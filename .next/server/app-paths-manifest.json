@@ -1,7 +1,10 @@
 {
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/page": "app/page.js",
+  "/api/daily-quizzes/route": "app/api/daily-quizzes/route.js",
   "/daily/[type]/page": "app/daily/[type]/page.js",
-  "/daily/[type]/export/page": "app/daily/[type]/export/page.js",
-  "/daily/page": "app/daily/page.js",
+  "/api/daily-quizzes/history/route": "app/api/daily-quizzes/history/route.js",
   "/admin/page": "app/admin/page.js",
   "/admin/categories/page": "app/admin/categories/page.js"
 }

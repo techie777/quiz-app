@@ -3,28 +3,30 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider = "mongodb"
+  url      = env("mongodb+srv://techsculptor8_db_user:MyMongoDb%40%23123cluster0.xxxx.mongodb.net/quiz-app?retryWrites=true&w=majority")
 }
 
 // ── NextAuth Models ──
 
 model User {
-  id            String    @id @default(cuid())
+  id            String      @id @default(auto()) @map("_id") @db.ObjectId
   name          String?
-  email         String    @unique
+  email         String      @unique
   emailVerified DateTime?
   image         String?
   nickname      String?
   avatar        String?
-  pin           String?   // 4-digit PIN stored as string
+  pin           String?
   accounts      Account[]
   favourites    Favourite[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  schoolProgress SchoolProgress[]
 }
 
 model VerificationToken {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
   identifier String
   token      String   @unique
   expires    DateTime
@@ -33,19 +35,20 @@ model VerificationToken {
 }
 
 model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String?
-  access_token      String?
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String?
-  session_state     String?
-  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                 String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId             String   @db.ObjectId
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?
+  access_token       String?
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -53,51 +56,59 @@ model Account {
 // ── Quiz Data ──
 
 model Category {
-  id            String     @id
-  topic         String
-  emoji         String
-  description   String     @default("")
-  categoryClass String     @default("")
-  hidden        Boolean    @default(false)
-  image                  String?
-  storyText              String?   // New: short story/info text
-  storyImage             String?   // New: image for the story section
-  originalLang           String     @default("en") // "en" or "hi"
-  isTrending             Boolean    @default(false)
-  chips                  String     @default("[]")
-  sortOrder              Int        @default(0)
-  showSubCategoriesOnHome Boolean    @default(false)
-  parentId               String?
-  parent                 Category?  @relation("SubCategories", fields: [parentId], references: [id], onDelete: SetNull)
-  subCategories          Category[] @relation("SubCategories")
-  questions     Question[]
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  id                      String      @id @default(auto()) @map("_id") @db.ObjectId
+  topic                   String
+  emoji                   String
+  description             String      @default("")
+  categoryClass           String      @default("")
+  hidden                  Boolean     @default(false)
+  image                   String?
+  storyText               String?
+  storyImage              String?
+  originalLang            String      @default("en")
+  isTrending              Boolean     @default(false)
+  chips                   String      @default("[]")
+  sortOrder               Int         @default(0)
+  showSubCategoriesOnHome Boolean     @default(false)
+
+  parentId      String?     @db.ObjectId
+  parent Category? @relation("SubCategories", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  subCategories Category[]  @relation("SubCategories")
+
+  questions Question[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Question {
-  id            String      @id
+  id            String      @id @default(auto()) @map("_id") @db.ObjectId
   text          String
   options       String
   correctAnswer String
   difficulty    String      @default("easy")
   image         String?
-  categoryId    String
-  category      Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  favourites    Favourite[]
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+
+  categoryId String   @db.ObjectId
+  category Category @relation(fields: [categoryId], references: [id])
+
+  favourites Favourite[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // ── User Features ──
 
 model Favourite {
-  id         String   @id @default(cuid())
-  userId     String
-  questionId String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now())
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String   @db.ObjectId
+  questionId String   @db.ObjectId
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id])
+
+  createdAt DateTime @default(now())
 
   @@unique([userId, questionId])
 }
@@ -105,7 +116,7 @@ model Favourite {
 // ── Admin System ──
 
 model AdminAccount {
-  id           String             @id @default(cuid())
+  id           String             @id @default(auto()) @map("_id") @db.ObjectId
   username     String             @unique
   passwordHash String
   displayName  String?
@@ -118,8 +129,8 @@ model AdminAccount {
 }
 
 model PendingTask {
-  id         String       @id @default(cuid())
-  adminId    String
+  id         String       @id @default(auto()) @map("_id") @db.ObjectId
+  adminId    String       @db.ObjectId
   admin      AdminAccount @relation(fields: [adminId], references: [id], onDelete: Cascade)
   actionType String
   entityType String
@@ -133,8 +144,8 @@ model PendingTask {
 }
 
 model AdminActivityLog {
-  id        String       @id @default(cuid())
-  adminId   String
+  id        String       @id @default(auto()) @map("_id") @db.ObjectId
+  adminId   String       @db.ObjectId
   admin     AdminAccount @relation(fields: [adminId], references: [id], onDelete: Cascade)
   action    String
   details   String?
@@ -144,15 +155,16 @@ model AdminActivityLog {
 // ── App Settings ──
 
 model Setting {
-  key   String @id
+  id    String @id @default(auto()) @map("_id") @db.ObjectId
+  key   String @unique
   value String
 }
 
 model DailyQuiz {
-  id          String   @id @default(cuid())
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
   type        String
   date        String
-  categoryId  String
+  categoryId  String   @db.ObjectId
   questionIds String   @default("[]")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -160,8 +172,10 @@ model DailyQuiz {
   @@unique([type, date])
 }
 
+// ── School Module ──
+
 model SchoolBoard {
-  id        String        @id
+  id        String        @id @default(auto()) @map("_id") @db.ObjectId
   name      String
   sortOrder Int           @default(0)
   hidden    Boolean       @default(false)
@@ -171,8 +185,8 @@ model SchoolBoard {
 }
 
 model SchoolClass {
-  id        String         @id @default(cuid())
-  boardId   String
+  id        String         @id @default(auto()) @map("_id") @db.ObjectId
+  boardId   String         @db.ObjectId
   board     SchoolBoard    @relation(fields: [boardId], references: [id], onDelete: Cascade)
   number    Int
   subjects  SchoolSubject[]
@@ -183,8 +197,8 @@ model SchoolClass {
 }
 
 model SchoolSubject {
-  id        String          @id @default(cuid())
-  classId   String
+  id        String          @id @default(auto()) @map("_id") @db.ObjectId
+  classId   String          @db.ObjectId
   class     SchoolClass     @relation(fields: [classId], references: [id], onDelete: Cascade)
   name      String
   slug      String
@@ -197,8 +211,8 @@ model SchoolSubject {
 }
 
 model SchoolChapter {
-  id        String           @id @default(cuid())
-  subjectId String
+  id        String           @id @default(auto()) @map("_id") @db.ObjectId
+  subjectId String           @db.ObjectId
   subject   SchoolSubject    @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   title     String
   sortOrder Int              @default(0)
@@ -209,8 +223,8 @@ model SchoolChapter {
 }
 
 model SchoolQuestion {
-  id          String        @id @default(cuid())
-  chapterId   String
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  chapterId   String        @db.ObjectId
   chapter     SchoolChapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
   type        String
   prompt      String
@@ -222,9 +236,9 @@ model SchoolQuestion {
 }
 
 model SchoolProgress {
-  id            String        @id @default(cuid())
-  userId        String
-  chapterId     String
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String        @db.ObjectId
+  chapterId     String        @db.ObjectId
   user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   chapter       SchoolChapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
   attempts      Int           @default(0)

@@ -24,41 +24,11 @@
       "static/css/app/admin/layout.css",
       "static/chunks/app/admin/layout.js"
     ],
-    "/category/[id]/page": [
+    "/admin/categories/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/css/app/category/[id]/page.css",
-      "static/chunks/app/category/[id]/page.js"
-    ],
-    "/quiz/[id]/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/css/app/quiz/[id]/page.css",
-      "static/chunks/app/quiz/[id]/page.js"
-    ],
-    "/results/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/css/app/results/page.css",
-      "static/chunks/app/results/page.js"
-    ],
-    "/admin/accounts/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/css/app/admin/accounts/page.css",
-      "static/chunks/app/admin/accounts/page.js"
-    ],
-    "/admin/settings/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/css/app/admin/settings/page.css",
-      "static/chunks/app/admin/settings/page.js"
-    ],
-    "/daily/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/css/app/daily/page.css",
-      "static/chunks/app/daily/page.js"
+      "static/css/app/admin/categories/page.css",
+      "static/chunks/app/admin/categories/page.js"
     ],
     "/daily/[type]/page": [
       "static/chunks/webpack.js",
@@ -66,17 +36,10 @@
       "static/css/app/daily/[type]/page.css",
       "static/chunks/app/daily/[type]/page.js"
     ],
-    "/daily/[type]/export/page": [
+    "/_not-found/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/css/app/daily/[type]/export/page.css",
-      "static/chunks/app/daily/[type]/export/page.js"
-    ],
-    "/admin/categories/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/css/app/admin/categories/page.css",
-      "static/chunks/app/admin/categories/page.js"
+      "static/chunks/app/_not-found/page.js"
     ]
   }
 }
