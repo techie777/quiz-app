@@ -1,12 +1,6 @@
 {
-  "/page": "app/page.js",
-  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
-  "/daily/[type]/page": "app/daily/[type]/page.js",
-  "/api/daily-quizzes/history/route": "app/api/daily-quizzes/history/route.js",
-  "/api/settings/route": "app/api/settings/route.js",
-  "/api/categories/route": "app/api/categories/route.js",
   "/daily/page": "app/daily/page.js",
-  "/api/daily-quizzes/route": "app/api/daily-quizzes/route.js",
+  "/daily/[type]/page": "app/daily/[type]/page.js",
   "/daily/[type]/export/page": "app/daily/[type]/export/page.js",
   "/admin/page": "app/admin/page.js",
   "/admin/categories/page": "app/admin/categories/page.js"
