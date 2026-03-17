@@ -1,0 +1,9 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/page": "app/page.js",
+  "/daily/[type]/page": "app/daily/[type]/page.js",
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/admin/settings/page": "app/admin/settings/page.js",
+  "/admin/page": "app/admin/page.js",
+  "/admin/login/page": "app/admin/login/page.js"
+}

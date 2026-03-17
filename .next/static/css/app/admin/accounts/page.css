@@ -1,0 +1,43 @@
+/*!*******************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[14].oneOf[7].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[14].oneOf[7].use[3]!./src/styles/AdminAccounts.module.css ***!
+  \*******************************************************************************************************************************************************************************************************************************************************************************/
+.AdminAccounts_page__cuSBK { padding: 1rem 0; }
+.AdminAccounts_header__R2ud3 { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+.AdminAccounts_title__wWrmx { font-size: 1.5rem; font-weight: 700; margin: 0; }
+.AdminAccounts_subtitle__lelFh { color: var(--text-secondary); font-size: 0.9rem; margin: 0.25rem 0 0; }
+.AdminAccounts_createForm__8NsPa { padding: 1.5rem; margin-bottom: 1.5rem; }
+.AdminAccounts_createForm__8NsPa h3 { margin: 0 0 1rem; }
+.AdminAccounts_formRow__7OFcH { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.AdminAccounts_input__iXK5J { padding: 0.6rem 0.8rem; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-primary); font-size: 0.9rem; flex: 1 1; min-width: 150px; }
+.AdminAccounts_error__BVew4 { color: #e53e3e; background: rgba(229,62,62,0.1); padding: 0.5rem 0.75rem; border-radius: 6px; margin-bottom: 0.75rem; font-size: 0.85rem; }
+.AdminAccounts_list__veokl { display: flex; flex-direction: column; gap: 0.75rem; }
+.AdminAccounts_row__YgFgD { padding: 1rem 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; }
+.AdminAccounts_rowInfo__ngTsE { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.AdminAccounts_name__i8yPo { font-weight: 600; font-size: 1rem; }
+.AdminAccounts_username__7v1T2 { color: var(--text-secondary); font-size: 0.85rem; }
+.AdminAccounts_roleBadge__Chmo1 { padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+.AdminAccounts_master__Yy9Pt { background: rgba(128,90,213,0.15); color: #805ad5; }
+.AdminAccounts_jr__7STxu { background: rgba(49,130,206,0.15); color: #3182ce; }
+.AdminAccounts_statusBadge__vnWSJ { padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+.AdminAccounts_active__VuqPu { background: rgba(72,187,120,0.15); color: #48bb78; }
+.AdminAccounts_paused__pcEMP { background: rgba(236,201,75,0.15); color: #d69e2e; }
+.AdminAccounts_disabled__K2eH6 { background: rgba(229,62,62,0.15); color: #e53e3e; }
+.AdminAccounts_actions__GezbH { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.AdminAccounts_actionBtn__uEEOX { padding: 0.35rem 0.7rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-primary); cursor: pointer; font-size: 0.8rem; transition: background 0.2s; }
+.AdminAccounts_actionBtn__uEEOX:hover { background: var(--accent-color); color: white; }
+.AdminAccounts_deleteBtn__xXbfL { padding: 0.35rem 0.7rem; border-radius: 6px; border: 1px solid #e53e3e; background: transparent; color: #e53e3e; cursor: pointer; font-size: 0.8rem; transition: all 0.2s; }
+.AdminAccounts_deleteBtn__xXbfL:hover { background: #e53e3e; color: white; }
+
+.AdminAccounts_headerActions__uIOi6 { display: flex; align-items: center; gap: 1.5rem; }
+.AdminAccounts_tabs__r_Xl0 { display: flex; background: var(--card-bg); padding: 4px; border-radius: 8px; border: 1px solid var(--border-color); }
+.AdminAccounts_tab__SK4ve { padding: 6px 16px; border-radius: 6px; border: none; background: transparent; color: var(--text-secondary); cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: all 0.2s; }
+.AdminAccounts_activeTab__kiJG_ { background: var(--accent) !important; color: white !important; }
+
+.AdminAccounts_pinDisplay__Vd3h_ { display: flex; align-items: center; gap: 8px; background: rgba(236, 72, 153, 0.1); padding: 6px 12px; border-radius: 6px; border: 1px dashed var(--accent); }
+.AdminAccounts_pinLabel__dLrb3 { font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; }
+.AdminAccounts_pinValue__gtJ4X { font-family: monospace; font-size: 1.1rem; font-weight: 800; color: var(--accent); letter-spacing: 2px; }
+
+.AdminAccounts_rowActions__mMI4m { display: flex; align-items: center; gap: 1rem; }
+
+.AdminAccounts_empty__JYKtp { text-align: center; padding: 3rem; color: var(--text-secondary); font-style: italic; }
+

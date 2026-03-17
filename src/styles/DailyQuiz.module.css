@@ -1,0 +1,158 @@
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 28px 24px 80px;
+}
+
+.loading {
+  color: var(--text-secondary);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  margin-top: 6px;
+}
+
+.headerActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.dateInput {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 2px solid var(--card-border);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.msg {
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.body {
+  display: grid;
+  grid-template-columns: 1.8fr 0.8fr;
+  gap: 14px;
+}
+
+.panel {
+  padding: 16px;
+  border-radius: 16px;
+}
+
+.panelTitle {
+  margin: 0 0 12px;
+  font-weight: 900;
+  color: var(--text-primary);
+}
+
+.qList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 640px;
+  overflow: auto;
+  padding-right: 6px;
+}
+
+.qItem {
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  padding: 12px;
+  background: var(--bg-secondary);
+}
+
+.qTop {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.qNum {
+  width: 26px;
+  height: 26px;
+  border-radius: 10px;
+  background: rgba(var(--accent-rgb), 0.12);
+  color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+.qText {
+  color: var(--text-primary);
+  line-height: 1.35;
+}
+
+.historyList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 640px;
+  overflow: auto;
+  padding-right: 6px;
+}
+
+.historyBtn {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--card-border);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.historyBtnActive {
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.08);
+}
+
+.historyCount {
+  font-weight: 900;
+  color: var(--accent);
+}
+
+.empty {
+  color: var(--text-muted);
+  padding: 6px 2px;
+}
+
+@media (max-width: 900px) {
+  .header {
+    flex-direction: column;
+  }
+  .headerActions {
+    justify-content: flex-start;
+  }
+  .body {
+    grid-template-columns: 1fr;
+  }
+}
+

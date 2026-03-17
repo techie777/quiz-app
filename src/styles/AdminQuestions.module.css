@@ -1,0 +1,171 @@
+.page {}
+.header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; }
+.title { font-size: 1.8rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+.subtitle { color: var(--text-secondary); font-size: 0.95rem; }
+
+/* Filters */
+.filters { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
+
+.searchInput {
+  flex: 1;
+  min-width: 200px;
+  padding: 10px 14px;
+  border: 2px solid var(--card-border);
+  border-radius: var(--border-radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  outline: none;
+}
+.searchInput:focus { border-color: var(--accent); }
+
+.select {
+  padding: 10px 14px;
+  border: 2px solid var(--card-border);
+  border-radius: var(--border-radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  outline: none;
+  cursor: pointer;
+}
+.select:focus { border-color: var(--accent); }
+
+/* List */
+.list { display: flex; flex-direction: column; gap: 12px; }
+
+.row { padding: 18px 20px; }
+
+.rowTop { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+
+.catBadge {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.diffBadge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  text-transform: capitalize;
+}
+.easy { background: rgba(16, 185, 129, 0.12); color: #10b981; }
+.medium { background: rgba(245, 158, 11, 0.12); color: #f59e0b; }
+.hard { background: rgba(239, 68, 68, 0.12); color: #ef4444; }
+
+.questionText { font-size: 0.95rem; font-weight: 500; color: var(--text-primary); margin-bottom: 10px; line-height: 1.4; }
+
+.optionsList { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+
+.optTag {
+  font-size: 0.78rem;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--btn-secondary-bg);
+  color: var(--text-secondary);
+}
+
+.correctTag {
+  background: var(--success-bg);
+  color: var(--success);
+  font-weight: 600;
+}
+
+.rowActions { display: flex; gap: 8px; }
+.editBtn, .deleteBtn {
+  background: var(--btn-secondary-bg);
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  transition: background 0.2s ease;
+  color: var(--text-secondary);
+}
+.editBtn:hover { background: var(--accent-light); color: var(--accent); }
+.deleteBtn:hover { background: var(--danger-bg); color: var(--danger); }
+
+.empty { text-align: center; color: var(--text-muted); padding: 40px 0; }
+
+/* Modal */
+.overlay { position: fixed; inset: 0; background: var(--modal-overlay); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 300; }
+
+.modal {
+  background: var(--modal-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--border-radius-lg);
+  padding: 32px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.modalTitle { font-size: 1.3rem; font-weight: 700; color: var(--text-primary); margin-bottom: 24px; }
+
+.field { margin-bottom: 16px; }
+.field label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+
+.input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 2px solid var(--card-border);
+  border-radius: var(--border-radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  outline: none;
+}
+.input:focus { border-color: var(--accent); }
+
+.textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 2px solid var(--card-border);
+  border-radius: var(--border-radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  outline: none;
+  resize: vertical;
+  font-family: inherit;
+}
+.textarea:focus { border-color: var(--accent); }
+
+.questionImg {
+  max-width: 180px;
+  max-height: 100px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  object-fit: cover;
+}
+
+.fileInput {
+  width: 100%;
+  padding: 8px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.imgPreviewWrap {
+  margin-top: 8px;
+}
+
+.imgPreview {
+  width: 120px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--card-border);
+}
+
+.removeImgBtn {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: var(--danger);
+  background: none;
+  padding: 2px 0;
+}
+
+.modalActions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }

@@ -1,0 +1,39 @@
+.toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 56px;
+  height: 30px;
+  background: var(--btn-secondary-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  cursor: pointer;
+  padding: 2px;
+  transition: background 0.3s ease;
+}
+
+.icon {
+  position: absolute;
+  font-size: 0.85rem;
+  z-index: 2;
+  transition: transform 0.3s ease;
+  left: 6px;
+}
+
+.dark .icon {
+  transform: translateX(24px);
+}
+
+.slider {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  background: var(--accent);
+  border-radius: 50%;
+  transition: transform 0.3s ease;
+  left: 3px;
+}
+
+.dark .slider {
+  transform: translateX(24px);
+}

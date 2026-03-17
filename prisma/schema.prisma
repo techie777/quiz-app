@@ -1,0 +1,238 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ── NextAuth Models ──
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  nickname      String?
+  avatar        String?
+  pin           String?   // 4-digit PIN stored as string
+  accounts      Account[]
+  favourites    Favourite[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+// ── Quiz Data ──
+
+model Category {
+  id            String     @id
+  topic         String
+  emoji         String
+  description   String     @default("")
+  categoryClass String     @default("")
+  hidden        Boolean    @default(false)
+  image                  String?
+  storyText              String?   // New: short story/info text
+  storyImage             String?   // New: image for the story section
+  originalLang           String     @default("en") // "en" or "hi"
+  isTrending             Boolean    @default(false)
+  chips                  String     @default("[]")
+  sortOrder              Int        @default(0)
+  showSubCategoriesOnHome Boolean    @default(false)
+  parentId               String?
+  parent                 Category?  @relation("SubCategories", fields: [parentId], references: [id], onDelete: SetNull)
+  subCategories          Category[] @relation("SubCategories")
+  questions     Question[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+model Question {
+  id            String      @id
+  text          String
+  options       String
+  correctAnswer String
+  difficulty    String      @default("easy")
+  image         String?
+  categoryId    String
+  category      Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  favourites    Favourite[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+// ── User Features ──
+
+model Favourite {
+  id         String   @id @default(cuid())
+  userId     String
+  questionId String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, questionId])
+}
+
+// ── Admin System ──
+
+model AdminAccount {
+  id           String             @id @default(cuid())
+  username     String             @unique
+  passwordHash String
+  displayName  String?
+  role         String             @default("jr")
+  status       String             @default("active")
+  pendingTasks PendingTask[]
+  activityLogs AdminActivityLog[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+}
+
+model PendingTask {
+  id         String       @id @default(cuid())
+  adminId    String
+  admin      AdminAccount @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  actionType String
+  entityType String
+  entityId   String?
+  payload    String
+  status     String       @default("pending")
+  reviewedBy String?
+  reviewNote String?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+}
+
+model AdminActivityLog {
+  id        String       @id @default(cuid())
+  adminId   String
+  admin     AdminAccount @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  action    String
+  details   String?
+  createdAt DateTime     @default(now())
+}
+
+// ── App Settings ──
+
+model Setting {
+  key   String @id
+  value String
+}
+
+model DailyQuiz {
+  id          String   @id @default(cuid())
+  type        String
+  date        String
+  categoryId  String
+  questionIds String   @default("[]")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([type, date])
+}
+
+model SchoolBoard {
+  id        String        @id
+  name      String
+  sortOrder Int           @default(0)
+  hidden    Boolean       @default(false)
+  classes   SchoolClass[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+model SchoolClass {
+  id        String         @id @default(cuid())
+  boardId   String
+  board     SchoolBoard    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  number    Int
+  subjects  SchoolSubject[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@unique([boardId, number])
+}
+
+model SchoolSubject {
+  id        String          @id @default(cuid())
+  classId   String
+  class     SchoolClass     @relation(fields: [classId], references: [id], onDelete: Cascade)
+  name      String
+  slug      String
+  sortOrder Int             @default(0)
+  chapters  SchoolChapter[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@unique([classId, slug])
+}
+
+model SchoolChapter {
+  id        String           @id @default(cuid())
+  subjectId String
+  subject   SchoolSubject    @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  title     String
+  sortOrder Int              @default(0)
+  questions SchoolQuestion[]
+  progress  SchoolProgress[]
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+model SchoolQuestion {
+  id          String        @id @default(cuid())
+  chapterId   String
+  chapter     SchoolChapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  type        String
+  prompt      String
+  options     String        @default("[]")
+  answer      String
+  explanation String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model SchoolProgress {
+  id            String        @id @default(cuid())
+  userId        String
+  chapterId     String
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chapter       SchoolChapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  attempts      Int           @default(0)
+  bestScore     Int           @default(0)
+  lastScore     Int           @default(0)
+  lastAttemptAt DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@unique([userId, chapterId])
+}

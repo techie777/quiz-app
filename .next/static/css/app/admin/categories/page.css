@@ -1,0 +1,379 @@
+/*!*********************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[14].oneOf[7].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[14].oneOf[7].use[3]!./src/styles/AdminCategories.module.css ***!
+  \*********************************************************************************************************************************************************************************************************************************************************************************/
+.AdminCategories_page__E5r5D {}
+
+.AdminCategories_header__UhYaD {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+
+.AdminCategories_title__VJ7lH { font-size: 1.8rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+.AdminCategories_subtitle__b01fb { color: var(--text-secondary); font-size: 0.95rem; }
+
+.AdminCategories_list__pp7a0 { display: flex; flex-direction: column; gap: 10px; }
+
+.AdminCategories_row__LdY_e {
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.AdminCategories_rowInfo__4d8ni { display: flex; align-items: center; gap: 14px; }
+.AdminCategories_dragHandle__5G0mb {
+  cursor: -webkit-grab;
+  cursor: grab;
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
+  padding: 4px;
+}
+.AdminCategories_dragHandle__5G0mb:active { cursor: -webkit-grabbing; cursor: grabbing; }
+.AdminCategories_rowImage__Qk4tV {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.AdminCategories_emoji__ueMTT { font-size: 1.8rem; }
+.AdminCategories_name__1U87z { display: block; font-weight: 600; color: var(--text-primary); font-size: 0.95rem; }
+.AdminCategories_desc__u9278 { display: block; font-size: 0.8rem; color: var(--text-muted); }
+
+.AdminCategories_rowMeta__R_g2t { display: flex; align-items: center; gap: 16px; }
+.AdminCategories_count__UF8Cy { font-size: 0.85rem; font-weight: 600; color: var(--accent); }
+
+.AdminCategories_actions___n4xD { display: flex; gap: 6px; }
+.AdminCategories_editBtn__c2Swa, .AdminCategories_deleteBtn__PN8B_ {
+  background: var(--btn-secondary-bg);
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  transition: background 0.2s ease;
+}
+.AdminCategories_editBtn__c2Swa:hover { background: var(--accent-light); }
+.AdminCategories_deleteBtn__PN8B_:hover { background: var(--danger-bg); }
+
+.AdminCategories_confirmBar__ZqSWc {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--card-border);
+  margin-top: 4px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.AdminCategories_confirmYes__NW4nQ {
+  background: var(--danger);
+  color: white;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.AdminCategories_confirmNo__mSv_b {
+  background: var(--btn-secondary-bg);
+  color: var(--text-secondary);
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+}
+
+.AdminCategories_empty__SEYKX { text-align: center; color: var(--text-muted); padding: 40px 0; }
+
+/* ===== Inline Form ===== */
+.AdminCategories_inlineForm__FIOac {
+  background: var(--modal-bg);
+  border: 2px solid var(--accent);
+  border-radius: 16px;
+  padding: 24px;
+  margin: 12px 0 20px;
+  box-shadow: var(--shadow-lg);
+  animation: AdminCategories_slideDown__9S5hI 0.3s ease-out;
+}
+
+@keyframes AdminCategories_slideDown__9S5hI {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.AdminCategories_formTitle__hb7tU { 
+  font-size: 1.2rem; 
+  font-weight: 700; 
+  color: var(--text-primary); 
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.AdminCategories_formGrid__Ax7aQ {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-gap: 20px;
+  gap: 20px;
+}
+
+.AdminCategories_field__ktpHA { margin-bottom: 16px; }
+.AdminCategories_field__ktpHA label { 
+  display: block; 
+  font-size: 0.75rem; 
+  font-weight: 700; 
+  color: var(--text-secondary); 
+  text-transform: uppercase; 
+  letter-spacing: 0.5px; 
+  margin-bottom: 8px; 
+}
+
+.AdminCategories_input__SKcI2 {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid var(--card-border);
+  border-radius: 10px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  outline: none;
+  transition: all 0.2s ease;
+}
+.AdminCategories_input__SKcI2:focus { 
+  border-color: var(--accent);
+  background: var(--bg-secondary);
+}
+
+.AdminCategories_textarea__ZPT75 {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 2px solid var(--card-border);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  outline: none;
+  resize: vertical;
+  min-height: 120px;
+}
+.AdminCategories_textarea__ZPT75:focus { border-color: var(--accent); }
+
+.AdminCategories_divider__hdPNd {
+  border: 0;
+  border-top: 1px solid var(--card-border);
+  margin: 24px 0;
+}
+
+.AdminCategories_sectionTitle__pm_C5 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.AdminCategories_storySection__7JnT7 {
+  background: var(--bg-secondary);
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px dashed var(--card-border);
+}
+
+.AdminCategories_formActions__9G7OK {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--card-border);
+}
+
+.AdminCategories_editingRow__UB3Li {
+  border-color: var(--accent) !important;
+  background: var(--bg-secondary) !important;
+}
+
+.AdminCategories_imagePreview__xiMI9 {
+  margin-top: 10px;
+  position: relative;
+  display: inline-block;
+}
+.AdminCategories_imagePreview__xiMI9 img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid var(--card-border);
+}
+.AdminCategories_removeImg__gEjft {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: var(--danger);
+  color: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  cursor: pointer;
+  border: 2px solid var(--bg-primary);
+}
+
+.AdminCategories_toggleField__lrKY9 { margin-bottom: 16px; }
+.AdminCategories_checkboxLabel__6hFWh {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.AdminCategories_checkboxLabel__6hFWh input { width: auto; cursor: pointer; }
+
+.AdminCategories_subRows__O8Qbm {
+  margin-left: 32px;
+  border-left: 2px dashed var(--card-border);
+  padding-left: 12px;
+  margin-top: -4px;
+  margin-bottom: 12px;
+}
+
+.AdminCategories_subRow__MM8VY {
+  padding: 12px 16px;
+  margin-top: 8px;
+  background: var(--bg-secondary);
+}
+
+.AdminCategories_subIndicator__K8162 {
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  font-weight: bold;
+}
+
+.AdminCategories_homeBadge__pN_S_ {
+  font-size: 1rem;
+  color: var(--accent);
+  cursor: help;
+}
+
+.AdminCategories_hiddenBadge__8hryq, .AdminCategories_trendingBadge__GK5wZ {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: var(--warning, #f59e0b);
+  color: #fff;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.AdminCategories_visibilityBtn__fMnAM {
+  background: var(--btn-secondary-bg);
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  transition: background 0.2s ease;
+}
+.AdminCategories_visibilityBtn__fMnAM:hover { background: var(--accent-light); }
+
+.AdminCategories_checkboxField__rADUO {
+  margin-bottom: 16px;
+}
+.AdminCategories_checkboxField__rADUO label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.AdminCategories_checkboxField__rADUO input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+
+.AdminCategories_fileInput__VLOy3 {
+  width: 100%;
+  padding: 8px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.AdminCategories_imagePreview__xiMI9 {
+  margin-top: 8px;
+  position: relative;
+  display: inline-block;
+}
+
+.AdminCategories_imagePreview__xiMI9 img {
+  width: 100%;
+  max-width: 200px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid var(--card-border);
+  display: block;
+}
+
+.AdminCategories_removeImg__gEjft {
+  background: var(--danger);
+  color: white;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.AdminCategories_removeImg__gEjft:hover { opacity: 0.9; }
+
+.AdminCategories_modalActions__HYX2L { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+.AdminCategories_langBadge__7c_QW {
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-left: 8px;
+}
+.AdminCategories_langEn__ihnGO { background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.2); }
+.AdminCategories_langHi__NA4Mj { background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2); }
+
+/* Chips selection */
+.AdminCategories_chipsWrap__LfyxH {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.AdminCategories_chipCheck__nkiPV {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--card-border);
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+}
+.AdminCategories_chipCheck__nkiPV input { width: auto; }
+

@@ -1,0 +1,21 @@
+.page { max-width: 900px; margin: 0 auto; padding: 32px 20px; }
+.header { margin-bottom: 24px; }
+.title { font-size: 1.6rem; font-weight: 700; color: var(--text-primary); }
+.subtitle { color: var(--text-secondary); font-size: 0.95rem; margin-top: 4px; }
+.empty { text-align: center; padding: 60px 20px; color: var(--text-secondary); }
+.toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.searchInput { flex: 1; min-width: 200px; padding: 10px 16px; border: 1px solid var(--navbar-border); border-radius: 10px; font-size: 0.95rem; background: var(--card-bg); color: var(--text-primary); }
+.tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.tab { padding: 8px 16px; border-radius: 20px; border: 1px solid var(--navbar-border); background: var(--card-bg); color: var(--text-secondary); font-size: 0.85rem; cursor: pointer; transition: all 0.2s; }
+.tab:hover { border-color: var(--accent); color: var(--accent); }
+.tabActive { background: var(--accent); color: #fff; border-color: var(--accent); }
+.list { display: flex; flex-direction: column; gap: 12px; }
+.noteCard { padding: 16px 20px; }
+.noteTop { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.catBadge { font-size: 0.8rem; padding: 4px 10px; border-radius: 12px; background: rgba(99,102,241,0.1); color: var(--accent); font-weight: 600; }
+.removeBtn { font-size: 0.8rem; color: #ef4444; background: none; border: none; cursor: pointer; font-weight: 600; }
+.removeBtn:hover { text-decoration: underline; }
+.questionText { font-size: 1rem; color: var(--text-primary); margin-bottom: 8px; line-height: 1.5; }
+.answer { font-size: 0.9rem; color: var(--text-secondary); }
+.answer strong { color: #10b981; }
+.noMatch { text-align: center; color: var(--text-secondary); padding: 40px 0; }

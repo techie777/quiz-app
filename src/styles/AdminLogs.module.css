@@ -1,0 +1,13 @@
+.page { padding: 1rem 0; }
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+.title { font-size: 1.5rem; font-weight: 700; margin: 0; }
+.subtitle { color: var(--text-secondary); font-size: 0.9rem; margin: 0.25rem 0 0; }
+.filter { padding: 0.5rem 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-primary); font-size: 0.85rem; }
+.list { display: flex; flex-direction: column; gap: 0.6rem; }
+.empty { color: var(--text-secondary); text-align: center; padding: 2rem; }
+.row { padding: 0.9rem 1.1rem; }
+.rowTop { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.action { background: var(--accent-color); color: white; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+.admin { font-weight: 600; font-size: 0.9rem; }
+.time { color: var(--text-secondary); font-size: 0.8rem; margin-left: auto; }
+.details { color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border-color); }

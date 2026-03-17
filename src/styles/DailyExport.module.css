@@ -1,0 +1,149 @@
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 18px 18px 40px;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.backLink {
+  text-decoration: none;
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
+.printBtn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.card {
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  background: var(--card-bg);
+  padding: 16px;
+}
+
+.title {
+  font-weight: 900;
+  color: var(--text-primary);
+  font-size: 1.4rem;
+}
+
+.subTitle {
+  color: var(--text-secondary);
+  margin-top: 6px;
+}
+
+.msg {
+  color: var(--text-secondary);
+  margin-top: 10px;
+}
+
+.sheet {
+  background: #fff;
+  color: #111;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.1);
+  padding: 18px 20px;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Noto Sans Devanagari", Arial, sans-serif;
+}
+
+.sheetHeader {
+  text-align: center;
+  border-bottom: 1px solid rgba(0,0,0,0.12);
+  padding-bottom: 10px;
+  margin-bottom: 14px;
+}
+
+.brand {
+  font-weight: 900;
+  font-size: 1.2rem;
+}
+
+.sheetTitle {
+  margin-top: 6px;
+  font-weight: 800;
+}
+
+.sheetMeta {
+  margin-top: 6px;
+  font-size: 0.92rem;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.qBlock {
+  break-inside: avoid;
+}
+
+.qText {
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.qNum {
+  display: inline-block;
+  width: 26px;
+}
+
+.opts {
+  margin: 8px 0 0 28px;
+  padding: 0;
+  list-style: disc;
+}
+
+.opts li {
+  margin: 4px 0;
+  line-height: 1.4;
+}
+
+.answer {
+  margin-top: 8px;
+  margin-left: 28px;
+  font-weight: 800;
+}
+
+.answer span {
+  font-weight: 900;
+}
+
+.sheetFooter {
+  margin-top: 16px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(0,0,0,0.12);
+  text-align: center;
+  font-size: 0.8rem;
+  color: rgba(0,0,0,0.7);
+}
+
+@media print {
+  .page {
+    max-width: none;
+    padding: 0;
+  }
+  .toolbar {
+    display: none;
+  }
+  .sheet {
+    border: none;
+    border-radius: 0;
+    padding: 0;
+  }
+}
+
