@@ -9,6 +9,9 @@
 .tab { padding: 8px 16px; border-radius: 20px; border: 1px solid var(--navbar-border); background: var(--card-bg); color: var(--text-secondary); font-size: 0.85rem; cursor: pointer; transition: all 0.2s; }
 .tab:hover { border-color: var(--accent); color: var(--accent); }
 .tabActive { background: var(--accent); color: #fff; border-color: var(--accent); }
+.sectionTabs { display: flex; gap: 10px; margin-bottom: 16px; }
+.sectionTab { padding: 10px 14px; border-radius: 12px; border: 1px solid var(--navbar-border); background: var(--card-bg); color: var(--text-secondary); font-weight: 800; cursor: pointer; }
+.sectionTabActive { background: rgba(75, 102, 255, 0.12); color: var(--accent); border-color: rgba(75, 102, 255, 0.28); }
 .list { display: flex; flex-direction: column; gap: 12px; }
 .noteCard { padding: 16px 20px; }
 .noteTop { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
@@ -19,3 +22,22 @@
 .answer { font-size: 0.9rem; color: var(--text-secondary); }
 .answer strong { color: #10b981; }
 .noMatch { text-align: center; color: var(--text-secondary); padding: 40px 0; }
+
+.caCard { padding: 16px 20px; }
+.caTop { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
+.caMeta { display: inline-flex; gap: 10px; align-items: center; flex-wrap: wrap; color: var(--text-secondary); font-weight: 800; }
+.caChip { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(0,0,0,0.08); font-weight: 900; font-size: 0.82rem; line-height: 1; }
+.caHeading { font-weight: 900; color: var(--text-primary); font-size: 1.05rem; margin-bottom: 8px; }
+.caDesc { color: var(--text-secondary); font-weight: 650; line-height: 1.5; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+.caActions { display: flex; gap: 10px; margin-top: 10px; }
+.readMoreBtn { padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(0, 0, 0, 0.12); background: var(--bg-secondary); color: var(--text-primary); font-weight: 900; cursor: pointer; }
+.readMoreBtn:hover { border-color: rgba(75, 102, 255, 0.45); }
+
+.modalOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; padding: 18px; z-index: 60; }
+.modal { width: 100%; max-width: 860px; border-radius: 14px; padding: 14px; }
+.modalTop { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
+.modalMeta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; color: var(--text-secondary); font-weight: 900; }
+.modalClose { width: 40px; height: 40px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.12); background: var(--bg-secondary); cursor: pointer; font-weight: 900; }
+.modalTitle { font-size: 1.55rem; font-weight: 950; margin-bottom: 12px; color: var(--text-primary); line-height: 1.25; }
+.modalImage { width: 100%; max-height: 360px; object-fit: cover; border-radius: 14px; border: 1px solid rgba(0,0,0,0.08); margin-bottom: 12px; }
+.modalDesc { color: var(--text-secondary); font-weight: 650; line-height: 1.6; white-space: pre-wrap; }

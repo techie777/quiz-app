@@ -5,21 +5,42 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import styles from "@/styles/Notes.module.css";
 
+function formatDate(d) {
+  if (!d) return "";
+  try {
+    const [y, m, day] = String(d).split("-");
+    const dt = new Date(Number(y), Number(m) - 1, Number(day));
+    return dt.toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
+  } catch {
+    return d;
+  }
+}
+
 export default function NotesPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [favourites, setFavourites] = useState([]);
+  const [caFavourites, setCaFavourites] = useState([]);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("all");
+  const [section, setSection] = useState("questions"); // "questions" | "currentAffairs"
   const [loading, setLoading] = useState(true);
+  const [reading, setReading] = useState(null);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/");
     if (status === "authenticated" && !session?.user?.isAdmin) {
       fetch("/api/favourites")
         .then((r) => r.json())
-        .then((data) => { setFavourites(data); setLoading(false); })
+        .then((data) => { setFavourites(data); })
         .catch(() => setLoading(false));
+
+      fetch("/api/current-affairs/favourites")
+        .then((r) => r.json())
+        .then((data) => { setCaFavourites(Array.isArray(data.items) ? data.items : []); })
+        .catch(() => {});
+
+      setLoading(false);
     }
   }, [status, session, router]);
 
@@ -40,6 +61,17 @@ export default function NotesPage() {
     });
   }, [favourites, activeTab, search]);
 
+  const filteredCA = useMemo(() => {
+    const s = search.trim().toLowerCase();
+    if (!s) return caFavourites;
+    return caFavourites.filter((it) => {
+      if (it.heading && String(it.heading).toLowerCase().includes(s)) return true;
+      if (it.description && String(it.description).toLowerCase().includes(s)) return true;
+      if (it.category && String(it.category).toLowerCase().includes(s)) return true;
+      return false;
+    });
+  }, [caFavourites, search]);
+
   const handleRemove = async (questionId) => {
     await fetch("/api/favourites", {
       method: "DELETE",
@@ -47,6 +79,26 @@ export default function NotesPage() {
       body: JSON.stringify({ questionId }),
     });
     setFavourites((prev) => prev.filter((f) => f.questionId !== questionId));
+  };
+
+  const handleRemoveCA = async (currentAffairId) => {
+    await fetch("/api/current-affairs/favourites", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ currentAffairId }),
+    });
+    setCaFavourites((prev) => prev.filter((x) => x.id !== currentAffairId));
+  };
+
+  const chipStyle = (label) => {
+    const s = String(label || "");
+    let h = 0;
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360;
+    return {
+      background: `linear-gradient(135deg, hsla(${h}, 85%, 55%, 0.18), hsla(${(h + 40) % 360}, 85%, 55%, 0.10))`,
+      borderColor: `hsla(${h}, 85%, 55%, 0.35)`,
+      color: `hsl(${h}, 65%, 40%)`,
+    };
   };
 
   const handleExportPDF = async () => {
@@ -112,68 +164,152 @@ export default function NotesPage() {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <h1 className={styles.title}>My Notes</h1>
-        <p className={styles.subtitle}>{favourites.length} favourite questions</p>
+        <h1 className={styles.title}>My Favourites</h1>
+        <p className={styles.subtitle}>
+          {section === "questions" ? `${favourites.length} favourite questions` : `${caFavourites.length} saved articles`}
+        </p>
       </div>
 
-      {favourites.length === 0 ? (
+      <div className={styles.sectionTabs}>
+        <button
+          className={`${styles.sectionTab} ${section === "questions" ? styles.sectionTabActive : ""}`}
+          onClick={() => {
+            setSection("questions");
+            setActiveTab("all");
+          }}
+        >
+          Questions
+        </button>
+        <button
+          className={`${styles.sectionTab} ${section === "currentAffairs" ? styles.sectionTabActive : ""}`}
+          onClick={() => {
+            setSection("currentAffairs");
+            setActiveTab("all");
+          }}
+        >
+          Current Affairs
+        </button>
+      </div>
+
+      {section === "questions" && favourites.length === 0 ? (
         <div className={styles.empty}>
           <p>No favourite questions yet. Play a quiz and mark questions you want to save!</p>
+        </div>
+      ) : section === "currentAffairs" && caFavourites.length === 0 ? (
+        <div className={styles.empty}>
+          <p>No saved current affairs yet. Open Current Affairs and tap the heart icon.</p>
         </div>
       ) : (
         <>
           <div className={styles.toolbar}>
             <input
               className={styles.searchInput}
-              placeholder="Search notes..."
+              placeholder={section === "questions" ? "Search favourites..." : "Search current affairs..."}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-            <button className="btn-primary" onClick={handleExportPDF}>
-              📄 Export PDF
-            </button>
+            {section === "questions" && (
+              <button className="btn-primary" onClick={handleExportPDF}>
+                📄 Export PDF
+              </button>
+            )}
           </div>
 
-          <div className={styles.tabs}>
-            <button
-              className={`${styles.tab} ${activeTab === "all" ? styles.tabActive : ""}`}
-              onClick={() => setActiveTab("all")}
-            >
-              All
-            </button>
-            {categories.map((cat) => (
+          {section === "questions" && (
+            <div className={styles.tabs}>
               <button
-                key={cat.id}
-                className={`${styles.tab} ${activeTab === cat.id ? styles.tabActive : ""}`}
-                onClick={() => setActiveTab(cat.id)}
+                className={`${styles.tab} ${activeTab === "all" ? styles.tabActive : ""}`}
+                onClick={() => setActiveTab("all")}
               >
-                {cat.emoji} {cat.topic}
+                All
               </button>
-            ))}
-          </div>
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  className={`${styles.tab} ${activeTab === cat.id ? styles.tabActive : ""}`}
+                  onClick={() => setActiveTab(cat.id)}
+                >
+                  {cat.emoji} {cat.topic}
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className={styles.list}>
-            {filtered.map((f) => (
-              <div key={f.id} className={`${styles.noteCard} glass-card`}>
-                <div className={styles.noteTop}>
-                  <span className={styles.catBadge}>
-                    {f.question.category.emoji} {f.question.category.topic}
-                  </span>
-                  <button className={styles.removeBtn} onClick={() => handleRemove(f.questionId)}>
-                    ✕ Remove
-                  </button>
-                </div>
-                <p className={styles.questionText}>{f.question.text}</p>
-                <p className={styles.answer}>
-                  <strong>Answer:</strong> {f.question.correctAnswer}
-                </p>
-              </div>
-            ))}
-            {filtered.length === 0 && (
-              <p className={styles.noMatch}>No notes match your filters.</p>
+            {section === "questions" ? (
+              <>
+                {filtered.map((f) => (
+                  <div key={f.id} className={`${styles.noteCard} glass-card`}>
+                    <div className={styles.noteTop}>
+                      <span className={styles.catBadge}>
+                        {f.question.category.emoji} {f.question.category.topic}
+                      </span>
+                      <button className={styles.removeBtn} onClick={() => handleRemove(f.questionId)}>
+                        ✕ Remove
+                      </button>
+                    </div>
+                    <p className={styles.questionText}>{f.question.text}</p>
+                    <p className={styles.answer}>
+                      <strong>Answer:</strong> {f.question.correctAnswer}
+                    </p>
+                  </div>
+                ))}
+                {filtered.length === 0 && <p className={styles.noMatch}>No favourites match your filters.</p>}
+              </>
+            ) : (
+              <>
+                {filteredCA.map((it) => (
+                  <div key={it.id} className={`${styles.caCard} glass-card`}>
+                    <div className={styles.caTop}>
+                      <div className={styles.caMeta}>
+                        <span>{formatDate(it.date)}</span>
+                        {it.category ? (
+                          <span className={styles.caChip} style={chipStyle(it.category)}>
+                            {it.category}
+                          </span>
+                        ) : null}
+                      </div>
+                      <button className={styles.removeBtn} onClick={() => handleRemoveCA(it.id)}>
+                        ✕ Remove
+                      </button>
+                    </div>
+                    <div className={styles.caHeading}>{it.heading}</div>
+                    <div className={styles.caDesc}>{it.description}</div>
+                    <div className={styles.caActions}>
+                      <button className={styles.readMoreBtn} onClick={() => setReading(it)}>
+                        Read More
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {filteredCA.length === 0 && <p className={styles.noMatch}>No current affairs match your search.</p>}
+              </>
             )}
           </div>
         </>
+      )}
+
+      {reading && (
+        <div className={styles.modalOverlay} onClick={() => setReading(null)}>
+          <div className={`${styles.modal} glass-card`} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalTop}>
+              <div className={styles.modalMeta}>
+                <span>{formatDate(reading.date)}</span>
+                {reading.category ? (
+                  <span className={styles.caChip} style={chipStyle(reading.category)}>
+                    {reading.category}
+                  </span>
+                ) : null}
+              </div>
+              <button className={styles.modalClose} onClick={() => setReading(null)}>
+                ✕
+              </button>
+            </div>
+            <div className={styles.modalTitle}>{reading.heading}</div>
+            {reading.image ? <img src={reading.image} alt="" className={styles.modalImage} /> : null}
+            <div className={styles.modalDesc}>{reading.description}</div>
+          </div>
+        </div>
       )}
     </div>
   );

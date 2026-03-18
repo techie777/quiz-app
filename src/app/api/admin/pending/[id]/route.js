@@ -25,6 +25,23 @@ export async function PUT(request, { params }) {
     const at = task.actionType;
 
     try {
+      async function loadCurrentAffairs() {
+        const row = await prisma.setting.findUnique({
+          where: { key: "currentAffairs" },
+          select: { value: true },
+        });
+        const list = safeJsonParse(row?.value || "[]", []);
+        return Array.isArray(list) ? list : [];
+      }
+
+      async function saveCurrentAffairs(list) {
+        await prisma.setting.upsert({
+          where: { key: "currentAffairs" },
+          update: { value: JSON.stringify(list) },
+          create: { key: "currentAffairs", value: JSON.stringify(list) },
+        });
+      }
+
       // Apply the change — support both naming conventions
       if (at === "add_category" || at === "create_category") {
         const maxSort = await prisma.category.aggregate({ _max: { sortOrder: true } });
@@ -139,6 +156,44 @@ export async function PUT(request, { params }) {
             });
           }
         }
+      } else if (at === "create_current_affair") {
+        const list = await loadCurrentAffairs();
+        const now = new Date().toISOString();
+        const id = `ca_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        list.push({
+          id,
+          date: payload.date,
+          category: payload.category || "",
+          heading: payload.heading,
+          description: payload.description,
+          image: payload.image || "",
+          hidden: !!payload.hidden,
+          createdAt: now,
+          updatedAt: now,
+        });
+        await saveCurrentAffairs(list);
+      } else if (at === "update_current_affair") {
+        const list = await loadCurrentAffairs();
+        const id = payload.id || task.entityId;
+        const idx = list.findIndex((x) => x?.id === id);
+        if (idx < 0) throw new Error("Current affair not found");
+        const now = new Date().toISOString();
+        list[idx] = {
+          ...list[idx],
+          ...(payload.date !== undefined ? { date: payload.date } : {}),
+          ...(payload.category !== undefined ? { category: payload.category } : {}),
+          ...(payload.heading !== undefined ? { heading: payload.heading } : {}),
+          ...(payload.description !== undefined ? { description: payload.description } : {}),
+          ...(payload.image !== undefined ? { image: payload.image } : {}),
+          ...(payload.hidden !== undefined ? { hidden: !!payload.hidden } : {}),
+          updatedAt: now,
+        };
+        await saveCurrentAffairs(list);
+      } else if (at === "delete_current_affair") {
+        const list = await loadCurrentAffairs();
+        const id = payload.id || task.entityId;
+        const next = list.filter((x) => x?.id !== id);
+        await saveCurrentAffairs(next);
       }
     } catch (applyError) {
       console.error("Error applying approved task:", applyError);

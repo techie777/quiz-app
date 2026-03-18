@@ -34,7 +34,11 @@ export default function QuizEngine() {
     setFullscreen,
     isTranslating,
     language,
+    translateTarget,
     translatedStory,
+    toggleLanguage,
+    fontScale,
+    toggleFontSize,
   } = useQuiz();
 
   const category = useMemo(() => {
@@ -128,9 +132,14 @@ export default function QuizEngine() {
   }, [language]);
 
   if (status !== "active" || questions.length === 0 || isTranslating) {
-    const loadingText = isTranslating 
-      ? (language === "hi" ? "प्रश्नोत्तरी का हिंदी में अनुवाद किया जा रहा है..." : "Translating quiz to English...")
-      : (language === "hi" ? "प्रश्नोत्तरी लोड हो रही है..." : "Loading quiz...");
+    const target = translateTarget || language;
+    const loadingText = isTranslating
+      ? target === "hi"
+        ? "प्रश्नोत्तरी का हिंदी में अनुवाद किया जा रहा है..."
+        : "Translating quiz to English..."
+      : language === "hi"
+        ? "प्रश्नोत्तरी लोड हो रही है..."
+        : "Loading quiz...";
 
     return (
       <div className={styles.loading}>
@@ -153,7 +162,10 @@ export default function QuizEngine() {
   };
 
   return (
-    <main className={`${styles.page} ${isFullscreen ? styles.fullscreen : ""}`}>
+    <main
+      className={`${styles.page} ${isFullscreen ? styles.fullscreen : ""}`}
+      style={{ ["--quizFontScale"]: String(fontScale || 1) }}
+    >
       <div className={styles.mainLayout}>
         <div className={styles.quizArea}>
           {/* Top Bar */}
@@ -175,6 +187,20 @@ export default function QuizEngine() {
             </div>
             <div className={styles.topRight}>
               <div className={styles.controls}>
+                <button
+                  className={styles.controlBtn}
+                  onClick={toggleFontSize}
+                  title="Adjust font size"
+                >
+                  A
+                </button>
+                <button
+                  className={styles.controlBtn}
+                  onClick={() => toggleLanguage(storyTextToDisplay)}
+                  title={language === "hi" ? "Switch to English" : "Switch to Hindi"}
+                >
+                  {language === "hi" ? "EN" : "हि"}
+                </button>
                 <button 
                   className={`${styles.controlBtn} ${!soundEnabled ? styles.disabled : ""}`} 
                   onClick={toggleSound}

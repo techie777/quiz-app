@@ -60,20 +60,20 @@
 }
 
 .storyTitle {
-  font-size: 1.1rem;
+  font-size: calc(1.1rem * var(--quizFontScale, 1));
   font-weight: 700;
   margin: 0;
   color: var(--text-primary);
 }
 
 .storyHint {
-  font-size: 0.85rem;
+  font-size: calc(0.85rem * var(--quizFontScale, 1));
   color: var(--text-muted);
   margin: 0;
 }
 
 .storyPreviewText {
-  font-size: 0.9rem;
+  font-size: calc(0.9rem * var(--quizFontScale, 1));
   color: var(--text-secondary);
   margin: 0;
   display: -webkit-box;
@@ -190,13 +190,13 @@
 }
 
 .storyHeading {
-  font-size: 1.5rem;
+  font-size: calc(1.5rem * var(--quizFontScale, 1));
   font-weight: 800;
   color: var(--text-primary);
 }
 
 .storyText {
-  font-size: 1rem;
+  font-size: calc(1rem * var(--quizFontScale, 1));
   line-height: 1.7;
   color: var(--text-secondary);
 }
@@ -338,7 +338,7 @@
 }
 
 .questionText {
-  font-size: 1.3rem;
+  font-size: calc(1.3rem * var(--quizFontScale, 1));
   font-weight: 600;
   color: var(--text-primary);
   line-height: 1.5;
@@ -420,7 +420,7 @@
   background: var(--card-bg);
   border: 2px solid var(--card-border);
   color: var(--text-primary);
-  font-size: 0.95rem;
+  font-size: calc(0.95rem * var(--quizFontScale, 1));
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;

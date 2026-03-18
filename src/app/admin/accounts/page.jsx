@@ -23,6 +23,7 @@ export default function AdminAccountsPage() {
     { key: "categories", label: "Categories" },
     { key: "questions", label: "Questions" },
     { key: "daily", label: "Daily Quizzes" },
+    { key: "currentAffairs", label: "Current Affairs" },
     { key: "upload", label: "Bulk Upload" },
     { key: "settings", label: "Settings" },
     { key: "notifications", label: "Notifications" },

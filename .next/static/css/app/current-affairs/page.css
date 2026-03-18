@@ -1,0 +1,506 @@
+/*!********************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[14].oneOf[7].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[14].oneOf[7].use[3]!./src/styles/CurrentAffairs.module.css ***!
+  \********************************************************************************************************************************************************************************************************************************************************************************/
+.CurrentAffairs_page__Jj2EV {
+  min-height: 80vh;
+  padding: 28px 18px 60px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.CurrentAffairs_header__5CCBX {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.CurrentAffairs_title__ivFyI {
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--text-primary);
+}
+
+.CurrentAffairs_subtitle__1x3T4 {
+  margin-top: 6px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.CurrentAffairs_exportBtn__bc6bL {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.CurrentAffairs_filters__sNP53 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--bg-secondary);
+  margin-bottom: 18px;
+}
+
+.CurrentAffairs_filterGroup__0DxCX {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 200px;
+}
+
+.CurrentAffairs_filterGroup__0DxCX label {
+  font-weight: 800;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.CurrentAffairs_filterGroup__0DxCX input,
+.CurrentAffairs_filterGroup__0DxCX select {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.CurrentAffairs_layout__ricni {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  grid-gap: 18px;
+  gap: 18px;
+}
+
+.CurrentAffairs_sidebar___BkZF {
+  border-radius: 14px;
+  background: var(--bg-secondary);
+  padding: 12px;
+  height: -moz-fit-content;
+  height: fit-content;
+  position: -webkit-sticky;
+  position: sticky;
+  top: 88px;
+}
+
+.CurrentAffairs_sidebarTitle__NVAaJ {
+  font-weight: 900;
+  margin-bottom: 10px;
+  color: var(--text-primary);
+}
+
+.CurrentAffairs_sideItem__JkSRG {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.CurrentAffairs_sideItem__JkSRG:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.CurrentAffairs_sideActive__mlfkp {
+  background: rgba(75, 102, 255, 0.12);
+  color: var(--accent);
+  border-color: rgba(75, 102, 255, 0.18);
+}
+
+.CurrentAffairs_content__SSRx_ {
+  min-width: 0;
+}
+
+.CurrentAffairs_list__5lgvq {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.CurrentAffairs_card__UgfO3 {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  grid-gap: 14px;
+  gap: 14px;
+  border-radius: 14px;
+  background: var(--bg-primary);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.CurrentAffairs_imageWrap__jQlG2 {
+  background: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.CurrentAffairs_image__xro4f {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  max-height: 170px;
+}
+
+.CurrentAffairs_imageFallback__3NK3X {
+  width: 100%;
+  height: 100%;
+  min-height: 170px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.4rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.CurrentAffairs_body__phWyO {
+  padding: 14px 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.CurrentAffairs_heading__tfxwA {
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: var(--text-primary);
+  line-height: 1.25;
+}
+
+.CurrentAffairs_meta__Tv9m5 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.CurrentAffairs_dot__almXo {
+  opacity: 0.7;
+}
+
+.CurrentAffairs_chip__KGnJ0 {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  font-weight: 900;
+  font-size: 0.82rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.CurrentAffairs_desc__KoTYz {
+  color: var(--text-secondary);
+  font-weight: 650;
+  line-height: 1.45;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+}
+
+.CurrentAffairs_actionsRow__nFBLu {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.CurrentAffairs_readMoreBtn__7rkzF {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.CurrentAffairs_readMoreBtn__7rkzF:hover {
+  border-color: rgba(75, 102, 255, 0.45);
+}
+
+.CurrentAffairs_favOverlay__Ttri7 {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(15, 23, 42, 0.55);
+  color: #fff;
+  font-size: 1.05rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(10px);
+          backdrop-filter: blur(10px);
+}
+
+.CurrentAffairs_modalOverlay__pCdnv {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  z-index: 60;
+}
+
+.CurrentAffairs_modal__98nmo {
+  width: 100%;
+  max-width: 860px;
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.CurrentAffairs_modalTop__hkFWP {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.CurrentAffairs_modalMeta__24Ruf {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 900;
+  color: var(--text-secondary);
+}
+
+.CurrentAffairs_modalBtns___C1TG {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.CurrentAffairs_modalFav__mMo7l {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: var(--bg-secondary);
+  cursor: pointer;
+  font-size: 1.05rem;
+}
+
+.CurrentAffairs_modalClose__Zpyvy {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: var(--bg-secondary);
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.CurrentAffairs_modalTitle__1oqQU {
+  font-size: 1.55rem;
+  font-weight: 950;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+  line-height: 1.25;
+}
+
+.CurrentAffairs_modalImage__iMtr7 {
+  width: 100%;
+  max-height: 360px;
+  object-fit: cover;
+  border-radius: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  margin-bottom: 12px;
+}
+
+.CurrentAffairs_modalDesc__OodbO {
+  color: var(--text-secondary);
+  font-weight: 650;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.CurrentAffairs_loginPromptOverlay__JBftQ {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  z-index: 70;
+}
+
+.CurrentAffairs_loginPrompt__tcq4Y {
+  width: 100%;
+  max-width: 460px;
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.CurrentAffairs_loginPromptText__3mAAV {
+  font-weight: 900;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+
+.CurrentAffairs_loginPromptBtns__3ak1J {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.CurrentAffairs_pagination__9iEhY {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 18px;
+}
+
+.CurrentAffairs_pagination__9iEhY button {
+  min-width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.CurrentAffairs_pagination__9iEhY button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.CurrentAffairs_pageActive__1IeJ6 {
+  background: var(--accent);
+  color: #fff;
+  border-color: transparent;
+}
+
+.CurrentAffairs_empty__Gx4NS {
+  padding: 30px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-weight: 800;
+  background: var(--bg-secondary);
+  border-radius: 14px;
+}
+
+.CurrentAffairs_skeletonList__slWDZ {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.CurrentAffairs_skeletonCard__MvvRU {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  grid-gap: 14px;
+  gap: 14px;
+  border-radius: 14px;
+  background: var(--bg-primary);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.CurrentAffairs_skeletonImage__hBJ3b {
+  height: 170px;
+  background: var(--bg-secondary);
+  position: relative;
+  overflow: hidden;
+}
+
+.CurrentAffairs_skeletonBody__Rd4dM {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.CurrentAffairs_skeletonTitle__Dt9DA,
+.CurrentAffairs_skeletonMeta__h_BGy,
+.CurrentAffairs_skeletonLine__eFaEE,
+.CurrentAffairs_skeletonLineShort__dxhDv {
+  height: 12px;
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  position: relative;
+  overflow: hidden;
+}
+
+.CurrentAffairs_skeletonTitle__Dt9DA {
+  height: 16px;
+  width: 70%;
+}
+
+.CurrentAffairs_skeletonMeta__h_BGy {
+  width: 45%;
+}
+
+.CurrentAffairs_skeletonLine__eFaEE {
+  width: 100%;
+}
+
+.CurrentAffairs_skeletonLineShort__dxhDv {
+  width: 72%;
+}
+
+.CurrentAffairs_skeletonImage__hBJ3b::after,
+.CurrentAffairs_skeletonTitle__Dt9DA::after,
+.CurrentAffairs_skeletonMeta__h_BGy::after,
+.CurrentAffairs_skeletonLine__eFaEE::after,
+.CurrentAffairs_skeletonLineShort__dxhDv::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.22), transparent);
+  transform: translateX(-100%);
+  animation: CurrentAffairs_shimmer__x0i7j 1.1s ease-in-out infinite;
+}
+
+@keyframes CurrentAffairs_shimmer__x0i7j {
+  100% { transform: translateX(100%); }
+}
+
+@media (max-width: 980px) {
+  .CurrentAffairs_layout__ricni {
+    grid-template-columns: 1fr;
+  }
+  .CurrentAffairs_sidebar___BkZF {
+    position: relative;
+    top: 0;
+  }
+  .CurrentAffairs_card__UgfO3,
+  .CurrentAffairs_skeletonCard__MvvRU {
+    grid-template-columns: 1fr;
+  }
+  .CurrentAffairs_image__xro4f {
+    max-height: 220px;
+  }
+  .CurrentAffairs_imageFallback__3NK3X,
+  .CurrentAffairs_skeletonImage__hBJ3b {
+    height: 220px;
+  }
+}
+

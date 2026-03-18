@@ -28,7 +28,9 @@ const initialState = {
   isFullscreen: false,
   language: "en", // "en" or "hi"
   isTranslating: false,
+  translateTarget: null,
   translatedStory: null,
+  fontScale: 1,
 };
 
 function quizReducer(state, action) {
@@ -76,6 +78,12 @@ function quizReducer(state, action) {
       return { ...state, translatedStory: action.payload };
     case "SET_TRANSLATING":
       return { ...state, isTranslating: action.payload };
+    case "SET_TRANSLATE_TARGET":
+      return { ...state, translateTarget: action.payload };
+    case "SET_LANGUAGE":
+      return { ...state, language: action.payload };
+    case "SET_FONT_SCALE":
+      return { ...state, fontScale: action.payload };
     case "SUBMIT_ANSWER": {
       const { questionId, selected } = action.payload;
       const question = state.questions.find((q) => q.id === questionId);
@@ -206,6 +214,30 @@ export function QuizProvider({ children }) {
     return null;
   }, []);
 
+  const toggleLanguage = useCallback(
+    async (storyText = null) => {
+      if (state.status !== "active") return;
+      if (state.isTranslating) return;
+      const target = state.language === "en" ? "hi" : "en";
+      dispatch({ type: "SET_TRANSLATE_TARGET", payload: target });
+      try {
+        await translateQuiz(state.questions, state.language, target, storyText);
+        dispatch({ type: "SET_LANGUAGE", payload: target });
+      } finally {
+        dispatch({ type: "SET_TRANSLATE_TARGET", payload: null });
+      }
+    },
+    [state.isTranslating, state.language, state.questions, state.status, translateQuiz]
+  );
+
+  const toggleFontSize = useCallback(() => {
+    const steps = [0.9, 1, 1.12, 1.25];
+    const current = Number(state.fontScale || 1);
+    const idx = steps.findIndex((s) => Math.abs(s - current) < 0.001);
+    const next = steps[(idx >= 0 ? idx + 1 : 1) % steps.length];
+    dispatch({ type: "SET_FONT_SCALE", payload: next });
+  }, [state.fontScale]);
+
   const startQuiz = useCallback(async (quizId, difficulty, timer, language = "en") => {
     const quiz = quizzes.find((q) => q.id === quizId);
     if (!quiz) return;
@@ -256,9 +288,13 @@ export function QuizProvider({ children }) {
         toggleSound,
         setFullscreen,
         resetQuiz,
+        toggleLanguage,
+        toggleFontSize,
         isTranslating: state.isTranslating,
         language: state.language,
+        translateTarget: state.translateTarget,
         translatedStory: state.translatedStory,
+        fontScale: state.fontScale,
       }}
     >
       {children}

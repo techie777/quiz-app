@@ -1,0 +1,301 @@
+.page {
+  padding: 20px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--text-primary);
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  font-weight: 650;
+  margin-top: 6px;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: flex-end;
+  margin-bottom: 16px;
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 210px;
+}
+
+.filterGroup label {
+  font-weight: 800;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.filterGroup input,
+.filterGroup select {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.toggle {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  font-weight: 800;
+  color: var(--text-secondary);
+  user-select: none;
+}
+
+.toggle input {
+  width: 16px;
+  height: 16px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.card {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 14px;
+  padding: 12px;
+  border-radius: 14px;
+}
+
+.cardLeft {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #0f172a;
+  min-height: 110px;
+}
+
+.cardImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cardImgFallback {
+  font-size: 2rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.cardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cardTitle {
+  font-weight: 900;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+  line-height: 1.25;
+}
+
+.badges {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.badgeLive,
+.badgeHidden {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 900;
+  font-size: 0.78rem;
+}
+
+.badgeLive {
+  background: rgba(34, 197, 94, 0.16);
+  color: rgb(22, 163, 74);
+}
+
+.badgeHidden {
+  background: rgba(245, 158, 11, 0.16);
+  color: rgb(217, 119, 6);
+}
+
+.cardMeta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  color: var(--text-secondary);
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+
+.dot {
+  opacity: 0.7;
+}
+
+.cardDesc {
+  color: var(--text-secondary);
+  font-weight: 650;
+  line-height: 1.45;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+}
+
+.cardActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.empty {
+  padding: 18px;
+  font-weight: 800;
+  color: var(--text-secondary);
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  z-index: 60;
+}
+
+.modal {
+  width: 100%;
+  max-width: 820px;
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.modalTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 10px;
+}
+
+.closeBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: var(--bg-secondary);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.msg {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(75, 102, 255, 0.12);
+  color: var(--text-primary);
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field label {
+  font-weight: 900;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.field input,
+.field textarea,
+.fieldFull input,
+.fieldFull textarea {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.fieldFull {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.previewRow {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.previewImg {
+  width: 140px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.modalActions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+@media (max-width: 880px) {
+  .card {
+    grid-template-columns: 1fr;
+  }
+  .cardLeft {
+    min-height: 160px;
+  }
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+}
+

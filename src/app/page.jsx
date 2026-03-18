@@ -153,6 +153,30 @@ export default function LandingPage() {
           </Link>
         </motion.div>
 
+        <motion.div
+          key="current-affairs"
+          className={styles.cardWrapper}
+          variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+          layout
+        >
+          <Link href="/current-affairs" className={styles.card}>
+            <div className={styles.cardImageContainer}>
+              <div className={styles.mediaFallback}>
+                <span className={styles.mediaEmoji}>🗞️</span>
+              </div>
+            </div>
+            <div className={styles.cardContent}>
+              <h3 className={styles.cardTitle}>Current Affairs</h3>
+              <p className={styles.cardDesc}>Daily current affairs posts with date & category filters.</p>
+              <div className={styles.cardFooter}>
+                <span className={styles.cardInfo}>Date-wise</span>
+                <span className={styles.cardInfo}>Export PDF</span>
+              </div>
+              <div className={styles.playButton}>▶ Open</div>
+            </div>
+          </Link>
+        </motion.div>
+
         {isLoading
           ? Array.from({ length: 9 }).map((_, idx) => (
               <motion.div

@@ -10,6 +10,7 @@ import styles from "@/styles/Admin.module.css";
 const JR_NAV = [
   { href: "/admin", label: "Dashboard", icon: "📊", perm: "dashboard" },
   { href: "/admin/daily", label: "Daily Quizzes", icon: "📅", perm: "daily" },
+  { href: "/admin/current-affairs", label: "Current Affairs", icon: "🗞️", perm: "currentAffairs" },
   { href: "/admin/categories", label: "Categories", icon: "📁", perm: "categories" },
   { href: "/admin/questions", label: "Questions", icon: "❓", perm: "questions" },
   { href: "/admin/upload", label: "Bulk Upload", icon: "📤", perm: "upload" },
@@ -20,6 +21,7 @@ const JR_NAV = [
 const MASTER_NAV = [
   { href: "/admin", label: "Dashboard", icon: "📊", perm: "dashboard" },
   { href: "/admin/daily", label: "Daily Quizzes", icon: "📅", perm: "daily" },
+  { href: "/admin/current-affairs", label: "Current Affairs", icon: "🗞️", perm: "currentAffairs" },
   { href: "/admin/categories", label: "Categories", icon: "📁", perm: "categories" },
   { href: "/admin/questions", label: "Questions", icon: "❓", perm: "questions" },
   { href: "/admin/upload", label: "Bulk Upload", icon: "📤", perm: "upload" },

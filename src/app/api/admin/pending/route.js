@@ -49,6 +49,9 @@ export async function POST(request) {
       } else if (actionType.includes("question")) {
         entityType = "question";
         entityId = payload.questionId || payload.id || null;
+      } else if (actionType.includes("current_affair")) {
+        entityType = "currentAffair";
+        entityId = payload.id || null;
       } else if (actionType.includes("bulk")) {
         entityType = "bulk";
       }
