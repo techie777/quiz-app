@@ -144,6 +144,39 @@
   padding: 6px 2px;
 }
 
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  background: var(--bg-secondary);
+  border-radius: 20px;
+  border: 2px dashed var(--card-border);
+}
+
+.emptyImage {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  filter: grayscale(0.5);
+  opacity: 0.7;
+}
+
+.emptyTitle {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.emptyDesc {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  max-width: 300px;
+  line-height: 1.5;
+}
+
 @media (max-width: 900px) {
   .header {
     flex-direction: column;

@@ -78,7 +78,6 @@ export default function AdminLoginPage() {
           </button>
         </form>
 
-        <p className={styles.hint}>Default: admin / admin</p>
       </div>
     </div>
   );

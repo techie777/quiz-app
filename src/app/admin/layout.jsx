@@ -1,47 +1,95 @@
 "use client";
 
-import { Suspense } from 'react';
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { AdminProvider, useAdmin } from "@/context/AdminContext";
 import ThemeToggle from "@/components/ThemeToggle";
 import styles from "@/styles/Admin.module.css";
 
-const COMMON_NAV = [
-  { href: "/admin", label: "Dashboard", icon: "📊" },
-  { href: "/admin/categories", label: "Categories", icon: "📁" },
-  { href: "/admin/questions", label: "Questions", icon: "❓" },
-  { href: "/admin/daily", label: "Daily Quizzes", icon: "📅" },
-  { href: "/admin/upload", label: "Bulk Upload", icon: "📤" },
-  { href: "/admin/settings", label: "Settings", icon: "⚙️" },
+const JR_NAV = [
+  { href: "/admin", label: "Dashboard", icon: "📊", perm: "dashboard" },
+  { href: "/admin/daily", label: "Daily Quizzes", icon: "📅", perm: "daily" },
+  { href: "/admin/categories", label: "Categories", icon: "📁", perm: "categories" },
+  { href: "/admin/questions", label: "Questions", icon: "❓", perm: "questions" },
+  { href: "/admin/upload", label: "Bulk Upload", icon: "📤", perm: "upload" },
+  { href: "/admin/notifications", label: "Notifications", icon: "🔔", perm: "notifications" },
+  { href: "/admin/settings", label: "Settings", icon: "⚙️", perm: "settings" },
 ];
 
 const MASTER_NAV = [
-  { href: "/admin/pending", label: "Approval Queue", icon: "📝" },
-  { href: "/admin/accounts", label: "Admin Accounts", icon: "👥" },
-  { href: "/admin/accounts?type=user", label: "User Accounts", icon: "👤" },
-  { href: "/admin/logs", label: "Activity Logs", icon: "📋" },
+  { href: "/admin", label: "Dashboard", icon: "📊", perm: "dashboard" },
+  { href: "/admin/daily", label: "Daily Quizzes", icon: "📅", perm: "daily" },
+  { href: "/admin/categories", label: "Categories", icon: "📁", perm: "categories" },
+  { href: "/admin/questions", label: "Questions", icon: "❓", perm: "questions" },
+  { href: "/admin/upload", label: "Bulk Upload", icon: "📤", perm: "upload" },
+  { href: "/admin/pending", label: "Approval Queue", icon: "📝", perm: "pending" },
+  { href: "/admin/accounts", label: "Admin Accounts", icon: "👥", perm: "accounts" },
+  { href: "/admin/accounts?type=user", label: "User Accounts", icon: "👤", perm: "users" },
+  { href: "/admin/logs", label: "Activity Logs", icon: "📋", perm: "logs" },
+  { href: "/admin/notifications", label: "Notifications", icon: "🔔", perm: "notifications" },
+  { href: "/admin/settings", label: "Settings", icon: "⚙️", perm: "settings" },
 ];
 
 function AdminShell({ children }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { isAuthenticated, loaded, logout, adminUser } = useAdmin();
+  const { isAuthenticated, loaded, logout, adminUser, status } = useAdmin();
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  if (pathname === "/admin/login") return children;
+  const isLogin = pathname === "/admin/login";
+  const isMaster = adminUser?.role === "master";
+
+  const navItems = useMemo(() => {
+    const raw = isMaster ? MASTER_NAV : JR_NAV;
+    if (isMaster) return raw;
+    const perms = adminUser?.permissions || {};
+    return raw.filter((item) => perms[item.perm] !== false);
+  }, [adminUser?.permissions, isMaster]);
+
+  useEffect(() => {
+    if (isLogin) return;
+    if (!adminUser?.id) return;
+    let cancelled = false;
+    async function refresh() {
+      try {
+        const res = await fetch("/api/admin/notifications/unread-count", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled) setUnreadCount(Number(data?.count || 0));
+      } catch {}
+    }
+    refresh();
+    const t = setInterval(refresh, 20000);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, [adminUser?.id, isLogin]);
+
+  if (isLogin) return children;
 
   if (!loaded) {
+    console.log("[AdminShell] Loading session...");
     return <div className={styles.loading}><p>Loading...</p></div>;
   }
 
-  if (!isAuthenticated) {
+  // Only redirect if status is explicitly unauthenticated
+  if (status === "unauthenticated") {
+    console.warn("[AdminShell] Status unauthenticated, redirecting to login");
     router.replace("/admin/login");
     return null;
   }
 
-  const isMaster = adminUser?.role === "master";
-  const navItems = isMaster ? [...COMMON_NAV, ...MASTER_NAV] : COMMON_NAV;
+  // Also check if they have admin privileges
+  if (status === "authenticated" && !isAuthenticated) {
+    console.warn("[AdminShell] Authenticated but not an admin, redirecting to login");
+    router.replace("/admin/login");
+    return null;
+  }
+
+  console.log("[AdminShell] Authenticated as:", adminUser?.username);
 
   const handleLogout = async () => {
     await logout();
@@ -81,7 +129,12 @@ function AdminShell({ children }) {
               }`}
             >
               <span className={styles.navIcon}>{item.icon}</span>
-              <span>{item.label}</span>
+              <span className={styles.navText}>
+                {item.label}
+                {item.href === "/admin/notifications" && unreadCount > 0 ? (
+                  <span className={styles.navBadge}>{unreadCount}</span>
+                ) : null}
+              </span>
             </Link>
           ))}
         </nav>

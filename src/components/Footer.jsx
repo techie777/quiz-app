@@ -2,14 +2,67 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useData } from "@/context/DataContext";
 import styles from "@/styles/Footer.module.css";
 
 export default function Footer() {
   const pathname = usePathname();
+  const { settings } = useData();
   const currentYear = new Date().getFullYear();
 
-  // Hide Footer on admin pages
-  if (pathname?.startsWith("/admin")) return null;
+  // Hide Footer on admin and export pages
+  if (pathname?.startsWith("/admin") || pathname?.endsWith("/export")) return null;
+  if (settings?.footerEnabled === false) return null;
+
+  const brandDesc =
+    (typeof settings?.footerBrandDesc === "string" && settings.footerBrandDesc.trim()
+      ? settings.footerBrandDesc
+      : "The ultimate platform to test your knowledge across hundreds of categories. Challenge yourself, learn new things, and have fun!");
+
+  const bottomText =
+    (typeof settings?.footerBottomText === "string" && settings.footerBottomText.trim()
+      ? settings.footerBottomText
+      : "All rights reserved. Designed for knowledge seekers worldwide.");
+
+  const sections = (function () {
+    const raw = settings?.footerSections;
+    if (typeof raw !== "string" || !raw.trim()) {
+      return [
+        { id: "platform", heading: "Platform", links: [{ id: "home", label: "Quizzes", href: "/" }] },
+        { id: "company", heading: "Company", links: [{ id: "about", label: "About Us", href: "/about" }] },
+        {
+          id: "legal",
+          heading: "Legal",
+          links: [
+            { id: "terms", label: "Terms of Usage", href: "/terms" },
+            { id: "privacy", label: "Privacy Policy", href: "/privacy" },
+            { id: "copyright", label: "Copyright", href: "/copyright" },
+          ],
+        },
+      ];
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .map((s) => ({
+          id: String(s?.id || s?.heading || Math.random().toString(36).slice(2, 8)).trim(),
+          heading: String(s?.heading || "").trim(),
+          links: Array.isArray(s?.links)
+            ? s.links
+                .map((l) => ({
+                  id: String(l?.id || l?.label || Math.random().toString(36).slice(2, 8)).trim(),
+                  label: String(l?.label || "").trim(),
+                  href: String(l?.href || "").trim(),
+                }))
+                .filter((l) => l.label && l.href)
+            : [],
+        }))
+        .filter((s) => s.heading && s.links.length > 0);
+    } catch {
+      return [];
+    }
+  })();
 
   return (
     <footer className={styles.footer}>
@@ -21,50 +74,29 @@ export default function Footer() {
               <span className={styles.logoEmoji}>🧠</span>
               <span className={styles.logoText}>QuizWeb</span>
             </Link>
-            <p className={styles.brandDesc}>
-              The ultimate platform to test your knowledge across hundreds of categories. 
-              Challenge yourself, learn new things, and have fun!
-            </p>
+            <p className={styles.brandDesc}>{brandDesc}</p>
           </div>
 
-          {/* Quick Links */}
-          <div className={styles.section}>
-            <h3 className={styles.heading}>Platform</h3>
-            <ul className={styles.list}>
-              <li><Link href="/" className={styles.link}>Quizzes</Link></li>
-              <li><Link href="/quizzes" className={styles.link}>All Categories</Link></li>
-              <li><Link href="/notes" className={styles.link}>My Notes</Link></li>
-              <li><Link href="/profile" className={styles.link}>Profile</Link></li>
-            </ul>
-          </div>
-
-          {/* Company Section */}
-          <div className={styles.section}>
-            <h3 className={styles.heading}>Company</h3>
-            <ul className={styles.list}>
-              <li><Link href="/about" className={styles.link}>About Us</Link></li>
-              <li><Link href="/contact" className={styles.link}>Contact</Link></li>
-              <li><Link href="/careers" className={styles.link}>Careers</Link></li>
-            </ul>
-          </div>
-
-          {/* Legal Section */}
-          <div className={styles.section}>
-            <h3 className={styles.heading}>Legal</h3>
-            <ul className={styles.list}>
-              <li><Link href="/terms" className={styles.link}>Terms of Usage</Link></li>
-              <li><Link href="/privacy" className={styles.link}>Privacy Policy</Link></li>
-              <li><Link href="/copyright" className={styles.link}>Copyright</Link></li>
-              <li><Link href="/cookies" className={styles.link}>Cookie Policy</Link></li>
-            </ul>
-          </div>
+          {sections.map((section) => (
+            <div key={section.id} className={styles.section}>
+              <h3 className={styles.heading}>{section.heading}</h3>
+              <ul className={styles.list}>
+                {section.links.map((l) => (
+                  <li key={l.id}>
+                    <Link href={l.href} className={styles.link}>
+                      {l.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
 
         {/* Bottom Bar */}
         <div className={styles.bottom}>
           <p className={styles.copyright}>
-            © {currentYear} QuizWeb. All rights reserved. 
-            Designed for knowledge seekers worldwide.
+            © {currentYear} QuizWeb. {bottomText}
           </p>
           <div className={styles.socials}>
             {/* Social icons could go here */}

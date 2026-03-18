@@ -317,6 +317,91 @@
   color: var(--text-secondary);
 }
 
+.LandingPage_loadingHint__olM9m {
+  margin: 6px 0 14px;
+  color: var(--text-secondary);
+  font-weight: 700;
+  font-size: 0.9rem;
+  animation: LandingPage_pulse__RrqTX 1.2s ease-in-out infinite;
+}
+
+.LandingPage_skeletonCard__X511Q {
+  pointer-events: none;
+}
+
+.LandingPage_skeletonMedia__9phjB,
+.LandingPage_skeletonTitle__Gd6lO,
+.LandingPage_skeletonLine__akl3Q,
+.LandingPage_skeletonLineShort__uUxBl,
+.LandingPage_skeletonFooter__bx2DB,
+.LandingPage_skeletonButton__9yQ6P {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-secondary);
+  border-radius: 10px;
+}
+
+.LandingPage_skeletonMedia__9phjB {
+  position: absolute;
+  inset: 0;
+  border-radius: 0;
+}
+
+.LandingPage_skeletonTitle__Gd6lO {
+  height: 16px;
+  width: 70%;
+  margin-bottom: 12px;
+}
+
+.LandingPage_skeletonLine__akl3Q {
+  height: 10px;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.LandingPage_skeletonLineShort__uUxBl {
+  height: 10px;
+  width: 60%;
+  margin-bottom: 14px;
+}
+
+.LandingPage_skeletonFooter__bx2DB {
+  height: 12px;
+  width: 90%;
+  margin-top: auto;
+  border-radius: 8px;
+}
+
+.LandingPage_skeletonButton__9yQ6P {
+  height: 36px;
+  width: 100%;
+  margin-top: 16px;
+  border-radius: 8px;
+}
+
+.LandingPage_skeletonMedia__9phjB::after,
+.LandingPage_skeletonTitle__Gd6lO::after,
+.LandingPage_skeletonLine__akl3Q::after,
+.LandingPage_skeletonLineShort__uUxBl::after,
+.LandingPage_skeletonFooter__bx2DB::after,
+.LandingPage_skeletonButton__9yQ6P::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.22), transparent);
+  transform: translateX(-100%);
+  animation: LandingPage_shimmer__MhJI6 1.1s ease-in-out infinite;
+}
+
+@keyframes LandingPage_shimmer__MhJI6 {
+  100% { transform: translateX(100%); }
+}
+
+@keyframes LandingPage_pulse__RrqTX {
+  0%, 100% { opacity: 0.75; }
+  50% { opacity: 1; }
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 1200px) { .LandingPage_grid__0VUli { grid-template-columns: repeat(4, 1fr); } }
 @media (max-width: 992px) { .LandingPage_grid__0VUli { grid-template-columns: repeat(3, 1fr); } }

@@ -7,8 +7,8 @@ import { useAdmin } from "@/context/AdminContext";
 import styles from "@/styles/AdminDaily.module.css";
 
 const TYPES = [
-  { key: "quiz-of-the-day", label: "Quiz of the day", categoryId: "quiz-of-the-day" },
-  { key: "daily-current-affairs", label: "Daily current affairs", categoryId: "daily-current-affairs" },
+  { key: "quiz-of-the-day", label: "Quiz of the day", categoryId: "65f1a2b3c4d5e6f7a8b9c0d9" },
+  { key: "daily-current-affairs", label: "Daily current affairs", categoryId: "65f1a2b3c4d5e6f7a8b9c0e1" },
 ];
 
 function today() {
@@ -81,7 +81,7 @@ function generateSampleXlsx() {
 }
 
 export default function AdminDailyPage() {
-  const { quizzes, refreshQuizzes, addQuestion, bulkImportQuestions } = useData();
+  const { quizzes, refreshQuizzes, addQuestion, updateQuestion, deleteQuestion, bulkImportQuestions } = useData();
   const { adminUser } = useAdmin();
   const isMaster = adminUser?.role === "master";
 
@@ -93,6 +93,10 @@ export default function AdminDailyPage() {
   const [diff, setDiff] = useState("all");
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [history, setHistory] = useState([]);
+  const [historyQuestions, setHistoryQuestions] = useState(null); // { date: string, questions: [] }
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  
+  // Manual Add Form State
   const [manualText, setManualText] = useState("");
   const [manualOpt1, setManualOpt1] = useState("");
   const [manualOpt2, setManualOpt2] = useState("");
@@ -100,6 +104,12 @@ export default function AdminDailyPage() {
   const [manualOpt4, setManualOpt4] = useState("");
   const [manualCorrect, setManualCorrect] = useState(1);
   const [manualDifficulty, setManualDifficulty] = useState("easy");
+  
+  // Edit Modal State
+  const [editingQ, setEditingQ] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState({ text: "", options: ["", "", "", ""], correctAnswer: "", difficulty: "easy" });
+
   const [excelPreview, setExcelPreview] = useState(null);
   const [excelErrors, setExcelErrors] = useState([]);
   const [attachToDay, setAttachToDay] = useState(true);
@@ -119,13 +129,23 @@ export default function AdminDailyPage() {
     });
   }, [category?.questions, diff, search]);
 
-  const selectedCount = selectedIds.size;
+  const selectedCount = useMemo(() => {
+    // Only count selected IDs that actually exist in the current filtered questions list
+    const currentQuestionIds = new Set(questions.map(q => q.id));
+    let count = 0;
+    selectedIds.forEach(id => {
+      if (currentQuestionIds.has(id)) count++;
+    });
+    return count;
+  }, [selectedIds, questions]);
 
   useEffect(() => {
     let cancelled = false;
     async function loadExisting() {
       setLoading(true);
       setMsg("");
+      // Clear selections when switching type or date to prevent "ghost" selections
+      setSelectedIds(new Set());
       try {
         const [dailyRes, histRes] = await Promise.all([
           fetch(`/api/daily-quizzes?type=${encodeURIComponent(type)}&date=${encodeURIComponent(date)}`),
@@ -190,6 +210,28 @@ export default function AdminDailyPage() {
     setSelectedIds(new Set());
   };
 
+  const deleteSelected = async () => {
+    if (selectedIds.size === 0) return;
+    if (!category || !confirm(`Are you sure you want to delete ${selectedIds.size} selected questions?`)) return;
+
+    setLoading(true);
+    setMsg("");
+    try {
+      let count = 0;
+      for (const id of selectedIds) {
+        const ok = await deleteQuestion(category.id, id);
+        if (ok) count++;
+      }
+      setSelectedIds(new Set());
+      setMsg(`Deleted ${count} questions.`);
+    } catch (err) {
+      console.error("[AdminDaily] Bulk delete error:", err);
+      setMsg("Bulk delete failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleAddManual = async () => {
     if (!category) return;
     const text = manualText.trim();
@@ -207,11 +249,10 @@ export default function AdminDailyPage() {
       setMsg("Correct answer must be 1-4.");
       return;
     }
-    const id = `q_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    
     setLoading(true);
     setMsg("");
     const ok = await addQuestion(category.id, {
-      id,
       text,
       options,
       correctAnswer: options[idx - 1],
@@ -219,9 +260,6 @@ export default function AdminDailyPage() {
     });
     setLoading(false);
     if (ok) {
-      if (attachToDay) {
-        setSelectedIds((prev) => new Set([...prev, id]));
-      }
       setManualText("");
       setManualOpt1("");
       setManualOpt2("");
@@ -232,6 +270,56 @@ export default function AdminDailyPage() {
       setMsg("Question added.");
     } else {
       setMsg("Failed to add question.");
+    }
+  };
+
+  const handleEditClick = (q) => {
+    setEditingQ(q);
+    setEditForm({
+      text: q.text,
+      options: [...q.options],
+      correctAnswer: q.correctAnswer,
+      difficulty: q.difficulty
+    });
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!category || !editingQ) return;
+    if (!editForm.text.trim() || editForm.options.some(o => !o.trim()) || !editForm.correctAnswer) {
+      alert("All fields are required.");
+      return;
+    }
+
+    setLoading(true);
+    const success = await updateQuestion(category.id, editingQ.id, editForm);
+    setLoading(false);
+    if (success) {
+      setShowEditModal(false);
+      setEditingQ(null);
+      setMsg("Question updated.");
+    } else {
+      alert("Failed to update question.");
+    }
+  };
+
+  const handleDeleteClick = async (qId) => {
+    if (!category || !confirm("Are you sure you want to delete this question?")) return;
+    
+    setLoading(true);
+    const success = await deleteQuestion(category.id, qId);
+    setLoading(false);
+    
+    if (success) {
+      // Also remove from selected set if it was there
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(qId);
+        return next;
+      });
+      setMsg("Question deleted.");
+    } else {
+      alert("Failed to delete question.");
     }
   };
 
@@ -291,6 +379,7 @@ export default function AdminDailyPage() {
     setLoading(true);
     setMsg("");
     try {
+      const qIds = Array.from(selectedIds);
       const res = await fetch("/api/daily-quizzes", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -298,19 +387,39 @@ export default function AdminDailyPage() {
           type,
           date,
           categoryId: category.id,
-          questionIds: Array.from(selectedIds),
+          questionIds: qIds,
         }),
       });
       if (res.ok) {
         setMsg("Saved.");
         const histRes = await fetch(`/api/daily-quizzes/history?type=${encodeURIComponent(type)}`);
-        if (histRes.ok) setHistory(await histRes.json());
+        if (histRes.ok) {
+          const histData = await histRes.json();
+          setHistory(histData);
+        }
       } else {
         const data = await res.json().catch(() => ({}));
         setMsg(data.error || "Save failed.");
       }
-    } catch {
+    } catch (error) {
+      console.error("[AdminDaily] Save error:", error);
       setMsg("Save failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleHistoryClick = async (h) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/daily-quizzes?type=${encodeURIComponent(type)}&date=${encodeURIComponent(h.date)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setHistoryQuestions({ date: h.date, questions: data.questions || [] });
+        setShowHistoryModal(true);
+      }
+    } catch (err) {
+      console.error("[AdminDaily] History questions error:", err);
     } finally {
       setLoading(false);
     }
@@ -523,18 +632,27 @@ export default function AdminDailyPage() {
                   Select Visible
                 </button>
                 <button className="btn-secondary" type="button" onClick={clearAll}>
-                  Clear
+                  Clear Selection
                 </button>
+                {selectedCount > 0 && (
+                  <button className={`${styles.fileBtn} ${styles.deleteBtn}`} type="button" onClick={deleteSelected} disabled={loading}>
+                    🗑️ Delete ({selectedCount})
+                  </button>
+                )}
                 <div className={styles.countBadge}>{selectedCount} selected</div>
               </div>
 
               <div className={styles.qList}>
                 {questions.map((q) => (
-                  <label key={q.id} className={styles.qRow}>
+                  <div key={q.id} className={styles.qRow}>
                     <input type="checkbox" checked={selectedIds.has(q.id)} onChange={() => toggleOne(q.id)} />
                     <span className={styles.qText}>{q.text}</span>
                     <span className={`${styles.diffTag} ${styles[q.difficulty]}`}>{q.difficulty}</span>
-                  </label>
+                    <div className={styles.qActions}>
+                      <button className={styles.iconBtn} onClick={() => handleEditClick(q)} title="Edit Question">✏️</button>
+                      <button className={`${styles.iconBtn} ${styles.deleteBtn}`} onClick={() => handleDeleteClick(q.id)} title="Delete Question">🗑️</button>
+                    </div>
+                  </div>
                 ))}
                 {questions.length === 0 && <div className={styles.empty}>No questions match your filters.</div>}
               </div>
@@ -544,15 +662,20 @@ export default function AdminDailyPage() {
               <div className={styles.historyTitle}>History</div>
               <div className={styles.historyList}>
                 {history.map((h) => (
-                  <button
-                    key={h.date}
-                    type="button"
-                    className={`${styles.historyBtn} ${h.date === date ? styles.historyBtnActive : ""}`}
-                    onClick={() => setDate(h.date)}
-                  >
-                    <span>{h.date}</span>
-                    <span className={styles.historyCount}>{h.questionCount}</span>
-                  </button>
+                  <div key={h.date} className={`${styles.historyBtn} ${h.date === date ? styles.historyBtnActive : ""}`}>
+                    <div onClick={() => setDate(h.date)} style={{ flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>{h.date === today() ? "Today" : h.date}</span>
+                      <span className={styles.historyCount}>{h.questionCount} Qs</span>
+                    </div>
+                    <button 
+                      className={styles.iconBtn} 
+                      onClick={(e) => { e.stopPropagation(); handleHistoryClick(h); }}
+                      title="View Questions"
+                      style={{ marginLeft: '10px' }}
+                    >
+                      👁️
+                    </button>
+                  </div>
                 ))}
                 {history.length === 0 && <div className={styles.empty}>No saved days yet.</div>}
               </div>
@@ -560,6 +683,116 @@ export default function AdminDailyPage() {
           </div>
         )}
       </div>
+
+      {/* Edit Modal */}
+      {showEditModal && (
+        <div className={styles.overlay}>
+          <div className={styles.modal}>
+            <h2 className={styles.modalTitle}>Edit Question</h2>
+            
+            <div className={styles.builderGrid}>
+              <div className={styles.field}>
+                <label>Question Text</label>
+                <input
+                  className={styles.input}
+                  value={editForm.text}
+                  onChange={(e) => setEditForm({ ...editForm, text: e.target.value })}
+                  placeholder="Enter question text..."
+                />
+              </div>
+
+              <div className={styles.row4}>
+                {editForm.options.map((opt, i) => (
+                  <div key={i} className={styles.field}>
+                    <label>Option {i + 1}</label>
+                    <input
+                      className={styles.input}
+                      value={opt}
+                      onChange={(e) => {
+                        const next = [...editForm.options];
+                        next[i] = e.target.value;
+                        setEditForm({ ...editForm, options: next });
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <div className={styles.row3}>
+                <div className={styles.field}>
+                  <label>Correct Answer</label>
+                  <select
+                    className={styles.input}
+                    value={editForm.options.indexOf(editForm.correctAnswer) + 1 || ""}
+                    onChange={(e) => {
+                      const idx = Number(e.target.value);
+                      if (idx >= 1 && idx <= 4) {
+                        setEditForm({ ...editForm, correctAnswer: editForm.options[idx - 1] });
+                      }
+                    }}
+                  >
+                    <option value="">Select correct option...</option>
+                    <option value="1">Option 1</option>
+                    <option value="2">Option 2</option>
+                    <option value="3">Option 3</option>
+                    <option value="4">Option 4</option>
+                  </select>
+                </div>
+
+                <div className={styles.field}>
+                  <label>Difficulty</label>
+                  <select
+                    className={styles.input}
+                    value={editForm.difficulty}
+                    onChange={(e) => setEditForm({ ...editForm, difficulty: e.target.value })}
+                  >
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.modalActions}>
+              <button className="btn-secondary" onClick={() => setShowEditModal(false)}>Cancel</button>
+              <button className="btn-primary" onClick={handleSaveEdit}>Save Changes</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* History Questions Modal */}
+      {showHistoryModal && historyQuestions && (
+        <div className={styles.overlay}>
+          <div className={styles.modal}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 className={styles.modalTitle} style={{ margin: 0 }}>Quiz for {historyQuestions.date}</h2>
+              <button className={styles.iconBtn} onClick={() => setShowHistoryModal(false)}>✕</button>
+            </div>
+            
+            <div className={styles.qList} style={{ maxHeight: '60vh' }}>
+              {historyQuestions.questions.length === 0 ? (
+                <p className={styles.empty}>No questions found for this date.</p>
+              ) : (
+                historyQuestions.questions.map((q, idx) => (
+                  <div key={q.id} className={styles.qRow} style={{ gridTemplateColumns: '30px 1fr auto' }}>
+                    <span className={styles.qNum}>{idx + 1}</span>
+                    <div className={styles.qText}>
+                      <div>{q.text}</div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--success)', marginTop: '4px' }}>✓ {q.correctAnswer}</div>
+                    </div>
+                    <span className={`${styles.diffTag} ${styles[q.difficulty]}`}>{q.difficulty}</span>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className={styles.modalActions}>
+              <button className="btn-primary" onClick={() => setShowHistoryModal(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

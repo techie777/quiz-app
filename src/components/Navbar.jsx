@@ -9,7 +9,7 @@ import ThemeToggle from "./ThemeToggle";
 import styles from "@/styles/Navbar.module.css";
 
 const DEFAULT_NAV_ITEMS = [
-  { id: "daily-quiz", label: "Daily quiz", href: "/daily/quiz-of-the-day", children: [] },
+  { id: "daily-quiz-hub", label: "Daily quiz", href: "/daily", children: [] },
   { id: "daily-current-affairs", label: "Daily current affairs", href: "/daily/daily-current-affairs", children: [] },
   {
     id: "school-study",
@@ -85,8 +85,8 @@ export default function Navbar() {
     setNavOpen(null);
   }, [pathname]);
 
-  // Hide Navbar on admin pages (admin has its own sidebar)
-  if (pathname?.startsWith("/admin")) return null;
+  // Hide Navbar on admin and export pages
+  if (pathname?.startsWith("/admin") || pathname?.endsWith("/export")) return null;
 
   const navbarEnabled = settings?.navbarEnabled !== false;
   const navItems = safeParseNav(settings?.navbarItems) || DEFAULT_NAV_ITEMS;

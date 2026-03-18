@@ -8,7 +8,10 @@ import styles from "@/styles/LandingPage.module.css";
 
 const DEFAULT_CHIPS = ["Science", "History", "GK", "Quick 5 Min"];
 const TRENDING_CHIP = "Trending Quiz";
-const DAILY_CATEGORY_IDS = new Set(["quiz-of-the-day", "daily-current-affairs"]);
+const DAILY_CATEGORY_IDS = new Set([
+  "65f1a2b3c4d5e6f7a8b9c0d9", // Quiz of the day
+  "65f1a2b3c4d5e6f7a8b9c0e1", // Daily current affairs
+]);
 
 const estimateTime = (numQuestions) => {
   const seconds = numQuestions * 18; // Avg 18s per question
@@ -17,9 +20,10 @@ const estimateTime = (numQuestions) => {
 };
 
 export default function LandingPage() {
-  const { quizzes, settings } = useData();
+  const { quizzes, settings, loaded } = useData();
   const [search, setSearch] = useState("");
   const [activeFilters, setActiveFilters] = useState([]);
+  const isLoading = !loaded;
 
   const handleFilterClick = (filter) => {
     setActiveFilters(prev => 
@@ -112,6 +116,7 @@ export default function LandingPage() {
       </div>
 
       <h2 className={styles.sectionTitle}>All Categories</h2>
+      {isLoading && <div className={styles.loadingHint}>Loading categories…</div>}
       <motion.div 
         className={styles.grid}
         variants={{ 
@@ -148,44 +153,66 @@ export default function LandingPage() {
           </Link>
         </motion.div>
 
-        {visibleCategories.map((cat) => (
-          <motion.div
-            key={cat.id}
-            className={styles.cardWrapper}
-            variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
-            layout
-          >
-            <Link href={`/category/${cat.id}`} className={styles.card}>
-              <div className={styles.cardImageContainer}>
-                <div className={styles.mediaFallback}>
-                  <span className={styles.mediaEmoji}>{cat.emoji}</span>
+        {isLoading
+          ? Array.from({ length: 9 }).map((_, idx) => (
+              <motion.div
+                key={`sk-${idx}`}
+                className={styles.cardWrapper}
+                variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+                layout
+              >
+                <div className={`${styles.card} ${styles.skeletonCard}`}>
+                  <div className={styles.cardImageContainer}>
+                    <div className={styles.skeletonMedia} />
+                  </div>
+                  <div className={styles.cardContent}>
+                    <div className={styles.skeletonTitle} />
+                    <div className={styles.skeletonLine} />
+                    <div className={styles.skeletonLineShort} />
+                    <div className={styles.skeletonFooter} />
+                    <div className={styles.skeletonButton} />
+                  </div>
                 </div>
-                {cat.image && (
-                  <img
-                    src={cat.image}
-                    alt={cat.topic}
-                    className={styles.cardImage}
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                    }}
-                  />
-                )}
-              </div>
-              <div className={styles.cardContent}>
-                <h3 className={styles.cardTitle}>{cat.topic}</h3>
-                <p className={styles.cardDesc}>{cat.description}</p>
-                <div className={styles.cardFooter}>
-                  <span className={styles.cardInfo}>{cat.questions.length} Questions</span>
-                  <span className={styles.cardInfo}>{estimateTime(cat.questions.length)}</span>
-                </div>
-                <div className={styles.playButton}>▶ Play Quiz</div>
-              </div>
-            </Link>
-          </motion.div>
-        ))}
+              </motion.div>
+            ))
+          : visibleCategories.map((cat) => (
+              <motion.div
+                key={cat.id}
+                className={styles.cardWrapper}
+                variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+                layout
+              >
+                <Link href={`/category/${cat.id}`} className={styles.card}>
+                  <div className={styles.cardImageContainer}>
+                    <div className={styles.mediaFallback}>
+                      <span className={styles.mediaEmoji}>{cat.emoji}</span>
+                    </div>
+                    {cat.image && (
+                      <img
+                        src={cat.image}
+                        alt={cat.topic}
+                        className={styles.cardImage}
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                        }}
+                      />
+                    )}
+                  </div>
+                  <div className={styles.cardContent}>
+                    <h3 className={styles.cardTitle}>{cat.topic}</h3>
+                    <p className={styles.cardDesc}>{cat.description}</p>
+                    <div className={styles.cardFooter}>
+                      <span className={styles.cardInfo}>{cat.questions.length} Questions</span>
+                      <span className={styles.cardInfo}>{estimateTime(cat.questions.length)}</span>
+                    </div>
+                    <div className={styles.playButton}>▶ Play Quiz</div>
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
       </motion.div>
 
-      {visibleCategories.length === 0 && (
+      {!isLoading && visibleCategories.length === 0 && (
         <p className={styles.empty}>
           {search || activeFilters.length > 0 ? "No categories match your criteria." : "No categories available."}
         </p>

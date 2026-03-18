@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "mongodb"
-  url      = env("mongodb+srv://techsculptor8_db_user:MyMongoDb%40%23123cluster0.xxxx.mongodb.net/quiz-app?retryWrites=true&w=majority")
+  url      = env("DATABASE_URL")
 }
 
 // ── NextAuth Models ──

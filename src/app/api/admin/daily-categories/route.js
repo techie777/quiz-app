@@ -7,14 +7,14 @@ export const dynamic = "force-dynamic";
 
 const DAILY_CATEGORIES = [
   {
-    id: "quiz-of-the-day",
+    id: "65f1a2b3c4d5e6f7a8b9c0d9", // Valid 24-char hex
     topic: "Quiz of the day",
     emoji: "🌟",
     description: "Daily curated quiz",
     categoryClass: "category-quiz-of-the-day",
   },
   {
-    id: "daily-current-affairs",
+    id: "65f1a2b3c4d5e6f7a8b9c0e1", // Valid 24-char hex
     topic: "Daily current affairs",
     emoji: "🗞️",
     description: "Daily current affairs quiz",

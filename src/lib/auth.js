@@ -11,7 +11,11 @@ const hasGoogleCreds = googleId && !googleId.startsWith("your-") && googleSecret
 
 export const authOptions = {
   adapter: PrismaAdapter(prisma),
-  session: { strategy: "jwt" },
+  session: { 
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+    updateAge: 24 * 60 * 60, // 24 hours
+  },
   providers: [
     // Google OAuth
     GoogleProvider({
@@ -119,6 +123,26 @@ export const authOptions = {
         if (token.isAdmin) {
           session.user.adminId = token.adminId;
           session.user.username = token.username;
+          try {
+            const admin = await prisma.adminAccount.findUnique({
+              where: { id: token.adminId },
+              select: { role: true, status: true, displayName: true, username: true },
+            });
+            if (admin?.status !== "active") {
+              session.user.isAdmin = false;
+            } else {
+              session.user.role = admin.role;
+              session.user.username = admin.username;
+              session.user.name = admin.displayName || admin.username;
+              const permRow = await prisma.setting.findUnique({
+                where: { key: `adminPerms:${token.adminId}` },
+                select: { value: true },
+              });
+              session.user.permissions = permRow?.value || "{}";
+            }
+          } catch {
+            session.user.permissions = "{}";
+          }
         }
       }
       return session;

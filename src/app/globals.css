@@ -162,6 +162,19 @@ button {
   transform: translateY(-1px);
 }
 
+.btn-primary:disabled {
+  background: #cbd5e1;
+  color: #64748b;
+  cursor: not-allowed;
+  transform: none;
+  opacity: 0.7;
+}
+
+[data-theme="dark"] .btn-primary:disabled {
+  background: #1e293b;
+  color: #475569;
+}
+
 .btn-secondary {
   display: inline-flex;
   align-items: center;
@@ -178,6 +191,18 @@ button {
 
 .btn-secondary:hover {
   background: var(--btn-secondary-hover);
+}
+
+.btn-secondary:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+[data-theme="dark"] .btn-secondary:disabled {
+  background: #111827;
+  color: #4b5563;
 }
 
 /* ===== Confetti Animation ===== */

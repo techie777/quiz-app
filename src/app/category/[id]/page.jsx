@@ -74,6 +74,7 @@ export default function CategorySetsPage() {
   const handlePlay = (set) => {
     setSelectedSet(set);
     setTimer(0);
+    // Default the modal language selection to the category's original language
     setLanguage(category?.originalLang || "en");
   };
 

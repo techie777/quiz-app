@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useData } from "@/context/DataContext";
+import { useAdmin } from "@/context/AdminContext";
 import styles from "@/styles/AdminSettings.module.css";
+import toast from "react-hot-toast";
 
 const DEFAULT_CHIPS = ["Science", "History", "GK", "Quick 5 Min"];
 const DEFAULT_NAV_ITEMS = [
@@ -32,6 +34,28 @@ const DEFAULT_NAV_ITEMS = [
   },
 ];
 
+const DEFAULT_FOOTER_SECTIONS = [
+  {
+    id: "platform",
+    heading: "Platform",
+    links: [{ id: "home", label: "Quizzes", href: "/" }],
+  },
+  {
+    id: "company",
+    heading: "Company",
+    links: [{ id: "about", label: "About Us", href: "/about" }],
+  },
+  {
+    id: "legal",
+    heading: "Legal",
+    links: [
+      { id: "terms", label: "Terms of Usage", href: "/terms" },
+      { id: "privacy", label: "Privacy Policy", href: "/privacy" },
+      { id: "copyright", label: "Copyright", href: "/copyright" },
+    ],
+  },
+];
+
 function parseChips(raw) {
   if (typeof raw !== "string" || !raw.trim()) return [];
   try {
@@ -40,6 +64,32 @@ function parseChips(raw) {
     return parsed
       .map((s) => (typeof s === "string" ? s.trim() : ""))
       .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function parseFooterSections(raw) {
+  if (typeof raw !== "string" || !raw.trim()) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((s) => {
+        const heading = String(s?.heading || "").trim();
+        const id = String(s?.id || heading || Math.random().toString(36).slice(2, 8)).trim();
+        const links = Array.isArray(s?.links)
+          ? s.links
+              .map((l) => ({
+                id: String(l?.id || l?.label || Math.random().toString(36).slice(2, 8)).trim(),
+                label: String(l?.label || "").trim(),
+                href: String(l?.href || "").trim(),
+              }))
+              .filter((l) => l.label && l.href)
+          : [];
+        return { id, heading, links };
+      })
+      .filter((s) => s.heading);
   } catch {
     return [];
   }
@@ -74,6 +124,7 @@ function parseNavItems(raw) {
 
 export default function AdminSettingsPage() {
   const { settings, updateSettings } = useData();
+  const { adminUser } = useAdmin();
   const [companyName, setCompanyName] = useState(settings.companyName || "QuizWeb");
   const [companyWebsite, setCompanyWebsite] = useState(settings.companyWebsite || "");
   const [saved, setSaved] = useState(false);
@@ -92,6 +143,20 @@ export default function AdminSettingsPage() {
   });
   const [navDirty, setNavDirty] = useState(false);
   const [navSaved, setNavSaved] = useState(false);
+  const [footerEnabled, setFooterEnabled] = useState(settings.footerEnabled !== false);
+  const [footerBrandDesc, setFooterBrandDesc] = useState(
+    settings.footerBrandDesc ||
+      "The ultimate platform to test your knowledge across hundreds of categories. Challenge yourself, learn new things, and have fun!"
+  );
+  const [footerBottomText, setFooterBottomText] = useState(
+    settings.footerBottomText || "All rights reserved. Designed for knowledge seekers worldwide."
+  );
+  const [footerSectionsDraft, setFooterSectionsDraft] = useState(() => {
+    const parsed = parseFooterSections(settings.footerSections);
+    return parsed.length ? parsed : DEFAULT_FOOTER_SECTIONS;
+  });
+  const [footerDirty, setFooterDirty] = useState(false);
+  const [footerSaved, setFooterSaved] = useState(false);
 
   useEffect(() => {
     if (!companyDirty) {
@@ -112,6 +177,20 @@ export default function AdminSettingsPage() {
     const parsed = parseNavItems(settings.navbarItems);
     setNavItemsDraft(parsed.length ? parsed : DEFAULT_NAV_ITEMS);
   }, [navDirty, settings.navbarEnabled, settings.navbarItems]);
+
+  useEffect(() => {
+    if (footerDirty) return;
+    setFooterEnabled(settings.footerEnabled !== false);
+    setFooterBrandDesc(
+      settings.footerBrandDesc ||
+        "The ultimate platform to test your knowledge across hundreds of categories. Challenge yourself, learn new things, and have fun!"
+    );
+    setFooterBottomText(
+      settings.footerBottomText || "All rights reserved. Designed for knowledge seekers worldwide."
+    );
+    const parsed = parseFooterSections(settings.footerSections);
+    setFooterSectionsDraft(parsed.length ? parsed : DEFAULT_FOOTER_SECTIONS);
+  }, [footerDirty, settings.footerEnabled, settings.footerBrandDesc, settings.footerBottomText, settings.footerSections]);
 
   const normalizedChips = useMemo(() => {
     const seen = new Set();
@@ -153,11 +232,34 @@ export default function AdminSettingsPage() {
       });
   }, [navItemsDraft]);
 
+  const normalizedFooterSections = useMemo(() => {
+    return footerSectionsDraft
+      .map((s) => ({
+        id: String(s?.id || s?.heading || Math.random().toString(36).slice(2, 8)).trim(),
+        heading: String(s?.heading || "").trim(),
+        links: Array.isArray(s?.links)
+          ? s.links
+              .map((l) => ({
+                id: String(l?.id || l?.label || Math.random().toString(36).slice(2, 8)).trim(),
+                label: String(l?.label || "").trim(),
+                href: String(l?.href || "").trim(),
+              }))
+              .filter((l) => l.label && l.href)
+          : [],
+      }))
+      .filter((s) => s.heading);
+  }, [footerSectionsDraft]);
+
   const handleSaveCompany = async () => {
-    await updateSettings({ companyName, companyWebsite });
-    setSaved(true);
-    setCompanyDirty(false);
-    setTimeout(() => setSaved(false), 2000);
+    const success = await updateSettings({ companyName, companyWebsite });
+    if (success) {
+      toast.success("Company settings saved!");
+      setSaved(true);
+      setCompanyDirty(false);
+      setTimeout(() => setSaved(false), 2000);
+    } else {
+      toast.error("Failed to save company settings.");
+    }
   };
 
   const handleAddChip = () => {
@@ -169,10 +271,15 @@ export default function AdminSettingsPage() {
   };
 
   const handleSaveChips = async () => {
-    await updateSettings({ homeChips: JSON.stringify(normalizedChips) });
-    setChipsSaved(true);
-    setChipsDirty(false);
-    setTimeout(() => setChipsSaved(false), 2000);
+    const success = await updateSettings({ homeChips: JSON.stringify(normalizedChips) });
+    if (success) {
+      toast.success("Home chips saved!");
+      setChipsSaved(true);
+      setChipsDirty(false);
+      setTimeout(() => setChipsSaved(false), 2000);
+    } else {
+      toast.error("Failed to save home chips.");
+    }
   };
 
   const handleAddNavItem = () => {
@@ -201,14 +308,70 @@ export default function AdminSettingsPage() {
   };
 
   const handleSaveNav = async () => {
-    await updateSettings({
+    const success = await updateSettings({
       navbarEnabled,
       navbarItems: JSON.stringify(normalizedNavItems),
     });
-    setNavSaved(true);
-    setNavDirty(false);
-    setTimeout(() => setNavSaved(false), 2000);
+    if (success) {
+      toast.success("Navigation settings saved!");
+      setNavSaved(true);
+      setNavDirty(false);
+      setTimeout(() => setNavSaved(false), 2000);
+    } else {
+      toast.error("Failed to save navigation settings.");
+    }
   };
+
+  const handleAddFooterSection = () => {
+    setFooterDirty(true);
+    setFooterSectionsDraft((prev) => [
+      ...prev,
+      { id: `footer_${Date.now()}`, heading: "New section", links: [] },
+    ]);
+  };
+
+  const handleAddFooterLink = (sectionId) => {
+    setFooterDirty(true);
+    setFooterSectionsDraft((prev) =>
+      prev.map((s) =>
+        s.id !== sectionId
+          ? s
+          : {
+              ...s,
+              links: [
+                ...(Array.isArray(s.links) ? s.links : []),
+                { id: `link_${Date.now()}`, label: "New link", href: "/" },
+              ],
+            }
+      )
+    );
+  };
+
+  const handleSaveFooter = async () => {
+    const success = await updateSettings({
+      footerEnabled,
+      footerBrandDesc,
+      footerBottomText,
+      footerSections: JSON.stringify(normalizedFooterSections),
+    });
+    if (success) {
+      toast.success("Footer saved!");
+      setFooterSaved(true);
+      setFooterDirty(false);
+      setTimeout(() => setFooterSaved(false), 2000);
+    } else {
+      toast.error("Failed to save footer.");
+    }
+  };
+
+  const allowed = adminUser?.role === "master" || adminUser?.permissions?.settings !== false;
+  if (!allowed) {
+    return (
+      <div className={styles.page}>
+        <p>Access denied.</p>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.page}>
@@ -227,7 +390,11 @@ export default function AdminSettingsPage() {
           </div>
           <button
             className={`${styles.toggleSwitch} ${settings.difficultyEnabled ? styles.toggleOn : ""}`}
-            onClick={() => updateSettings({ difficultyEnabled: !settings.difficultyEnabled })}
+            onClick={async () => {
+              const success = await updateSettings({ difficultyEnabled: !settings.difficultyEnabled });
+              if (success) toast.success(`Difficulty selection ${!settings.difficultyEnabled ? "enabled" : "disabled"}`);
+              else toast.error("Failed to update difficulty setting.");
+            }}
           >
             <span className={styles.toggleKnob} />
           </button>
@@ -484,6 +651,156 @@ export default function AdminSettingsPage() {
             Save Navigation
           </button>
         </div>
+      </section>
+
+      <section className={`${styles.section} glass-card`}>
+        <h2 className={styles.sectionTitle}>🦶 Footer</h2>
+        <p className={styles.sectionDesc}>Edit or delete the footer content shown on the public site.</p>
+
+        <div className={styles.toggleRow}>
+          <div>
+            <span className={styles.toggleLabel}>Footer Enabled</span>
+            <p className={styles.toggleDesc}>Hide or show the footer globally.</p>
+          </div>
+          <button
+            className={`${styles.toggleSwitch} ${footerEnabled ? styles.toggleOn : ""}`}
+            onClick={() => {
+              setFooterDirty(true);
+              setFooterEnabled((v) => !v);
+            }}
+          >
+            <span className={styles.toggleKnob} />
+          </button>
+        </div>
+
+        <div className={styles.field}>
+          <label>Brand Description</label>
+          <textarea
+            className={styles.textarea}
+            rows={3}
+            value={footerBrandDesc}
+            onChange={(e) => {
+              setFooterDirty(true);
+              setFooterBrandDesc(e.target.value);
+            }}
+          />
+        </div>
+
+        <div className={styles.field}>
+          <label>Bottom Text</label>
+          <input
+            className={styles.input}
+            value={footerBottomText}
+            onChange={(e) => {
+              setFooterDirty(true);
+              setFooterBottomText(e.target.value);
+            }}
+          />
+        </div>
+
+        <div className={styles.field}>
+          <div style={{ display: "flex", gap: "0.8rem", alignItems: "center", justifyContent: "space-between" }}>
+            <label style={{ margin: 0 }}>Sections</label>
+            <button className={styles.addBtn} type="button" onClick={handleAddFooterSection}>
+              Add Section
+            </button>
+          </div>
+        </div>
+
+        <div className={styles.navEditor}>
+          {footerSectionsDraft.map((section) => (
+            <div key={section.id} className={styles.navItem}>
+              <div className={styles.navHeader}>
+                <input
+                  className={styles.input}
+                  value={section.heading}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setFooterDirty(true);
+                    setFooterSectionsDraft((prev) =>
+                      prev.map((s) => (s.id === section.id ? { ...s, heading: v } : s))
+                    );
+                  }}
+                  placeholder="Section heading"
+                />
+                <button
+                  type="button"
+                  className={styles.deleteChipBtn}
+                  onClick={() => {
+                    setFooterDirty(true);
+                    setFooterSectionsDraft((prev) => prev.filter((s) => s.id !== section.id));
+                  }}
+                >
+                  Delete Section
+                </button>
+              </div>
+
+              <div style={{ marginTop: "0.6rem" }}>
+                <button className={styles.addBtn} type="button" onClick={() => handleAddFooterLink(section.id)}>
+                  Add Link
+                </button>
+              </div>
+
+              <div className={styles.subNavList}>
+                {(section.links || []).map((link) => (
+                  <div key={link.id} className={styles.subNavItem}>
+                    <input
+                      className={styles.input}
+                      value={link.label}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setFooterDirty(true);
+                        setFooterSectionsDraft((prev) =>
+                          prev.map((s) =>
+                            s.id !== section.id
+                              ? s
+                              : { ...s, links: s.links.map((l) => (l.id === link.id ? { ...l, label: v } : l)) }
+                          )
+                        );
+                      }}
+                      placeholder="Label"
+                    />
+                    <input
+                      className={styles.input}
+                      value={link.href}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setFooterDirty(true);
+                        setFooterSectionsDraft((prev) =>
+                          prev.map((s) =>
+                            s.id !== section.id
+                              ? s
+                              : { ...s, links: s.links.map((l) => (l.id === link.id ? { ...l, href: v } : l)) }
+                          )
+                        );
+                      }}
+                      placeholder="/path"
+                    />
+                    <button
+                      type="button"
+                      className={styles.deleteChipBtn}
+                      onClick={() => {
+                        setFooterDirty(true);
+                        setFooterSectionsDraft((prev) =>
+                          prev.map((s) =>
+                            s.id !== section.id ? s : { ...s, links: s.links.filter((l) => l.id !== link.id) }
+                          )
+                        );
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {footerSaved && <div className={`${styles.msg} ${styles.success}`}>Footer saved!</div>}
+        <button className="btn-primary" onClick={handleSaveFooter}>
+          Save Footer
+        </button>
       </section>
 
       {/* Info */}

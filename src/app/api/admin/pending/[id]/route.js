@@ -28,13 +28,16 @@ export async function PUT(request, { params }) {
       // Apply the change — support both naming conventions
       if (at === "add_category" || at === "create_category") {
         const maxSort = await prisma.category.aggregate({ _max: { sortOrder: true } });
+        const maybeId = typeof payload.id === "string" && payload.id.length === 24 ? payload.id : undefined;
         await prisma.category.create({
           data: {
-            id: payload.id,
+            ...(maybeId ? { id: maybeId } : {}),
             topic: payload.topic,
             emoji: payload.emoji,
             description: payload.description || "",
-            categoryClass: payload.categoryClass || `category-${payload.id}`,
+            categoryClass:
+              payload.categoryClass ||
+              `category-${String(payload.topic || "").toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")}`,
             hidden: !!payload.hidden,
             image: payload.image || null,
             sortOrder: (maxSort._max.sortOrder ?? -1) + 1,
@@ -56,7 +59,6 @@ export async function PUT(request, { params }) {
       } else if (at === "add_question" || at === "create_question") {
         await prisma.question.create({
           data: {
-            id: payload.id || `q_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             text: payload.text,
             options: JSON.stringify(payload.options),
             correctAnswer: payload.correctAnswer,
@@ -77,17 +79,28 @@ export async function PUT(request, { params }) {
         await prisma.question.delete({ where: { id: qId } });
       } else if (at === "bulk_upload" || at === "bulk_import" || at === "bulk_add_questions") {
         if (payload.categories) {
+          console.log("[Approval] Processing bulk_import categories:", payload.categories.length);
           for (const cat of payload.categories) {
-            const exists = await prisma.category.findUnique({ where: { id: cat.id } });
-            if (!exists) {
+            // Use topic for uniqueness if ID is not a valid MongoDB ObjectId or let Prisma handle it
+            const catId = (cat.id && cat.id.length === 24) ? cat.id : undefined;
+            
+            let existing = null;
+            if (catId) {
+              existing = await prisma.category.findUnique({ where: { id: catId } });
+            } else {
+              existing = await prisma.category.findFirst({ where: { topic: cat.topic } });
+            }
+
+            let targetCatId = existing?.id;
+
+            if (!existing) {
               const ms = await prisma.category.aggregate({ _max: { sortOrder: true } });
-              await prisma.category.create({
+              const newCat = await prisma.category.create({
                 data: {
-                  id: cat.id,
                   topic: cat.topic,
-                  emoji: cat.emoji,
+                  emoji: cat.emoji || "❓",
                   description: cat.description || "",
-                  categoryClass: cat.categoryClass || "",
+                  categoryClass: cat.categoryClass || `category-${cat.topic.toLowerCase().replace(/\s+/g, "-")}`,
                   sortOrder: (ms._max.sortOrder ?? -1) + 1,
                   parentId: cat.parentId || null,
                   showSubCategoriesOnHome: !!cat.showSubCategoriesOnHome,
@@ -96,20 +109,33 @@ export async function PUT(request, { params }) {
                   originalLang: cat.originalLang || "en",
                 },
               });
+              targetCatId = newCat.id;
+              console.log("[Approval] Created new category for bulk:", cat.topic, targetCatId);
             }
+
             for (const q of cat.questions || []) {
-              const qExists = await prisma.question.findUnique({ where: { id: q.id } });
-              if (!qExists) {
-                await prisma.question.create({
-                  data: { id: q.id, text: q.text, options: JSON.stringify(q.options), correctAnswer: q.correctAnswer, difficulty: q.difficulty || "easy", categoryId: cat.id },
-                });
-              }
+              await prisma.question.create({
+                data: { 
+                  text: q.text, 
+                  options: JSON.stringify(q.options), 
+                  correctAnswer: q.correctAnswer, 
+                  difficulty: q.difficulty || "easy", 
+                  categoryId: targetCatId 
+                },
+              });
             }
           }
         } else if (payload.questions && payload.categoryId) {
+          console.log("[Approval] Processing bulk_add_questions for cat:", payload.categoryId);
           for (const q of payload.questions) {
             await prisma.question.create({
-              data: { id: q.id, text: q.text, options: JSON.stringify(q.options), correctAnswer: q.correctAnswer, difficulty: q.difficulty || "easy", categoryId: payload.categoryId },
+              data: { 
+                text: q.text, 
+                options: JSON.stringify(q.options), 
+                correctAnswer: q.correctAnswer, 
+                difficulty: q.difficulty || "easy", 
+                categoryId: payload.categoryId 
+              },
             });
           }
         }

@@ -129,6 +129,9 @@
   font-weight: 500;
   color: var(--text-secondary);
   transition: all 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+  justify-content: flex-start;
 }
 
 .Admin_navLink__ks6qW:hover {
@@ -145,7 +148,34 @@
 .Admin_navIcon__rxjQX {
   font-size: 1.1rem;
   width: 24px;
-  text-align: center;
+  flex: 0 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.Admin_navText__vwhKs {
+  flex: 1 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.Admin_navBadge__7HOll {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent-light);
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
 }
 
 /* ===== Footer ===== */

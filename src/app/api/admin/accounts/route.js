@@ -27,7 +27,18 @@ export async function GET(request) {
     select: { id: true, username: true, displayName: true, role: true, status: true, createdAt: true },
     orderBy: { createdAt: "asc" },
   });
-  return NextResponse.json(accounts);
+  const permKeys = accounts.map((a) => `adminPerms:${a.id}`);
+  const perms = await prisma.setting.findMany({
+    where: { key: { in: permKeys } },
+    select: { key: true, value: true },
+  });
+  const permMap = new Map(perms.map((p) => [p.key, p.value]));
+  return NextResponse.json(
+    accounts.map((a) => ({
+      ...a,
+      permissions: permMap.get(`adminPerms:${a.id}`) || "{}",
+    }))
+  );
 }
 
 export async function POST(request) {
@@ -45,12 +56,63 @@ export async function POST(request) {
   }
   const hash = await bcrypt.hash(password, 10);
   const account = await prisma.adminAccount.create({
-    data: { username, passwordHash: hash, displayName: displayName || username, role: "jr", status: "active" },
+    data: {
+      username,
+      passwordHash: hash,
+      displayName: displayName || username,
+      role: "jr",
+      status: "active",
+    },
+  });
+
+  await prisma.setting.upsert({
+    where: { key: `adminPerms:${account.id}` },
+    update: {
+      value: JSON.stringify({
+        dashboard: true,
+        categories: true,
+        questions: true,
+        daily: true,
+        upload: true,
+        settings: true,
+        notifications: true,
+      }),
+    },
+    create: {
+      key: `adminPerms:${account.id}`,
+      value: JSON.stringify({
+        dashboard: true,
+        categories: true,
+        questions: true,
+        daily: true,
+        upload: true,
+        settings: true,
+        notifications: true,
+      }),
+    },
   });
 
   await prisma.adminActivityLog.create({
     data: { adminId: session.user.adminId, action: "create_admin", details: `Created Jr Admin: ${username}` },
   });
 
-  return NextResponse.json({ id: account.id, username: account.username, role: account.role, status: account.status }, { status: 201 });
+  return NextResponse.json(
+    {
+      id: account.id,
+      username: account.username,
+      role: account.role,
+      status: account.status,
+      permissions:
+        JSON.stringify({
+          dashboard: true,
+          categories: true,
+          questions: true,
+          daily: true,
+          upload: true,
+          settings: true,
+          notifications: true,
+        }),
+    },
+    { status: 201 }
+  );
 }

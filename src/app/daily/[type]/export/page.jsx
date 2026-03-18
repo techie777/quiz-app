@@ -106,22 +106,23 @@ export default function DailyExportPage() {
   return (
     <div className={styles.page}>
       <div className={styles.toolbar}>
-        <Link href={`/daily/${type}?date=${encodeURIComponent(date)}`} className={styles.backLink}>← Back</Link>
+        <Link href={`/daily/${type}?date=${encodeURIComponent(date)}`} className={styles.backLink}>← Back to Quiz</Link>
         <button type="button" className={styles.printBtn} onClick={printNow}>Print / Save PDF</button>
       </div>
 
       <article className={styles.sheet}>
         <header className={styles.sheetHeader}>
           <div className={styles.brand}>{companyName}</div>
-          <div className={styles.sheetTitle}>{meta.emoji} {meta.label}</div>
-          <div className={styles.sheetMeta}>Date: {date}</div>
+          <div className={styles.sheetTitle}>{meta.label}</div>
+          <div className={styles.sheetMeta}>{date}</div>
         </header>
 
         <section className={styles.body}>
           {questions.map((q, idx) => (
             <div key={q.id} className={styles.qBlock}>
               <div className={styles.qText}>
-                <span className={styles.qNum}>{idx + 1}.</span> {q.text}
+                <span className={styles.qNum}>{idx + 1}.</span>
+                <span>{q.text}</span>
               </div>
               {Array.isArray(q.options) && (
                 <ul className={styles.opts}>
@@ -130,14 +131,18 @@ export default function DailyExportPage() {
                   ))}
                 </ul>
               )}
-              <div className={styles.answer}><span>Answer:</span> {q.correctAnswer}</div>
+              <div className={styles.answer}>
+                <span>Correct Answer:</span> {q.correctAnswer}
+              </div>
             </div>
           ))}
         </section>
 
-        <footer className={styles.sheetFooter}>
-          <div>{companyWebsite}</div>
-        </footer>
+        {companyWebsite && (
+          <footer className={styles.sheetFooter}>
+            <div>{companyWebsite}</div>
+          </footer>
+        )}
       </article>
     </div>
   );

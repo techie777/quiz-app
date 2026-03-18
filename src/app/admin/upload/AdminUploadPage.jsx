@@ -135,6 +135,15 @@ export default function AdminUploadPage() {
   const [jsonPreview, setJsonPreview] = useState(null);
   const [jsonSuccess, setJsonSuccess] = useState(false);
 
+  const allowed = adminUser?.role === "master" || adminUser?.permissions?.upload !== false;
+  if (!allowed) {
+    return (
+      <div className={styles.page}>
+        <p>Access denied.</p>
+      </div>
+    );
+  }
+
   // ===== Excel handlers =====
   const handleExcelFile = (e) => {
     const file = e.target.files[0];
@@ -172,13 +181,24 @@ export default function AdminUploadPage() {
 
   const handleExcelImport = async () => {
     if (!excelPreview || !selectedCatId) return;
-    if (isJr) {
-      await submitPending("bulk_add_questions", { categoryId: selectedCatId, questions: excelPreview });
-    } else {
-      excelPreview.forEach((q) => addQuestion(selectedCatId, q));
+    try {
+      if (isJr) {
+        await submitPending("bulk_add_questions", { categoryId: selectedCatId, questions: excelPreview });
+        setExcelSuccess(true);
+        setExcelPreview(null);
+      } else {
+        const success = await bulkImportQuestions(selectedCatId, excelPreview);
+        if (success) {
+          setExcelSuccess(true);
+          setExcelPreview(null);
+        } else {
+          alert("Bulk import failed. Check console for details.");
+        }
+      }
+    } catch (err) {
+      console.error("Bulk upload error:", err);
+      alert("An error occurred during import.");
     }
-    setExcelSuccess(true);
-    setExcelPreview(null);
   };
 
   // ===== JSON handlers =====

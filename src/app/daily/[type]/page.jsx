@@ -40,14 +40,31 @@ export default function DailyQuizPage() {
       setLoading(true);
       setMsg("");
       try {
+        const fetchDate = date || today();
+        console.log(`[DailyQuiz] Fetching data for ${type} on ${fetchDate}`);
         const [dailyRes, histRes] = await Promise.all([
-          fetch(`/api/daily-quizzes?type=${encodeURIComponent(type)}&date=${encodeURIComponent(date)}`),
+          fetch(`/api/daily-quizzes?type=${encodeURIComponent(type)}&date=${encodeURIComponent(fetchDate)}`),
           fetch(`/api/daily-quizzes/history?type=${encodeURIComponent(type)}`),
         ]);
-        if (!cancelled && dailyRes.ok) setData(await dailyRes.json());
-        if (!cancelled && histRes.ok) setHistory(await histRes.json());
-      } catch {
-        if (!cancelled) setMsg("Failed to load.");
+        
+        if (cancelled) return;
+
+        if (dailyRes.ok) {
+          const resData = await dailyRes.json();
+          console.log(`[DailyQuiz] Received data:`, resData?.daily ? "Found" : "Not Found", "Questions:", resData?.questions?.length);
+          setData(resData);
+        } else {
+          console.error(`[DailyQuiz] Failed to fetch daily quiz:`, dailyRes.status);
+          setMsg("Failed to load daily quiz data.");
+        }
+
+        if (histRes.ok) {
+          const histData = await histRes.json();
+          setHistory(histData);
+        }
+      } catch (err) {
+        console.error("[DailyQuiz] Load error:", err);
+        if (!cancelled) setMsg("Failed to load. Check your connection.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -60,14 +77,28 @@ export default function DailyQuizPage() {
 
   const playable = useMemo(() => {
     const qs = data?.questions || [];
-    return Array.isArray(qs) && qs.length > 0 && data?.daily?.categoryId;
+    return Array.isArray(qs) && qs.length > 0 && !!data?.daily;
   }, [data]);
 
   const play = () => {
-    if (!playable) return;
+    if (!playable) {
+      console.warn("[DailyQuiz] Play clicked but not playable", { 
+        hasQuestions: !!data?.questions?.length, 
+        hasCategoryId: !!data?.daily?.categoryId 
+      });
+      return;
+    }
     const categoryId = data.daily.categoryId;
     const language = data?.category?.originalLang || "en";
-    startQuizSet(categoryId, data.questions, 0, language);
+    console.log("[DailyQuiz] Starting quiz with questions:", data.questions.length, "CategoryId:", categoryId);
+    
+    // Ensure questions have the correct categoryId for the quiz engine
+    const normalizedQuestions = data.questions.map(q => ({
+      ...q,
+      categoryId: categoryId
+    }));
+
+    startQuizSet(categoryId, normalizedQuestions, 0, language);
     router.push(`/quiz/${categoryId}`);
   };
 
@@ -119,8 +150,14 @@ export default function DailyQuizPage() {
       <div className={styles.body}>
         <div className={`${styles.panel} glass-card`}>
           <h2 className={styles.panelTitle}>Quiz</h2>
-          {!hasDaily ? (
-            <div className={styles.empty}>No questions for {date}. Try a past date from the right panel.</div>
+          {!hasDaily || questionCount === 0 ? (
+            <div className={styles.emptyState}>
+              <div className={styles.emptyImage}>📔</div>
+              <h3 className={styles.emptyTitle}>No Quiz Available</h3>
+              <p className={styles.emptyDesc}>
+                There are no questions scheduled for {date === today() ? "today" : date}. Please check back later or select a past date.
+              </p>
+            </div>
           ) : (
             <div className={styles.qList}>
               {data.questions.map((q, idx) => (

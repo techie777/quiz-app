@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { useData } from "@/context/DataContext";
 import { useAdmin } from "@/context/AdminContext";
 import styles from "@/styles/AdminCategories.module.css";
+import toast from "react-hot-toast";
 
 const EMPTY_CAT = { id: "", topic: "", emoji: "", description: "", categoryClass: "", hidden: false, image: "", parentId: "", showSubCategoriesOnHome: false, storyText: "", storyImage: "", originalLang: "en", isTrending: false, chips: [] };
 
@@ -13,105 +14,15 @@ async function submitPending(type, payload) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ type, payload }),
   });
-  if (res.ok) alert("Your change has been submitted for approval.");
-  else alert("Failed to submit change for approval.");
+  if (res.ok) {
+    toast.success("Your change has been submitted for approval.");
+  } else {
+    toast.error("Failed to submit change for approval.");
+  }
 }
 
-export default function AdminCategoriesPage() {
-  const { quizzes, settings, addCategory, updateCategory, deleteCategory, reorderCategories } = useData();
-  const { adminUser } = useAdmin();
-  const isJr = adminUser?.role === "jr";
-  const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState(EMPTY_CAT);
-  const [confirm, setConfirm] = useState(null);
-  const dragItem = useRef(null);
-  const dragOver = useRef(null);
-
-  const openAdd = () => {
-    setEditingId("new");
-    setForm(EMPTY_CAT);
-  };
-
-  const openEdit = (cat) => {
-    setForm({
-      id: cat.id,
-      topic: cat.topic,
-      emoji: cat.emoji,
-      description: cat.description,
-      categoryClass: cat.categoryClass,
-      hidden: !!cat.hidden,
-      image: cat.image || "",
-      parentId: cat.parentId || "",
-      showSubCategoriesOnHome: !!cat.showSubCategoriesOnHome,
-      storyText: cat.storyText || "",
-      storyImage: cat.storyImage || "",
-      originalLang: cat.originalLang || "en",
-      isTrending: !!cat.isTrending,
-      chips: Array.isArray(cat.chips) ? cat.chips : [],
-    });
-    setEditingId(cat.id);
-  };
-
-  const handleSave = async () => {
-    if (!form.topic.trim() || !form.emoji.trim()) return;
-    
-    if (editingId !== "new") {
-      const data = { 
-        topic: form.topic, 
-        emoji: form.emoji, 
-        description: form.description, 
-        categoryClass: form.categoryClass, 
-        hidden: form.hidden, 
-        image: form.image, 
-        parentId: form.parentId || null, 
-        showSubCategoriesOnHome: form.showSubCategoriesOnHome,
-        storyText: form.storyText,
-        storyImage: form.storyImage,
-        originalLang: form.originalLang,
-        isTrending: form.isTrending,
-        chips: Array.isArray(form.chips) ? form.chips : [],
-      };
-      if (isJr) {
-        await submitPending("update_category", { categoryId: editingId, ...data });
-      } else {
-        await updateCategory(editingId, data);
-      }
-    } else {
-      const id = form.topic.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
-      const data = { 
-        id, 
-        topic: form.topic, 
-        emoji: form.emoji, 
-        description: form.description, 
-        categoryClass: form.categoryClass || `category-${id}`, 
-        hidden: form.hidden, 
-        image: form.image, 
-        parentId: form.parentId || null, 
-        showSubCategoriesOnHome: form.showSubCategoriesOnHome, 
-        storyText: form.storyText,
-        storyImage: form.storyImage,
-        originalLang: form.originalLang,
-        isTrending: form.isTrending,
-        chips: Array.isArray(form.chips) ? form.chips : [],
-        questions: [] 
-      };
-      if (isJr) {
-        await submitPending("create_category", data);
-      } else {
-        await addCategory(data);
-      }
-    }
-    setEditingId(null);
-  };
-
-  const handleDelete = async (id) => {
-    if (isJr) {
-      await submitPending("delete_category", { categoryId: id });
-    } else {
-      await deleteCategory(id);
-    }
-    setConfirm(null);
-  };
+const EditForm = ({ category, onSave, onCancel, isNew = false, quizzes = [], settings = {}, editingId }) => {
+  const [form, setForm] = useState(category);
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -129,7 +40,7 @@ export default function AdminCategoriesPage() {
     reader.readAsDataURL(file);
   };
 
-  const EditForm = ({ isNew = false }) => (
+  return (
     <div className={styles.inlineForm}>
       <h2 className={styles.formTitle}>
         {isNew ? "Add Category" : "Edit Category"}
@@ -166,8 +77,8 @@ export default function AdminCategoriesPage() {
         <div className={styles.field}>
           <label>Parent Category (Optional)</label>
           <select
-            value={form.parentId}
-            onChange={(e) => setForm({ ...form, parentId: e.target.value })}
+            value={form.parentId || ""}
+            onChange={(e) => setForm({ ...form, parentId: e.target.value || null })}
             className={styles.input}
           >
             <option value="">None (Top Level)</option>
@@ -185,7 +96,7 @@ export default function AdminCategoriesPage() {
           <label className={styles.checkboxLabel}>
             <input
               type="checkbox"
-              checked={form.showSubCategoriesOnHome}
+              checked={!!form.showSubCategoriesOnHome}
               onChange={(e) => setForm({ ...form, showSubCategoriesOnHome: e.target.checked })}
             />
             Show sub-categories on home page
@@ -204,7 +115,7 @@ export default function AdminCategoriesPage() {
         <div className={styles.field}>
           <label>Original Language</label>
           <select
-            value={form.originalLang}
+            value={form.originalLang || "en"}
             onChange={(e) => setForm({ ...form, originalLang: e.target.value })}
             className={styles.input}
           >
@@ -219,26 +130,24 @@ export default function AdminCategoriesPage() {
             {(function () {
               let list = [];
               try {
-                list = JSON.parse(settings?.homeChips || "[]");
+                list = typeof settings?.homeChips === 'string' ? JSON.parse(settings.homeChips) : (settings.homeChips || []);
               } catch {
                 list = [];
               }
               if (!Array.isArray(list) || list.length === 0) {
                 list = ["Science", "History", "GK", "Quick 5 Min"];
               }
-              return (Array.isArray(list) ? list : []).map((chip) => (
+              return list.map((chip) => (
                 <label key={chip} className={styles.chipCheck}>
                   <input
                     type="checkbox"
                     checked={Array.isArray(form.chips) && form.chips.includes(chip)}
                     onChange={(e) => {
                       const checked = e.target.checked;
-                      setForm((prev) => {
-                        const current = new Set(Array.isArray(prev.chips) ? prev.chips : []);
-                        if (checked) current.add(chip);
-                        else current.delete(chip);
-                        return { ...prev, chips: Array.from(current) };
-                      });
+                      const current = new Set(Array.isArray(form.chips) ? form.chips : []);
+                      if (checked) current.add(chip);
+                      else current.delete(chip);
+                      setForm({ ...form, chips: Array.from(current) });
                     }}
                   />
                   <span>#{chip}</span>
@@ -252,7 +161,7 @@ export default function AdminCategoriesPage() {
           <label>
             <input
               type="checkbox"
-              checked={form.isTrending}
+              checked={!!form.isTrending}
               onChange={(e) => setForm({ ...form, isTrending: e.target.checked })}
             />
             <span>Mark as Trending 🔥</span>
@@ -263,7 +172,7 @@ export default function AdminCategoriesPage() {
           <label>
             <input
               type="checkbox"
-              checked={form.hidden}
+              checked={!!form.hidden}
               onChange={(e) => setForm({ ...form, hidden: e.target.checked })}
             />
             <span>Hidden from public view</span>
@@ -287,7 +196,7 @@ export default function AdminCategoriesPage() {
         <div className={styles.field}>
           <label>Story/Informative Text</label>
           <textarea
-            value={form.storyText}
+            value={form.storyText || ""}
             onChange={(e) => setForm({ ...form, storyText: e.target.value })}
             placeholder="Add a short story or informative text about this quiz..."
             className={styles.textarea}
@@ -297,15 +206,125 @@ export default function AdminCategoriesPage() {
       </div>
 
       <div className={styles.formActions}>
-        <button className="btn-secondary" onClick={() => setEditingId(null)}>
+        <button className="btn-secondary" onClick={onCancel}>
           Cancel
         </button>
-        <button className="btn-primary" onClick={handleSave}>
+        <button className="btn-primary" onClick={() => onSave(form, isNew)}>
           {isNew ? "Add Category" : "Save Changes"}
         </button>
       </div>
     </div>
   );
+};
+
+export default function AdminCategoriesPage() {
+  const { quizzes, settings, addCategory, updateCategory, deleteCategory, reorderCategories } = useData();
+  const { adminUser } = useAdmin();
+  const isJr = adminUser?.role === "jr";
+  const allowed = adminUser?.role === "master" || adminUser?.permissions?.categories !== false;
+  const [editingId, setEditingId] = useState(null);
+  const [confirm, setConfirm] = useState(null);
+  const dragItem = useRef(null);
+  const dragOver = useRef(null);
+
+  if (!allowed) {
+    return (
+      <div className={styles.page}>
+        <p>Access denied.</p>
+      </div>
+    );
+  }
+
+  const openAdd = () => {
+    setEditingId("new");
+  };
+
+  const openEdit = (cat) => {
+    setEditingId(cat.id);
+  };
+
+  const handleSave = async (formData, isNew) => {
+    console.log("[AdminCategories] handleSave called:", { isNew, topic: formData.topic });
+    try {
+      // Basic validation with existence check
+      if (!formData || !formData.topic || !formData.emoji) {
+        toast.error("Topic and Emoji are required!");
+        return;
+      }
+
+      const topicStr = String(formData.topic).trim();
+      const emojiStr = String(formData.emoji).trim();
+
+      if (!topicStr || !emojiStr) {
+        toast.error("Topic and Emoji cannot be empty!");
+        return;
+      }
+
+      const data = { 
+        topic: topicStr, 
+        emoji: emojiStr, 
+        description: formData.description || "", 
+        categoryClass: formData.categoryClass || `category-${topicStr.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")}`,
+        hidden: !!formData.hidden, 
+        image: formData.image || null, 
+        parentId: formData.parentId && formData.parentId !== "" ? formData.parentId : null, 
+        showSubCategoriesOnHome: !!formData.showSubCategoriesOnHome, 
+        storyText: formData.storyText || "",
+        storyImage: formData.storyImage || null,
+        originalLang: formData.originalLang || "en",
+        isTrending: !!formData.isTrending,
+        chips: Array.isArray(formData.chips) ? formData.chips : [],
+      };
+
+      console.log("[AdminCategories] data for API:", data);
+
+      if (!isNew) {
+        if (isJr) {
+          console.log("[AdminCategories] Submitting pending update");
+          await submitPending("update_category", { categoryId: editingId, ...data });
+          setEditingId(null);
+        } else {
+          console.log("[AdminCategories] Updating category directly:", editingId);
+          const success = await updateCategory(editingId, data);
+          if (success) {
+            toast.success("Category updated successfully!");
+            setEditingId(null);
+          } else {
+            toast.error("Failed to update category.");
+          }
+        }
+      } else {
+        if (isJr) {
+          console.log("[AdminCategories] Submitting pending creation");
+          await submitPending("create_category", data);
+          setEditingId(null);
+        } else {
+          console.log("[AdminCategories] Creating category directly");
+          const success = await addCategory(data);
+          if (success) {
+            toast.success("Category created successfully!");
+            setEditingId(null);
+          } else {
+            toast.error("Failed to create category. Please check the server logs.");
+          }
+        }
+      }
+    } catch (error) {
+      console.error("[AdminCategories] handleSave error:", error);
+      toast.error("An unexpected error occurred: " + error.message);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (isJr) {
+      await submitPending("delete_category", { categoryId: id });
+    } else {
+      const success = await deleteCategory(id);
+      if (success) toast.success("Category deleted successfully!");
+      else toast.error("Failed to delete category.");
+    }
+    setConfirm(null);
+  };
 
   const handleDragEnd = () => {
     if (dragItem.current === null || dragOver.current === null) return;
@@ -331,7 +350,18 @@ export default function AdminCategoriesPage() {
       </div>
 
       <div className={styles.list}>
-        {editingId === "new" && <EditForm isNew={true} />}
+        {editingId === "new" && (
+          <EditForm 
+            category={EMPTY_CAT} 
+            onSave={handleSave} 
+            onCancel={() => setEditingId(null)} 
+            isNew={true} 
+            quizzes={quizzes}
+            settings={settings}
+            editingId={editingId}
+          />
+        )}
+        
         {quizzes
           .filter((c) => !c.parentId)
           .map((cat, idx) => (
@@ -369,7 +399,7 @@ export default function AdminCategoriesPage() {
                   )}
                   {cat.hidden && <span className={styles.hiddenBadge}>Hidden</span>}
                   {cat.isTrending && <span className={styles.trendingBadge}>🔥 Trending</span>}
-                  <span className={styles.count}>{cat.questions.length} Q</span>
+                  <span className={styles.count}>{cat.questions?.length || 0} Q</span>
                   <div className={styles.actions}>
                     <button
                       className={styles.visibilityBtn}
@@ -414,7 +444,16 @@ export default function AdminCategoriesPage() {
               </div>
 
               {/* Inline Edit Form for Main Category */}
-              {editingId === cat.id && <EditForm />}
+              {editingId === cat.id && (
+                <EditForm 
+                  category={cat} 
+                  onSave={handleSave} 
+                  onCancel={() => setEditingId(null)} 
+                  quizzes={quizzes}
+                  settings={settings}
+                  editingId={editingId}
+                />
+              )}
 
               {/* Render sub-categories */}
               <div className={styles.subRows}>
@@ -441,7 +480,7 @@ export default function AdminCategoriesPage() {
                         {sub.hidden && (
                           <span className={styles.hiddenBadge}>Hidden</span>
                         )}
-                        <span className={styles.count}>{sub.questions.length} Q</span>
+                        <span className={styles.count}>{sub.questions?.length || 0} Q</span>
                         <div className={styles.actions}>
                           <button
                             className={styles.visibilityBtn}
@@ -489,7 +528,16 @@ export default function AdminCategoriesPage() {
                         </div>
                       )}
                       {/* Inline Edit Form for Sub-Category */}
-                      {editingId === sub.id && <EditForm />}
+                      {editingId === sub.id && (
+                        <EditForm 
+                          category={sub} 
+                          onSave={handleSave} 
+                          onCancel={() => setEditingId(null)} 
+                          quizzes={quizzes}
+                          settings={settings}
+                          editingId={editingId}
+                        />
+                      )}
                     </div>
                   ))}
               </div>

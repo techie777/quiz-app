@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { useData } from "@/context/DataContext";
 import { useAdmin } from "@/context/AdminContext";
 import styles from "@/styles/AdminQuestions.module.css";
+import toast from "react-hot-toast";
 
 const EMPTY_Q = { text: "", options: ["", "", "", ""], correctAnswer: "", difficulty: "easy", image: "" };
 
@@ -13,14 +14,18 @@ async function submitPending(type, payload) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ type, payload }),
   });
-  if (res.ok) alert("Your change has been submitted for approval.");
-  else alert("Failed to submit change for approval.");
+  if (res.ok) {
+    toast.success("Your change has been submitted for approval.");
+  } else {
+    toast.error("Failed to submit change for approval.");
+  }
 }
 
 export default function AdminQuestionsPage() {
   const { quizzes, addQuestion, updateQuestion, deleteQuestion } = useData();
   const { adminUser } = useAdmin();
   const isJr = adminUser?.role === "jr";
+  const allowed = adminUser?.role === "master" || adminUser?.permissions?.questions !== false;
   const [filterCat, setFilterCat] = useState("all");
   const [filterDiff, setFilterDiff] = useState("all");
   const [search, setSearch] = useState("");
@@ -50,6 +55,14 @@ export default function AdminQuestionsPage() {
     });
   }, [allQuestions, filterCat, filterDiff, search]);
 
+  if (!allowed) {
+    return (
+      <div className={styles.page}>
+        <p>Access denied.</p>
+      </div>
+    );
+  }
+
   const openAdd = () => {
     setEditingQ(null);
     setEditingCat(null);
@@ -73,32 +86,75 @@ export default function AdminQuestionsPage() {
   };
 
   const handleSave = async () => {
-    if (!form.text.trim() || !form.correctAnswer || !formCatId) return;
-    if (form.options.some((o) => !o.trim())) return;
+    console.log("[AdminQuestions] handleSave called", { editingQ: !!editingQ, formCatId });
+    try {
+      if (!form.text.trim() || !form.correctAnswer || !formCatId) {
+        toast.error("Please fill in all required fields.");
+        return;
+      }
+      if (form.options.some((o) => !o.trim())) {
+        toast.error("All 4 options must be filled.");
+        return;
+      }
 
-    if (editingQ) {
-      const data = { text: form.text, options: form.options, correctAnswer: form.correctAnswer, difficulty: form.difficulty, image: form.image };
-      if (isJr) {
-        await submitPending("update_question", { categoryId: editingCat, questionId: editingQ.id, ...data });
+      if (editingQ) {
+        const data = { 
+          text: form.text, 
+          options: form.options, 
+          correctAnswer: form.correctAnswer, 
+          difficulty: form.difficulty, 
+          image: form.image || null 
+        };
+        if (isJr) {
+          console.log("[AdminQuestions] Submitting pending update");
+          await submitPending("update_question", { categoryId: editingCat, questionId: editingQ.id, ...data });
+          setModalOpen(false);
+        } else {
+          console.log("[AdminQuestions] Updating question directly:", editingQ.id);
+          const success = await updateQuestion(editingCat, editingQ.id, data);
+          if (success) {
+            toast.success("Question updated successfully!");
+            setModalOpen(false);
+          } else {
+            toast.error("Failed to update question.");
+          }
+        }
       } else {
-        updateQuestion(editingCat, editingQ.id, data);
+        const data = { 
+          text: form.text, 
+          options: form.options, 
+          correctAnswer: form.correctAnswer, 
+          difficulty: form.difficulty, 
+          image: form.image || null 
+        };
+        if (isJr) {
+          console.log("[AdminQuestions] Submitting pending creation");
+          await submitPending("create_question", { categoryId: formCatId, ...data });
+          setModalOpen(false);
+        } else {
+          console.log("[AdminQuestions] Creating question directly in category:", formCatId);
+          const success = await addQuestion(formCatId, data);
+          if (success) {
+            toast.success("Question created successfully!");
+            setModalOpen(false);
+          } else {
+            toast.error("Failed to create question. Please check server logs.");
+          }
+        }
       }
-    } else {
-      const id = `q_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-      if (isJr) {
-        await submitPending("create_question", { categoryId: formCatId, id, ...form });
-      } else {
-        addQuestion(formCatId, { id, ...form });
-      }
+    } catch (error) {
+      console.error("[AdminQuestions] handleSave error:", error);
+      toast.error("An unexpected error occurred: " + error.message);
     }
-    setModalOpen(false);
   };
 
   const handleDelete = async (catId, qId) => {
     if (isJr) {
       await submitPending("delete_question", { categoryId: catId, questionId: qId });
     } else {
-      deleteQuestion(catId, qId);
+      const success = await deleteQuestion(catId, qId);
+      if (success) toast.success("Question deleted successfully!");
+      else toast.error("Failed to delete question.");
     }
   };
 

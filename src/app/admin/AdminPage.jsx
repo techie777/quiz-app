@@ -2,10 +2,13 @@
 
 import { useState, useMemo } from "react";
 import { useData } from "@/context/DataContext";
+import { useAdmin } from "@/context/AdminContext";
 import styles from "@/styles/AdminDashboard.module.css";
 
 export default function AdminDashboard() {
   const { quizzes, getStats } = useData();
+  const { adminUser } = useAdmin();
+  const allowed = adminUser?.role === "master" || adminUser?.permissions?.dashboard !== false;
   const stats = getStats();
   const [search, setSearch] = useState("");
 
@@ -15,6 +18,14 @@ export default function AdminDashboard() {
       c.topic.toLowerCase().includes(search.toLowerCase())
     );
   }, [quizzes, search]);
+
+  if (!allowed) {
+    return (
+      <div className={styles.page}>
+        <p>Access denied.</p>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.page}>

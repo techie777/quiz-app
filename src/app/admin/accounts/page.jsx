@@ -16,6 +16,28 @@ export default function AdminAccountsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ username: "", password: "", displayName: "" });
   const [msg, setMsg] = useState("");
+  const [permEditor, setPermEditor] = useState({ id: null, perms: {} });
+  const [masterEditor, setMasterEditor] = useState({ id: null, username: "", currentPassword: "", password: "" });
+
+  const PERMISSION_FIELDS = [
+    { key: "categories", label: "Categories" },
+    { key: "questions", label: "Questions" },
+    { key: "daily", label: "Daily Quizzes" },
+    { key: "upload", label: "Bulk Upload" },
+    { key: "settings", label: "Settings" },
+    { key: "notifications", label: "Notifications" },
+  ];
+
+  const parsePerms = (raw) => {
+    if (raw && typeof raw === "object") return raw;
+    if (typeof raw !== "string" || !raw.trim()) return {};
+    try {
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+      return {};
+    }
+  };
 
   useEffect(() => {
     const type = searchParams.get("type") === "user" ? "user" : "admin";
@@ -79,6 +101,50 @@ export default function AdminAccountsPage() {
     if (!confirm("Delete this admin account?")) return;
     await fetch(`/api/admin/accounts/${id}`, { method: "DELETE" });
     fetchAccounts();
+  };
+
+  const openPermissions = (acc) => {
+    setPermEditor({ id: acc.id, perms: parsePerms(acc.permissions) });
+  };
+
+  const savePermissions = async () => {
+    if (!permEditor.id) return;
+    await fetch(`/api/admin/accounts/${permEditor.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ permissions: JSON.stringify(permEditor.perms) }),
+    });
+    setPermEditor({ id: null, perms: {} });
+    fetchAccounts();
+  };
+
+  const openMasterEdit = (acc) => {
+    setMasterEditor({ id: acc.id, username: acc.username || "", currentPassword: "", password: "" });
+  };
+
+  const saveMasterEdit = async () => {
+    if (!masterEditor.id) return;
+    if (!masterEditor.currentPassword) {
+      alert("Current password is required to change master login.");
+      return;
+    }
+    const body = {};
+    if (masterEditor.username !== undefined) body.username = masterEditor.username;
+    body.currentPassword = masterEditor.currentPassword;
+    if (masterEditor.password) body.newPassword = masterEditor.password;
+    const res = await fetch(`/api/admin/accounts/${masterEditor.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (res.ok) {
+      setMasterEditor({ id: null, username: "", currentPassword: "", password: "" });
+      fetchAccounts();
+      alert("Master admin login updated. Please log in again if you changed the username.");
+    } else {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || "Failed to update master admin");
+    }
   };
 
   const handleEditUser = async (user) => {
@@ -162,29 +228,96 @@ export default function AdminAccountsPage() {
 
           <div className={styles.list}>
             {accounts.map((acc) => (
-              <div key={acc.id} className={`${styles.row} glass-card`}>
-                <div className={styles.rowInfo}>
-                  <span className={styles.name}>{acc.displayName || acc.username}</span>
-                  <span className={styles.username}>@{acc.username}</span>
-                  <span className={`${styles.roleBadge} ${styles[acc.role]}`}>{acc.role}</span>
-                  <span className={`${styles.statusBadge} ${styles[acc.status]}`}>{acc.status}</span>
+              <div key={acc.id}>
+                <div className={`${styles.row} glass-card`}>
+                  <div className={styles.rowInfo}>
+                    <span className={styles.name}>{acc.displayName || acc.username}</span>
+                    <span className={styles.username}>@{acc.username}</span>
+                    <span className={`${styles.roleBadge} ${styles[acc.role]}`}>{acc.role}</span>
+                    <span className={`${styles.statusBadge} ${styles[acc.status]}`}>{acc.status}</span>
+                  </div>
+                  {acc.role === "master" ? (
+                    <div className={styles.actions}>
+                      <button className={styles.actionBtn} onClick={() => openMasterEdit(acc)}>✏️ Edit Login</button>
+                    </div>
+                  ) : (
+                    <div className={styles.actions}>
+                      <button className={styles.actionBtn} onClick={() => openPermissions(acc)}>🔐 Access</button>
+                      {acc.status === "active" && (
+                        <button className={styles.actionBtn} onClick={() => handleStatusChange(acc.id, "paused")}>⏸ Pause</button>
+                      )}
+                      {acc.status === "paused" && (
+                        <button className={styles.actionBtn} onClick={() => handleStatusChange(acc.id, "active")}>▶ Activate</button>
+                      )}
+                      {acc.status !== "disabled" && (
+                        <button className={styles.actionBtn} onClick={() => handleStatusChange(acc.id, "disabled")}>🚫 Disable</button>
+                      )}
+                      {acc.status === "disabled" && (
+                        <button className={styles.actionBtn} onClick={() => handleStatusChange(acc.id, "active")}>▶ Re-enable</button>
+                      )}
+                      <button className={styles.actionBtn} onClick={() => handleResetPassword(acc.id)}>🔑 Reset PW</button>
+                      <button className={styles.deleteBtn} onClick={() => handleDelete(acc.id)}>🗑️ Delete</button>
+                    </div>
+                  )}
                 </div>
-                {acc.role !== "master" && (
-                  <div className={styles.actions}>
-                    {acc.status === "active" && (
-                      <button className={styles.actionBtn} onClick={() => handleStatusChange(acc.id, "paused")}>⏸ Pause</button>
-                    )}
-                    {acc.status === "paused" && (
-                      <button className={styles.actionBtn} onClick={() => handleStatusChange(acc.id, "active")}>▶ Activate</button>
-                    )}
-                    {acc.status !== "disabled" && (
-                      <button className={styles.actionBtn} onClick={() => handleStatusChange(acc.id, "disabled")}>🚫 Disable</button>
-                    )}
-                    {acc.status === "disabled" && (
-                      <button className={styles.actionBtn} onClick={() => handleStatusChange(acc.id, "active")}>▶ Re-enable</button>
-                    )}
-                    <button className={styles.actionBtn} onClick={() => handleResetPassword(acc.id)}>🔑 Reset PW</button>
-                    <button className={styles.deleteBtn} onClick={() => handleDelete(acc.id)}>🗑️ Delete</button>
+
+                {masterEditor.id === acc.id && (
+                  <div className={`${styles.createForm} glass-card`} style={{ marginTop: "0.6rem" }}>
+                    <h3>Master Admin Login</h3>
+                    <div className={styles.formRow}>
+                      <input
+                        className={styles.input}
+                        placeholder="Username"
+                        value={masterEditor.username}
+                        onChange={(e) => setMasterEditor((prev) => ({ ...prev, username: e.target.value }))}
+                      />
+                      <input
+                        className={styles.input}
+                        placeholder="Current Password"
+                        type="password"
+                        value={masterEditor.currentPassword}
+                        onChange={(e) => setMasterEditor((prev) => ({ ...prev, currentPassword: e.target.value }))}
+                      />
+                      <input
+                        className={styles.input}
+                        placeholder="New Password (optional)"
+                        type="password"
+                        value={masterEditor.password}
+                        onChange={(e) => setMasterEditor((prev) => ({ ...prev, password: e.target.value }))}
+                      />
+                    </div>
+                    <div style={{ display: "flex", gap: "0.6rem", marginTop: "0.8rem" }}>
+                      <button className="btn-primary" onClick={saveMasterEdit}>Save</button>
+                      <button className="btn-secondary" onClick={() => setMasterEditor({ id: null, username: "", currentPassword: "", password: "" })}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {permEditor.id === acc.id && (
+                  <div className={`${styles.createForm} glass-card`} style={{ marginTop: "0.6rem" }}>
+                    <h3>Jr Admin Access</h3>
+                    <div className={styles.formRow} style={{ flexWrap: "wrap" }}>
+                      {PERMISSION_FIELDS.map((f) => (
+                        <label key={f.key} style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                          <input
+                            type="checkbox"
+                            checked={permEditor.perms?.[f.key] !== false}
+                            onChange={(e) => {
+                              const next = { ...(permEditor.perms || {}) };
+                              next[f.key] = e.target.checked;
+                              setPermEditor((prev) => ({ ...prev, perms: next }));
+                            }}
+                          />
+                          <span>{f.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <div style={{ display: "flex", gap: "0.6rem", marginTop: "0.8rem" }}>
+                      <button className="btn-primary" onClick={savePermissions}>Save Access</button>
+                      <button className="btn-secondary" onClick={() => setPermEditor({ id: null, perms: {} })}>Cancel</button>
+                    </div>
                   </div>
                 )}
               </div>

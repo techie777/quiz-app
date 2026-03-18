@@ -32,20 +32,45 @@ export function DataProvider({ children }) {
   }, []);
 
   const refreshQuizzes = useCallback(async () => {
+    console.log("[DataContext] refreshQuizzes called");
     try {
-      const res = await fetch("/api/categories");
-      if (res.ok) setQuizzes(await res.json());
-    } catch {}
+      const res = await fetch("/api/categories", { cache: "no-store" });
+      console.log("[DataContext] refreshQuizzes status:", res.status);
+      if (res.ok) {
+        const data = await res.json();
+        console.log("[DataContext] refreshQuizzes data length:", data?.length);
+        if (Array.isArray(data)) {
+          setQuizzes(data);
+        } else {
+          console.warn("[DataContext] refreshQuizzes data is not an array:", data);
+        }
+      }
+    } catch (error) {
+      console.error("[DataContext] refreshQuizzes error:", error);
+    }
   }, []);
 
   const addCategory = useCallback(async (category) => {
-    const res = await fetch("/api/categories", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(category),
-    });
-    if (res.ok) await refreshQuizzes();
-    return res.ok;
+    console.log("[DataContext] addCategory called with:", category.topic);
+    try {
+      const res = await fetch("/api/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(category),
+      });
+      console.log("[DataContext] addCategory response status:", res.status);
+      if (res.ok) {
+        await refreshQuizzes();
+        return true;
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        console.error("[DataContext] addCategory failed:", errData);
+        return false;
+      }
+    } catch (error) {
+      console.error("[DataContext] addCategory fetch error:", error);
+      return false;
+    }
   }, [refreshQuizzes]);
 
   const updateCategory = useCallback(async (id, updates) => {
@@ -85,13 +110,26 @@ export function DataProvider({ children }) {
   }, [refreshSettings]);
 
   const addQuestion = useCallback(async (categoryId, question) => {
-    const res = await fetch("/api/questions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...question, categoryId }),
-    });
-    if (res.ok) await refreshQuizzes();
-    return res.ok;
+    console.log("[DataContext] addQuestion called for cat:", categoryId);
+    try {
+      const res = await fetch("/api/questions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...question, categoryId }),
+      });
+      console.log("[DataContext] addQuestion status:", res.status);
+      if (res.ok) {
+        await refreshQuizzes();
+        return true;
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        console.error("[DataContext] addQuestion failed:", errData);
+        return false;
+      }
+    } catch (error) {
+      console.error("[DataContext] addQuestion fetch error:", error);
+      return false;
+    }
   }, [refreshQuizzes]);
 
   const updateQuestion = useCallback(async (categoryId, questionId, updates) => {

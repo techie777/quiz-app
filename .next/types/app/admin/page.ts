@@ -1,4 +1,4 @@
-// File: C:\Users\Techie\Desktop\NewQuizWeb\src\app\admin\page.jsx
+// File: C:\Users\TECHIE777\Desktop\NewQuizWeb\src\app\admin\page.jsx
 import * as entry from '../../../../src/app/admin/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

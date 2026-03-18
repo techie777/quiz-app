@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { safeJsonParse } from "@/lib/utils";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -56,20 +58,31 @@ export async function GET() {
 }
 
 export async function POST(request) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.isAdmin || session.user.role !== "master") {
+    return NextResponse.json({ error: "Master admin only" }, { status: 403 });
+  }
+
+  console.log("[API/categories] POST request received");
   try {
     const body = await request.json();
-    const { id, topic, emoji, description, categoryClass, hidden, image, parentId, showSubCategoriesOnHome, storyText, storyImage, originalLang, isTrending, chips } = body;
-    if (!id || !topic || !emoji) {
-      return NextResponse.json({ error: "id, topic, and emoji are required" }, { status: 400 });
+    console.log("[API/categories] Request body topic:", body.topic);
+    const { topic, emoji, description, categoryClass, hidden, image, parentId, showSubCategoriesOnHome, storyText, storyImage, originalLang, isTrending, chips } = body;
+    
+    if (!topic || !emoji) {
+      console.warn("[API/categories] Missing topic or emoji");
+      return NextResponse.json({ error: "topic and emoji are required" }, { status: 400 });
     }
+
     const maxSort = await prisma.category.aggregate({ _max: { sortOrder: true } });
+    console.log("[API/categories] maxSort:", maxSort._max.sortOrder);
+
     const category = await prisma.category.create({
       data: {
-        id,
         topic,
         emoji,
         description: description || "",
-        categoryClass: categoryClass || `category-${id}`,
+        categoryClass: categoryClass || `category-${topic.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")}`,
         hidden: !!hidden,
         image: image || null,
         sortOrder: (maxSort._max.sortOrder ?? -1) + 1,
@@ -82,13 +95,16 @@ export async function POST(request) {
         chips: Array.isArray(chips) ? JSON.stringify(chips) : "[]",
       },
     });
+    
+    console.log("[API/categories] Category created successfully:", category.id);
+
     const normalized = {
       ...category,
       chips: safeJsonParse(category.chips) || [],
     };
     return NextResponse.json(normalized, { status: 201 });
   } catch (error) {
-    console.error("Categories POST error:", error);
-    return NextResponse.json({ error: "Failed to create category" }, { status: 500 });
+    console.error("[API/categories] POST error:", error);
+    return NextResponse.json({ error: "Failed to create category: " + error.message }, { status: 500 });
   }
 }
