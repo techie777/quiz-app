@@ -297,10 +297,10 @@ export function QuizProvider({ children }) {
   );
 
   const toggleFontSize = useCallback(() => {
-    const steps = [0.9, 1, 1.12, 1.25];
+    const steps = [0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4];
     const current = Number(state.fontScale || 1);
     const idx = steps.findIndex((s) => Math.abs(s - current) < 0.001);
-    const next = steps[(idx >= 0 ? idx + 1 : 1) % steps.length];
+    const next = steps[(idx >= 0 ? idx + 1 : 2) % steps.length]; // default to 1 (index 2) if not found
     dispatch({ type: "SET_FONT_SCALE", payload: next });
   }, [state.fontScale]);
 

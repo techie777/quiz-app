@@ -267,32 +267,42 @@ export default function QuizEngine() {
     };
   }, [handleGoBack, handleNavigateToQuestion, handleResumeQuiz, handleExitQuiz]);
 
-  // Voice Narration Function
-  const speakText = (text) => {
-    if ('speechSynthesis' in window && !isSpeaking) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = language === 'hi' ? 'hi-IN' : 'en-US';
-      utterance.rate = 0.9;
-      utterance.pitch = 1;
-      utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => setIsSpeaking(false);
-      utterance.onerror = () => setIsSpeaking(false);
-      speechSynthesis.speak(utterance);
-    }
-  };
 
-  const stopSpeaking = () => {
-    if ('speechSynthesis' in window) {
-      speechSynthesis.cancel();
-      setIsSpeaking(false);
-    }
-  };
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(() => {});
     } else if (document.exitFullscreen) {
       document.exitFullscreen();
+    }
+  };
+
+  // Voice Narration Function
+  const speakText = (text) => {
+    if (!('speechSynthesis' in window)) return;
+    
+    // Stop any existing speech
+    window.speechSynthesis.cancel();
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = language === 'hi' ? 'hi-IN' : 'en-US';
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = (e) => {
+      console.error("Speech error:", e);
+      setIsSpeaking(false);
+    };
+    
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const stopSpeaking = () => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
     }
   };
 
@@ -339,27 +349,6 @@ export default function QuizEngine() {
     setUsedAskAudience(true);
     setPerformanceData(prev => ({ ...prev, lifelinesUsed: prev.lifelinesUsed + 1 }));
     updateScore(-3);
-  };
-
-  const reportQuestion = (issue) => {
-    if (!questions[currentIndex]) return;
-    setReportData({ questionId: questions[currentIndex]?.id, issue });
-    setShowReportModal(true);
-  };
-
-  const submitReport = async () => {
-    try {
-      await fetch('/api/report-question', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(reportData)
-      });
-      setShowReportModal(false);
-      setReportData({ questionId: null, issue: '' });
-      alert('Report submitted successfully!');
-    } catch (error) {
-      alert('Failed to submit report.');
-    }
   };
 
   const triggerCelebration = () => {
@@ -471,9 +460,9 @@ export default function QuizEngine() {
                   className={`${styles.controlBtn} ${isSpeaking ? styles.active : ""}`}
                   onClick={() => isSpeaking ? stopSpeaking() : speakText(currentQuestion.question)}
                   title={isSpeaking ? "Stop Speaking" : "Read Question Aloud"}
-                  data-icon={isSpeaking ? "🔇" : "🔊"}
+                  data-icon={isSpeaking ? "⏹️" : "🗣️"}
                 >
-                  {isSpeaking ? "🔇" : "🔊"}
+                  {isSpeaking ? "⏹️" : "🗣️"}
                 </button>
                 
                 {/* Hint Button */}
@@ -507,16 +496,6 @@ export default function QuizEngine() {
                   data-icon="👥"
                 >
                   👥
-                </button>
-                
-                {/* Report Question */}
-                <button
-                  className={styles.controlBtn}
-                  onClick={() => reportQuestion('')}
-                  title="Report Question"
-                  data-icon="🚩"
-                >
-                  🚩
                 </button>
                 
                 {/* Font Size - Hidden on small mobile */}
@@ -642,63 +621,6 @@ export default function QuizEngine() {
         score={score}
         totalQuestions={questions.length}
       />
-
-      {/* Report Question Modal */}
-      {showReportModal && (
-        <div className={styles.modalOverlay} onClick={() => setShowReportModal(false)}>
-          <div className={`${styles.reportModal} glass-card`} onClick={(e) => e.stopPropagation()}>
-            <h3 className={styles.modalTitle}>Report Question</h3>
-            <div className={styles.reportContent}>
-              <p className={styles.reportQuestion}>{currentQuestion.question}</p>
-              <div className={styles.reportOptions}>
-                {currentQuestion.options.map((option, idx) => (
-                  <label key={idx} className={styles.reportOption}>
-                    <input
-                      type="radio"
-                      name="reportIssue"
-                      value={`Option ${idx + 1} is incorrect`}
-                      onChange={(e) => setReportData({ ...reportData, issue: e.target.value })}
-                    />
-                    <span>{option}</span>
-                  </label>
-                ))}
-                <label className={styles.reportOption}>
-                  <input
-                    type="radio"
-                    name="reportIssue"
-                    value="Question is unclear"
-                    onChange={(e) => setReportData({ ...reportData, issue: e.target.value })}
-                  />
-                  <span>Question is unclear</span>
-                </label>
-                <label className={styles.reportOption}>
-                  <input
-                    type="radio"
-                    name="reportIssue"
-                    value="Other issue"
-                    onChange={(e) => setReportData({ ...reportData, issue: e.target.value })}
-                  />
-                  <span>Other issue</span>
-                </label>
-              </div>
-              <textarea
-                className={styles.reportTextarea}
-                placeholder="Please provide more details..."
-                value={reportData.issue.includes(':') ? reportData.issue.split(':')[1] : ''}
-                onChange={(e) => setReportData({ ...reportData, issue: `${reportData.issue.split(':')[0]}: ${e.target.value}` })}
-              />
-            </div>
-            <div className={styles.modalActions}>
-              <button className={styles.cancelBtn} onClick={() => setShowReportModal(false)}>
-                Cancel
-              </button>
-              <button className={styles.submitBtn} onClick={submitReport} disabled={!reportData.issue}>
-                Submit Report
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Performance Analytics (shown at quiz end) */}
       {status === "finished" && (

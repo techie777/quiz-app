@@ -54,7 +54,7 @@ const CARD_GRADIENTS = [
 export default function CategorySetsPage() {
   const params = useParams();
   const router = useRouter();
-  const { quizzes } = useData();
+  const { quizzes, loaded } = useData();
   const { startQuizSet } = useQuiz();
 
   const category = quizzes.find((c) => c.id === params.id);
@@ -83,6 +83,17 @@ export default function CategorySetsPage() {
     (page - 1) * SETS_PER_PAGE,
     page * SETS_PER_PAGE
   );
+
+  if (!loaded) {
+    return (
+      <main className={styles.page}>
+        <div className={styles.loadingContainer}>
+          <div className={styles.spinner}></div>
+          <p>Loading category...</p>
+        </div>
+      </main>
+    );
+  }
 
   if (!category) {
     return (

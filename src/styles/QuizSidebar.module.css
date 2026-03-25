@@ -923,45 +923,36 @@
   .quizSidebar {
     width: 100%;
     position: static;
-    margin-top: 20px;
+    margin-top: 32px; /* More space from question area */
     margin-left: 0;
-    padding: 12px;
-    max-height: none;
+    padding: 16px;
+    border-radius: 20px;
+    box-shadow: var(--shadow-sm);
   }
   
   .compactHeader {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
+    flex-direction: row; /* Keep horizontal on mobile if possible */
+    align-items: center;
+    gap: 12px;
   }
   
-  .quizInfo {
-    width: 100%;
-  }
-  
-  .scoreDisplay {
-    align-self: flex-end;
-  }
-  
-  .navigationControls {
-    flex-direction: column;
-    gap: 6px;
-  }
-  
-  .navButton {
-    width: 100%;
+  .quizTitle {
+    font-size: 1.1rem; /* Slightly larger for readability */
   }
   
   .miniQuestionGrid {
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(10, 1fr); /* More columns for compact view */
+    gap: 4px;
   }
   
   .quickActions {
-    flex-direction: column;
+    flex-direction: row; /* Keep horizontal */
+    gap: 8px;
   }
   
   .actionButton {
-    width: 100%;
+    padding: 12px 8px;
+    font-size: 0.8rem;
   }
 }
 

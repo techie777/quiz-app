@@ -310,21 +310,21 @@
 
 /* ===== Progress ===== */
 .progressContainer {
-  margin-bottom: 12px; /* Reduced margin */
+  margin-bottom: 12px; 
 }
 
 .progressTrack {
   width: 100%;
-  height: 3px; /* Thinner */
+  height: 6px; /* Slightly thicker */
   background: var(--progress-bg);
-  border-radius: 1.5px;
+  border-radius: 3px;
   overflow: hidden;
 }
 
 .progressFill {
   height: 100%;
   background: var(--progress-fill);
-  border-radius: 1.5px;
+  border-radius: 3px;
   transition: width 0.4s ease;
 }
 
@@ -580,7 +580,7 @@
 /* Mobile Styles */
 @media (max-width: 768px) {
   .page {
-    padding: 4px 4px 20px; /* Ultra minimal padding */
+    padding: 12px 12px 32px; /* Balanced padding */
   }
   
   .quizArea {
@@ -590,281 +590,144 @@
   }
   
   .topBar {
-    flex-direction: row; /* Keep row layout */
-    justify-content: space-between; /* Space between timer and score */
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px; /* Reduced margin */
-    padding: 8px 12px; /* Add padding for better spacing */
+    flex-direction: column; 
+    align-items: stretch;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding: 16px;
     background: var(--card-bg);
-    border-radius: 8px;
+    border-radius: 16px;
     border: 1px solid var(--card-border);
+    box-shadow: var(--shadow-md);
   }
   
   .topLeft {
-    flex: 0 0 auto; /* Don't grow */
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    justify-content: space-between;
+    width: 100%;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--card-border);
   }
   
   .topCenter {
-    display: none; /* Hide question counter on mobile */
+    display: block; 
+    order: -1; 
+    text-align: center;
+    margin-bottom: 8px;
   }
   
   .topRight {
-    flex: 0 0 auto; /* Don't grow */
-    display: flex;
+    flex: 1;
+    width: 100%;
     flex-direction: column;
-    align-items: flex-end;
-    gap: 2px; /* Minimal gap */
+    align-items: stretch;
+    gap: 12px;
   }
   
   .controls {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 1px; /* Minimal gap */
-    margin-bottom: 2px;
-    max-width: 100%; /* Use full width */
+    display: grid;
+    grid-template-columns: repeat(5, 1fr); /* 5 columns for main controls */
+    gap: 8px;
+    width: 100%;
+    margin-bottom: 0;
   }
   
   .controlBtn {
-    width: 32px; /* Slightly larger for touch */
-    height: 32px; /* Slightly larger for touch */
-    font-size: 1rem; /* Larger icons */
-    border-radius: 6px; /* More rounded */
+    width: 100%;
+    height: 44px; /* Even larger for better touch */
+    font-size: 1.2rem;
+    border-radius: 10px;
   }
   
   .scoreInfo {
-    text-align: right;
-    margin-top: 0; /* Remove margin */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 12px 4px 0;
   }
   
   .questionCard {
-    padding: 20px 16px; /* Reverted to previous style */
-    margin-bottom: 20px; /* Reverted to previous style */
+    padding: 32px 24px; /* Significant padding for "zoom" effect */
+    margin-bottom: 28px;
+    border-radius: 24px;
+    box-shadow: var(--shadow-lg);
   }
   
   .questionText {
-    font-size: 1.1rem; /* Reverted to previous style */
-    line-height: 1.4; /* Reverted to previous style */
+    font-size: 1.5rem; /* Large font for readability */
+    line-height: 1.5;
+    font-weight: 700;
+    text-align: center; /* Center question text on mobile */
   }
   
   .questionHeader {
-    flex-direction: row; /* Keep row layout on mobile */
-    justify-content: space-between; /* Space between text and buttons */
-    gap: 8px; /* Reverted to previous style */
-    align-items: flex-start;
-  }
-  
-  .questionText {
-    font-size: 1.1rem; /* Reverted to previous style */
-    line-height: 1.4; /* Reverted to previous style */
-    flex: 1; /* Take remaining space */
-    text-align: left; /* Left align */
-    margin-right: 8px; /* Space for buttons */
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
   }
   
   .actionBtns {
-    justify-content: flex-end; /* Align buttons to right */
-    flex-shrink: 0; /* Don't shrink */
-    align-items: flex-start; /* Align to top */
+    width: 100%;
+    justify-content: center; /* Center buttons below text */
+    gap: 20px;
+  }
+  
+  .favBtn, .shareBtn {
+    font-size: 1.6rem;
+    padding: 10px;
   }
   
   .optionsGrid {
     grid-template-columns: 1fr;
-    gap: 12px; /* Reverted to previous style */
+    gap: 16px;
   }
   
   .option {
-    padding: 16px 14px; /* Reverted to previous style */
-    font-size: 0.9rem; /* Reverted to previous style */
+    padding: 24px 20px; /* Large touch area */
+    font-size: 1.2rem; /* Large font for options */
+    border-radius: 20px;
+    min-height: 72px;
+    font-weight: 600;
   }
   
   .optionIndicator {
-    font-size: 1rem; /* Slightly smaller on mobile */
-    min-width: 20px;
-    height: 20px;
-  }
-  
-  .hintBox,
-  .audienceBox,
-  .explanationBox {
-    padding: 4px; /* Ultra minimal padding */
-    margin: 2px 0; /* Minimal margin */
-    max-height: 150px; /* Max height for mobile */
-    overflow-y: auto; /* Add scrollbar */
-  }
-  
-  .hintBox::-webkit-scrollbar,
-  .audienceBox::-webkit-scrollbar,
-  .explanationBox::-webkit-scrollbar {
-    width: 3px;
-  }
-  
-  .hintBox::-webkit-scrollbar-track,
-  .audienceBox::-webkit-scrollbar-track,
-  .explanationBox::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 1.5px;
-  }
-  
-  .hintBox::-webkit-scrollbar-thumb,
-  .audienceBox::-webkit-scrollbar-thumb,
-  .explanationBox::-webkit-scrollbar-thumb {
-    background: var(--accent);
-    border-radius: 1.5px;
-  }
-  
-  .hintHeader,
-  .audienceHeader,
-  .explanationHeader {
-    font-size: 0.7rem; /* Smaller */
-    margin-bottom: 2px; /* Minimal margin */
-  }
-  
-  .hintPenalty,
-  .audiencePenalty {
-    font-size: 0.6rem; /* Smaller */
-    padding: 1px 4px; /* Smaller */
-  }
-  
-  .hintText,
-  .explanationText {
-    font-size: 0.75rem; /* Smaller */
-    line-height: 1.2; /* Tighter */
-  }
-  
-  .audienceChart {
-    gap: 2px; /* Minimal gap */
-  }
-  
-  .audienceBar {
-    flex-direction: row; /* Horizontal layout for mobile */
-    align-items: center;
-    gap: 4px;
-  }
-  
-  .audienceBarFill {
-    height: 12px; /* Smaller */
-    min-width: 40px; /* Minimum width */
-  }
-  
-  .audiencePercent {
-    font-size: 0.6rem; /* Smaller */
-  }
-  
-  .audienceOption {
-    font-size: 0.65rem; /* Smaller */
-    min-width: 40px; /* Smaller */
+    font-size: 1.6rem;
+    min-width: 36px;
+    height: 36px;
   }
 }
 
 /* Small Mobile Styles */
 @media (max-width: 480px) {
   .page {
-    padding: 2px 2px 16px; /* Ultra minimal padding */
+    padding: 8px 8px 20px;
   }
   
   .topBar {
-    padding: 6px 8px; /* Smaller padding */
-    gap: 6px; /* Smaller gap */
+    padding: 12px;
+    gap: 12px;
   }
   
   .controls {
-    gap: 1px; /* Minimal gap */
+    gap: 6px;
   }
   
   .controlBtn {
-    width: 30px; /* Slightly smaller */
-    height: 30px; /* Slightly smaller */
-    font-size: 0.9rem; /* Keep icons readable */
+    height: 40px;
   }
   
   .questionCard {
-    padding: 16px 12px; /* Reverted to previous style */
+    padding: 28px 16px;
   }
   
   .questionText {
-    font-size: 1rem; /* Reverted to previous style */
-    flex: 1; /* Take remaining space */
-    text-align: left; /* Left align */
-    margin-right: 8px; /* Space for buttons */
-  }
-  
-  .actionBtns {
-    justify-content: flex-end; /* Align buttons to right */
-    flex-shrink: 0; /* Don't shrink */
-    align-items: flex-start; /* Align to top */
+    font-size: 1.3rem; 
   }
   
   .option {
-    padding: 14px 12px; /* Reverted to previous style */
-    font-size: 0.85rem; /* Reverted to previous style */
-  }
-  
-  .optionIndicator {
-    font-size: 0.9rem; /* Even smaller on small mobile */
-    min-width: 18px;
-    height: 18px;
-  }
-  
-  .hintBox,
-  .audienceBox,
-  .explanationBox {
-    padding: 3px; /* Even smaller */
-    margin: 1px 0; /* Minimal margin */
-    max-height: 120px; /* Smaller max height */
-    overflow-y: auto; /* Add scrollbar */
-  }
-  
-  .hintBox::-webkit-scrollbar,
-  .audienceBox::-webkit-scrollbar,
-  .explanationBox::-webkit-scrollbar {
-    width: 2px; /* Even smaller scrollbar */
-  }
-  
-  .hintHeader,
-  .audienceHeader,
-  .explanationHeader {
-    font-size: 0.65rem; /* Even smaller */
-  }
-  
-  .hintPenalty,
-  .audiencePenalty {
-    font-size: 0.55rem; /* Even smaller */
-    padding: 1px 2px; /* Minimal */
-  }
-  
-  .hintText,
-  .explanationText {
-    font-size: 0.7rem; /* Even smaller */
-  }
-  
-  .audienceBarFill {
-    height: 10px; /* Even smaller */
-    min-width: 30px; /* Smaller */
-  }
-  
-  .audiencePercent {
-    font-size: 0.55rem; /* Even smaller */
-  }
-  
-  .audienceOption {
-    font-size: 0.6rem; /* Even smaller */
-    min-width: 30px; /* Smaller */
-  }
-  
-  .scoreValue {
-    font-size: 1rem; /* Smaller */
-  }
-  
-  .scoreLabel {
-    font-size: 0.55rem; /* Smaller */
-  }
-  
-  .questionCounter {
-    font-size: 0.65rem; /* Smaller */
+    padding: 20px 16px;
+    font-size: 1.1rem;
+    min-height: 64px;
   }
 }
 

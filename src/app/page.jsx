@@ -507,10 +507,86 @@ export default function LandingPage() {
                 <span className={styles.suggestionEmoji}>{suggestion.emoji}</span>
                 <div className={styles.suggestionContent}>
                   <span className={styles.suggestionName}>{suggestion.topic}</span>
-                  <span className={styles.suggestionDesc}>{suggestion.description}</span>
+                  <span className={suggestion.description}>{suggestion.description}</span>
                 </div>
               </button>
             ))}
+          </div>
+        )}
+      </div>
+
+      <div className={styles.advancedFiltersSection}>
+        <button 
+          className={styles.advancedFiltersToggle}
+          onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+        >
+          <span>Advanced Filters</span>
+          <span className={`${styles.filterArrow} ${showAdvancedFilters ? styles.filterArrowUp : ''}`}>
+            ▼
+          </span>
+        </button>
+
+        {showAdvancedFilters && (
+          <div className={styles.advancedFiltersPanel}>
+            <div className={styles.filterGroup}>
+              <span className={styles.filterLabel}>Sort By</span>
+              <div className={styles.filterOptions}>
+                {[
+                  { id: 'default', label: 'Default' },
+                  { id: 'alphabetical', label: 'A-Z' },
+                  { id: 'newest', label: 'Newest' },
+                  { id: 'popular', label: 'Popular' }
+                ].map(opt => (
+                  <button
+                    key={opt.id}
+                    className={`${styles.filterOption} ${sortBy === opt.id ? styles.filterOptionActive : ''}`}
+                    onClick={() => setSortBy(opt.id)}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className={styles.filterGroup}>
+              <span className={styles.filterLabel}>Difficulty</span>
+              <div className={styles.filterOptions}>
+                {[
+                  { id: 'all', label: 'All' },
+                  { id: 'easy', label: 'Easy' },
+                  { id: 'medium', label: 'Medium' },
+                  { id: 'hard', label: 'Hard' }
+                ].map(opt => (
+                  <button
+                    key={opt.id}
+                    className={`${styles.filterOption} ${difficultyFilter === opt.id ? styles.filterOptionActive : ''}`}
+                    onClick={() => setDifficultyFilter(opt.id)}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className={styles.filterGroup}>
+              <span className={styles.filterLabel}>Question Count</span>
+              <div className={styles.filterOptions}>
+                {[
+                  { id: 'all', label: 'Any' },
+                  { id: 'small', label: '1-10' },
+                  { id: 'medium', label: '11-25' },
+                  { id: 'large', label: '25+' }
+                ].map(opt => (
+                  <button
+                    key={opt.id}
+                    className={`${styles.filterOption} ${questionCountFilter === opt.id ? styles.filterOptionActive : ''}`}
+                    onClick={() => setQuestionCountFilter(opt.id)}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         )}
       </div>
