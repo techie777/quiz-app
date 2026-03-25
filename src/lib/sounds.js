@@ -5,12 +5,18 @@ function getAudioContext() {
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   }
+  // Resume context if it's suspended (browsers block auto-play)
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
   return audioCtx;
 }
 
 function playTone(frequency, duration, type = "sine", volume = 0.3) {
   try {
     const ctx = getAudioContext();
+    if (ctx.state === 'suspended') ctx.resume();
+    
     const oscillator = ctx.createOscillator();
     const gainNode = ctx.createGain();
 
@@ -33,6 +39,7 @@ function playTone(frequency, duration, type = "sine", volume = 0.3) {
 export function playCorrectSound() {
   try {
     const ctx = getAudioContext();
+    if (ctx.state === 'suspended') ctx.resume();
     const now = ctx.currentTime;
 
     // Pleasant ascending two-tone chime

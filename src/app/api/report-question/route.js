@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { connectDB } from '@/lib/mongodb';
-import Question from '@/models/Question';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(request) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
     
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -17,24 +17,18 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Connect to database
-    await connectDB();
-
-    // Save the report
+    // Prepare report object
     const report = {
       questionId,
       issue,
-      reportedBy: session.user.id,
+      reportedBy: session.user.id || session.user.email,
       reportedAt: new Date(),
       status: 'pending'
     };
 
-    // You could save this to a reports collection or send an email
     // For now, we'll just log it and return success
-    console.log('Question Report:', report);
-
-    // TODO: Save to database or send notification to admin
-    // await Report.create(report);
+    // TODO: Add Report model to prisma/schema.prisma and save it
+    console.log('Question Report Received:', report);
 
     return NextResponse.json({ 
       success: true, 

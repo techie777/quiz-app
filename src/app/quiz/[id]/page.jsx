@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useQuiz } from "@/context/QuizContext";
@@ -18,7 +18,34 @@ export default function QuizEngine() {
   const params = useParams();
   const { data: session } = useSession();
   const { quizzes } = useData();
-  const { goToQuestion } = useQuiz();
+  
+  const {
+    status,
+    questions,
+    currentIndex,
+    score,
+    timerSetting,
+    submitAnswer,
+    isPaused,
+    pauseQuiz,
+    resumeQuiz,
+    soundEnabled,
+    toggleSound,
+    isFullscreen,
+    setFullscreen,
+    isTranslating,
+    language,
+    translateTarget,
+    translatedStory,
+    toggleLanguage,
+    fontScale,
+    toggleFontSize,
+    finishQuiz,
+    updateScore,
+    goToQuestion,
+    resetQuiz,
+  } = useQuiz();
+
   const [favouriteIds, setFavouriteIds] = useState(null);
   const [showStory, setShowStory] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
@@ -47,34 +74,43 @@ export default function QuizEngine() {
   });
   const [questionStartTime, setQuestionStartTime] = useState(Date.now());
 
-  const {
-    status,
-    questions,
-    currentIndex,
-    score,
-    timerSetting,
-    submitAnswer,
-    isPaused,
-    pauseQuiz,
-    resumeQuiz,
-    soundEnabled,
-    toggleSound,
-    isFullscreen,
-    setFullscreen,
-    isTranslating,
-    language,
-    translateTarget,
-    translatedStory,
-    toggleLanguage,
-    fontScale,
-    toggleFontSize,
-    finishQuiz,
-    updateScore,
-  } = useQuiz();
-
   const category = useMemo(() => {
     return quizzes.find((q) => q.id === params?.id);
   }, [quizzes, params?.id]);
+
+  const storyTextToDisplay = useMemo(() => {
+    return translatedStory || category?.storyText;
+  }, [translatedStory, category?.storyText]);
+
+  const storyPreviewText = useMemo(() => {
+    const raw = storyTextToDisplay?.trim();
+    if (!raw) return "";
+    return raw.replace(/\n+/g, " ");
+  }, [storyTextToDisplay]);
+
+  const hasStory = useMemo(() => {
+    return !!(storyTextToDisplay?.trim() || category?.storyImage);
+  }, [storyTextToDisplay, category?.storyImage]);
+
+  const storyHeading = useMemo(() => {
+    if (language === "hi") return `${category?.topic} - संक्षिप्त कहानी`;
+    return `${category?.topic} - Short Story`;
+  }, [category?.topic, language]);
+
+  const sidebarTitle = useMemo(() => {
+    if (language === "hi") return "प्रश्नोत्तरी कहानी पढ़ें";
+    return "Read Quiz Story";
+  }, [language]);
+
+  const sidebarHint = useMemo(() => {
+    if (language === "hi") return "पढ़ने के लिए क्लिक करें";
+    return "Click to pause and read";
+  }, [language]);
+
+  const continueBtnText = useMemo(() => {
+    if (language === "hi") return "प्रश्नोत्तरी जारी रखें";
+    return "Continue Quiz";
+  }, [language]);
 
   // Load user's favourite question IDs once
   useEffect(() => {
@@ -91,12 +127,18 @@ export default function QuizEngine() {
 
   // Redirect if no active quiz
   useEffect(() => {
-    if (status === "idle") {
-      router.replace("/");
-    }
+    // Only redirect if status is idle and we're not just mounting
+    const timer = setTimeout(() => {
+      if (status === "idle") {
+        router.replace("/");
+      }
+    }, 1500); // Increased delay to 1.5s to ensure context state syncs
+    
     if (status === "finished") {
       router.replace("/results");
     }
+    
+    return () => clearTimeout(timer);
   }, [status, router]);
 
   // Fullscreen effect
@@ -108,19 +150,122 @@ export default function QuizEngine() {
     return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, [setFullscreen]);
 
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
+  // Manually move to next question
+  const moveToNextQuestion = useCallback(() => {
+    if (currentIndex < (questions?.length || 0) - 1) {
+      goToQuestion(currentIndex + 1);
     } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      }
+      finishQuiz();
+      router.replace("/results");
     }
-  };
+  }, [currentIndex, questions?.length, goToQuestion, finishQuiz, router]);
 
-  const storyTextToDisplay = useMemo(() => {
-    return translatedStory || category?.storyText;
-  }, [translatedStory, category?.storyText]);
+  // Initialize quiz start time
+  useEffect(() => {
+    if (!window.quizStartTime && status === 'active') {
+      window.quizStartTime = Date.now();
+    }
+    
+    // Set up global function for next question
+    window.onNextQuestion = () => {
+      // Reset lifelines for next question
+      setShowHint(false);
+      setUsed5050(false);
+      setUsedAskAudience(false);
+      setShowExplanation(false);
+      setAudienceStats(null);
+      setRemovedOptions([]);
+      
+      // Move to next question
+      moveToNextQuestion();
+    };
+    
+    return () => {
+      delete window.onNextQuestion;
+    };
+  }, [status, currentIndex, questions?.length, moveToNextQuestion]);
+
+  // Reset question start time when question changes
+  useEffect(() => {
+    setQuestionStartTime(Date.now());
+    
+    // Reset revealed state for new question
+    if (window.QuestionCardRef) {
+      window.QuestionCardRef.resetQuestion();
+    }
+  }, [currentIndex]);
+
+  // Capture referrer on component mount
+  useEffect(() => {
+    const referrerUrl = document.referrer;
+    const fromStorage = sessionStorage.getItem('quizReferrer');
+    
+    if (fromStorage) {
+      setReferrer(fromStorage);
+      sessionStorage.removeItem('quizReferrer');
+    } else if (referrerUrl && referrerUrl.includes(window.location.origin)) {
+      setReferrer(referrerUrl);
+    } else {
+      setReferrer('/');
+    }
+  }, []);
+
+  // Navigation handlers for sidebar
+  const handleGoBack = useCallback(() => {
+    if (currentIndex > 0) {
+      goToQuestion(currentIndex - 1);
+    }
+  }, [currentIndex, goToQuestion]);
+
+  const handleNavigateToQuestion = useCallback((questionIndex) => {
+    if (questionIndex <= currentIndex) {
+      goToQuestion(questionIndex);
+    }
+  }, [currentIndex, goToQuestion]);
+
+  const handleResumeQuiz = useCallback(() => {
+    // Find the next unanswered question
+    const nextUnansweredIndex = questions.findIndex((q, index) => 
+      index > currentIndex && q.userAnswer === undefined
+    );
+    
+    if (nextUnansweredIndex !== -1) {
+      goToQuestion(nextUnansweredIndex);
+    } else if (currentIndex < questions.length - 1) {
+      // If no unanswered questions found, go to next question
+      goToQuestion(currentIndex + 1);
+    }
+  }, [currentIndex, questions, goToQuestion]);
+
+  const handleExitQuiz = useCallback(() => {
+    setShowExitModal(true);
+  }, []);
+
+  const confirmExitQuiz = useCallback(() => {
+    resetQuiz();
+    if (referrer) {
+      router.push(referrer);
+    } else {
+      const categoryId = params?.id;
+      if (categoryId) router.push(`/category/${categoryId}`);
+      else router.push('/');
+    }
+  }, [resetQuiz, referrer, router, params?.id]);
+
+  // Set up global navigation handlers
+  useEffect(() => {
+    window.onGoBack = handleGoBack;
+    window.onNavigateToQuestion = handleNavigateToQuestion;
+    window.onResumeQuiz = handleResumeQuiz;
+    window.onExitQuiz = handleExitQuiz;
+    
+    return () => {
+      delete window.onGoBack;
+      delete window.onNavigateToQuestion;
+      delete window.onResumeQuiz;
+      delete window.onExitQuiz;
+    };
+  }, [handleGoBack, handleNavigateToQuestion, handleResumeQuiz, handleExitQuiz]);
 
   // Voice Narration Function
   const speakText = (text) => {
@@ -143,76 +288,59 @@ export default function QuizEngine() {
     }
   };
 
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else if (document.exitFullscreen) {
+      document.exitFullscreen();
+    }
+  };
+
   // Hint System
   const useHint = () => {
     setShowHint(true);
     setPerformanceData(prev => ({ ...prev, hintsUsed: prev.hintsUsed + 1 }));
-    // Deduct points for hint
-    if (score > 5) {
-      updateScore(-5); // Deduct 5 points
-    }
+    if (score > 5) updateScore(-5);
   };
 
   // 50/50 Lifeline
   const use5050 = () => {
     if (used5050) return;
-    
     const currentQuestion = questions[currentIndex];
     if (!currentQuestion) return;
-
-    // Normalize comparison to find correct answer index
     const correctAnswerText = String(currentQuestion.correctAnswer || "").trim();
     const correctAnswerIndex = currentQuestion.options.findIndex(option => 
       String(option || "").trim() === correctAnswerText
     );
-    const wrongAnswers = currentQuestion.options
-      .map((opt, idx) => idx)
-      .filter(idx => idx !== correctAnswerIndex);
-    
-    // Remove 2 wrong answers randomly
+    const wrongAnswers = currentQuestion.options.map((_, idx) => idx).filter(idx => idx !== correctAnswerIndex);
     const toRemove = wrongAnswers.sort(() => Math.random() - 0.5).slice(0, 2);
-    
     setUsed5050(true);
     setPerformanceData(prev => ({ ...prev, lifelinesUsed: prev.lifelinesUsed + 1 }));
-    updateScore(-3); // Deduct 3 points for 50/50
-    
-    // Store removed options for UI
+    updateScore(-3);
     setRemovedOptions(toRemove);
   };
 
   // Ask Audience
   const useAskAudience = () => {
     if (usedAskAudience) return;
-    
     const currentQuestion = questions[currentIndex];
     if (!currentQuestion) return;
-
-    // Normalize comparison to find correct answer index
     const correctAnswerText = String(currentQuestion.correctAnswer || "").trim();
     const correctAnswerIndex = currentQuestion.options.findIndex(option => 
       String(option || "").trim() === correctAnswerText
     );
-    
-    // Simulate audience poll (more realistic distribution)
     const stats = currentQuestion.options.map((_, idx) => {
-      if (idx === correctAnswerIndex) {
-        return Math.floor(Math.random() * 30) + 40; // 40-70% for correct
-      } else {
-        return Math.floor(Math.random() * 20) + 5; // 5-25% for wrong
-      }
+      if (idx === correctAnswerIndex) return Math.floor(Math.random() * 30) + 40;
+      return Math.floor(Math.random() * 20) + 5;
     });
-    
-    // Normalize to 100%
     const total = stats.reduce((sum, val) => sum + val, 0);
     const normalizedStats = stats.map(val => Math.round((val / total) * 100));
-    
     setAudienceStats(normalizedStats);
     setUsedAskAudience(true);
     setPerformanceData(prev => ({ ...prev, lifelinesUsed: prev.lifelinesUsed + 1 }));
-    updateScore(-3); // Deduct 3 points for audience poll
+    updateScore(-3);
   };
 
-  // Report Question
   const reportQuestion = (issue) => {
     if (!questions[currentIndex]) return;
     setReportData({ questionId: questions[currentIndex]?.id, issue });
@@ -228,37 +356,22 @@ export default function QuizEngine() {
       });
       setShowReportModal(false);
       setReportData({ questionId: null, issue: '' });
-      alert('Report submitted successfully. Thank you for helping us improve!');
+      alert('Report submitted successfully!');
     } catch (error) {
-      alert('Failed to submit report. Please try again.');
+      alert('Failed to submit report.');
     }
   };
 
-  // Celebration Effects
   const triggerCelebration = () => {
     setCelebrationAnimation(true);
     setTimeout(() => setCelebrationAnimation(false), 1000);
   };
 
-  // Question Transition
   const triggerQuestionTransition = () => {
     setQuestionTransition(true);
     setTimeout(() => setQuestionTransition(false), 200); 
   };
 
-  // Manually move to next question
-  const moveToNextQuestion = () => {
-    if (currentIndex < questions.length - 1) {
-      // Move to next question
-      goToQuestion(currentIndex + 1);
-    } else {
-      // Quiz is finished - update state and redirect
-      finishQuiz();
-      router.replace("/results");
-    }
-  };
-
-  // Performance Tracking
   const updatePerformanceData = (isCorrect) => {
     const questionTime = Date.now() - questionStartTime;
     setPerformanceData(prev => ({
@@ -272,27 +385,16 @@ export default function QuizEngine() {
     setQuestionStartTime(Date.now());
   };
 
-  // Enhanced Answer Submission
   const handleSubmitAnswer = (answerIndex) => {
     const currentQuestion = questions[currentIndex];
     if (!currentQuestion) return;
-    
-    // Normalize comparison for live feedback
     const selectedOptionText = String(currentQuestion.options[answerIndex] || "").trim();
     const correctAnswerText = String(currentQuestion.correctAnswer || "").trim();
     const isCorrect = selectedOptionText === correctAnswerText;
-    
     updatePerformanceData(isCorrect);
-    
-    // Show explanation after answering
     setShowExplanation(true);
-    
-    // Submit answer using the quiz context function
     submitAnswer(currentQuestion.id, answerIndex);
-    
-    // Auto-progress to next question after 2.5 seconds
     setTimeout(() => {
-      // Reset lifelines for next question
       setShowHint(false);
       setUsed5050(false);
       setUsedAskAudience(false);
@@ -300,57 +402,9 @@ export default function QuizEngine() {
       setAudienceStats(null);
       setRemovedOptions([]);
       triggerQuestionTransition();
-      
-      // Move to next question automatically
       moveToNextQuestion();
-    }, 2500); // 2.5 seconds to review the answer
+    }, 2000);
   };
-
-  // Initialize quiz start time
-  useEffect(() => {
-    if (!window.quizStartTime && status === 'active') {
-      window.quizStartTime = Date.now();
-    }
-    
-    // Set up global function for next question
-    window.onNextQuestion = () => {
-      // Reset lifelines for next question
-      setShowHint(false);
-      setUsed5050(false);
-      setUsedAskAudience(false);
-      setShowExplanation(false);
-      setAudienceStats(null);
-      setRemovedOptions([]);
-      triggerQuestionTransition();
-      
-      // Move to next question
-      moveToNextQuestion();
-    };
-    
-    return () => {
-      delete window.onNextQuestion;
-    };
-  }, [status, currentIndex, questions.length]);
-
-  // Reset question start time when question changes
-  useEffect(() => {
-    setQuestionStartTime(Date.now());
-    
-    // Reset revealed state for new question
-    if (window.QuestionCardRef) {
-      window.QuestionCardRef.resetQuestion();
-    }
-  }, [currentIndex]);
-
-  const storyPreviewText = useMemo(() => {
-    const raw = storyTextToDisplay?.trim();
-    if (!raw) return "";
-    return raw.replace(/\n+/g, " ");
-  }, [storyTextToDisplay]);
-
-  const hasStory = useMemo(() => {
-    return !!(storyTextToDisplay?.trim() || category?.storyImage);
-  }, [storyTextToDisplay, category?.storyImage]);
 
   const handleToggleStory = () => {
     if (!showStory) {
@@ -362,39 +416,16 @@ export default function QuizEngine() {
     }
   };
 
-  const storyHeading = useMemo(() => {
-    if (language === "hi") return `${category?.topic} - संक्षिप्त कहानी`;
-    return `${category?.topic} - Short Story`;
-  }, [category?.topic, language]);
-
-  const sidebarTitle = useMemo(() => {
-    if (language === "hi") return "प्रश्नोत्तरी कहानी पढ़ें";
-    return "Read Quiz Story";
-  }, [language]);
-
-  const sidebarHint = useMemo(() => {
-    if (language === "hi") return "पढ़ने के लिए क्लिक करें";
-    return "Click to pause and read";
-  }, [language]);
-
-  const continueBtnText = useMemo(() => {
-    if (language === "hi") return "प्रश्नोत्तरी जारी रखें";
-    return "Continue Quiz";
-  }, [language]);
-
-  if (status !== "active" || questions.length === 0 || isTranslating) {
+  // Early return while loading or redirecting
+  if (status !== "active" || !questions || questions.length === 0 || isTranslating) {
+    if (status === "finished") return null;
     const target = translateTarget || language;
     const loadingText = isTranslating
-      ? target === "hi"
-        ? "प्रश्नोत्तरी का हिंदी में अनुवाद किया जा रहा है..."
-        : "Translating quiz to English..."
-      : language === "hi"
-        ? "प्रश्नोत्तरी लोड हो रही है..."
-        : "Loading quiz...";
-
+      ? target === "hi" ? "प्रश्नोत्तरी का हिंदी में अनुवाद किया जा रहा है..." : "Translating quiz to English..."
+      : language === "hi" ? "प्रश्नोत्तरी लोड हो रही है..." : "Loading quiz...";
     return (
-      <div className={styles.loading}>
-        <div className={styles.loadingContent}>
+      <div className={styles.page}>
+        <div className={styles.loadingContainer}>
           <p>{loadingText}</p>
           {isTranslating && <div className={styles.spinner}></div>}
         </div>
@@ -403,95 +434,11 @@ export default function QuizEngine() {
   }
 
   const currentQuestion = questions[currentIndex];
-
-  const handleAnswer = (selected) => {
-    submitAnswer(currentQuestion.id, selected);
-  };
+  if (!currentQuestion) return null;
 
   const handleTimerExpire = () => {
-    submitAnswer(currentQuestion.id, null);
+    handleSubmitAnswer(null);
   };
-
-  // Navigation handlers for sidebar
-  const handleGoBack = () => {
-    if (currentIndex > 0) {
-      goToQuestion(currentIndex - 1);
-    }
-  };
-
-  const handleNavigateToQuestion = (questionIndex) => {
-    if (questionIndex <= currentIndex) {
-      goToQuestion(questionIndex);
-    }
-  };
-
-  const handleResumeQuiz = () => {
-    // Find the next unanswered question
-    const nextUnansweredIndex = questions.findIndex((q, index) => 
-      index > currentIndex && q.userAnswer === undefined
-    );
-    
-    if (nextUnansweredIndex !== -1) {
-      goToQuestion(nextUnansweredIndex);
-    } else if (currentIndex < questions.length - 1) {
-      // If no unanswered questions found, go to next question
-      goToQuestion(currentIndex + 1);
-    }
-  };
-
-  const handleExitQuiz = () => {
-    setShowExitModal(true);
-  };
-
-  const confirmExitQuiz = () => {
-    // Reset quiz state
-    resetQuiz();
-    
-    // Navigate back to where user came from
-    if (referrer) {
-      router.push(referrer);
-    } else {
-      // Fallback to category page or home
-      const categoryId = params?.id;
-      if (categoryId) {
-        router.push(`/category/${categoryId}`);
-      } else {
-        router.push('/');
-      }
-    }
-  };
-
-  // Capture referrer on component mount
-  useEffect(() => {
-    // Try to get the referrer from various sources
-    const referrerUrl = document.referrer;
-    const fromStorage = sessionStorage.getItem('quizReferrer');
-    
-    if (fromStorage) {
-      setReferrer(fromStorage);
-      sessionStorage.removeItem('quizReferrer');
-    } else if (referrerUrl && referrerUrl.includes(window.location.origin)) {
-      setReferrer(referrerUrl);
-    } else {
-      // Default fallback
-      setReferrer('/');
-    }
-  }, []);
-
-  // Set up global navigation handlers
-  useEffect(() => {
-    window.onGoBack = handleGoBack;
-    window.onNavigateToQuestion = handleNavigateToQuestion;
-    window.onResumeQuiz = handleResumeQuiz;
-    window.onExitQuiz = handleExitQuiz;
-    
-    return () => {
-      delete window.onGoBack;
-      delete window.onNavigateToQuestion;
-      delete window.onResumeQuiz;
-      delete window.onExitQuiz;
-    };
-  }, [currentIndex, questions]);
 
   return (
     <main
