@@ -8,7 +8,19 @@ import { playCorrectSound, playWrongSound } from "@/lib/sounds";
 import { shareQuestion } from "@/lib/shareImage";
 import styles from "@/styles/QuizEngine.module.css";
 
-export default function QuestionCard({ question, onAnswer, favouriteIds, quizId, disabled }) {
+export default function QuestionCard({ 
+  question, 
+  onAnswer, 
+  favouriteIds, 
+  quizId, 
+  disabled, 
+  userAnswer, 
+  showHint, 
+  removedOptions = [], 
+  audienceStats, 
+  showExplanation, 
+  explanation 
+}) {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { soundEnabled } = useQuiz();
@@ -19,12 +31,34 @@ export default function QuestionCard({ question, onAnswer, favouriteIds, quizId,
   const [sharing, setSharing] = useState(false);
   const isUser = session?.user && !session.user.isAdmin;
 
+  // Update selected when userAnswer changes (navigation)
+  useEffect(() => {
+    if (userAnswer !== undefined) {
+      setSelected(userAnswer);
+      setRevealed(true);
+    }
+  }, [userAnswer]);
+
   // Check if this question is already favourited
   useEffect(() => {
     if (favouriteIds) {
       setFav(favouriteIds.has(question.id));
     }
   }, [question.id, favouriteIds]);
+
+  // Set up ref for external access
+  useEffect(() => {
+    window.QuestionCardRef = {
+      resetQuestion: () => {
+        setSelected(null);
+        setRevealed(false);
+      }
+    };
+    
+    return () => {
+      delete window.QuestionCardRef;
+    };
+  }, []);
 
   const handleFavClick = async () => {
     if (disabled) return;
@@ -60,33 +94,66 @@ export default function QuestionCard({ question, onAnswer, favouriteIds, quizId,
     setSharing(false);
   };
 
-  const handleSelect = (option) => {
+  const handleSelect = (optionIndex) => {
     if (revealed || disabled) return;
-    setSelected(option);
+    
+    // Normalize comparison
+    const selectedOptionText = String(question.options[optionIndex] || "").trim();
+    const correctAnswerText = String(question.correctAnswer || "").trim();
+    const isCorrect = selectedOptionText === correctAnswerText;
+    
+    // Set selected and revealed immediately for live feedback
+    setSelected(optionIndex);
     setRevealed(true);
-
-    // Play sound effect
+    
+    // ONLY sound feedback - NO celebration
     if (soundEnabled) {
-      if (option === question.correctAnswer) {
+      if (isCorrect) {
         playCorrectSound();
       } else {
         playWrongSound();
       }
     }
-
-    setTimeout(() => {
-      onAnswer(option);
-      setSelected(null);
-      setRevealed(false);
-    }, 1000);
+    onAnswer(optionIndex);
   };
 
-  const getOptionClass = (option) => {
-    if (!revealed) return styles.option;
-    if (option === question.correctAnswer) return `${styles.option} ${styles.correct}`;
-    if (option === selected && option !== question.correctAnswer)
-      return `${styles.option} ${styles.wrong}`;
-    return styles.option;
+  const getOptionClass = (optionIndex) => {
+    // Always return base option class
+    let className = styles.option;
+    
+    if (!revealed) return className;
+    
+    // Normalize comparison for Hindi and other characters
+    const selectedOptionText = String(question.options[optionIndex] || "").trim();
+    const correctAnswerText = String(question.correctAnswer || "").trim();
+    const isCorrect = selectedOptionText === correctAnswerText;
+    
+    if (isCorrect) {
+      className += ` ${styles.correct} correct-answer`;
+    } else if (optionIndex === selected && !isCorrect) {
+      className += ` ${styles.wrong} wrong-answer`;
+    }
+    
+    return className;
+  };
+
+  const getOptionStyle = (optionIndex) => {
+    // We already apply styles via CSS classes in getOptionClass
+    // This can be used for dynamic styles if needed, but for now we keep it minimal
+    if (!revealed) return {};
+    return {};
+  };
+
+  const getOptionIndicator = (optionIndex) => {
+    if (!revealed) return null;
+    // Normalize comparison
+    const selectedOptionText = String(question.options[optionIndex] || "").trim();
+    const correctAnswerText = String(question.correctAnswer || "").trim();
+    const isCorrect = selectedOptionText === correctAnswerText;
+    
+    if (isCorrect) return '✓';
+    if (optionIndex === selected && !isCorrect) return '✗';
+    return null;
   };
 
   return (
@@ -138,18 +205,77 @@ export default function QuestionCard({ question, onAnswer, favouriteIds, quizId,
         </div>
       )}
 
+      {/* Hint Display */}
+      {showHint && (
+        <div className={styles.hintBox}>
+          <div className={styles.hintHeader}>
+            <span>💡 Hint</span>
+            <span className={styles.hintPenalty}>-5 points</span>
+          </div>
+          <p className={styles.hintText}>
+            {question.hint || "Think carefully about the question and try to eliminate the obviously wrong options."}
+          </p>
+        </div>
+      )}
+
+      {/* Ask Audience Results */}
+      {audienceStats && (
+        <div className={styles.audienceBox}>
+          <div className={styles.audienceHeader}>
+            <span>👥 Audience Poll</span>
+            <span className={styles.audiencePenalty}>-3 points</span>
+          </div>
+          <div className={styles.audienceChart}>
+            {question.options.map((option, idx) => (
+              <div key={idx} className={styles.audienceBar}>
+                <div className={styles.audienceBarFill} style={{ width: `${audienceStats[idx]}%` }}>
+                  <span className={styles.audiencePercent}>{audienceStats[idx]}%</span>
+                </div>
+                <span className={styles.audienceOption}>{option}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className={styles.optionsGrid}>
-        {question.options.map((option) => (
-          <button
-            key={option}
-            className={getOptionClass(option)}
-            onClick={() => handleSelect(option)}
-            disabled={revealed}
-          >
-            {option}
-          </button>
-        ))}
+        {question.options.map((option, idx) => {
+          const isRemoved = removedOptions.includes(idx);
+          
+          if (isRemoved) return null;
+          
+          return (
+            <button
+              key={idx}
+              data-option-index={idx}
+              className={`${getOptionClass(idx)} ${isRemoved ? styles.removed : ''} ${audienceStats ? styles.withAudience : ''}`}
+              style={getOptionStyle(idx)}
+              onClick={() => handleSelect(idx)}
+              disabled={revealed || disabled}
+            >
+              <span className={styles.optionText}>{option}</span>
+              {revealed && (
+                <span className={styles.optionIndicator}>
+                  {getOptionIndicator(idx)}
+                </span>
+              )}
+              {audienceStats && (
+                <span className={styles.audienceBadge}>{audienceStats[idx]}%</span>
+              )}
+            </button>
+          );
+        })}
       </div>
+
+      {/* Explanation Display */}
+      {showExplanation && explanation && (
+        <div className={styles.explanationBox}>
+          <div className={styles.explanationHeader}>
+            <span>📚 Explanation</span>
+          </div>
+          <p className={styles.explanationText}>{explanation}</p>
+        </div>
+      )}
     </div>
   );
 }

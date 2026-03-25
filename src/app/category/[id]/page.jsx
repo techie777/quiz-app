@@ -129,19 +129,48 @@ export default function CategorySetsPage() {
           )}
         </div>
         <div className={styles.headerInfo}>
-          <h1 className={styles.title}>{category.topic}</h1>
+          <div className={styles.headerTop}>
+            <h1 className={styles.title}>{category.topic}</h1>
+            <div className={styles.headerMeta}>
+              <span className={styles.difficultyBadge}>
+                {category.difficulty || 'Medium'}
+              </span>
+              <span className={styles.questionCount}>
+                {category.questions.length} questions
+              </span>
+            </div>
+          </div>
           <p className={styles.desc}>{category.description}</p>
-          <p className={styles.totalCount}>
-            {category.questions.length} questions · {sets.length}{" "}
-            {sets.length === 1 ? "set" : "sets"}
-          </p>
+          <div className={styles.headerStats}>
+            <div className={styles.statItem}>
+              <span className={styles.statIcon}>📚</span>
+              <span className={styles.statText}>
+                {sets.length} {sets.length === 1 ? "set" : "sets"}
+              </span>
+            </div>
+            <div className={styles.statItem}>
+              <span className={styles.statIcon}>⏱️</span>
+              <span className={styles.statText}>
+                ~{Math.ceil(category.questions.length * 0.3)} mins
+              </span>
+            </div>
+            <div className={styles.statItem}>
+              <span className={styles.statIcon}>🎯</span>
+              <span className={styles.statText}>
+                {category.difficulty || 'Medium'} level
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Sub-categories */}
       {quizzes.some((c) => c.parentId === category.id && !c.hidden) && (
         <div className={styles.subCategories}>
-          <h2 className={styles.subTitle}>Explore Sub-categories</h2>
+          <h2 className={styles.subTitle}>
+            <span className={styles.subTitleIcon}>🔍</span>
+            Explore Sub-categories
+          </h2>
           <div className={styles.subGrid}>
             {quizzes
               .filter((c) => c.parentId === category.id && !c.hidden)
@@ -151,90 +180,123 @@ export default function CategorySetsPage() {
                   href={`/category/${sub.id}`}
                   className={`${styles.subCard} glass-card`}
                 >
-                  <span className={styles.subEmoji}>{sub.emoji}</span>
+                  <div className={styles.subCardImage}>
+                    <span className={styles.subEmoji}>{sub.emoji}</span>
+                  </div>
                   <div className={styles.subInfo}>
                     <span className={styles.subName}>{sub.topic}</span>
                     <span className={styles.subCount}>
                       {sub.questions?.length || 0} questions
                     </span>
                   </div>
+                  <div className={styles.subArrow}>→</div>
                 </Link>
               ))}
           </div>
         </div>
       )}
 
-      {/* Sets Grid */}
-      {sets.length === 0 ? (
-        <p className={styles.emptyText}>No questions in this category yet.</p>
-      ) : (
-        <>
-          <div className={styles.grid}>
-            {paginatedSets.map((set, i) => (
-              <div key={set.index} className={`${styles.setCard} glass-card`}>
-                <div
-                  className={styles.setCardTop}
-                  style={{
-                    background:
-                      CARD_GRADIENTS[(set.index - 1) % CARD_GRADIENTS.length],
-                  }}
-                >
-                  <span className={styles.setNum}>Set {set.index}</span>
-                </div>
-                <div className={styles.setCardBody}>
-                  <p className={styles.setRange}>
-                    Questions {set.start + 1} – {set.end}
-                  </p>
-                  <p className={styles.setCount}>
-                    {set.questions.length} questions
-                  </p>
-                  <button
-                    className={`btn-primary ${styles.playBtn}`}
-                    onClick={() => handlePlay(set)}
-                  >
-                    ▶ Play Quiz
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+      {/* Quiz Sets Section */}
+      <div className={styles.setsSection}>
+        <div className={styles.setsHeader}>
+          <h2 className={styles.setsTitle}>
+            <span className={styles.setsTitleIcon}>🎮</span>
+            Quiz Sets
+          </h2>
+          <p className={styles.setsSubtitle}>
+            Choose a set to start practicing. Each set contains {SET_SIZE} questions.
+          </p>
+        </div>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className={styles.pagination}>
-              <button
-                className={styles.pageBtn}
-                disabled={page <= 1}
-                onClick={() => setPage(page - 1)}
-              >
-                ← Previous
-              </button>
-              <div className={styles.pageNumbers}>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                  (p) => (
+        {sets.length === 0 ? (
+          <div className={styles.emptyState}>
+            <div className={styles.emptyIcon}>📭</div>
+            <h3 className={styles.emptyTitle}>No Questions Yet</h3>
+            <p className={styles.emptyDesc}>
+              This category doesn't have any questions at the moment. Check back later!
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className={styles.grid}>
+              {paginatedSets.map((set, i) => (
+                <div key={set.index} className={`${styles.setCard} glass-card`}>
+                  <div
+                    className={styles.setCardTop}
+                    style={{
+                      background:
+                        CARD_GRADIENTS[(set.index - 1) % CARD_GRADIENTS.length],
+                    }}
+                  >
+                    <div className={styles.setCardTopContent}>
+                      <span className={styles.setNum}>Set {set.index}</span>
+                      <span className={styles.setBadge}>New</span>
+                    </div>
+                  </div>
+                  <div className={styles.setCardBody}>
+                    <div className={styles.setInfo}>
+                      <p className={styles.setRange}>
+                        Questions {set.start + 1} – {set.end}
+                      </p>
+                      <p className={styles.setCount}>
+                        {set.questions.length} questions
+                      </p>
+                      <div className={styles.setTime}>
+                        <span className={styles.setTimeIcon}>⏱️</span>
+                        <span className={styles.setTimeText}>
+                          ~{Math.ceil(set.questions.length * 0.3)} mins
+                        </span>
+                      </div>
+                    </div>
                     <button
-                      key={p}
-                      className={`${styles.pageNum} ${
-                        p === page ? styles.pageNumActive : ""
-                      }`}
-                      onClick={() => setPage(p)}
+                      className={`btn-primary ${styles.playBtn}`}
+                      onClick={() => handlePlay(set)}
                     >
-                      {p}
+                      <span className={styles.playBtnIcon}>▶</span>
+                      Play Quiz
                     </button>
-                  )
-                )}
-              </div>
-              <button
-                className={styles.pageBtn}
-                disabled={page >= totalPages}
-                onClick={() => setPage(page + 1)}
-              >
-                Next →
-              </button>
+                  </div>
+                </div>
+              ))}
             </div>
-          )}
-        </>
-      )}
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className={styles.pagination}>
+                <button
+                  className={styles.pageBtn}
+                  disabled={page <= 1}
+                  onClick={() => setPage(page - 1)}
+                >
+                  ← Previous
+                </button>
+                <div className={styles.pageNumbers}>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (p) => (
+                      <button
+                        key={p}
+                        className={`${styles.pageNum} ${
+                          p === page ? styles.pageNumActive : ""
+                        }`}
+                        onClick={() => setPage(p)}
+                      >
+                        {p}
+                      </button>
+                    )
+                  )}
+                </div>
+                <button
+                  className={styles.pageBtn}
+                  disabled={page >= totalPages}
+                  onClick={() => setPage(page + 1)}
+                >
+                  Next →
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       {/* Timer Modal */}
       {selectedSet && (

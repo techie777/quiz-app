@@ -79,6 +79,27 @@ button {
   --btn-secondary-hover: #e2e8f0;
 }
 
+/* Quiz Answer Color Indicators */
+.correct-answer,
+button.correct-answer {
+  background: #10b981 !important;
+  background-color: #10b981 !important;
+  border: 2px solid #10b981 !important;
+  border-color: #10b981 !important;
+  color: white !important;
+  font-weight: bold !important;
+}
+
+.wrong-answer,
+button.wrong-answer {
+  background: #ef4444 !important;
+  background-color: #ef4444 !important;
+  border: 2px solid #ef4444 !important;
+  border-color: #ef4444 !important;
+  color: white !important;
+  font-weight: bold !important;
+}
+
 /* ===== Dark Theme ===== */
 [data-theme="dark"] {
   --bg-primary: #0a0e27;

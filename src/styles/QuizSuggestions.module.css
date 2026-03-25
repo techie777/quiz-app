@@ -1,0 +1,308 @@
+/* ===== Quiz Suggestions Component ===== */
+.suggestionsContainer {
+  margin-top: 40px;
+  padding: 32px 0;
+  border-top: 1px solid var(--card-border);
+}
+
+.suggestionsHeader {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.suggestionsTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.suggestionsSubtitle {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.suggestionsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.suggestionCard {
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  overflow: hidden;
+  text-decoration: none;
+  color: var(--text-primary);
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.suggestionCard:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--accent);
+}
+
+.suggestionImage {
+  position: relative;
+  width: 100%;
+  height: 120px;
+  overflow: hidden;
+  background: var(--bg-secondary);
+}
+
+.suggestionImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.suggestionCard:hover .suggestionImg {
+  transform: scale(1.05);
+}
+
+.suggestionEmojiFallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 3rem;
+  background: linear-gradient(135deg, var(--accent-light), var(--bg-secondary));
+}
+
+.suggestionContent {
+  padding: 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.suggestionQuizTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+  line-height: 1.3;
+}
+
+.suggestionDescription {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.3;
+  margin-bottom: 12px;
+  flex: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  box-orient: vertical;
+}
+
+.suggestionMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 0.75rem;
+}
+
+.suggestionQuestions {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.suggestionDifficulty {
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.suggestionDifficulty:contains("Easy"),
+.suggestionDifficulty[data-difficulty="Easy"] {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.suggestionDifficulty:contains("Medium"),
+.suggestionDifficulty[data-difficulty="Medium"] {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.suggestionDifficulty:contains("Hard"),
+.suggestionDifficulty[data-difficulty="Hard"] {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.suggestionButton {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.suggestionButton:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.suggestionsFooter {
+  text-align: center;
+}
+
+.browseAllLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.browseAllLink:hover {
+  background: var(--accent-light);
+  border-color: var(--accent);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+/* Mobile Responsive */
+@media (max-width: 1024px) {
+  .suggestionsGrid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  
+  .suggestionImage {
+    height: 110px;
+  }
+  
+  .suggestionEmojiFallback {
+    font-size: 2.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .suggestionsContainer {
+    margin-top: 24px;
+    padding: 24px 0;
+  }
+  
+  .suggestionsHeader {
+    margin-bottom: 24px;
+  }
+  
+  .suggestionsTitle {
+    font-size: 1.3rem;
+  }
+  
+  .suggestionsSubtitle {
+    font-size: 0.9rem;
+  }
+  
+  .suggestionsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  
+  .suggestionImage {
+    height: 100px;
+  }
+  
+  .suggestionContent {
+    padding: 12px;
+  }
+  
+  .suggestionQuizTitle {
+    font-size: 0.9rem;
+  }
+  
+  .suggestionDescription {
+    font-size: 0.75rem;
+    margin-bottom: 10px;
+  }
+  
+  .suggestionButton {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .suggestionsContainer {
+    margin-top: 20px;
+    padding: 20px 0;
+  }
+  
+  .suggestionsTitle {
+    font-size: 1.2rem;
+  }
+  
+  .suggestionsGrid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  
+  .suggestionImage {
+    height: 120px;
+  }
+  
+  .suggestionEmojiFallback {
+    font-size: 2.5rem;
+  }
+  
+  .suggestionContent {
+    padding: 12px;
+  }
+  
+  .suggestionQuizTitle {
+    font-size: 0.95rem;
+  }
+  
+  .suggestionDescription {
+    font-size: 0.8rem;
+    margin-bottom: 10px;
+  }
+  
+  .suggestionMeta {
+    font-size: 0.7rem;
+    margin-bottom: 10px;
+  }
+  
+  .suggestionButton {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+}

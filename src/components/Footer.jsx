@@ -7,36 +7,89 @@ import styles from "@/styles/Footer.module.css";
 
 export default function Footer() {
   const pathname = usePathname();
-  const { settings } = useData();
+  const { settings, quizzes } = useData();
   const currentYear = new Date().getFullYear();
 
-  // Hide Footer on admin and export pages
-  if (pathname?.startsWith("/admin") || pathname?.endsWith("/export")) return null;
-  if (settings?.footerEnabled === false) return null;
+  const shouldHide = pathname?.startsWith("/admin") || pathname?.endsWith("/export") || settings?.footerEnabled === false;
 
   const brandDesc =
     (typeof settings?.footerBrandDesc === "string" && settings.footerBrandDesc.trim()
       ? settings.footerBrandDesc
-      : "The ultimate platform to test your knowledge across hundreds of categories. Challenge yourself, learn new things, and have fun!");
+      : "Test your knowledge with thousands of interactive quizzes. From science to history, challenge yourself and learn new facts every day!");
 
   const bottomText =
     (typeof settings?.footerBottomText === "string" && settings.footerBottomText.trim()
       ? settings.footerBottomText
-      : "All rights reserved. Designed for knowledge seekers worldwide.");
+      : "Empowering learners worldwide with engaging educational content.");
+
+  // Generate quiz categories for SEO
+  const popularCategories = quizzes
+    .filter(q => !q.hidden && q.questions && q.questions.length > 0)
+    .slice(0, 8)
+    .map(q => ({
+      id: q.id,
+      label: q.topic,
+      href: `/category/${q.id}`,
+      emoji: q.emoji || '📚'
+    }));
+
+  // Always return JSX - never return null
+  if (shouldHide) {
+    return <div style={{ display: 'none' }} />; // Hidden div instead of null
+  }
 
   const sections = (function () {
     const raw = settings?.footerSections;
     if (typeof raw !== "string" || !raw.trim()) {
       return [
-        { id: "platform", heading: "Platform", links: [{ id: "home", label: "Quizzes", href: "/" }] },
-        { id: "company", heading: "Company", links: [{ id: "about", label: "About Us", href: "/about" }] },
+        { 
+          id: "quizzes", 
+          heading: "Popular Quizzes", 
+          links: popularCategories.map(cat => ({
+            id: cat.id,
+            label: `${cat.emoji} ${cat.label}`,
+            href: cat.href
+          }))
+        },
+        { 
+          id: "topics", 
+          heading: "Quiz Topics", 
+          links: [
+            { id: "science", label: "🔬 Science Quizzes", href: "/?filter=Science" },
+            { id: "math", label: "🔢 Mathematics", href: "/?filter=Math" },
+            { id: "history", label: "📚 History", href: "/?filter=History" },
+            { id: "geography", label: "🌍 Geography", href: "/?filter=Geography" },
+            { id: "sports", label: "⚽ Sports", href: "/?filter=Sports" },
+            { id: "entertainment", label: "🎬 Entertainment", href: "/?filter=Entertainment" },
+          ]
+        },
+        { 
+          id: "resources", 
+          heading: "Learning Resources", 
+          links: [
+            { id: "daily", label: "Daily Quiz", href: "/?filter=Daily" },
+            { id: "current", label: "Current Affairs", href: "/?filter=Current" },
+            { id: "gk", label: "General Knowledge", href: "/?filter=GK" },
+            { id: "practice", label: "Practice Tests", href: "/" },
+          ]
+        },
+        {
+          id: "company",
+          heading: "About",
+          links: [
+            { id: "about", label: "About Us", href: "/about" },
+            { id: "contact", label: "Contact", href: "/contact" },
+            { id: "blog", label: "Quiz Blog", href: "/blog" },
+          ],
+        },
         {
           id: "legal",
           heading: "Legal",
           links: [
-            { id: "terms", label: "Terms of Usage", href: "/terms" },
+            { id: "terms", label: "Terms of Service", href: "/terms" },
             { id: "privacy", label: "Privacy Policy", href: "/privacy" },
-            { id: "copyright", label: "Copyright", href: "/copyright" },
+            { id: "cookies", label: "Cookie Policy", href: "/cookies" },
+            { id: "sitemap", label: "Sitemap", href: "/sitemap.xml" },
           ],
         },
       ];
@@ -75,6 +128,12 @@ export default function Footer() {
               <span className={styles.logoText}>QuizWeb</span>
             </Link>
             <p className={styles.brandDesc}>{brandDesc}</p>
+            <div className={styles.seoTags}>
+              <span className={styles.tag}>#QuizPlatform</span>
+              <span className={styles.tag}>#KnowledgeTest</span>
+              <span className={styles.tag}>#Learning</span>
+              <span className={styles.tag}>#Education</span>
+            </div>
           </div>
 
           {sections.map((section) => (
@@ -93,13 +152,32 @@ export default function Footer() {
           ))}
         </div>
 
+        {/* SEO Keywords Section */}
+        <div className={styles.seoSection}>
+          <h4 className={styles.seoTitle}>Popular Quiz Topics</h4>
+          <div className={styles.seoKeywords}>
+            <span className={styles.keyword}>Science Quiz</span>
+            <span className={styles.keyword}>Math Test</span>
+            <span className={styles.keyword}>History Questions</span>
+            <span className={styles.keyword}>Geography Challenge</span>
+            <span className={styles.keyword}>Sports Trivia</span>
+            <span className={styles.keyword}>Entertainment Quiz</span>
+            <span className={styles.keyword}>Current Affairs</span>
+            <span className={styles.keyword}>General Knowledge</span>
+            <span className={styles.keyword}>Educational Games</span>
+            <span className={styles.keyword}>Online Quiz</span>
+            <span className={styles.keyword}>Free Tests</span>
+            <span className={styles.keyword}>Learning Platform</span>
+          </div>
+        </div>
+
         {/* Bottom Bar */}
         <div className={styles.bottom}>
           <p className={styles.copyright}>
             © {currentYear} QuizWeb. {bottomText}
           </p>
-          <div className={styles.socials}>
-            {/* Social icons could go here */}
+          <div className={styles.seoInfo}>
+            <span className={styles.seoMeta}>Thousands of quizzes • Free to play • Educational content</span>
           </div>
         </div>
       </div>

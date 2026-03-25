@@ -25,7 +25,14 @@ export default function ResultPage() {
   const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
   const motivation = getMotivation(percentage);
 
-  // Generate confetti
+  // Always call this hook - handle redirection logic inside
+  useEffect(() => {
+    if (total === 0) {
+      router.replace("/");
+    }
+  }, [total, router]);
+
+  // Always call this hook - handle confetti logic inside
   useEffect(() => {
     if (total === 0) return;
     const pieces = Array.from({ length: 40 }, (_, i) => ({
@@ -39,15 +46,6 @@ export default function ResultPage() {
     setConfetti(pieces);
   }, [total]);
 
-  // Redirect if no results
-  useEffect(() => {
-    if (total === 0) {
-      router.replace("/");
-    }
-  }, [total, router]);
-
-  if (total === 0) return null;
-
   const handlePlayAgain = () => {
     startQuiz(quizId, difficulty, timerSetting, language);
     router.push(`/quiz/${quizId}`);
@@ -58,94 +56,106 @@ export default function ResultPage() {
     router.push(`/category/${quizId}`);
   };
 
+  // Always return JSX - never return null or conditionally skip hooks
   return (
     <main className={styles.page}>
-      {/* Confetti */}
-      <div className={styles.confettiContainer}>
-        {confetti.map((piece) => (
-          <div
-            key={piece.id}
-            className={styles.confettiPiece}
-            style={{
-              left: `${piece.left}%`,
-              animationDelay: `${piece.delay}s`,
-              animationDuration: `${piece.duration}s`,
-              backgroundColor: piece.color,
-              transform: `rotate(${piece.rotation}deg)`,
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Score Card */}
-      <div className={`${styles.scoreCard} glass-card`}>
-        <div className={styles.trophy}>🏆</div>
-        <h1 className={styles.heading}>Quiz Completed!</h1>
-        <div className={styles.scoreCircle}>
-          <span className={styles.scoreNum}>{score}</span>
-          <span className={styles.scoreDivider}>/</span>
-          <span className={styles.scoreTotal}>{total}</span>
+      {total === 0 ? (
+        // Empty state - always render this when no results
+        <div className={styles.scoreCard}>
+          <h1>Loading...</h1>
+          <p>Redirecting to home...</p>
         </div>
-        <div className={styles.motivation}>
-          <span>{motivation.emoji}</span>
-          <span>{motivation.text}</span>
-        </div>
-        <div className={styles.percentage}>{percentage}%</div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className={styles.actions}>
-        <button className="btn-primary" onClick={handlePlayAgain}>
-          🔄 Play Again
-        </button>
-        <button
-          className="btn-secondary"
-          onClick={() => setShowReview(!showReview)}
-        >
-          {showReview ? "Hide Answers" : "📋 View Answers"}
-        </button>
-        <button className="btn-secondary" onClick={handleBackToQuizzes}>
-          ← Back to Quizzes
-        </button>
-      </div>
-
-      {/* Answer Review */}
-      {showReview && (
-        <div className={styles.review}>
-          <h2 className={styles.reviewTitle}>Answer Review</h2>
-          {answers.map((answer, index) => {
-            const question = questions.find((q) => q.id === answer.questionId);
-            if (!question) return null;
-            return (
+      ) : (
+        // Full results - always render this when we have results
+        <>
+          {/* Confetti */}
+          <div className={styles.confettiContainer}>
+            {confetti.map((piece) => (
               <div
-                key={answer.questionId}
-                className={`${styles.reviewItem} ${
-                  answer.isCorrect ? styles.reviewCorrect : styles.reviewWrong
-                }`}
-              >
-                <div className={styles.reviewHeader}>
-                  <span className={styles.reviewNum}>Q{index + 1}</span>
-                  <span className={styles.reviewBadge}>
-                    {answer.isCorrect ? "✓ Correct" : "✗ Wrong"}
-                  </span>
-                </div>
-                <p className={styles.reviewQuestion}>{question.text}</p>
-                {!answer.isCorrect && (
-                  <div className={styles.reviewAnswers}>
-                    {answer.selected && (
-                      <p className={styles.yourAnswer}>
-                        Your answer: <strong>{answer.selected}</strong>
-                      </p>
+                key={piece.id}
+                className={styles.confettiPiece}
+                style={{
+                  left: `${piece.left}%`,
+                  animationDelay: `${piece.delay}s`,
+                  animationDuration: `${piece.duration}s`,
+                  backgroundColor: piece.color,
+                  transform: `rotate(${piece.rotation}deg)`,
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Score Card */}
+          <div className={`${styles.scoreCard} glass-card`}>
+            <div className={styles.trophy}>🏆</div>
+            <h1 className={styles.heading}>Quiz Completed!</h1>
+            <div className={styles.scoreCircle}>
+              <span className={styles.scoreNum}>{score}</span>
+              <span className={styles.scoreDivider}>/</span>
+              <span className={styles.scoreTotal}>{total}</span>
+            </div>
+            <div className={styles.motivation}>
+              <span>{motivation.emoji}</span>
+              <span>{motivation.text}</span>
+            </div>
+            <div className={styles.percentage}>{percentage}%</div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className={styles.actions}>
+            <button className="btn-primary" onClick={handlePlayAgain}>
+              🔄 Play Again
+            </button>
+            <button
+              className="btn-secondary"
+              onClick={() => setShowReview(!showReview)}
+            >
+              {showReview ? "Hide Answers" : "📋 View Answers"}
+            </button>
+            <button className="btn-secondary" onClick={handleBackToQuizzes}>
+              ← Back to Quizzes
+            </button>
+          </div>
+
+          {/* Answer Review */}
+          {showReview && (
+            <div className={styles.review}>
+              <h2 className={styles.reviewTitle}>Answer Review</h2>
+              {answers.map((answer, index) => {
+                const question = questions.find((q) => q.id === answer.questionId);
+                if (!question) return null;
+                return (
+                  <div
+                    key={answer.questionId}
+                    className={`${styles.reviewItem} ${
+                      answer.isCorrect ? styles.reviewCorrect : styles.reviewWrong
+                    }`}
+                  >
+                    <div className={styles.reviewHeader}>
+                      <span className={styles.reviewNum}>Q{index + 1}</span>
+                      <span className={styles.reviewBadge}>
+                        {answer.isCorrect ? "✓ Correct" : "✗ Wrong"}
+                      </span>
+                    </div>
+                    <p className={styles.reviewQuestion}>{question.text}</p>
+                    {!answer.isCorrect && (
+                      <div className={styles.reviewAnswers}>
+                        {answer.selected && (
+                          <p className={styles.yourAnswer}>
+                            Your answer: <strong>{answer.selected}</strong>
+                          </p>
+                        )}
+                        <p className={styles.correctAnswer}>
+                          Correct answer: <strong>{answer.correct}</strong>
+                        </p>
+                      </div>
                     )}
-                    <p className={styles.correctAnswer}>
-                      Correct answer: <strong>{answer.correct}</strong>
-                    </p>
                   </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
     </main>
   );

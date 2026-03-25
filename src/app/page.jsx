@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useData } from "@/context/DataContext";
 import { motion } from "framer-motion";
+import QuizSidebar from "@/components/QuizSidebar";
 import styles from "@/styles/LandingPage.module.css";
 
 // Import safe JSON parsing utility
@@ -16,6 +17,114 @@ function safeJsonParse(json, fallback = []) {
     console.error("JSON parse error in home page:", error, "on string:", json);
     return fallback;
   }
+}
+
+// Function to get relevant image based on quiz topic
+function getRelevantImage(topic, emoji) {
+  const topicLower = topic.toLowerCase();
+  
+  // Science related topics
+  if (topicLower.includes('science') || topicLower.includes('physics') || topicLower.includes('chemistry') || topicLower.includes('biology') || topicLower.includes('astronomy')) {
+    return '🔬';
+  }
+  
+  // History related topics
+  if (topicLower.includes('history') || topicLower.includes('ancient') || topicLower.includes('medieval') || topicLower.includes('war') || topicLower.includes('civilization')) {
+    return '📚';
+  }
+  
+  // Geography related topics
+  if (topicLower.includes('geography') || topicLower.includes('country') || topicLower.includes('capital') || topicLower.includes('world') || topicLower.includes('map')) {
+    return '🌍';
+  }
+  
+  // Technology/Computer topics
+  if (topicLower.includes('computer') || topicLower.includes('technology') || topicLower.includes('programming') || topicLower.includes('software') || topicLower.includes('internet')) {
+    return '💻';
+  }
+  
+  // Mathematics topics
+  if (topicLower.includes('math') || topicLower.includes('mathematics') || topicLower.includes('algebra') || topicLower.includes('geometry') || topicLower.includes('calculation')) {
+    return '🔢';
+  }
+  
+  // Sports topics
+  if (topicLower.includes('sport') || topicLower.includes('football') || topicLower.includes('cricket') || topicLower.includes('basketball') || topicLower.includes('tennis')) {
+    return '⚽';
+  }
+  
+  // Entertainment/Movies topics
+  if (topicLower.includes('movie') || topicLower.includes('film') || topicLower.includes('cinema') || topicLower.includes('bollywood') || topicLower.includes('hollywood')) {
+    return '🎬';
+  }
+  
+  // Music topics
+  if (topicLower.includes('music') || topicLower.includes('song') || topicLower.includes('instrument') || topicLower.includes('singer') || topicLower.includes('melody')) {
+    return '🎵';
+  }
+  
+  // Literature/Books topics
+  if (topicLower.includes('book') || topicLower.includes('literature') || topicLower.includes('novel') || topicLower.includes('author') || topicLower.includes('poem')) {
+    return '📖';
+  }
+  
+  // Art topics
+  if (topicLower.includes('art') || topicLower.includes('painting') || topicLower.includes('drawing') || topicLower.includes('sculpture') || topicLower.includes('museum')) {
+    return '🎨';
+  }
+  
+  // Food/Cooking topics
+  if (topicLower.includes('food') || topicLower.includes('cook') || topicLower.includes('recipe') || topicLower.includes('cuisine') || topicLower.includes('dish')) {
+    return '🍳';
+  }
+  
+  // Animals/Nature topics
+  if (topicLower.includes('animal') || topicLower.includes('wildlife') || topicLower.includes('nature') || topicLower.includes('forest') || topicLower.includes('ocean')) {
+    return '🦁';
+  }
+  
+  // Health/Medical topics
+  if (topicLower.includes('health') || topicLower.includes('medical') || topicLower.includes('disease') || topicLower.includes('body') || topicLower.includes('medicine')) {
+    return '⚕️';
+  }
+  
+  // Business/Economy topics
+  if (topicLower.includes('business') || topicLower.includes('economy') || topicLower.includes('finance') || topicLower.includes('money') || topicLower.includes('market')) {
+    return '💰';
+  }
+  
+  // Politics/Government topics
+  if (topicLower.includes('politics') || topicLower.includes('government') || topicLower.includes('election') || topicLower.includes('democracy') || topicLower.includes('parliament')) {
+    return '🏛️';
+  }
+  
+  // Space/Universe topics
+  if (topicLower.includes('space') || topicLower.includes('universe') || topicLower.includes('planet') || topicLower.includes('galaxy') || topicLower.includes('astronaut')) {
+    return '🚀';
+  }
+  
+  // Religion/Mythology topics
+  if (topicLower.includes('religion') || topicLower.includes('mythology') || topicLower.includes('god') || topicLower.includes('temple') || topicLower.includes('church')) {
+    return '⛪';
+  }
+  
+  // Language topics
+  if (topicLower.includes('language') || topicLower.includes('english') || topicLower.includes('grammar') || topicLower.includes('vocabulary') || topicLower.includes('speaking')) {
+    return '💬';
+  }
+  
+  // General Knowledge topics
+  if (topicLower.includes('general') || topicLower.includes('gk') || topicLower.includes('knowledge') || topicLower.includes('trivia') || topicLower.includes('facts')) {
+    return '🧠';
+  }
+  
+  // Current Affairs topics
+  if (topicLower.includes('current') || topicLower.includes('affairs') || topicLower.includes('news') || topicLower.includes('latest') || topicLower.includes('recent')) {
+    return '📰';
+  }
+  
+  // Default fallback to provided emoji or a general quiz emoji
+  return emoji || '📝';
 }
 
 const DEFAULT_CHIPS = ["Science", "History", "GK", "Quick 5 Min"];
@@ -228,17 +337,14 @@ export default function LandingPage() {
   }, []);
 
   const chips = useMemo(() => {
-    const raw = settings?.homeChips;
-    let list = DEFAULT_CHIPS;
+    let list = settings?.homeChips 
+      ? safeJsonParse(settings.homeChips, DEFAULT_CHIPS) 
+      : DEFAULT_CHIPS;
     
-    if (raw && typeof raw === "string" && raw.trim()) {
-      const parsed = safeJsonParse(raw);
-      if (parsed.length > 0) {
-        const cleaned = parsed
-          .map((s) => (typeof s === "string" ? s.trim() : ""))
-          .filter(Boolean);
-        if (cleaned.length > 0) list = cleaned;
-      }
+    // Ensure trending chip is first
+    if (Array.isArray(list)) {
+      const cleaned = list.filter((c) => c && typeof c === 'string' && c.trim().length > 0);
+      if (cleaned.length > 0) list = cleaned;
     }
 
     const withoutTrending = list.filter(
@@ -329,6 +435,29 @@ export default function LandingPage() {
 
   return (
     <main className={styles.page}>
+      {/* Hidden SEO Content - Visually Hidden for SEO Only */}
+      <div className={styles.seoOnlyContent} style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
+        <h1>Test Your Knowledge with Thousands of Free Online Quizzes</h1>
+        <p>Challenge yourself with our comprehensive collection of educational quizzes. From science and mathematics to history and current affairs, learn new facts and track your progress with detailed analytics.</p>
+        <div>
+          <span>{quizzes.filter(q => !q.hidden).length} Quiz Categories</span>
+          <span>{quizzes.reduce((total, q) => total + (q.questions?.length || 0), 0)} Questions</span>
+          <span>Free To Play</span>
+        </div>
+        <h2>Why Choose Our Online Quiz Platform?</h2>
+        <div>
+          <h3>Comprehensive Subject Coverage</h3>
+          <p>Explore quizzes across Science, Mathematics, History, Geography, Sports, Entertainment, and more. Each category is carefully curated to provide the best learning experience.</p>
+          <h3>Track Your Progress</h3>
+          <p>Monitor your performance with detailed analytics, identify areas for improvement, and celebrate your achievements as you master different subjects.</p>
+          <h3>Competitive Learning</h3>
+          <p>Challenge yourself with timed quizzes, compete for high scores, and join a community of knowledge seekers dedicated to continuous learning.</p>
+        </div>
+        <h2>Explore Quiz Categories</h2>
+        <p>Choose from our wide range of educational quizzes. Each category is designed to test your knowledge and help you learn new concepts.</p>
+      </div>
+
+      {/* Original Clean Design */}
       <div className={styles.bgOrbs} aria-hidden="true">
         <div className={`${styles.orb} ${styles.orb1}`} />
         <div className={`${styles.orb} ${styles.orb2}`} />
@@ -354,140 +483,49 @@ export default function LandingPage() {
             aria-autocomplete="list"
             role="combobox"
           />
-          {isSearching && (
-            <span className={styles.searchSpinner} />
+          {search.trim() && (
+            <button
+              className={styles.clearButton}
+              onClick={() => handleSearchChange("")}
+              aria-label="Clear search"
+            >
+              ✕
+            </button>
           )}
         </div>
         
-        {/* Search Suggestions Dropdown */}
         {showSuggestions && searchSuggestions.length > 0 && (
-          <div 
-            className={styles.searchSuggestions}
-            role="listbox"
-            aria-label="Search suggestions"
-          >
+          <div className={styles.suggestionsDropdown}>
             {searchSuggestions.map((suggestion, index) => (
-              <div
+              <button
                 key={suggestion.id}
-                className={`${styles.suggestionItem} ${index === selectedSuggestionIndex ? styles.suggestionActive : ''}`}
+                className={`${styles.suggestionItem} ${
+                  index === selectedSuggestionIndex ? styles.selected : ""
+                }`}
                 onClick={() => handleSuggestionClick(suggestion)}
-                role="option"
-                aria-selected={index === selectedSuggestionIndex}
-                tabIndex={index === selectedSuggestionIndex ? 0 : -1}
               >
                 <span className={styles.suggestionEmoji}>{suggestion.emoji}</span>
                 <div className={styles.suggestionContent}>
-                  <div className={styles.suggestionTopic}>{suggestion.topic}</div>
-                  <div className={styles.suggestionDescription}>{suggestion.description}</div>
+                  <span className={styles.suggestionName}>{suggestion.topic}</span>
+                  <span className={styles.suggestionDesc}>{suggestion.description}</span>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         )}
-        
-        {/* Advanced Filters Toggle */}
-        <div className={styles.advancedFiltersSection}>
-          <button
-            className={styles.advancedFiltersToggle}
-            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-            aria-expanded={showAdvancedFilters}
-            aria-controls="advanced-filters-panel"
-            aria-label="Toggle advanced filters"
+      </div>
+
+      <div className={styles.filterChips}>
+        {chips.map((filter) => (
+          <button 
+            key={filter}
+            className={`${styles.chip} ${activeFilters.includes(filter) ? styles.activeChip : ''}`}
+            onClick={() => handleFilterClick(filter)}
+            disabled={isLoading}
           >
-            <span>⚙️ Advanced Filters</span>
-            <span className={`${styles.filterArrow} ${showAdvancedFilters ? styles.filterArrowUp : ''}`}>
-              ▼
-            </span>
+            {filter.startsWith("#") ? filter : `#${filter}`}
           </button>
-          
-          {showAdvancedFilters && (
-            <div 
-              id="advanced-filters-panel"
-              className={styles.advancedFiltersPanel}
-              role="region"
-              aria-label="Advanced filtering options"
-            >
-              <div className={styles.filterGroup}>
-                <label className={styles.filterLabel}>Sort By</label>
-                <div className={styles.filterOptions}>
-                  {[
-                    { value: "default", label: "Default" },
-                    { value: "alphabetical", label: "A-Z" },
-                    { value: "newest", label: "Newest" },
-                    { value: "popular", label: "Most Questions" }
-                  ].map(option => (
-                    <button
-                      key={option.value}
-                      className={`${styles.filterOption} ${sortBy === option.value ? styles.filterOptionActive : ''}`}
-                      onClick={() => setSortBy(option.value)}
-                      aria-pressed={sortBy === option.value}
-                      aria-label={`Sort by ${option.label}`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className={styles.filterGroup}>
-                <label className={styles.filterLabel}>Difficulty</label>
-                <div className={styles.filterOptions}>
-                  {[
-                    { value: "all", label: "All Levels" },
-                    { value: "easy", label: "Easy" },
-                    { value: "medium", label: "Medium" },
-                    { value: "hard", label: "Hard" }
-                  ].map(option => (
-                    <button
-                      key={option.value}
-                      className={`${styles.filterOption} ${difficultyFilter === option.value ? styles.filterOptionActive : ''}`}
-                      onClick={() => setDifficultyFilter(option.value)}
-                      aria-pressed={difficultyFilter === option.value}
-                      aria-label={`Filter by difficulty: ${option.label}`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className={styles.filterGroup}>
-                <label className={styles.filterLabel}>Question Count</label>
-                <div className={styles.filterOptions}>
-                  {[
-                    { value: "all", label: "All Sizes" },
-                    { value: "small", label: "Small (≤10)" },
-                    { value: "medium", label: "Medium (11-25)" },
-                    { value: "large", label: "Large (25+)" }
-                  ].map(option => (
-                    <button
-                      key={option.value}
-                      className={`${styles.filterOption} ${questionCountFilter === option.value ? styles.filterOptionActive : ''}`}
-                      onClick={() => setQuestionCountFilter(option.value)}
-                      aria-pressed={questionCountFilter === option.value}
-                      aria-label={`Filter by question count: ${option.label}`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-        
-        <div className={styles.filterChips}>
-          {chips.map((filter) => (
-            <button 
-              key={filter}
-              className={`${styles.chip} ${activeFilters.includes(filter) ? styles.activeChip : ''}`}
-              onClick={() => handleFilterClick(filter)}
-              disabled={isLoading}
-            >
-              {filter.startsWith("#") ? filter : `#${filter}`}
-            </button>
-          ))}
-        </div>
+        ))}
       </div>
 
       <h2 className={styles.sectionTitle}>All Categories</h2>
@@ -589,10 +627,14 @@ export default function LandingPage() {
                       href={`/category/${cat.id}`} 
                       className={styles.cardLink}
                       aria-label={`View ${cat.topic} quiz category with ${cat.questions.length} questions`}
+                      onClick={() => {
+                        // Store the current page as referrer for quiz exit navigation
+                        sessionStorage.setItem('quizReferrer', window.location.pathname);
+                      }}
                     >
                         <div className={styles.cardImageContainer}>
                           <div className={styles.mediaFallback}>
-                            <span className={styles.mediaEmoji}>{cat.emoji}</span>
+                            <span className={styles.mediaEmoji}>{getRelevantImage(cat.topic, cat.emoji)}</span>
                           </div>
                           {cat.image && (
                             <img
@@ -641,7 +683,8 @@ export default function LandingPage() {
                             aria-label={`Preview ${cat.topic} category details`}
                           >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M1 12s0-1.1 0-2 2-2 2 2 0 1.1 0 2-2 2-2m0 14a7 7 0 1 1 0 7-7 7-7 7 0 1 1 0 7-7 7-7m-7 18h14a2 2 0 0 1-1 0h-14a2 2 0 0 1-1 0"/>
+                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                              <circle cx="12" cy="12" r="3"/>
                             </svg>
                           </button>
                         </div>
@@ -698,16 +741,18 @@ export default function LandingPage() {
               
               <div className={styles.modalSection}>
                 <h4 className={styles.modalSectionTitle}>📝 Description</h4>
-                <p className={styles.modalDescription}>{previewCategory.description || 'No description available'}</p>
+                <p className={styles.modalDescription}>
+                  {previewCategory.description || 'No description available for this category.'}
+                </p>
               </div>
               
               <div className={styles.modalSection}>
-                <h4 className={styles.modalSectionTitle}>🏷️ Difficulty</h4>
+                <h4 className={styles.modalSectionTitle}>🎯 Difficulty</h4>
                 <div className={styles.difficultyBadges}>
                   {['easy', 'medium', 'hard'].map(difficulty => {
-                    const hasDifficulty = previewCategory.questions?.some(q => q.difficulty === difficulty);
+                    const hasDifficulty = previewCategory.difficulty?.toLowerCase() === difficulty;
                     return (
-                      <span 
+                      <span
                         key={difficulty}
                         className={`${styles.difficultyBadge} ${hasDifficulty ? styles.difficultyBadgeActive : ''}`}
                       >

@@ -6,12 +6,31 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const rows = await prisma.setting.findMany();
-  const settings = {};
-  rows.forEach((r) => {
-    settings[r.key] = r.value === "true" ? true : r.value === "false" ? false : r.value;
-  });
-  return NextResponse.json(settings);
+  try {
+    const rows = await prisma.setting.findMany();
+    const settings = {};
+    rows.forEach((r) => {
+      settings[r.key] = r.value === "true" ? true : r.value === "false" ? false : r.value;
+    });
+    return NextResponse.json(settings);
+  } catch (error) {
+    console.error("Settings GET error:", error);
+    
+    // Fallback settings when database is unavailable
+    const fallbackSettings = {
+      difficultyEnabled: true,
+      homeChips: JSON.stringify(["Science", "History", "GK", "Quick 5 Min"]),
+      theme: "light",
+      soundEnabled: true,
+      timerEnabled: false,
+      languageEnabled: true,
+      navbarEnabled: true, // Add this to ensure navbar is visible
+      footerEnabled: true, // Add this to ensure footer is visible
+    };
+    
+    console.log("[API] Returning fallback settings due to database error");
+    return NextResponse.json(fallbackSettings);
+  }
 }
 
 export async function PUT(request) {

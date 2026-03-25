@@ -115,23 +115,38 @@ function quizReducer(state, action) {
       const question = state.questions.find((q) => q.id === questionId);
       if (!question) return state;
 
-      const isCorrect = selected === question.correctAnswer;
+      // Normalize comparison for score calculation
+      const selectedOptionText = String(question.options[selected] || "").trim();
+      const correctAnswerText = String(question.correctAnswer || "").trim();
+      const isCorrect = selectedOptionText === correctAnswerText;
+      
       const newAnswers = [
         ...state.answers,
         { questionId, selected, correct: question.correctAnswer, isCorrect },
       ];
       const newScore = state.score + (isCorrect ? 1 : 0);
-      const nextIndex = state.currentIndex + 1;
-      const isFinished = nextIndex >= state.questions.length;
+      const isFinished = state.currentIndex + 1 >= state.questions.length;
+
+      // Update questions with user answers
+      const updatedQuestions = state.questions.map(q => 
+        q.id === questionId ? { ...q, userAnswer: selected } : q
+      );
 
       return {
         ...state,
+        questions: updatedQuestions,
         answers: newAnswers,
         score: newScore,
-        currentIndex: isFinished ? state.currentIndex : nextIndex,
-        status: isFinished ? "finished" : "active",
+        // Status remains "active" - UI will trigger finish after review
+        status: "active",
       };
     }
+    case "FINISH_QUIZ":
+      return { ...state, status: "finished" };
+    case "GO_TO_QUESTION":
+      return { ...state, currentIndex: action.payload };
+    case "UPDATE_SCORE":
+      return { ...state, score: state.score + action.payload };
     case "PAUSE_QUIZ":
       return { ...state, isPaused: true };
     case "RESUME_QUIZ":
@@ -155,6 +170,14 @@ export function QuizProvider({ children }) {
     dispatch({ type: "SUBMIT_ANSWER", payload: { questionId, selected } });
   }, []);
 
+  const finishQuiz = useCallback(() => {
+    dispatch({ type: "FINISH_QUIZ" });
+  }, []);
+
+  const updateScore = useCallback((amount) => {
+    dispatch({ type: "UPDATE_SCORE", payload: amount });
+  }, []);
+
   const pauseQuiz = useCallback(() => {
     dispatch({ type: "PAUSE_QUIZ" });
   }, []);
@@ -173,6 +196,10 @@ export function QuizProvider({ children }) {
 
   const resetQuiz = useCallback(() => {
     dispatch({ type: "RESET_QUIZ" });
+  }, []);
+
+  const goToQuestion = useCallback((questionIndex) => {
+    dispatch({ type: "GO_TO_QUESTION", payload: questionIndex });
   }, []);
 
   const translateQuiz = useCallback(async (questions, from, to, storyText = null) => {
@@ -330,11 +357,14 @@ export function QuizProvider({ children }) {
         startQuiz,
         startQuizSet,
         submitAnswer,
+        finishQuiz,
+        updateScore,
         pauseQuiz,
         resumeQuiz,
         toggleSound,
         setFullscreen,
         resetQuiz,
+        goToQuestion,
         toggleLanguage,
         toggleFontSize,
         isTranslating: state.isTranslating,

@@ -1,0 +1,96 @@
+.header {
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--card-border);
+  padding: 16px 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(8px);
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 1.25rem;
+  transition: opacity 0.2s ease;
+}
+
+.logo:hover {
+  opacity: 0.8;
+}
+
+.logoEmoji {
+  font-size: 1.5rem;
+}
+
+.logoText {
+  color: var(--text-primary);
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.loading {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.userMenu {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.welcomeText {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.signInBtn, .signOutBtn {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.signInBtn:hover, .signOutBtn:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.signInBtn:active, .signOutBtn:active {
+  transform: translateY(0);
+}
+
+.signOutBtn {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--card-border);
+}
+
+.signOutBtn:hover {
+  background: var(--card-border);
+  color: var(--text-primary);
+}

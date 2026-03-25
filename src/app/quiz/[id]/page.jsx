@@ -8,6 +8,9 @@ import { useData } from "@/context/DataContext";
 import Timer from "@/components/Timer";
 import QuestionCard from "@/components/QuestionCard";
 import ProgressBar from "@/components/ProgressBar";
+import QuizSidebar from "@/components/QuizSidebar";
+import QuizSuggestions from "@/components/QuizSuggestions";
+import ExitConfirmModal from "@/components/ExitConfirmModal";
 import styles from "@/styles/QuizEngine.module.css";
 
 export default function QuizEngine() {
@@ -15,8 +18,34 @@ export default function QuizEngine() {
   const params = useParams();
   const { data: session } = useSession();
   const { quizzes } = useData();
+  const { goToQuestion } = useQuiz();
   const [favouriteIds, setFavouriteIds] = useState(null);
   const [showStory, setShowStory] = useState(false);
+  const [showExitModal, setShowExitModal] = useState(false);
+  const [referrer, setReferrer] = useState(null);
+  
+  // New feature states
+  const [showHint, setShowHint] = useState(false);
+  const [used5050, setUsed5050] = useState(false);
+  const [usedAskAudience, setUsedAskAudience] = useState(false);
+  const [showExplanation, setShowExplanation] = useState(false);
+  const [audienceStats, setAudienceStats] = useState(null);
+  const [removedOptions, setRemovedOptions] = useState([]);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportData, setReportData] = useState({ questionId: null, issue: '' });
+  const [celebrationAnimation, setCelebrationAnimation] = useState(false);
+  const [questionTransition, setQuestionTransition] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [performanceData, setPerformanceData] = useState({
+    totalTime: 0,
+    averageTimePerQuestion: 0,
+    correctAnswers: 0,
+    wrongAnswers: 0,
+    hintsUsed: 0,
+    lifelinesUsed: 0,
+    accuracy: 0
+  });
+  const [questionStartTime, setQuestionStartTime] = useState(Date.now());
 
   const {
     status,
@@ -39,6 +68,8 @@ export default function QuizEngine() {
     toggleLanguage,
     fontScale,
     toggleFontSize,
+    finishQuiz,
+    updateScore,
   } = useQuiz();
 
   const category = useMemo(() => {
@@ -90,6 +121,226 @@ export default function QuizEngine() {
   const storyTextToDisplay = useMemo(() => {
     return translatedStory || category?.storyText;
   }, [translatedStory, category?.storyText]);
+
+  // Voice Narration Function
+  const speakText = (text) => {
+    if ('speechSynthesis' in window && !isSpeaking) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = language === 'hi' ? 'hi-IN' : 'en-US';
+      utterance.rate = 0.9;
+      utterance.pitch = 1;
+      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onend = () => setIsSpeaking(false);
+      utterance.onerror = () => setIsSpeaking(false);
+      speechSynthesis.speak(utterance);
+    }
+  };
+
+  const stopSpeaking = () => {
+    if ('speechSynthesis' in window) {
+      speechSynthesis.cancel();
+      setIsSpeaking(false);
+    }
+  };
+
+  // Hint System
+  const useHint = () => {
+    setShowHint(true);
+    setPerformanceData(prev => ({ ...prev, hintsUsed: prev.hintsUsed + 1 }));
+    // Deduct points for hint
+    if (score > 5) {
+      updateScore(-5); // Deduct 5 points
+    }
+  };
+
+  // 50/50 Lifeline
+  const use5050 = () => {
+    if (used5050) return;
+    
+    const currentQuestion = questions[currentIndex];
+    if (!currentQuestion) return;
+
+    // Normalize comparison to find correct answer index
+    const correctAnswerText = String(currentQuestion.correctAnswer || "").trim();
+    const correctAnswerIndex = currentQuestion.options.findIndex(option => 
+      String(option || "").trim() === correctAnswerText
+    );
+    const wrongAnswers = currentQuestion.options
+      .map((opt, idx) => idx)
+      .filter(idx => idx !== correctAnswerIndex);
+    
+    // Remove 2 wrong answers randomly
+    const toRemove = wrongAnswers.sort(() => Math.random() - 0.5).slice(0, 2);
+    
+    setUsed5050(true);
+    setPerformanceData(prev => ({ ...prev, lifelinesUsed: prev.lifelinesUsed + 1 }));
+    updateScore(-3); // Deduct 3 points for 50/50
+    
+    // Store removed options for UI
+    setRemovedOptions(toRemove);
+  };
+
+  // Ask Audience
+  const useAskAudience = () => {
+    if (usedAskAudience) return;
+    
+    const currentQuestion = questions[currentIndex];
+    if (!currentQuestion) return;
+
+    // Normalize comparison to find correct answer index
+    const correctAnswerText = String(currentQuestion.correctAnswer || "").trim();
+    const correctAnswerIndex = currentQuestion.options.findIndex(option => 
+      String(option || "").trim() === correctAnswerText
+    );
+    
+    // Simulate audience poll (more realistic distribution)
+    const stats = currentQuestion.options.map((_, idx) => {
+      if (idx === correctAnswerIndex) {
+        return Math.floor(Math.random() * 30) + 40; // 40-70% for correct
+      } else {
+        return Math.floor(Math.random() * 20) + 5; // 5-25% for wrong
+      }
+    });
+    
+    // Normalize to 100%
+    const total = stats.reduce((sum, val) => sum + val, 0);
+    const normalizedStats = stats.map(val => Math.round((val / total) * 100));
+    
+    setAudienceStats(normalizedStats);
+    setUsedAskAudience(true);
+    setPerformanceData(prev => ({ ...prev, lifelinesUsed: prev.lifelinesUsed + 1 }));
+    updateScore(-3); // Deduct 3 points for audience poll
+  };
+
+  // Report Question
+  const reportQuestion = (issue) => {
+    if (!questions[currentIndex]) return;
+    setReportData({ questionId: questions[currentIndex]?.id, issue });
+    setShowReportModal(true);
+  };
+
+  const submitReport = async () => {
+    try {
+      await fetch('/api/report-question', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(reportData)
+      });
+      setShowReportModal(false);
+      setReportData({ questionId: null, issue: '' });
+      alert('Report submitted successfully. Thank you for helping us improve!');
+    } catch (error) {
+      alert('Failed to submit report. Please try again.');
+    }
+  };
+
+  // Celebration Effects
+  const triggerCelebration = () => {
+    setCelebrationAnimation(true);
+    setTimeout(() => setCelebrationAnimation(false), 1000);
+  };
+
+  // Question Transition
+  const triggerQuestionTransition = () => {
+    setQuestionTransition(true);
+    setTimeout(() => setQuestionTransition(false), 200); 
+  };
+
+  // Manually move to next question
+  const moveToNextQuestion = () => {
+    if (currentIndex < questions.length - 1) {
+      // Move to next question
+      goToQuestion(currentIndex + 1);
+    } else {
+      // Quiz is finished - update state and redirect
+      finishQuiz();
+      router.replace("/results");
+    }
+  };
+
+  // Performance Tracking
+  const updatePerformanceData = (isCorrect) => {
+    const questionTime = Date.now() - questionStartTime;
+    setPerformanceData(prev => ({
+      ...prev,
+      totalTime: prev.totalTime + questionTime,
+      averageTimePerQuestion: (prev.totalTime + questionTime) / (currentIndex + 1),
+      correctAnswers: isCorrect ? prev.correctAnswers + 1 : prev.correctAnswers,
+      wrongAnswers: !isCorrect ? prev.wrongAnswers + 1 : prev.wrongAnswers,
+      accuracy: ((isCorrect ? prev.correctAnswers + 1 : prev.correctAnswers) / (currentIndex + 1)) * 100
+    }));
+    setQuestionStartTime(Date.now());
+  };
+
+  // Enhanced Answer Submission
+  const handleSubmitAnswer = (answerIndex) => {
+    const currentQuestion = questions[currentIndex];
+    if (!currentQuestion) return;
+    
+    // Normalize comparison for live feedback
+    const selectedOptionText = String(currentQuestion.options[answerIndex] || "").trim();
+    const correctAnswerText = String(currentQuestion.correctAnswer || "").trim();
+    const isCorrect = selectedOptionText === correctAnswerText;
+    
+    updatePerformanceData(isCorrect);
+    
+    // Show explanation after answering
+    setShowExplanation(true);
+    
+    // Submit answer using the quiz context function
+    submitAnswer(currentQuestion.id, answerIndex);
+    
+    // Auto-progress to next question after 2.5 seconds
+    setTimeout(() => {
+      // Reset lifelines for next question
+      setShowHint(false);
+      setUsed5050(false);
+      setUsedAskAudience(false);
+      setShowExplanation(false);
+      setAudienceStats(null);
+      setRemovedOptions([]);
+      triggerQuestionTransition();
+      
+      // Move to next question automatically
+      moveToNextQuestion();
+    }, 2500); // 2.5 seconds to review the answer
+  };
+
+  // Initialize quiz start time
+  useEffect(() => {
+    if (!window.quizStartTime && status === 'active') {
+      window.quizStartTime = Date.now();
+    }
+    
+    // Set up global function for next question
+    window.onNextQuestion = () => {
+      // Reset lifelines for next question
+      setShowHint(false);
+      setUsed5050(false);
+      setUsedAskAudience(false);
+      setShowExplanation(false);
+      setAudienceStats(null);
+      setRemovedOptions([]);
+      triggerQuestionTransition();
+      
+      // Move to next question
+      moveToNextQuestion();
+    };
+    
+    return () => {
+      delete window.onNextQuestion;
+    };
+  }, [status, currentIndex, questions.length]);
+
+  // Reset question start time when question changes
+  useEffect(() => {
+    setQuestionStartTime(Date.now());
+    
+    // Reset revealed state for new question
+    if (window.QuestionCardRef) {
+      window.QuestionCardRef.resetQuestion();
+    }
+  }, [currentIndex]);
 
   const storyPreviewText = useMemo(() => {
     const raw = storyTextToDisplay?.trim();
@@ -161,6 +412,87 @@ export default function QuizEngine() {
     submitAnswer(currentQuestion.id, null);
   };
 
+  // Navigation handlers for sidebar
+  const handleGoBack = () => {
+    if (currentIndex > 0) {
+      goToQuestion(currentIndex - 1);
+    }
+  };
+
+  const handleNavigateToQuestion = (questionIndex) => {
+    if (questionIndex <= currentIndex) {
+      goToQuestion(questionIndex);
+    }
+  };
+
+  const handleResumeQuiz = () => {
+    // Find the next unanswered question
+    const nextUnansweredIndex = questions.findIndex((q, index) => 
+      index > currentIndex && q.userAnswer === undefined
+    );
+    
+    if (nextUnansweredIndex !== -1) {
+      goToQuestion(nextUnansweredIndex);
+    } else if (currentIndex < questions.length - 1) {
+      // If no unanswered questions found, go to next question
+      goToQuestion(currentIndex + 1);
+    }
+  };
+
+  const handleExitQuiz = () => {
+    setShowExitModal(true);
+  };
+
+  const confirmExitQuiz = () => {
+    // Reset quiz state
+    resetQuiz();
+    
+    // Navigate back to where user came from
+    if (referrer) {
+      router.push(referrer);
+    } else {
+      // Fallback to category page or home
+      const categoryId = params?.id;
+      if (categoryId) {
+        router.push(`/category/${categoryId}`);
+      } else {
+        router.push('/');
+      }
+    }
+  };
+
+  // Capture referrer on component mount
+  useEffect(() => {
+    // Try to get the referrer from various sources
+    const referrerUrl = document.referrer;
+    const fromStorage = sessionStorage.getItem('quizReferrer');
+    
+    if (fromStorage) {
+      setReferrer(fromStorage);
+      sessionStorage.removeItem('quizReferrer');
+    } else if (referrerUrl && referrerUrl.includes(window.location.origin)) {
+      setReferrer(referrerUrl);
+    } else {
+      // Default fallback
+      setReferrer('/');
+    }
+  }, []);
+
+  // Set up global navigation handlers
+  useEffect(() => {
+    window.onGoBack = handleGoBack;
+    window.onNavigateToQuestion = handleNavigateToQuestion;
+    window.onResumeQuiz = handleResumeQuiz;
+    window.onExitQuiz = handleExitQuiz;
+    
+    return () => {
+      delete window.onGoBack;
+      delete window.onNavigateToQuestion;
+      delete window.onResumeQuiz;
+      delete window.onExitQuiz;
+    };
+  }, [currentIndex, questions]);
+
   return (
     <main
       className={`${styles.page} ${isFullscreen ? styles.fullscreen : ""}`}
@@ -187,31 +519,95 @@ export default function QuizEngine() {
             </div>
             <div className={styles.topRight}>
               <div className={styles.controls}>
+                {/* Voice Narration */}
+                <button
+                  className={`${styles.controlBtn} ${isSpeaking ? styles.active : ""}`}
+                  onClick={() => isSpeaking ? stopSpeaking() : speakText(currentQuestion.question)}
+                  title={isSpeaking ? "Stop Speaking" : "Read Question Aloud"}
+                  data-icon={isSpeaking ? "🔇" : "🔊"}
+                >
+                  {isSpeaking ? "🔇" : "🔊"}
+                </button>
+                
+                {/* Hint Button */}
+                <button
+                  className={`${styles.controlBtn} ${showHint ? styles.active : ""}`}
+                  onClick={useHint}
+                  disabled={showHint}
+                  title="Get Hint (-5 points)"
+                  data-icon="💡"
+                >
+                  💡
+                </button>
+                
+                {/* 50/50 Lifeline */}
+                <button
+                  className={`${styles.controlBtn} ${used5050 ? styles.disabled : ""}`}
+                  onClick={use5050}
+                  disabled={used5050}
+                  title="50/50 Lifeline (-3 points)"
+                  data-icon="50/50"
+                >
+                  50/50
+                </button>
+                
+                {/* Ask Audience */}
+                <button
+                  className={`${styles.controlBtn} ${usedAskAudience ? styles.disabled : ""}`}
+                  onClick={useAskAudience}
+                  disabled={usedAskAudience}
+                  title="Ask Audience (-3 points)"
+                  data-icon="👥"
+                >
+                  👥
+                </button>
+                
+                {/* Report Question */}
+                <button
+                  className={styles.controlBtn}
+                  onClick={() => reportQuestion('')}
+                  title="Report Question"
+                  data-icon="🚩"
+                >
+                  🚩
+                </button>
+                
+                {/* Font Size - Hidden on small mobile */}
                 <button
                   className={styles.controlBtn}
                   onClick={toggleFontSize}
                   title="Adjust font size"
+                  data-icon="A"
                 >
                   A
                 </button>
+                
+                {/* Language Toggle - Hidden on small mobile */}
                 <button
                   className={styles.controlBtn}
                   onClick={() => toggleLanguage(storyTextToDisplay)}
                   title={language === "hi" ? "Switch to English" : "Switch to Hindi"}
+                  data-icon={language === "hi" ? "EN" : "हि"}
                 >
                   {language === "hi" ? "EN" : "हि"}
                 </button>
+                
+                {/* Sound Toggle */}
                 <button 
                   className={`${styles.controlBtn} ${!soundEnabled ? styles.disabled : ""}`} 
                   onClick={toggleSound}
                   title={soundEnabled ? "Disable Sound" : "Enable Sound"}
+                  data-icon={soundEnabled ? "🔊" : "🔇"}
                 >
                   {soundEnabled ? "🔊" : "🔇"}
                 </button>
+                
+                {/* Fullscreen Toggle */}
                 <button 
                   className={styles.controlBtn} 
                   onClick={toggleFullscreen}
                   title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+                  data-icon={isFullscreen ? "↙️" : "↗️"}
                 >
                   {isFullscreen ? "↙️" : "↗️"}
                 </button>
@@ -227,50 +623,44 @@ export default function QuizEngine() {
           <ProgressBar current={currentIndex} total={questions.length} />
 
           {/* Question */}
-          <div className={isPaused || showStory ? styles.pausedContent : ""}>
+          <div className={`${isPaused || showStory ? styles.pausedContent : ""} ${questionTransition ? styles.transitioning : ""}`}>
             <QuestionCard
               key={currentQuestion.id}
               question={currentQuestion}
-              onAnswer={handleAnswer}
+              onAnswer={handleSubmitAnswer}
               favouriteIds={favouriteIds}
               quizId={params?.id}
               disabled={isPaused || showStory}
+              userAnswer={currentQuestion.userAnswer}
+              showHint={showHint}
+              removedOptions={removedOptions}
+              audienceStats={audienceStats}
+              showExplanation={showExplanation}
+              explanation={currentQuestion.explanation}
             />
           </div>
-        </div>
 
-        {/* Story Sidebar */}
-        {hasStory && (
-          <aside className={styles.sidebar}>
-            <div className={`${styles.storyCard} glass-card`}>
-              {category?.storyImage && (
-                <img
-                  src={category.storyImage}
-                  alt=""
-                  className={styles.storyPreviewImage}
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                  }}
-                />
-              )}
-              <div className={styles.storyPreviewBody}>
-                <h3 className={styles.storyTitle}>{sidebarTitle}</h3>
-                {storyPreviewText ? (
-                  <p className={styles.storyPreviewText}>{storyPreviewText}</p>
-                ) : (
-                  <p className={styles.storyHint}>{sidebarHint}</p>
-                )}
-                <button
-                  type="button"
-                  className={styles.knowMoreBtn}
-                  onClick={handleToggleStory}
-                >
-                  Know More
-                </button>
+          {/* Celebration Animation */}
+          {celebrationAnimation && (
+            <div className={styles.celebrationOverlay}>
+              <div className={styles.celebrationEffect}>
+                🎉 Correct! 🎉
               </div>
             </div>
-          </aside>
-        )}
+          )}
+        </div>
+
+        {/* Quiz Sidebar */}
+        <QuizSidebar
+          category={category}
+          questions={questions}
+          currentIndex={currentIndex}
+          score={score}
+          timerSetting={timerSetting}
+          isPaused={isPaused || showStory}
+          pauseQuiz={pauseQuiz}
+          resumeQuiz={resumeQuiz}
+        />
       </div>
 
       {/* Story Overlay */}
@@ -295,6 +685,124 @@ export default function QuizEngine() {
           </div>
         </div>
       )}
+
+      {/* Exit Confirmation Modal */}
+      <ExitConfirmModal
+        isOpen={showExitModal}
+        onClose={() => setShowExitModal(false)}
+        onConfirm={confirmExitQuiz}
+        progress={questions.length > 0 ? Math.round(((currentIndex + 1) / questions.length) * 100) : 0}
+        score={score}
+        totalQuestions={questions.length}
+      />
+
+      {/* Report Question Modal */}
+      {showReportModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowReportModal(false)}>
+          <div className={`${styles.reportModal} glass-card`} onClick={(e) => e.stopPropagation()}>
+            <h3 className={styles.modalTitle}>Report Question</h3>
+            <div className={styles.reportContent}>
+              <p className={styles.reportQuestion}>{currentQuestion.question}</p>
+              <div className={styles.reportOptions}>
+                {currentQuestion.options.map((option, idx) => (
+                  <label key={idx} className={styles.reportOption}>
+                    <input
+                      type="radio"
+                      name="reportIssue"
+                      value={`Option ${idx + 1} is incorrect`}
+                      onChange={(e) => setReportData({ ...reportData, issue: e.target.value })}
+                    />
+                    <span>{option}</span>
+                  </label>
+                ))}
+                <label className={styles.reportOption}>
+                  <input
+                    type="radio"
+                    name="reportIssue"
+                    value="Question is unclear"
+                    onChange={(e) => setReportData({ ...reportData, issue: e.target.value })}
+                  />
+                  <span>Question is unclear</span>
+                </label>
+                <label className={styles.reportOption}>
+                  <input
+                    type="radio"
+                    name="reportIssue"
+                    value="Other issue"
+                    onChange={(e) => setReportData({ ...reportData, issue: e.target.value })}
+                  />
+                  <span>Other issue</span>
+                </label>
+              </div>
+              <textarea
+                className={styles.reportTextarea}
+                placeholder="Please provide more details..."
+                value={reportData.issue.includes(':') ? reportData.issue.split(':')[1] : ''}
+                onChange={(e) => setReportData({ ...reportData, issue: `${reportData.issue.split(':')[0]}: ${e.target.value}` })}
+              />
+            </div>
+            <div className={styles.modalActions}>
+              <button className={styles.cancelBtn} onClick={() => setShowReportModal(false)}>
+                Cancel
+              </button>
+              <button className={styles.submitBtn} onClick={submitReport} disabled={!reportData.issue}>
+                Submit Report
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Performance Analytics (shown at quiz end) */}
+      {status === "finished" && (
+        <div className={styles.modalOverlay}>
+          <div className={`${styles.performanceModal} glass-card`}>
+            <h2 className={styles.modalTitle}>📊 Performance Analytics</h2>
+            <div className={styles.performanceGrid}>
+              <div className={styles.performanceItem}>
+                <span className={styles.performanceLabel}>Total Score</span>
+                <span className={styles.performanceValue}>{score}</span>
+              </div>
+              <div className={styles.performanceItem}>
+                <span className={styles.performanceLabel}>Accuracy</span>
+                <span className={styles.performanceValue}>{performanceData.accuracy.toFixed(1)}%</span>
+              </div>
+              <div className={styles.performanceItem}>
+                <span className={styles.performanceLabel}>Total Time</span>
+                <span className={styles.performanceValue}>{Math.round(performanceData.totalTime / 1000)}s</span>
+              </div>
+              <div className={styles.performanceItem}>
+                <span className={styles.performanceLabel}>Avg Time/Question</span>
+                <span className={styles.performanceValue}>{Math.round(performanceData.averageTimePerQuestion / 1000)}s</span>
+              </div>
+              <div className={styles.performanceItem}>
+                <span className={styles.performanceLabel}>Correct Answers</span>
+                <span className={styles.performanceValue}>{performanceData.correctAnswers}</span>
+              </div>
+              <div className={styles.performanceItem}>
+                <span className={styles.performanceLabel}>Wrong Answers</span>
+                <span className={styles.performanceValue}>{performanceData.wrongAnswers}</span>
+              </div>
+              <div className={styles.performanceItem}>
+                <span className={styles.performanceLabel}>Hints Used</span>
+                <span className={styles.performanceValue}>{performanceData.hintsUsed}</span>
+              </div>
+              <div className={styles.performanceItem}>
+                <span className={styles.performanceLabel}>Lifelines Used</span>
+                <span className={styles.performanceValue}>{performanceData.lifelinesUsed}</span>
+              </div>
+            </div>
+            <div className={styles.modalActions}>
+              <button className={styles.primaryBtn} onClick={() => router.push('/results')}>
+                View Detailed Results
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quiz Suggestions - Below Console */}
+      <QuizSuggestions currentCategory={category} />
     </main>
   );
 }

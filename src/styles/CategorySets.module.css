@@ -1,5 +1,5 @@
 .page {
-  max-width: 900px;
+  max-width: 1000px;
   margin: 0 auto;
   padding: 32px 24px 80px;
 }
@@ -7,26 +7,44 @@
 /* ===== Header ===== */
 .header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 24px;
-  margin-bottom: 40px;
-  padding: 24px;
-  background: var(--card-bg);
+  margin-bottom: 48px;
+  padding: 32px;
+  background: linear-gradient(135deg, var(--card-bg), var(--accent-light));
   backdrop-filter: var(--card-backdrop);
   border: 1px solid var(--card-border);
-  border-radius: var(--border-radius-lg);
+  border-radius: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, var(--accent), transparent);
+  opacity: 0.1;
+  border-radius: 50%;
+  transform: translate(50%, -50%);
 }
 
 .headerImage {
-  width: 80px;
-  height: 80px;
-  border-radius: var(--border-radius);
+  width: 100px;
+  height: 100px;
+  border-radius: 16px;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--accent-light);
+  background: var(--accent);
   flex-shrink: 0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 1;
 }
 
 .headerImg {
@@ -36,13 +54,90 @@
 }
 
 .headerEmoji {
-  font-size: 2.5rem;
+  font-size: 3rem;
+  filter: brightness(1.2);
 }
 
-.headerInfo { flex: 1; }
-.title { font-size: 1.6rem; font-weight: 800; color: var(--text-primary); margin-bottom: 4px; }
-.desc { font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 6px; }
-.totalCount { font-size: 0.85rem; color: var(--text-muted); font-weight: 500; }
+.headerInfo { 
+  flex: 1; 
+  position: relative;
+  z-index: 1;
+}
+
+.headerTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  gap: 16px;
+}
+
+.title { 
+  font-size: 2rem; 
+  font-weight: 800; 
+  color: var(--text-primary); 
+  margin-bottom: 0;
+  line-height: 1.2;
+}
+
+.headerMeta {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.difficultyBadge {
+  padding: 6px 12px;
+  background: var(--accent);
+  color: white;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.questionCount {
+  padding: 6px 12px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.desc { 
+  font-size: 1rem; 
+  color: var(--text-secondary); 
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+
+.headerStats {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.statItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.statIcon {
+  font-size: 1.2rem;
+}
+
+.statText {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
 
 /* ===== Sub-categories ===== */
 .subCategories {
@@ -50,10 +145,265 @@
 }
 
 .subTitle {
-  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 20px;
+}
+
+.subTitleIcon {
+  font-size: 1.5rem;
+}
+
+.subGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.subCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--text-primary);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.subCard:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--accent);
+}
+
+.subCardImage {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--accent-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.subEmoji {
+  font-size: 1.5rem;
+}
+
+.subInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.subName {
+  display: block;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subCount {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.subArrow {
+  font-size: 1.2rem;
+  color: var(--accent);
+  font-weight: 600;
+  transition: transform 0.3s ease;
+}
+
+.subCard:hover .subArrow {
+  transform: translateX(4px);
+}
+
+/* ===== Quiz Sets Section ===== */
+.setsSection {
+  margin-bottom: 48px;
+}
+
+.setsHeader {
+  margin-bottom: 32px;
+}
+
+.setsTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.setsTitleIcon {
+  font-size: 1.8rem;
+}
+
+.setsSubtitle {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* ===== Empty State ===== */
+.emptyState {
+  text-align: center;
+  padding: 80px 32px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+}
+
+.emptyIcon {
+  font-size: 4rem;
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+.emptyTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.emptyDesc {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* ===== Grid ===== */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.setCard {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.setCard:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.setCardTop {
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.setCardTopContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+.setNum {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.setBadge {
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: white;
+  text-transform: uppercase;
+}
+
+.setCardBody {
+  padding: 24px 20px;
+}
+
+.setInfo {
+  margin-bottom: 20px;
+}
+
+.setRange {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.setCount {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.setTime {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.setTimeIcon {
+  font-size: 0.9rem;
+}
+
+.setTimeText {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.playBtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  font-weight: 600;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.playBtnIcon {
+  font-size: 0.9rem;
+}
+
+.playBtn:hover {
+  transform: translateY(-1px);
+}
+
+.subTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 16px;
 }
 
 .subGrid {
@@ -233,31 +583,49 @@
 /* ===== Modal ===== */
 .overlay {
   position: fixed;
-  inset: 0;
-  background: var(--modal-overlay);
-  backdrop-filter: blur(4px);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 200;
-  animation: fadeIn 0.2s ease;
+  z-index: 1000;
+  padding: 20px;
 }
 
 .modal {
-  background: var(--modal-bg);
+  background: var(--card-bg);
   border: 1px solid var(--card-border);
-  border-radius: var(--border-radius-lg);
-  padding: 36px 32px;
-  width: 90%;
-  max-width: 440px;
+  border-radius: 20px;
+  padding: 32px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   position: relative;
-  animation: scaleIn 0.25s ease;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .closeBtn {
   position: absolute;
   top: 16px;
   right: 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
   width: 32px;
   height: 32px;
   border-radius: 50%;

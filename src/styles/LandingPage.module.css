@@ -9,6 +9,9 @@
 .searchContainer {
   margin-bottom: 40px;
   position: relative;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto 32px;
   z-index: 10;
 }
 
@@ -16,20 +19,69 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  width: 100%;
-  max-width: 500px;
-  margin: 0 auto;
-  padding: 12px 20px;
   background: var(--card-bg);
-  border: 1px solid var(--card-border);
+  border: 2px solid var(--card-border);
   border-radius: 12px;
-  box-shadow: var(--shadow-sm);
+  padding: 12px 16px;
   transition: all 0.3s ease;
 }
 
 .searchBox:focus-within {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-light);
+}
+
+.searchActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 12px;
+}
+
+.mobileFilterToggle {
+  display: none; /* Hidden on desktop, shown on mobile */
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s ease;
+}
+
+.mobileFilterToggle:hover {
+  background: var(--card-border);
+}
+
+.advancedFiltersToggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin: 0 auto;
+  width: fit-content;
+}
+
+.advancedFiltersToggle:hover {
+  background: var(--accent-light);
+  color: var(--text-primary);
+}
+
+.filterArrow {
+  transition: transform 0.2s ease;
+  font-size: 12px;
+}
+
+.filterArrowUp {
+  transform: rotate(180deg);
 }
 
 .searchInput {
@@ -44,6 +96,32 @@
 .searchInput:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.clearButton {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: bold;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+}
+
+.clearButton:hover {
+  background: var(--card-border);
+  color: var(--text-primary);
+}
+
+.clearButton:active {
+  transform: scale(0.9);
 }
 
 .searchSpinner {
@@ -239,8 +317,9 @@
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 20px;
+  gap: 8px;
+  margin-top: 16px;
+  margin-bottom: 24px;
 }
 
 .chip {
@@ -250,20 +329,29 @@
   padding: 6px 14px;
   border-radius: 20px;
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  text-decoration: none;
+  white-space: nowrap;
 }
 
 .chip:hover {
-  background: var(--bg-secondary);
+  background: var(--accent-light);
   border-color: var(--accent);
+  color: var(--text-primary);
+  transform: translateY(-1px);
 }
 
 .activeChip {
   background: var(--accent);
   color: white;
   border-color: var(--accent);
+}
+
+.activeChip:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
 }
 
 /* ===== Trending Section ===== */
@@ -1022,6 +1110,25 @@
   color: var(--text-muted);
   padding: 60px 0;
   font-size: 1rem;
+}
+
+/* ===== Mobile Responsive ===== */
+@media (max-width: 768px) {
+  .searchActions {
+    margin-left: 8px;
+  }
+  
+  .mobileFilterToggle {
+    display: flex; /* Show on mobile */
+  }
+  
+  .advancedFiltersToggle span:not(.filterArrow) {
+    display: none; /* Hide text on mobile, only show icon */
+  }
+  
+  .advancedFiltersToggle {
+    padding: 8px 12px;
+  }
 }
 
 /* ===== Animations ===== */

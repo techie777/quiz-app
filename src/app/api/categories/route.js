@@ -53,7 +53,184 @@ export async function GET() {
     return NextResponse.json(result);
   } catch (error) {
     console.error("Categories GET error:", error);
-    return NextResponse.json([], { status: 200 });
+    
+    // Fallback data when database is unavailable
+    const fallbackCategories = [
+      {
+        id: "fallback-1",
+        topic: "Science",
+        emoji: "🔬",
+        description: "Test your knowledge of physics, chemistry, biology, and more!",
+        categoryClass: "category-science",
+        hidden: false,
+        image: null,
+        storyText: null,
+        storyImage: null,
+        originalLang: "en",
+        isTrending: true,
+        chips: ["Science", "Education"],
+        sortOrder: 1,
+        parentId: null,
+        showSubCategoriesOnHome: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        questions: [
+          {
+            id: "q1",
+            text: "What is the chemical symbol for water?",
+            options: ["H2O", "CO2", "O2", "N2"],
+            correctAnswer: "H2O",
+            difficulty: "easy",
+            image: null,
+            categoryId: "fallback-1",
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          },
+          {
+            id: "q2", 
+            text: "What planet is known as the Red Planet?",
+            options: ["Earth", "Mars", "Jupiter", "Venus"],
+            correctAnswer: "Mars",
+            difficulty: "easy",
+            image: null,
+            categoryId: "fallback-1",
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }
+        ]
+      },
+      {
+        id: "fallback-2",
+        topic: "History",
+        emoji: "📚",
+        description: "Explore historical events, famous personalities, and ancient civilizations!",
+        categoryClass: "category-history",
+        hidden: false,
+        image: null,
+        storyText: null,
+        storyImage: null,
+        originalLang: "en",
+        isTrending: false,
+        chips: ["History", "Education"],
+        sortOrder: 2,
+        parentId: null,
+        showSubCategoriesOnHome: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        questions: [
+          {
+            id: "q3",
+            text: "In which year did World War II end?",
+            options: ["1943", "1944", "1945", "1946"],
+            correctAnswer: "1945",
+            difficulty: "medium",
+            image: null,
+            categoryId: "fallback-2",
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }
+        ]
+      },
+      {
+        id: "fallback-3",
+        topic: "General Knowledge",
+        emoji: "🧠",
+        description: "Challenge yourself with questions from various fields!",
+        categoryClass: "category-gk",
+        hidden: false,
+        image: null,
+        storyText: null,
+        storyImage: null,
+        originalLang: "en",
+        isTrending: true,
+        chips: ["GK", "Quick 5 Min"],
+        sortOrder: 3,
+        parentId: null,
+        showSubCategoriesOnHome: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        questions: [
+          {
+            id: "q4",
+            text: "What is the capital of France?",
+            options: ["London", "Berlin", "Paris", "Madrid"],
+            correctAnswer: "Paris",
+            difficulty: "easy",
+            image: null,
+            categoryId: "fallback-3",
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }
+        ]
+      },
+      {
+        id: "fallback-4",
+        topic: "Mathematics",
+        emoji: "🔢",
+        description: "Test your mathematical skills with arithmetic, algebra, and geometry!",
+        categoryClass: "category-math",
+        hidden: false,
+        image: null,
+        storyText: null,
+        storyImage: null,
+        originalLang: "en",
+        isTrending: false,
+        chips: ["Math", "Education"],
+        sortOrder: 4,
+        parentId: null,
+        showSubCategoriesOnHome: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        questions: [
+          {
+            id: "q5",
+            text: "What is 15 × 8?",
+            options: ["120", "125", "130", "135"],
+            correctAnswer: "120",
+            difficulty: "easy",
+            image: null,
+            categoryId: "fallback-4",
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }
+        ]
+      },
+      {
+        id: "fallback-5",
+        topic: "Sports",
+        emoji: "⚽",
+        description: "Questions about various sports, athletes, and sporting events!",
+        categoryClass: "category-sports",
+        hidden: false,
+        image: null,
+        storyText: null,
+        storyImage: null,
+        originalLang: "en",
+        isTrending: false,
+        chips: ["Sports", "Quick 5 Min"],
+        sortOrder: 5,
+        parentId: null,
+        showSubCategoriesOnHome: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        questions: [
+          {
+            id: "q6",
+            text: "How many players are on a standard soccer team?",
+            options: ["9", "10", "11", "12"],
+            correctAnswer: "11",
+            difficulty: "easy",
+            image: null,
+            categoryId: "fallback-5",
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }
+        ]
+      }
+    ];
+    
+    console.log("[API] Returning fallback categories due to database error");
+    return NextResponse.json(fallbackCategories);
   }
 }
 
