@@ -5,6 +5,32 @@ import { useData } from "@/context/DataContext";
 
 const QuizContext = createContext(null);
 
+// Helper function to detect if text is Hindi
+function isHindiText(text) {
+  if (!text || typeof text !== 'string') return false;
+  // Hindi Unicode range: \u0900-\u097F
+  const hindiRegex = /[\u0900-\u097F]/;
+  return hindiRegex.test(text);
+}
+
+// Helper function to detect quiz language
+function detectQuizLanguage(questions) {
+  if (!questions || questions.length === 0) return 'en';
+  
+  // Check first few questions to determine language
+  const sampleQuestions = questions.slice(0, Math.min(3, questions.length));
+  let hindiCount = 0;
+  
+  sampleQuestions.forEach(q => {
+    if (isHindiText(q.text) || (q.options && q.options.some(opt => isHindiText(opt)))) {
+      hindiCount++;
+    }
+  });
+  
+  // If majority of sample questions have Hindi text, consider it Hindi
+  return hindiCount > sampleQuestions.length / 2 ? 'hi' : 'en';
+}
+
 function shuffleArray(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -159,8 +185,15 @@ export function QuizProvider({ children }) {
     const isAllowed = allowedPairs.some(p => p.from === from && p.to === to);
     
     if (!isAllowed) {
-      console.log(`[Quiz/Translate] Translation from ${from} to ${to} is not allowed or necessary.`);
+      console.log(`[Quiz/Translate] Translation from ${from} to ${to} is not allowed or unnecessary.`);
       return null;
+    }
+
+    // Additional check: detect if source content actually matches the 'from' language
+    const detectedLang = detectQuizLanguage(questions);
+    if (detectedLang !== from) {
+      console.log(`[Quiz/Translate] Language mismatch. Detected: ${detectedLang}, Expected: ${from}. Using detected language.`);
+      from = detectedLang;
     }
 
     dispatch({ type: "SET_TRANSLATING", payload: true });
@@ -191,7 +224,7 @@ export function QuizProvider({ children }) {
           const newQ = { ...q };
           newQ.text = translations[tIndex++];
           newQ.options = q.options.map(() => translations[tIndex++]);
-          // Also need to translate the correct answer if it matches one of the options
+          // Also need to translate correct answer if it matches one of the options
           const originalCorrectIndex = q.options.indexOf(q.correctAnswer);
           if (originalCorrectIndex !== -1) {
             newQ.correctAnswer = newQ.options[originalCorrectIndex];
@@ -218,16 +251,22 @@ export function QuizProvider({ children }) {
     async (storyText = null) => {
       if (state.status !== "active") return;
       if (state.isTranslating) return;
-      const target = state.language === "en" ? "hi" : "en";
+      
+      // Detect current language of the content
+      const currentContentLang = detectQuizLanguage(state.questions);
+      const target = currentContentLang === "en" ? "hi" : "en";
+      
+      console.log(`[Quiz/Toggle] Current content language: ${currentContentLang}, Target: ${target}`);
+      
       dispatch({ type: "SET_TRANSLATE_TARGET", payload: target });
       try {
-        await translateQuiz(state.questions, state.language, target, storyText);
+        await translateQuiz(state.questions, currentContentLang, target, storyText);
         dispatch({ type: "SET_LANGUAGE", payload: target });
       } finally {
         dispatch({ type: "SET_TRANSLATE_TARGET", payload: null });
       }
     },
-    [state.isTranslating, state.language, state.questions, state.status, translateQuiz]
+    [state.isTranslating, state.questions, state.status, translateQuiz]
   );
 
   const toggleFontSize = useCallback(() => {
@@ -242,20 +281,25 @@ export function QuizProvider({ children }) {
     const quiz = quizzes.find((q) => q.id === quizId);
     if (!quiz) return;
     
-    const originalLang = quiz?.originalLang || "en";
+    // Get the questions for this difficulty
+    const quizQuestions = quiz.questions.filter(q => q.difficulty === difficulty).length > 0 
+      ? quiz.questions.filter(q => q.difficulty === difficulty) 
+      : quiz.questions;
+    
+    // Detect actual content language
+    const detectedLang = detectQuizLanguage(quizQuestions);
+    const originalLang = quiz?.originalLang || detectedLang;
+    
     dispatch({ type: "START_QUIZ", payload: { quiz, difficulty, timer, language } });
     
-    console.log(`[Quiz] Start. User selected: ${language}, Original data lang: ${originalLang}`);
+    console.log(`[Quiz] Start. User selected: ${language}, Original data lang: ${originalLang}, Detected: ${detectedLang}`);
     
-    // Rule: Only translate if target language is DIFFERENT from original language
-    if (language !== originalLang) {
-      console.log(`[Quiz] Languages differ. Checking translation feasibility...`);
-      const quizQuestions = quiz.questions.filter(q => q.difficulty === difficulty).length > 0 
-        ? quiz.questions.filter(q => q.difficulty === difficulty) 
-        : quiz.questions;
-      await translateQuiz(quizQuestions, originalLang, language, quiz.storyText);
+    // Rule: Only translate if target language is DIFFERENT from detected content language
+    if (language !== detectedLang) {
+      console.log(`[Quiz] Languages differ. Triggering translation from ${detectedLang} to ${language}...`);
+      await translateQuiz(quizQuestions, detectedLang, language, quiz.storyText);
     } else {
-      console.log(`[Quiz] Target language matches original data language. Skipping translation API.`);
+      console.log(`[Quiz] Target language matches content language. Skipping translation API.`);
     }
   }, [quizzes, translateQuiz]);
 
@@ -263,16 +307,19 @@ export function QuizProvider({ children }) {
     dispatch({ type: "START_QUIZ_SET", payload: { quizId, questions, timer, language } });
     
     const quiz = quizzes.find(q => q.id === quizId);
-    const originalLang = quiz?.originalLang || "en";
     
-    console.log(`[QuizSet] Start. User selected: ${language}, Original data lang: ${originalLang}`);
+    // Detect actual content language
+    const detectedLang = detectQuizLanguage(questions);
+    const originalLang = quiz?.originalLang || detectedLang;
     
-    // Rule: Only translate if target language is DIFFERENT from original language
-    if (language !== originalLang) {
-      console.log(`[QuizSet] Languages differ. Triggering translation...`);
-      await translateQuiz(questions, originalLang, language, quiz?.storyText);
+    console.log(`[QuizSet] Start. User selected: ${language}, Original data lang: ${originalLang}, Detected: ${detectedLang}`);
+    
+    // Rule: Only translate if target language is DIFFERENT from detected content language
+    if (language !== detectedLang) {
+      console.log(`[QuizSet] Languages differ. Triggering translation from ${detectedLang} to ${language}...`);
+      await translateQuiz(questions, detectedLang, language, quiz?.storyText);
     } else {
-      console.log(`[QuizSet] Target language matches original data language. Skipping translation API.`);
+      console.log(`[QuizSet] Target language matches content language. Skipping translation API.`);
     }
   }, [quizzes, translateQuiz]);
 

@@ -53,6 +53,7 @@ button {
   --accent: #4361ee;
   --accent-hover: #3a56d4;
   --accent-light: rgba(67, 97, 238, 0.1);
+  --accent-rgb: 67, 97, 238;
 
   --success: #10b981;
   --success-bg: rgba(16, 185, 129, 0.12);
@@ -99,6 +100,7 @@ button {
   --accent: #00e5ff;
   --accent-hover: #00c8e0;
   --accent-light: rgba(0, 229, 255, 0.1);
+  --accent-rgb: 0, 229, 255;
 
   --success: #34d399;
   --success-bg: rgba(52, 211, 153, 0.15);

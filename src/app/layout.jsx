@@ -1,6 +1,7 @@
 import Providers from "@/components/Providers";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import "./globals.css";
 
 export const metadata = {
@@ -16,7 +17,9 @@ export default function RootLayout({ children }) {
         <Providers>
           <Navbar />
           <main style={{ flex: 1 }}>
-            {children}
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
           </main>
           <Footer />
         </Providers>

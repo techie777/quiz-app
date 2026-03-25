@@ -72,6 +72,16 @@ export default function Navbar() {
   const navBtnRefs = useRef(new Map());
   const isUser = session?.user && !session.user.isAdmin;
 
+  // Hide Navbar on admin and export pages
+  if (pathname?.startsWith("/admin") || pathname?.endsWith("/export")) return null;
+
+  const navbarEnabled = settings?.navbarEnabled !== false;
+  if (!navbarEnabled) return null;
+
+  const navItems = safeParseNav(settings?.navbarItems) || DEFAULT_NAV_ITEMS;
+
+  const openItem = useMemo(() => navItems.find((n) => n.id === navOpen) || null, [navItems, navOpen]);
+
   useEffect(() => {
     function handleClick(e) {
       if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
@@ -85,24 +95,16 @@ export default function Navbar() {
     setNavOpen(null);
   }, [pathname]);
 
-  // Hide Navbar on admin and export pages
-  if (pathname?.startsWith("/admin") || pathname?.endsWith("/export")) return null;
-
-  const navbarEnabled = settings?.navbarEnabled !== false;
-  const navItems = safeParseNav(settings?.navbarItems) || DEFAULT_NAV_ITEMS;
-
-  const openItem = useMemo(() => navItems.find((n) => n.id === navOpen) || null, [navItems, navOpen]);
-
   useEffect(() => {
     if (!navOpen) return;
     function handleScrollOrResize() {
       setNavOpen(null);
     }
     window.addEventListener("scroll", handleScrollOrResize, true);
-    window.addEventListener("resize", handleScrollOrResize);
+    window.addEventListener("resize", handleScrollOrResize, true);
     return () => {
       window.removeEventListener("scroll", handleScrollOrResize, true);
-      window.removeEventListener("resize", handleScrollOrResize);
+      window.removeEventListener("resize", handleScrollOrResize, true);
     };
   }, [navOpen]);
 

@@ -1,10 +1,1 @@
-{
-  "/page": "app/page.js",
-  "/category/[id]/page": "app/category/[id]/page.js",
-  "/quiz/[id]/page": "app/quiz/[id]/page.js",
-  "/api/translate/route": "app/api/translate/route.js",
-  "/results/page": "app/results/page.js",
-  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
-  "/current-affairs/page": "app/current-affairs/page.js",
-  "/api/current-affairs/route": "app/api/current-affairs/route.js"
-}
+{}

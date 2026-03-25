@@ -24,20 +24,82 @@ async function submitPending(type, payload) {
 const EditForm = ({ category, onSave, onCancel, isNew = false, quizzes = [], settings = {}, editingId }) => {
   const [form, setForm] = useState(category);
 
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => setForm({ ...form, image: ev.target.result });
-    reader.readAsDataURL(file);
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file');
+      return;
+    }
+    
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image file size must be less than 5MB');
+      return;
+    }
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await fetch('/api/upload/image', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        setForm({ ...form, image: result.url });
+        toast.success('Image uploaded successfully!');
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'Failed to upload image');
+      }
+    } catch (error) {
+      console.error('Image upload error:', error);
+      toast.error('Failed to upload image');
+    }
   };
 
-  const handleStoryImageUpload = (e) => {
+  const handleStoryImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => setForm({ ...form, storyImage: ev.target.result });
-    reader.readAsDataURL(file);
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file');
+      return;
+    }
+    
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image file size must be less than 5MB');
+      return;
+    }
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await fetch('/api/upload/image', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        setForm({ ...form, storyImage: result.url });
+        toast.success('Story image uploaded successfully!');
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'Failed to upload story image');
+      }
+    } catch (error) {
+      console.error('Story image upload error:', error);
+      toast.error('Failed to upload story image');
+    }
   };
 
   return (

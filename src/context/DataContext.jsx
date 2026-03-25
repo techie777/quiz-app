@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useCallback, useEffect } from "react";
+import toast from "react-hot-toast";
 
 const DataContext = createContext(null);
 
@@ -74,13 +75,30 @@ export function DataProvider({ children }) {
   }, [refreshQuizzes]);
 
   const updateCategory = useCallback(async (id, updates) => {
-    const res = await fetch(`/api/categories/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updates),
-    });
-    if (res.ok) await refreshQuizzes();
-    return res.ok;
+    console.log("[DataContext] updateCategory called with:", { id, updates });
+    try {
+      const res = await fetch(`/api/categories/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+      
+      console.log("[DataContext] updateCategory response status:", res.status);
+      
+      if (res.ok) {
+        await refreshQuizzes();
+        return true;
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        console.error("[DataContext] updateCategory failed:", errData);
+        toast.error(errData.error || "Failed to update category");
+        return false;
+      }
+    } catch (error) {
+      console.error("[DataContext] updateCategory fetch error:", error);
+      toast.error("Network error while updating category");
+      return false;
+    }
   }, [refreshQuizzes]);
 
   const deleteCategory = useCallback(async (id) => {

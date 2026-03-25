@@ -27,6 +27,9 @@ export async function PUT(request, { params }) {
 
   const { id } = params;
   const body = await request.json();
+  
+  console.log('PUT request body:', body);
+  
   const category = await prisma.category.update({
     where: { id },
     data: {
@@ -45,6 +48,7 @@ export async function PUT(request, { params }) {
       ...(body.chips !== undefined && { chips: Array.isArray(body.chips) ? JSON.stringify(body.chips) : "[]" }),
     },
   });
+  
   return NextResponse.json({
     ...category,
     chips: safeJsonParse(category.chips) || [],

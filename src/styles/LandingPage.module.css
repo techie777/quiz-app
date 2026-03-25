@@ -8,6 +8,8 @@
 /* ===== Search & Filter ===== */
 .searchContainer {
   margin-bottom: 40px;
+  position: relative;
+  z-index: 10;
 }
 
 .searchBox {
@@ -37,6 +39,200 @@
   color: var(--text-primary);
   font-size: 1rem;
   outline: none;
+}
+
+.searchInput:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.searchSpinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--accent-light);
+  border-top: 2px solid var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Search Suggestions */
+.searchSuggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 1000;
+  margin-top: 8px;
+  backdrop-filter: blur(8px);
+}
+
+.suggestionItem {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid var(--card-border);
+  position: relative;
+}
+
+.suggestionItem:last-child {
+  border-bottom: none;
+}
+
+.suggestionItem:hover,
+.suggestionActive {
+  background: var(--accent-light);
+  transform: translateX(4px);
+}
+
+.suggestionItem:hover::before,
+.suggestionActive::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--accent);
+}
+
+.suggestionEmoji {
+  font-size: 1.5rem;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.suggestionContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.suggestionTopic {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.suggestionDescription {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Advanced Filters */
+.advancedFiltersSection {
+  margin-bottom: 20px;
+}
+
+.advancedFiltersToggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin: 0 auto;
+  width: fit-content;
+}
+
+.advancedFiltersToggle:hover {
+  background: var(--accent-light);
+  color: var(--text-primary);
+}
+
+.filterArrow {
+  transition: transform 0.2s ease;
+}
+
+.filterArrowUp {
+  transform: rotate(180deg);
+}
+
+.advancedFiltersPanel {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: slideDown 0.3s ease;
+  position: relative;
+  z-index: 100;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.filterGroup {
+  margin-bottom: 20px;
+}
+
+.filterGroup:last-child {
+  margin-bottom: 0;
+}
+
+.filterLabel {
+  display: block;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.filterOptions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filterOption {
+  padding: 6px 12px;
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.85rem;
+}
+
+.filterOption:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.filterOptionActive {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
 }
 
 .filterChips {
@@ -199,9 +395,15 @@
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 20px;
+  align-items: stretch; /* Ensures consistent heights */
 }
 
-.cardWrapper { cursor: pointer; }
+.cardWrapper { 
+  cursor: pointer; 
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
 
 .card {
   background: var(--card-bg);
@@ -212,6 +414,7 @@
   flex-direction: column;
   height: 100%;
   transition: all 0.3s ease;
+  position: relative;
 }
 
 .card:hover {
@@ -256,10 +459,274 @@
 
 
 .cardContent {
-  padding: 16px;
+  flex: 1;
   display: flex;
   flex-direction: column;
-  flex-grow: 1;
+  justify-content: space-between;
+  min-height: 160px; /* Ensures consistent content height */
+  padding: 16px;
+}
+
+/* Progress Indicators */
+.progressContainer {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.progressBar {
+  flex: 1;
+  height: 4px;
+  background: var(--card-border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-light));
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* Preview Button */
+.previewButton {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  color: white;
+  border: none;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(4px);
+}
+
+.previewButton:hover {
+  background: linear-gradient(135deg, var(--accent-hover), var(--accent));
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.previewButton:active {
+  transform: scale(0.95);
+}
+
+.previewButton::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  padding: 2px;
+  background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  mask: linear-gradient(135deg, white, transparent);
+  -webkit-mask: linear-gradient(135deg, white, transparent);
+  mask-mode: alpha;
+  -webkit-mask-mode: alpha;
+}
+
+/* Preview Modal */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+}
+
+.previewModal {
+  background: var(--card-bg);
+  border-radius: 16px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.modalTitle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.modalEmoji {
+  font-size: 1.5rem;
+}
+
+.modalClose {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.modalClose:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.modalContent {
+  padding: 24px;
+}
+
+.modalSection {
+  margin-bottom: 24px;
+}
+
+.modalSection:last-child {
+  margin-bottom: 0;
+}
+
+.modalSectionTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modalDescription {
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.statItem {
+  text-align: center;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--card-border);
+}
+
+.statLabel {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.statValue {
+  display: block;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.difficultyBadges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.difficultyBadge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--card-border);
+  transition: all 0.2s ease;
+}
+
+.difficultyBadgeActive {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.modalFooter {
+  display: flex;
+  gap: 12px;
+  padding: 20px 24px;
+  border-top: 1px solid var(--card-border);
+  justify-content: flex-end;
+}
+
+.modalPrimaryButton {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.modalPrimaryButton:hover {
+  background: var(--accent-dark);
+  transform: translateY(-2px);
+}
+
+.modalSecondaryButton {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--card-border);
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modalSecondaryButton:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 .cardTitle {
@@ -517,6 +984,10 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  /* Fallback for browsers that don't support -webkit-line-clamp */
+  display: -moz-box;
+  line-clamp: 2;
+  box-orient: vertical;
 }
 
 .cardCount {

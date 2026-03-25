@@ -7,6 +7,32 @@ import { useData } from "@/context/DataContext";
 import { useQuiz } from "@/context/QuizContext";
 import styles from "@/styles/CategorySets.module.css";
 
+// Helper function to detect if text is Hindi
+function isHindiText(text) {
+  if (!text || typeof text !== 'string') return false;
+  // Hindi Unicode range: \u0900-\u097F
+  const hindiRegex = /[\u0900-\u097F]/;
+  return hindiRegex.test(text);
+}
+
+// Helper function to detect quiz language
+function detectQuizLanguage(questions) {
+  if (!questions || questions.length === 0) return 'en';
+  
+  // Check first few questions to determine language
+  const sampleQuestions = questions.slice(0, Math.min(3, questions.length));
+  let hindiCount = 0;
+  
+  sampleQuestions.forEach(q => {
+    if (isHindiText(q.text) || (q.options && q.options.some(opt => isHindiText(opt)))) {
+      hindiCount++;
+    }
+  });
+  
+  // If majority of sample questions have Hindi text, consider it Hindi
+  return hindiCount > sampleQuestions.length / 2 ? 'hi' : 'en';
+}
+
 const SET_SIZE = 30;
 const SETS_PER_PAGE = 6;
 const TIMER_OPTIONS = [
@@ -74,8 +100,9 @@ export default function CategorySetsPage() {
   const handlePlay = (set) => {
     setSelectedSet(set);
     setTimer(0);
-    // Default the modal language selection to the category's original language
-    setLanguage(category?.originalLang || "en");
+    // Auto-detect the language of the quiz content
+    const detectedLang = detectQuizLanguage(set.questions);
+    setLanguage(detectedLang);
   };
 
   const handleStart = () => {

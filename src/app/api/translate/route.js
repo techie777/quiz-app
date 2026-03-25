@@ -9,7 +9,17 @@ export async function POST(request) {
       return NextResponse.json({ error: "Missing text or target language" }, { status: 400 });
     }
 
-    console.log(`[Translate API] Translating from: ${from} to: ${to}. Input size: ${Array.isArray(text) ? text.length : 1}`);
+    // Auto-detect source language if not provided
+    let sourceLang = from;
+    if (!sourceLang) {
+      // Simple detection: check if any text contains Hindi characters
+      const textSample = Array.isArray(text) ? text.join(' ') : text;
+      const hindiRegex = /[\u0900-\u097F]/;
+      sourceLang = hindiRegex.test(textSample) ? 'hi' : 'en';
+      console.log(`[Translate API] Auto-detected source language: ${sourceLang}`);
+    }
+
+    console.log(`[Translate API] Translating from: ${sourceLang} to: ${to}. Input size: ${Array.isArray(text) ? text.length : 1}`);
 
     const texts = Array.isArray(text) ? text : [text];
     const validTexts = texts.map(t => (t && t.trim() !== "") ? t.trim() : "");
@@ -30,7 +40,7 @@ export async function POST(request) {
     }
 
     try {
-      const translations = await translate(stringsToTranslate, { from, to });
+      const translations = await translate(stringsToTranslate, { from: sourceLang, to });
       
       const finalTranslations = [...texts];
       translationMap.forEach((originalIndex, i) => {
