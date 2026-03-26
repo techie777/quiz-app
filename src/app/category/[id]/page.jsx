@@ -17,14 +17,15 @@ function isHindiText(text) {
 
 // Helper function to detect quiz language
 function detectQuizLanguage(questions) {
-  if (!questions || questions.length === 0) return 'en';
+  if (!questions || !Array.isArray(questions) || questions.length === 0) return 'en';
   
   // Check first few questions to determine language
   const sampleQuestions = questions.slice(0, Math.min(3, questions.length));
   let hindiCount = 0;
   
   sampleQuestions.forEach(q => {
-    if (isHindiText(q.text) || (q.options && q.options.some(opt => isHindiText(opt)))) {
+    const hasHindi = isHindiText(q.text) || (Array.isArray(q.options) && q.options.some(opt => isHindiText(opt)));
+    if (hasHindi) {
       hindiCount++;
     }
   });
@@ -54,17 +55,31 @@ const CARD_GRADIENTS = [
 export default function CategorySetsPage() {
   const params = useParams();
   const router = useRouter();
-  const { quizzes, loaded } = useData();
+  const { quizzes } = useData();
   const { startQuizSet } = useQuiz();
 
-  const category = quizzes.find((c) => c.id === params.id);
+  const [category, setCategory] = useState(null);
+  const [loaded, setLoaded] = useState(false);
+
+
   const [timer, setTimer] = useState(0);
   const [language, setLanguage] = useState("en");
   const [selectedSet, setSelectedSet] = useState(null);
   const [page, setPage] = useState(1);
 
+  useEffect(() => {
+    if (params.id) {
+      fetch(`/api/categories/${params.id}`)
+        .then(res => res.json())
+        .then(data => {
+          setCategory(data);
+          setLoaded(true);
+        });
+    }
+  }, [params.id]);
+
   const sets = useMemo(() => {
-    if (!category) return [];
+    if (!category || !category.questions) return [];
     const result = [];
     const qs = category.questions;
     for (let i = 0; i < qs.length; i += SET_SIZE) {
@@ -78,11 +93,19 @@ export default function CategorySetsPage() {
     return result;
   }, [category]);
 
+  const paginatedSets = useMemo(() => {
+    return sets.slice(
+      (page - 1) * SETS_PER_PAGE,
+      page * SETS_PER_PAGE
+    );
+  }, [sets, page]);
+
   const totalPages = Math.ceil(sets.length / SETS_PER_PAGE);
-  const paginatedSets = sets.slice(
-    (page - 1) * SETS_PER_PAGE,
-    page * SETS_PER_PAGE
-  );
+
+  const subCategories = useMemo(() => {
+    if (!category || !quizzes) return [];
+    return (quizzes || []).filter((c) => c.parentId === category.id && !c.hidden);
+  }, [quizzes, category]);
 
   if (!loaded) {
     return (
@@ -176,16 +199,14 @@ export default function CategorySetsPage() {
       </div>
 
       {/* Sub-categories */}
-      {quizzes.some((c) => c.parentId === category.id && !c.hidden) && (
+      {subCategories.length > 0 && (
         <div className={styles.subCategories}>
           <h2 className={styles.subTitle}>
             <span className={styles.subTitleIcon}>🔍</span>
             Explore Sub-categories
           </h2>
           <div className={styles.subGrid}>
-            {quizzes
-              .filter((c) => c.parentId === category.id && !c.hidden)
-              .map((sub) => (
+            {subCategories.map((sub) => (
                 <Link
                   key={sub.id}
                   href={`/category/${sub.id}`}
@@ -231,41 +252,30 @@ export default function CategorySetsPage() {
           <>
             <div className={styles.grid}>
               {paginatedSets.map((set, i) => (
-                <div key={set.index} className={`${styles.setCard} glass-card`}>
-                  <div
-                    className={styles.setCardTop}
-                    style={{
-                      background:
-                        CARD_GRADIENTS[(set.index - 1) % CARD_GRADIENTS.length],
-                    }}
-                  >
-                    <div className={styles.setCardTopContent}>
-                      <span className={styles.setNum}>Set {set.index}</span>
-                      <span className={styles.setBadge}>New</span>
+                <div key={set.index} className={styles.setCard}>
+                  <div className={styles.setCardImage}>
+                    <div className={styles.setCardIcon}>
+                      <span className={styles.setEmoji}>🎮</span>
                     </div>
                   </div>
                   <div className={styles.setCardBody}>
-                    <div className={styles.setInfo}>
-                      <p className={styles.setRange}>
-                        Questions {set.start + 1} – {set.end}
-                      </p>
-                      <p className={styles.setCount}>
-                        {set.questions.length} questions
-                      </p>
-                      <div className={styles.setTime}>
-                        <span className={styles.setTimeIcon}>⏱️</span>
-                        <span className={styles.setTimeText}>
-                          ~{Math.ceil(set.questions.length * 0.3)} mins
-                        </span>
-                      </div>
-                    </div>
+                    <h3 className={styles.setCardTitle}>Set {set.index}</h3>
+                    
                     <button
-                      className={`btn-primary ${styles.playBtn}`}
+                      className={styles.playBtn}
                       onClick={() => handlePlay(set)}
                     >
-                      <span className={styles.playBtnIcon}>▶</span>
                       Play Quiz
                     </button>
+
+                    <div className={styles.setCardFooter}>
+                      <span className={styles.setRange}>
+                        Q {set.start + 1} – {set.end}
+                      </span>
+                      <span className={styles.setTime}>
+                        ~{Math.ceil(set.questions.length * 0.3)} mins
+                      </span>
+                    </div>
                   </div>
                 </div>
               ))}

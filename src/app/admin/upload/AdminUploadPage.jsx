@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import * as XLSX from "xlsx";
 import { useData } from "@/context/DataContext";
 import { useAdmin } from "@/context/AdminContext";
 import styles from "@/styles/AdminUpload.module.css";
@@ -49,7 +48,8 @@ function parseExcelRows(rows) {
   return { questions, errors };
 }
 
-function generateSampleXlsx() {
+async function generateSampleXlsx() {
+  const XLSX = await import("xlsx");
   const data = [
     { "Question": "What is the capital of France?", "Option 1": "London", "Option 2": "Berlin", "Option 3": "Paris", "Option 4": "Madrid", "Correct Answer": 3, "Difficulty": "Easy" },
     { "Question": "What is 2 + 2?", "Option 1": "3", "Option 2": "4", "Option 3": "5", "Option 4": "6", "Correct Answer": 2, "Difficulty": "Easy" },
@@ -153,7 +153,7 @@ export default function AdminUploadPage() {
     setExcelSuccess(false);
 
     const reader = new FileReader();
-    reader.onload = (ev) => {
+    reader.onload = async (ev) => {
       try {
         const wb = XLSX.read(ev.target.result, { type: "array" });
         const ws = wb.Sheets[wb.SheetNames[0]];

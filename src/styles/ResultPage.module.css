@@ -1,9 +1,96 @@
 .page {
-  max-width: 600px;
+  width: 100%;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 40px 24px 80px;
   position: relative;
-  overflow: hidden;
+}
+
+.resultContainer {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.mainContent {
+  flex: 1;
+  max-width: 650px;
+  min-width: 320px;
+}
+
+/* Sidebars */
+.sidebarLeft, .sidebarRight {
+  flex: 0 0 250px;
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 100px;
+  height: fit-content;
+}
+
+.sidebarTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.suggestedList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.suggestedCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.suggestedCard:hover {
+  background: white;
+  border-color: #4361ee;
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(67, 97, 238, 0.1);
+}
+
+.suggestedEmoji {
+  font-size: 24px;
+}
+
+.suggestedInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.suggestedName {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.suggestedQuestions {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+@media (max-width: 1100px) {
+  .sidebarLeft, .sidebarRight {
+    display: none;
+  }
 }
 
 /* ===== Confetti ===== */

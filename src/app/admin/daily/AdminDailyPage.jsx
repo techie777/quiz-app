@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import * as XLSX from "xlsx";
 import { useData } from "@/context/DataContext";
 import { useAdmin } from "@/context/AdminContext";
 import styles from "@/styles/AdminDaily.module.css";
@@ -68,7 +67,8 @@ function parseExcelRows(rows) {
   return { questions, errors };
 }
 
-function generateSampleXlsx() {
+async function generateSampleXlsx() {
+  const XLSX = await import("xlsx");
   const data = [
     { "Question": "What is the capital of France?", "Option 1": "London", "Option 2": "Berlin", "Option 3": "Paris", "Option 4": "Madrid", "Correct Answer": 3 },
     { "Question": "Which planet is known as the Red Planet?", "Option 1": "Earth", "Option 2": "Mars", "Option 3": "Jupiter", "Option 4": "Venus", "Correct Answer": 2 },
@@ -330,7 +330,7 @@ export default function AdminDailyPage() {
     setExcelPreview(null);
 
     const reader = new FileReader();
-    reader.onload = (ev) => {
+    reader.onload = async (ev) => {
       try {
         const wb = XLSX.read(ev.target.result, { type: "array" });
         const ws = wb.Sheets[wb.SheetNames[0]];

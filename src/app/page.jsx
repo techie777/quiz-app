@@ -1,10 +1,13 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
-import Link from "next/link";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useData } from "@/context/DataContext";
-import { motion } from "framer-motion";
-import QuizSidebar from "@/components/QuizSidebar";
+import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { debounce } from "lodash";
+import { useSession, signIn } from "next-auth/react";
+import toast from "react-hot-toast";
 import styles from "@/styles/LandingPage.module.css";
 
 // Import safe JSON parsing utility
@@ -19,7 +22,7 @@ function safeJsonParse(json, fallback = []) {
   }
 }
 
-// Function to get relevant image based on quiz topic
+
 function getRelevantImage(topic, emoji) {
   const topicLower = topic.toLowerCase();
   
@@ -177,9 +180,230 @@ const calculateProgress = (categoryId, totalQuestions) => {
   return 0; // Default to 0% progress
 };
 
+// Sub-section component for categorized quizzes
+const SubSection = React.memo(({ title, quizzes, onViewAll }) => {
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [favorites, setFavorites] = useState(new Set());
+
+  // Load favorites from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('favorite_quizzes');
+    if (saved) {
+      try {
+        setFavorites(new Set(JSON.parse(saved)));
+      } catch (e) {
+        console.error("Failed to parse favorites", e);
+      }
+    }
+  }, []);
+
+  const toggleFavorite = useCallback((e, quizId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setFavorites(prev => {
+      const next = new Set(prev);
+      if (next.has(quizId)) next.delete(quizId);
+      else next.add(quizId);
+      localStorage.setItem('favorite_quizzes', JSON.stringify([...next]));
+      return next;
+    });
+  }, []);
+
+  // Get relevant icon for the sub-section
+  const getSubSectionIcon = useCallback((title) => {
+    const titleLower = title.toLowerCase();
+    
+    if (titleLower.includes('general knowledge') || titleLower.includes('gk')) return '🧠';
+    if (titleLower.includes('india')) return '🇮🇳';
+    if (titleLower.includes('world')) return '🌍';
+    if (titleLower.includes('history')) return '📚';
+    if (titleLower.includes('sports')) return '⚽';
+    if (titleLower.includes('computer') || titleLower.includes('technology')) return '💻';
+    if (titleLower.includes('economy')) return '💰';
+    if (titleLower.includes('polity')) return '🏛️';
+    if (titleLower.includes('chemistry')) return '⚗️';
+    if (titleLower.includes('physics')) return '⚛️';
+    if (titleLower.includes('biology')) return '🧬';
+    if (titleLower.includes('bollywood') || titleLower.includes('entertainment')) return '🎬';
+    if (titleLower.includes('company') || titleLower.includes('ceo')) return '🏢';
+    if (titleLower.includes('others')) return '📋';
+    
+    return '📝'; // Default icon
+  }, []);
+
+  const toggleExpand = useCallback(() => {
+    setIsExpanded(prev => !prev);
+  }, []);
+
+  if (!quizzes || quizzes.length === 0) return null;
+
+  return (
+    <div className={styles.subSection}>
+      <div className={styles.subSectionHeader}>
+        <div className={styles.subSectionTitleContainer}>
+          <span className={styles.subSectionIcon}>{getSubSectionIcon(title)}</span>
+          <h3 className={styles.subSectionTitle}>
+            {title}
+            <span className={styles.subSectionCount}>({quizzes.length} quizzes)</span>
+          </h3>
+        </div>
+        <button className={styles.viewAllButton} onClick={toggleExpand}>
+          {isExpanded ? (
+            <>
+              Collapse
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginLeft: '6px'}}>
+                <path d="M5 15l7-7 7 7"/>
+              </svg>
+            </>
+          ) : (
+            <>
+              Expand
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginLeft: '6px'}}>
+                <path d="M19 9l-7 7-7-7"/>
+              </svg>
+            </>
+          )}
+        </button>
+      </div>
+      <div className={`${styles.subSectionGrid} ${!isExpanded ? styles.collapsed : ''}`}>
+        {isExpanded && (quizzes || []).map((quiz) => (
+          <motion.div
+            key={quiz.id}
+            className={styles.subSectionCard}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Link href={`/category/${quiz.id}`} className={styles.subSectionCardLink}>
+              <div className={styles.subSectionCardImage}>
+                {quiz.image ? (
+                  <img 
+                    src={quiz.image} 
+                    alt={quiz.topic} 
+                    className={styles.subSectionCardImg}
+                    loading="lazy"
+                  />
+                ) : (
+                  <span className={styles.subSectionCardEmoji}>
+                    {getRelevantImage(quiz.topic, quiz.emoji)}
+                  </span>
+                )}
+                <button 
+                  className={`${styles.favoriteBtn} ${favorites.has(quiz.id) ? styles.isFavorite : ''}`}
+                  onClick={(e) => toggleFavorite(e, quiz.id)}
+                  title={favorites.has(quiz.id) ? "Remove from favorites" : "Add to favorites"}
+                >
+                  {favorites.has(quiz.id) ? '❤️' : '🤍'}
+                </button>
+              </div>
+              <div className={styles.subSectionCardContent}>
+                <h4 className={styles.subSectionCardTitle}>{quiz.topic}</h4>
+                
+                {/* Play Quiz Button */}
+                <button
+                  className={styles.playQuizButton}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // Navigate to the quiz category page
+                    window.location.href = `/category/${quiz.id}`;
+                  }}
+                  aria-label={`Play ${quiz.topic} quiz`}
+                >
+                  Play Quiz
+                </button>
+
+                <div className={styles.subSectionCardFooter}>
+                  <span className={styles.subSectionCardCount}>
+                    {quiz.questions.length} questions
+                  </span>
+                  <span className={styles.subSectionCardTime}>
+                    {Math.max(1, Math.round(quiz.questions.length / 10))} min per set
+                  </span>
+                </div>
+              </div>
+            </Link>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+});
+
+
+
+// Function to categorize quizzes based on sections
+function categorizeQuizzes(quizzes, sections) {
+  const categorized = {};
+  
+  sections.forEach(section => {
+    categorized[section.name] = [];
+    
+    section.subSections.forEach(subSection => {
+      // quizIds is already an array in MongoDB (String[])
+      const quizIds = subSection.quizIds || [];
+      const subSectionQuizzes = quizzes.filter(quiz => quizIds.includes(quiz.id));
+      
+      if (subSectionQuizzes.length > 0) {
+        categorized[section.name].push({
+          title: subSection.name,
+          quizzes: subSectionQuizzes,
+          order: subSection.order
+        });
+      }
+    });
+    
+    // Sort subsections by order
+    categorized[section.name].sort((a, b) => a.order - b.order);
+  });
+  
+  return categorized;
+}
+
+// Main Category Section component
+const MainCategorySection = React.memo(({ category, categorizedData }) => {
+  const subSections = categorizedData[category] || [];
+  
+  if (subSections.length === 0) return null;
+  
+  return (
+    <div className={styles.mainCategorySection}>
+      <h2 className={styles.sectionTitle}>{category}</h2>
+      {subSections.map((subSection) => (
+        <SubSection
+          key={subSection.title}
+          title={subSection.title}
+          quizzes={subSection.quizzes}
+        />
+      ))}
+    </div>
+  );
+});
+
 export default function LandingPage() {
   const { quizzes, settings, loaded } = useData();
+  const [sections, setSections] = useState([]);
+  const [sectionsLoaded, setSectionsLoaded] = useState(false);
   const [search, setSearch] = useState("");
+
+  // Fetch sections from DB
+  useEffect(() => {
+    const fetchSections = async () => {
+      try {
+        const res = await fetch('/api/sections');
+        if (res.ok) {
+          const data = await res.json();
+          setSections(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch sections:", error);
+      } finally {
+        setSectionsLoaded(true);
+      }
+    };
+    fetchSections();
+  }, []);
+
   const [activeFilters, setActiveFilters] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchSuggestions, setSearchSuggestions] = useState([]);
@@ -192,7 +416,7 @@ export default function LandingPage() {
   const [userProgress, setUserProgress] = useState({});
   const [previewCategory, setPreviewCategory] = useState(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
-  const isLoading = !loaded;
+  const isLoading = !loaded || !sectionsLoaded;
 
   // Cleanup effect for any timers or animations
   useEffect(() => {
@@ -360,6 +584,11 @@ export default function LandingPage() {
   const baseFilteredCategories = useMemo(() => {
     return quizzes.filter((c) => !c.hidden && !c.parentId && !dailyCategoryIds.has(c.id));
   }, [quizzes, dailyCategoryIds]);
+
+  // Memoize categorized quizzes for sub-sections
+  const categorizedQuizzes = useMemo(() => {
+    return categorizeQuizzes(baseFilteredCategories, sections);
+  }, [baseFilteredCategories, sections]);
 
   // Memoize search filtered categories
   const searchFilteredCategories = useMemo(() => {
@@ -604,91 +833,110 @@ export default function LandingPage() {
         ))}
       </div>
 
-      <h2 className={styles.sectionTitle}>All Categories</h2>
-      {isLoading && <div className={styles.loadingHint}>Loading categories…</div>}
-      <motion.div 
-        className={styles.grid}
-        variants={{ 
-          hidden: { opacity: 0 },
-          show: {
-            opacity: 1,
-            transition: { staggerChildren: 0.05 }
-          }
-        }}
-        initial="hidden"
-        animate="show"
-      >
-        <motion.div
-          key="daily-quiz"
-          className={styles.cardWrapper}
-          variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
-          layout
-        >
-          <Link href="/daily" className={styles.card}>
-            <div className={styles.cardImageContainer}>
-              <div className={styles.mediaFallback}>
-                <span className={styles.mediaEmoji}>📅</span>
-              </div>
-            </div>
-            <div className={styles.cardContent}>
-              <h3 className={styles.cardTitle}>Daily Quiz</h3>
-              <p className={styles.cardDesc}>Quiz of the day + Daily current affairs (past & present).</p>
-              <div className={styles.cardFooter}>
-                <span className={styles.cardInfo}>Daily</span>
-                <span className={styles.cardInfo}>Export PDF</span>
-              </div>
-              <div className={styles.playButton}>▶ Open</div>
-            </div>
-          </Link>
-        </motion.div>
+      {/* Main Category Sections */}
+      {!search && !activeFilters.length && (
+        <div className={styles.allSubSections}>
+          {Object.keys(categorizedQuizzes).map((categoryName) => (
+            <MainCategorySection 
+              key={categoryName}
+              category={categoryName} 
+              categorizedData={categorizedQuizzes} 
+            />
+          ))}
+        </div>
+      )}
 
-        <motion.div
-          key="current-affairs"
-          className={styles.cardWrapper}
-          variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
-          layout
-        >
-          <Link href="/current-affairs" className={styles.card}>
-            <div className={styles.cardImageContainer}>
-              <div className={styles.mediaFallback}>
-                <span className={styles.mediaEmoji}>🗞️</span>
-              </div>
-            </div>
-            <div className={styles.cardContent}>
-              <h3 className={styles.cardTitle}>Current Affairs</h3>
-              <p className={styles.cardDesc}>Daily current affairs posts with date & category filters.</p>
-              <div className={styles.cardFooter}>
-                <span className={styles.cardInfo}>Date-wise</span>
-                <span className={styles.cardInfo}>Export PDF</span>
-              </div>
-              <div className={styles.playButton}>▶ Open</div>
-            </div>
-          </Link>
-        </motion.div>
-
-        {isLoading
-          ? Array.from({ length: 9 }).map((_, idx) => (
-              <motion.div
-                key={`sk-${idx}`}
-                className={styles.cardWrapper}
-                variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
-                layout
-              >
-                <div className={`${styles.card} ${styles.skeletonCard}`}>
-                  <div className={styles.cardImageContainer}>
-                    <div className={styles.skeletonMedia} />
-                  </div>
-                  <div className={styles.cardContent}>
-                    <div className={styles.skeletonTitle} />
-                    <div className={styles.skeletonLine} />
-                    <div className={styles.skeletonLineShort} />
-                    <div className={styles.skeletonFooter} />
-                    <div className={styles.skeletonButton} />
+      {/* All Categories Section (shown when searching or filtering) */}
+      {(search || activeFilters.length > 0) && (
+        <>
+          <h2 className={styles.sectionTitle}>All Categories</h2>
+          {isLoading && <div className={styles.loadingHint}>Loading categories…</div>}
+          <motion.div 
+            className={styles.grid}
+            variants={{ 
+              hidden: { opacity: 0 },
+              show: {
+                opacity: 1,
+                transition: { staggerChildren: 0.05 }
+              }
+            }}
+            initial="hidden"
+            animate="show"
+          >
+            {/* Daily Quiz Card */}
+            <motion.div
+              key="daily-quiz"
+              className={styles.cardWrapper}
+              variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+              layout
+            >
+              <Link href="/daily" className={styles.card}>
+                <div className={styles.cardImageContainer}>
+                  <div className={styles.mediaFallback}>
+                    <span className={styles.mediaEmoji}>📅</span>
                   </div>
                 </div>
-              </motion.div>
-            ))
-          : visibleCategories.map((cat, index) => {
+                <div className={styles.cardContent}>
+                  <h3 className={styles.cardTitle}>Daily Quiz</h3>
+                  
+                  <div className={styles.cardFooter}>
+                    <span className={styles.cardInfo}>Daily</span>
+                    <span className={styles.cardInfo}>Export PDF</span>
+                  </div>
+                  <div className={styles.playButton}>Play Quiz</div>
+                </div>
+              </Link>
+            </motion.div>
+
+            {/* Current Affairs Card */}
+            <motion.div
+              key="current-affairs"
+              className={styles.cardWrapper}
+              variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+              layout
+            >
+              <Link href="/current-affairs" className={styles.card}>
+                <div className={styles.cardImageContainer}>
+                  <div className={styles.mediaFallback}>
+                    <span className={styles.mediaEmoji}>🗞️</span>
+                  </div>
+                </div>
+                <div className={styles.cardContent}>
+                  <h3 className={styles.cardTitle}>Current Affairs</h3>
+                  
+                  <div className={styles.cardFooter}>
+                    <span className={styles.cardInfo}>Date-wise</span>
+                    <span className={styles.cardInfo}>Export PDF</span>
+                  </div>
+                  <div className={styles.playButton}>Play Quiz</div>
+                </div>
+              </Link>
+            </motion.div>
+
+            {/* Regular Quiz Cards */}
+            {isLoading
+              ? Array.from({ length: 9 }).map((_, idx) => (
+                  <motion.div
+                    key={`sk-${idx}`}
+                    className={styles.cardWrapper}
+                    variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+                    layout
+                  >
+                    <div className={`${styles.card} ${styles.skeletonCard}`}>
+                      <div className={styles.cardImageContainer}>
+                        <div className={styles.skeletonMedia} />
+                      </div>
+                      <div className={styles.cardContent}>
+                        <div className={styles.skeletonTitle} />
+                        <div className={styles.skeletonLine} />
+                        <div className={styles.skeletonLineShort} />
+                        <div className={styles.skeletonFooter} />
+                        <div className={styles.skeletonButton} />
+                      </div>
+                    </div>
+                  </motion.div>
+                ))
+              : visibleCategories.map((cat, index) => {
                   const progress = calculateProgress(cat.id, cat.questions.length);
                   return (
                     <motion.div
@@ -726,7 +974,9 @@ export default function LandingPage() {
                         </div>
                         <div className={styles.cardContent}>
                           <h3 className={styles.cardTitle}>{cat.topic}</h3>
-                          <p className={styles.cardDesc}>{cat.description}</p>
+                          
+                          <div className={styles.playButton}>Play Quiz</div>
+
                           <div className={styles.cardFooter}>
                             <span className={styles.cardCount}>
                               {cat.questions.length} questions
@@ -768,11 +1018,13 @@ export default function LandingPage() {
                     </motion.div>
                   );
                 })}
-      </motion.div>
+          </motion.div>
+        </>
+      )}
 
-      {!isLoading && visibleCategories.length === 0 && (
+      {!isLoading && visibleCategories.length === 0 && (search || activeFilters.length > 0) && (
         <p className={styles.empty}>
-          {search || activeFilters.length > 0 ? "No categories match your criteria." : "No categories available."}
+          No categories match your criteria.
         </p>
       )}
 

@@ -12,6 +12,7 @@ import QuizSidebar from "@/components/QuizSidebar";
 import QuizSuggestions from "@/components/QuizSuggestions";
 import ExitConfirmModal from "@/components/ExitConfirmModal";
 import styles from "@/styles/QuizEngine.module.css";
+import { initSounds, playCorrectSound, playWrongSound } from "@/lib/sounds";
 
 export default function QuizEngine() {
   const router = useRouter();
@@ -62,7 +63,6 @@ export default function QuizEngine() {
   const [reportData, setReportData] = useState({ questionId: null, issue: '' });
   const [celebrationAnimation, setCelebrationAnimation] = useState(false);
   const [questionTransition, setQuestionTransition] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
   const [performanceData, setPerformanceData] = useState({
     totalTime: 0,
     averageTimePerQuestion: 0,
@@ -75,7 +75,7 @@ export default function QuizEngine() {
   const [questionStartTime, setQuestionStartTime] = useState(Date.now());
 
   const category = useMemo(() => {
-    return quizzes.find((q) => q.id === params?.id);
+    return (quizzes || []).find((q) => q.id === params?.id);
   }, [quizzes, params?.id]);
 
   const storyTextToDisplay = useMemo(() => {
@@ -112,6 +112,11 @@ export default function QuizEngine() {
     return "Continue Quiz";
   }, [language]);
 
+  // Initialize sounds
+  useEffect(() => {
+    initSounds();
+  }, []);
+
   // Load user's favourite question IDs once
   useEffect(() => {
     if (session?.user && !session.user.isAdmin) {
@@ -125,17 +130,21 @@ export default function QuizEngine() {
     }
   }, [session]);
 
-  // Redirect if no active quiz
+  // Redirect if quiz is finished or idle
   useEffect(() => {
     // Only redirect if status is idle and we're not just mounting
     const timer = setTimeout(() => {
       if (status === "idle") {
         router.replace("/");
       }
-    }, 1500); // Increased delay to 1.5s to ensure context state syncs
+    }, 2000); 
     
     if (status === "finished") {
-      router.replace("/results");
+      // Small delay before redirecting to results to ensure state is committed
+      const resultTimer = setTimeout(() => {
+        router.replace("/results");
+      }, 100);
+      return () => clearTimeout(resultTimer);
     }
     
     return () => clearTimeout(timer);
@@ -156,6 +165,7 @@ export default function QuizEngine() {
       goToQuestion(currentIndex + 1);
     } else {
       finishQuiz();
+      // Use router.push for smoother navigation or router.replace
       router.replace("/results");
     }
   }, [currentIndex, questions?.length, goToQuestion, finishQuiz, router]);
@@ -277,35 +287,6 @@ export default function QuizEngine() {
     }
   };
 
-  // Voice Narration Function
-  const speakText = (text) => {
-    if (!('speechSynthesis' in window)) return;
-    
-    // Stop any existing speech
-    window.speechSynthesis.cancel();
-    
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = language === 'hi' ? 'hi-IN' : 'en-US';
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
-    
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = (e) => {
-      console.error("Speech error:", e);
-      setIsSpeaking(false);
-    };
-    
-    window.speechSynthesis.speak(utterance);
-  };
-
-  const stopSpeaking = () => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      setIsSpeaking(false);
-    }
-  };
-
   // Hint System
   const useHint = () => {
     setShowHint(true);
@@ -374,15 +355,30 @@ export default function QuizEngine() {
     setQuestionStartTime(Date.now());
   };
 
-  const handleSubmitAnswer = (answerIndex) => {
+  const handleSubmitAnswer = useCallback((answerIndex) => {
+    if (showExplanation) return; // Prevent multiple submissions
+    
     const currentQuestion = questions[currentIndex];
     if (!currentQuestion) return;
-    const selectedOptionText = String(currentQuestion.options[answerIndex] || "").trim();
+    
+    // Normalize comparison for score calculation
+    const selectedOptionText = answerIndex !== null ? String(currentQuestion.options[answerIndex] || "").trim() : "";
     const correctAnswerText = String(currentQuestion.correctAnswer || "").trim();
     const isCorrect = selectedOptionText === correctAnswerText;
+    
     updatePerformanceData(isCorrect);
     setShowExplanation(true);
     submitAnswer(currentQuestion.id, answerIndex);
+
+    // Play sounds if enabled
+    if (soundEnabled) {
+      if (isCorrect) {
+        playCorrectSound();
+      } else {
+        playWrongSound();
+      }
+    }
+
     setTimeout(() => {
       setShowHint(false);
       setUsed5050(false);
@@ -393,7 +389,7 @@ export default function QuizEngine() {
       triggerQuestionTransition();
       moveToNextQuestion();
     }, 2000);
-  };
+  }, [currentIndex, questions, updatePerformanceData, submitAnswer, soundEnabled, moveToNextQuestion, showExplanation]);
 
   const handleToggleStory = () => {
     if (!showStory) {
@@ -406,8 +402,7 @@ export default function QuizEngine() {
   };
 
   // Early return while loading or redirecting
-  if (status !== "active" || !questions || questions.length === 0 || isTranslating) {
-    if (status === "finished") return null;
+  if (status === "idle" || !questions || questions.length === 0 || isTranslating) {
     const target = translateTarget || language;
     const loadingText = isTranslating
       ? target === "hi" ? "प्रश्नोत्तरी का हिंदी में अनुवाद किया जा रहा है..." : "Translating quiz to English..."
@@ -417,6 +412,18 @@ export default function QuizEngine() {
         <div className={styles.loadingContainer}>
           <p>{loadingText}</p>
           {isTranslating && <div className={styles.spinner}></div>}
+        </div>
+      </div>
+    );
+  }
+
+  // Handle finished state separately
+  if (status === "finished") {
+    return (
+      <div className={styles.page}>
+        <div className={styles.loadingContainer}>
+          <p>{language === "hi" ? "परिणाम तैयार किए जा रहे हैं..." : "Preparing results..."}</p>
+          <div className={styles.spinner}></div>
         </div>
       </div>
     );
@@ -455,16 +462,6 @@ export default function QuizEngine() {
             </div>
             <div className={styles.topRight}>
               <div className={styles.controls}>
-                {/* Voice Narration */}
-                <button
-                  className={`${styles.controlBtn} ${isSpeaking ? styles.active : ""}`}
-                  onClick={() => isSpeaking ? stopSpeaking() : speakText(currentQuestion.question)}
-                  title={isSpeaking ? "Stop Speaking" : "Read Question Aloud"}
-                  data-icon={isSpeaking ? "⏹️" : "🗣️"}
-                >
-                  {isSpeaking ? "⏹️" : "🗣️"}
-                </button>
-                
                 {/* Hint Button */}
                 <button
                   className={`${styles.controlBtn} ${showHint ? styles.active : ""}`}
