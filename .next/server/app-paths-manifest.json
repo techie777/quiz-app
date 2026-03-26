@@ -1,7 +1,10 @@
 {
-  "/api/sections/route": "app/api/sections/route.js",
+  "/_not-found/page": "app/_not-found/page.js",
   "/page": "app/page.js",
-  "/api/categories/route": "app/api/categories/route.js",
   "/api/settings/route": "app/api/settings/route.js",
-  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js"
+  "/api/categories/route": "app/api/categories/route.js",
+  "/api/sections/route": "app/api/sections/route.js",
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/category/[id]/page": "app/category/[id]/page.js",
+  "/api/categories/[id]/route": "app/api/categories/[id]/route.js"
 }
