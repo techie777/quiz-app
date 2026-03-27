@@ -6,11 +6,13 @@ import Link from "next/link";
 import { AdminProvider, useAdmin } from "@/context/AdminContext";
 import ThemeToggle from "@/components/ThemeToggle";
 import styles from "@/styles/Admin.module.css";
+import "./globals.css"; // Import admin-specific globals
 
 const JR_NAV = [
   { href: "/admin", label: "Dashboard", icon: "📊", perm: "dashboard" },
   { href: "/admin/daily", label: "Daily Quizzes", icon: "📅", perm: "daily" },
   { href: "/admin/current-affairs", label: "Current Affairs", icon: "🗞️", perm: "currentAffairs" },
+  { href: "/admin/govt-exams", label: "Govt Exams", icon: "🏛️", perm: "govtExams" },
   { href: "/admin/sections", label: "Sections", icon: "📂", perm: "sections" },
   { href: "/admin/categories", label: "Categories", icon: "📁", perm: "categories" },
   { href: "/admin/questions", label: "Questions", icon: "❓", perm: "questions" },
@@ -23,6 +25,7 @@ const MASTER_NAV = [
   { href: "/admin", label: "Dashboard", icon: "📊", perm: "dashboard" },
   { href: "/admin/daily", label: "Daily Quizzes", icon: "📅", perm: "daily" },
   { href: "/admin/current-affairs", label: "Current Affairs", icon: "🗞️", perm: "currentAffairs" },
+  { href: "/admin/govt-exams", label: "Govt Exams", icon: "🏛️", perm: "govtExams" },
   { href: "/admin/sections", label: "Sections", icon: "📂", perm: "sections" },
   { href: "/admin/categories", label: "Categories", icon: "📁", perm: "categories" },
   { href: "/admin/questions", label: "Questions", icon: "❓", perm: "questions" },
@@ -75,25 +78,20 @@ function AdminShell({ children }) {
   if (isLogin) return children;
 
   if (!loaded) {
-    console.log("[AdminShell] Loading session...");
     return <div className={styles.loading}><p>Loading...</p></div>;
   }
 
   // Only redirect if status is explicitly unauthenticated
   if (status === "unauthenticated") {
-    console.warn("[AdminShell] Status unauthenticated, redirecting to login");
     router.replace("/admin/login");
     return null;
   }
 
   // Also check if they have admin privileges
   if (status === "authenticated" && !isAuthenticated) {
-    console.warn("[AdminShell] Authenticated but not an admin, redirecting to login");
     router.replace("/admin/login");
     return null;
   }
-
-  console.log("[AdminShell] Authenticated as:", adminUser?.username);
 
   const handleLogout = async () => {
     await logout();
@@ -163,10 +161,20 @@ function AdminShell({ children }) {
 
 export default function AdminLayout({ children }) {
   return (
-    <AdminProvider>
-      <Suspense>
-        <AdminShell>{children}</AdminShell>
-      </Suspense>
-    </AdminProvider>
+    <html lang="en">
+      <head>
+        <title>Admin Panel - QuizWeb</title>
+        <meta name="description" content="QuizWeb Admin Panel" />
+        <meta name="robots" content="noindex, nofollow" />
+        <link rel="icon" href="/favicon.ico" />
+      </head>
+      <body className={styles.adminBody}>
+        <AdminProvider>
+          <Suspense>
+            <AdminShell>{children}</AdminShell>
+          </Suspense>
+        </AdminProvider>
+      </body>
+    </html>
   );
 }

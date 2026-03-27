@@ -8,19 +8,28 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request, { params }) {
   const { id } = params;
+  const { searchParams } = new URL(request.url);
+  const metaOnly = searchParams.get("metaOnly") === "true";
   
   try {
     const category = await prisma.category.findUnique({
       where: { id },
-      include: { questions: true },
+      include: { 
+        questions: metaOnly ? { select: { id: true } } : true 
+      },
     });
     
     if (!category) return NextResponse.json({ error: "Not found" }, { status: 404 });
     
-    return NextResponse.json({
+    const responseData = {
       ...category,
-      questions: category.questions.map((q) => ({ ...q, options: safeJsonParse(q.options) })),
-    });
+      questionCount: category.questions.length,
+      questions: metaOnly 
+        ? [] // Return empty if metaOnly, we already have the count
+        : category.questions.map((q) => ({ ...q, options: safeJsonParse(q.options) })),
+    };
+
+    return NextResponse.json(responseData);
   } catch (error) {
     console.error("Category GET error:", error);
     

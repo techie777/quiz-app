@@ -17,6 +17,15 @@ function normalizeString(v) {
   return String(v || "").trim();
 }
 
+// Helper function to get today's date in YYYY-MM-DD format (local timezone)
+function getTodayDateString() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function formatDate(d) {
   if (!d) return "";
   try {
@@ -42,7 +51,10 @@ export default function AdminCurrentAffairsPage() {
 
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedMonth, setSelectedMonth] = useState("");
-  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedDate, setSelectedDate] = useState(() => {
+    // Set today's date by default (27-03-2026) - use local timezone
+    return getTodayDateString();
+  });
   const [showHidden, setShowHidden] = useState(true);
 
   const [editing, setEditing] = useState(null);
@@ -93,7 +105,7 @@ export default function AdminCurrentAffairsPage() {
   const openCreate = () => {
     setMsg("");
     setEditing("new");
-    setForm({ ...EMPTY, date: new Date().toISOString().slice(0, 10) });
+    setForm({ ...EMPTY, date: getTodayDateString() });
   };
 
   const openEdit = (it) => {
@@ -288,9 +300,9 @@ export default function AdminCurrentAffairsPage() {
       </div>
 
       {editing && (
-        <div className={`${styles.modalOverlay}`}>
-          <div className={`${styles.modal} glass-card`}>
-            <div className={styles.modalTop}>
+        <div className={`${styles.sidePanelOverlay}`}>
+          <div className={`${styles.sidePanel} glass-card`}>
+            <div className={styles.sidePanelHeader}>
               <h2>{editing === "new" ? "Add Current Affair" : "Edit Current Affair"}</h2>
               <button className={styles.closeBtn} onClick={() => setEditing(null)}>
                 ✕
@@ -299,56 +311,58 @@ export default function AdminCurrentAffairsPage() {
 
             {msg ? <div className={styles.msg}>{msg}</div> : null}
 
-            <div className={styles.formGrid}>
-              <div className={styles.field}>
-                <label>Date</label>
-                <input type="date" value={form.date} onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))} />
+            <div className={styles.sidePanelContent}>
+              <div className={styles.formGrid}>
+                <div className={styles.field}>
+                  <label>Date</label>
+                  <input type="date" value={form.date} onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))} />
+                </div>
+                <div className={styles.field}>
+                  <label>Category</label>
+                  <input
+                    value={form.category}
+                    onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
+                    placeholder="e.g. Science & Technology"
+                  />
+                </div>
+                <div className={styles.fieldFull}>
+                  <label>Heading</label>
+                  <input value={form.heading} onChange={(e) => setForm((p) => ({ ...p, heading: e.target.value }))} />
+                </div>
+                <div className={styles.fieldFull}>
+                  <label>Description</label>
+                  <textarea
+                    rows={5}
+                    value={form.description}
+                    onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+                  />
+                </div>
+                <div className={styles.fieldFull}>
+                  <label>Image (optional)</label>
+                  <input type="file" accept="image/*" onChange={handleImageUpload} />
+                  {form.image ? (
+                    <div className={styles.previewRow}>
+                      <img src={form.image} alt="Preview" className={styles.previewImg} />
+                      <button className="btn-secondary" type="button" onClick={() => setForm((p) => ({ ...p, image: "" }))}>
+                        Remove
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+                <label className={styles.toggle}>
+                  <input type="checkbox" checked={!!form.hidden} onChange={(e) => setForm((p) => ({ ...p, hidden: e.target.checked }))} />
+                  <span>Hidden</span>
+                </label>
               </div>
-              <div className={styles.field}>
-                <label>Category</label>
-                <input
-                  value={form.category}
-                  onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
-                  placeholder="e.g. Science & Technology"
-                />
-              </div>
-              <div className={styles.fieldFull}>
-                <label>Heading</label>
-                <input value={form.heading} onChange={(e) => setForm((p) => ({ ...p, heading: e.target.value }))} />
-              </div>
-              <div className={styles.fieldFull}>
-                <label>Description</label>
-                <textarea
-                  rows={5}
-                  value={form.description}
-                  onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-                />
-              </div>
-              <div className={styles.fieldFull}>
-                <label>Image (optional)</label>
-                <input type="file" accept="image/*" onChange={handleImageUpload} />
-                {form.image ? (
-                  <div className={styles.previewRow}>
-                    <img src={form.image} alt="Preview" className={styles.previewImg} />
-                    <button className="btn-secondary" type="button" onClick={() => setForm((p) => ({ ...p, image: "" }))}>
-                      Remove
-                    </button>
-                  </div>
-                ) : null}
-              </div>
-              <label className={styles.toggle}>
-                <input type="checkbox" checked={!!form.hidden} onChange={(e) => setForm((p) => ({ ...p, hidden: e.target.checked }))} />
-                <span>Hidden</span>
-              </label>
-            </div>
 
-            <div className={styles.modalActions}>
-              <button className="btn-primary" onClick={save}>
-                {isMaster ? "Save" : "Submit for approval"}
-              </button>
-              <button className="btn-secondary" onClick={() => setEditing(null)}>
-                Cancel
-              </button>
+              <div className={styles.sidePanelActions}>
+                <button className="btn-primary" onClick={save}>
+                  {isMaster ? "Save" : "Submit for approval"}
+                </button>
+                <button className="btn-secondary" onClick={() => setEditing(null)}>
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -359,40 +373,50 @@ export default function AdminCurrentAffairsPage() {
       ) : visibleItems.length === 0 ? (
         <p className={styles.empty}>No current affairs.</p>
       ) : (
-        <div className={styles.list}>
-          {visibleItems.map((it) => (
-            <div key={it.id} className={`${styles.card} glass-card`}>
-              <div className={styles.cardLeft}>
-                {it.image ? <img src={it.image} alt={it.heading} className={styles.cardImg} /> : <div className={styles.cardImgFallback}>🗞️</div>}
-              </div>
-              <div className={styles.cardBody}>
-                <div className={styles.cardTop}>
-                  <div className={styles.cardTitle}>{it.heading}</div>
-                  <div className={styles.badges}>
-                    {it.hidden ? <span className={styles.badgeHidden}>Hidden</span> : <span className={styles.badgeLive}>Live</span>}
+        <>
+          {/* Show Today's Current Affairs indicator */}
+          {selectedDate && selectedDate === getTodayDateString() && (
+            <div className={styles.todayIndicator}>
+              <span className={styles.todayBadge}>📅 Today's Current Affairs</span>
+              <span className={styles.todayDate}>{formatDate(selectedDate)}</span>
+            </div>
+          )}
+          
+          <div className={styles.list}>
+            {visibleItems.map((it) => (
+              <div key={it.id} className={`${styles.card} glass-card`}>
+                <div className={styles.cardLeft}>
+                  {it.image ? <img src={it.image} alt={it.heading} className={styles.cardImg} /> : <div className={styles.cardImgFallback}>🗞️</div>}
+                </div>
+                <div className={styles.cardBody}>
+                  <div className={styles.cardTop}>
+                    <div className={styles.cardTitle}>{it.heading}</div>
+                    <div className={styles.badges}>
+                      {it.hidden ? <span className={styles.badgeHidden}>Hidden</span> : <span className={styles.badgeLive}>Live</span>}
+                    </div>
+                  </div>
+                  <div className={styles.cardMeta}>
+                    <span>{formatDate(it.date)}</span>
+                    {it.category ? <span className={styles.dot}>•</span> : null}
+                    {it.category ? <span>{it.category}</span> : null}
+                  </div>
+                  <div className={styles.cardDesc}>{it.description}</div>
+                  <div className={styles.cardActions}>
+                    <button className="btn-secondary" onClick={() => openEdit(it)}>
+                      Edit
+                    </button>
+                    <button className="btn-secondary" onClick={() => toggleHidden(it)}>
+                      {it.hidden ? "Show" : "Hide"}
+                    </button>
+                    <button className="btn-secondary" onClick={() => remove(it)}>
+                      Delete
+                    </button>
                   </div>
                 </div>
-                <div className={styles.cardMeta}>
-                  <span>{formatDate(it.date)}</span>
-                  {it.category ? <span className={styles.dot}>•</span> : null}
-                  {it.category ? <span>{it.category}</span> : null}
-                </div>
-                <div className={styles.cardDesc}>{it.description}</div>
-                <div className={styles.cardActions}>
-                  <button className="btn-secondary" onClick={() => openEdit(it)}>
-                    Edit
-                  </button>
-                  <button className="btn-secondary" onClick={() => toggleHidden(it)}>
-                    {it.hidden ? "Show" : "Hide"}
-                  </button>
-                  <button className="btn-secondary" onClick={() => remove(it)}>
-                    Delete
-                  </button>
-                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

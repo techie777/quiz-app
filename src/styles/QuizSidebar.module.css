@@ -234,28 +234,24 @@
   border: 1px solid var(--card-border);
   background: var(--card-bg);
   color: var(--text-secondary);
-  border-radius: 6px;
-  font-size: 0.65rem;
-  font-weight: 600;
+  border-radius: 8px; /* Slightly more rounded */
+  font-size: 0.7rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   line-height: 1;
+  overflow: hidden;
 }
 
 .miniQuestionButton:hover:not(:disabled):not(.disabled) {
   border-color: var(--accent);
-  color: var(--text-primary);
-  transform: translateY(-1px);
-}
-
-.miniQuestionButton:disabled,
-.miniQuestionButton.disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
+  background: var(--accent-light);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
 }
 
 .miniQuestionButton.current {
@@ -263,34 +259,65 @@
   color: white;
   border-color: var(--accent);
   transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+  z-index: 2;
 }
 
 .miniQuestionButton.current:not(.answered) {
   background: var(--card-bg);
-  color: var(--text-secondary);
+  color: var(--accent);
   border-color: var(--accent);
-  transform: scale(1.1);
+  border-width: 2px;
 }
 
 .miniQuestionButton.correct {
   background: #10b981;
   color: white;
   border-color: #10b981;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.2);
 }
 
 .miniQuestionButton.incorrect {
   background: #ef4444;
   color: white;
   border-color: #ef4444;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.2);
+}
+
+.questionNumber {
+  position: relative;
+  z-index: 1;
 }
 
 .answerIndicator {
   position: absolute;
-  top: 2px;
-  right: 2px;
-  font-size: 0.6rem;
-  font-weight: bold;
+  top: 1px;
+  right: 1px;
+  font-size: 0.55rem;
+  font-weight: 900;
   line-height: 1;
+  background: rgba(255, 255, 255, 0.9);
+  color: inherit;
+  width: 12px;
+  height: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.correct .answerIndicator {
+  color: #10b981;
+}
+
+.incorrect .answerIndicator {
+  color: #ef4444;
+}
+
+.current:not(.answered) .answerIndicator {
+  background: var(--accent);
+  color: white;
 }
 
 /* Quick Stats */

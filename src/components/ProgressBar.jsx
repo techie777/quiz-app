@@ -2,8 +2,8 @@
 
 import styles from "@/styles/QuizEngine.module.css";
 
-export default function ProgressBar({ current, total }) {
-  const percentage = ((current) / total) * 100;
+export default function ProgressBar({ current, total, showPercentage = false }) {
+  const percentage = total > 0 ? ((current) / total) * 100 : 0;
 
   return (
     <div className={styles.progressContainer}>
@@ -13,6 +13,11 @@ export default function ProgressBar({ current, total }) {
           style={{ width: `${percentage}%` }}
         />
       </div>
+      {showPercentage && (
+        <span className={styles.progressPercentage}>
+          {Math.round(percentage)}%
+        </span>
+      )}
     </div>
   );
 }

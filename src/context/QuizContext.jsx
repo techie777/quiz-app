@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useReducer, useCallback } from "react";
 import { useData } from "@/context/DataContext";
+import toast from "react-hot-toast";
 
 const QuizContext = createContext(null);
 
@@ -57,6 +58,7 @@ const initialState = {
   translateTarget: null,
   translatedStory: null,
   fontScale: 1,
+  selectedSetIndex: null,
 };
 
 function quizReducer(state, action) {
@@ -69,33 +71,47 @@ function quizReducer(state, action) {
         (q) => q.difficulty === difficulty
       );
       const raw = filtered.length > 0 ? filtered : quiz.questions;
-      const questions = shuffleArray(raw);
+      
+      // Deep shuffle: shuffle questions AND their options
+      const shuffledQuestions = shuffleArray(raw).map(q => ({
+        ...q,
+        options: shuffleArray(q.options)
+      }));
 
       return {
         ...initialState,
         quizId: quiz.id,
         difficulty: difficulty,
         timerSetting: timer,
-        questions,
+        questions: shuffledQuestions,
         status: "active",
         soundEnabled: state.soundEnabled,
         isFullscreen: state.isFullscreen,
         language: language || "en",
         translatedStory: null,
+        selectedSetIndex: null,
       };
     }
     case "START_QUIZ_SET": {
-      const { quizId, questions, timer, language } = action.payload;
+      const { quizId, questions, timer, language, setIndex } = action.payload;
+      
+      // Deep shuffle: shuffle questions AND their options
+      const shuffledQuestions = shuffleArray(questions).map(q => ({
+        ...q,
+        options: shuffleArray(q.options)
+      }));
+
       return {
         ...initialState,
         quizId,
         timerSetting: timer,
-        questions: shuffleArray(questions),
+        questions: shuffledQuestions,
         status: "active",
         soundEnabled: state.soundEnabled,
         isFullscreen: state.isFullscreen,
         language: language || "en",
         translatedStory: null,
+        selectedSetIndex: setIndex,
       };
     }
     case "SET_QUESTIONS":
@@ -120,13 +136,21 @@ function quizReducer(state, action) {
       const correctAnswerText = String(question.correctAnswer || "").trim();
       const isCorrect = selectedOptionText === correctAnswerText;
       
-      const newAnswers = [
-        ...state.answers,
-        { questionId, selected, correct: question.correctAnswer, isCorrect },
-      ];
-      const newScore = state.score + (isCorrect ? 1 : 0);
-      const isFinished = state.currentIndex + 1 >= state.questions.length;
-
+      // Update answers array, replacing if already exists for this question
+      const existingAnswerIndex = state.answers.findIndex(a => a.questionId === questionId);
+      let newAnswers = [...state.answers];
+      
+      const answerData = { questionId, selected, correct: question.correctAnswer, isCorrect };
+      
+      if (existingAnswerIndex !== -1) {
+        newAnswers[existingAnswerIndex] = answerData;
+      } else {
+        newAnswers.push(answerData);
+      }
+      
+      // Recalculate score based on all answers
+      const newScore = newAnswers.reduce((sum, a) => sum + (a.isCorrect ? 1 : 0), 0);
+      
       // Update questions with user answers
       const updatedQuestions = state.questions.map(q => 
         q.id === questionId ? { ...q, userAnswer: selected } : q
@@ -137,7 +161,6 @@ function quizReducer(state, action) {
         questions: updatedQuestions,
         answers: newAnswers,
         score: newScore,
-        // Status remains "active" - UI will trigger finish after review
         status: "active",
       };
     }
@@ -263,13 +286,18 @@ export function QuizProvider({ children }) {
 
         dispatch({ type: "SET_QUESTIONS", payload: translatedQuestions });
         dispatch({ type: "SET_TRANSLATED_STORY", payload: translatedStory });
+        toast.success(`Translated to ${to === 'hi' ? 'Hindi' : 'English'}`);
         return translatedStory;
       } else {
+        const errorData = await res.json().catch(() => ({}));
+        console.error("Translation API error response:", errorData);
         dispatch({ type: "SET_TRANSLATING", payload: false });
+        toast.error("Translation service is currently unavailable");
       }
     } catch (error) {
       console.error("Translation error:", error);
       dispatch({ type: "SET_TRANSLATING", payload: false });
+      toast.error("Failed to connect to translation service");
     }
     return null;
   }, []);
@@ -330,8 +358,8 @@ export function QuizProvider({ children }) {
     }
   }, [quizzes, translateQuiz]);
 
-  const startQuizSet = useCallback(async (quizId, questions, timer, language = "en") => {
-    dispatch({ type: "START_QUIZ_SET", payload: { quizId, questions, timer, language } });
+  const startQuizSet = useCallback(async (quizId, questions, timer, language = "en", setIndex = null) => {
+    dispatch({ type: "START_QUIZ_SET", payload: { quizId, questions, timer, language, setIndex } });
     
     const quiz = quizzes.find(q => q.id === quizId);
     

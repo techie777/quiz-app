@@ -145,7 +145,7 @@ export default function QuizSidebar({ category, questions, currentIndex, score, 
                 }}
                 title={`Q${index + 1}${isAnswered ? (isCorrect ? ' ✓ Correct' : ' ✗ Wrong') : (isCurrent ? ' 👁 Current' : ' - Upcoming')}`}
               >
-                {index + 1}
+                <span className={styles.questionNumber}>{index + 1}</span>
                 {isCurrent && !isAnswered && (
                   <span className={styles.answerIndicator}>
                     👁
@@ -177,7 +177,7 @@ export default function QuizSidebar({ category, questions, currentIndex, score, 
         </div>
       </div>
 
-      /* Quick Actions */
+      {/* Quick Actions */}
       <div className={styles.quickActions}>
         <button className={styles.actionButton}>
           📝 Notes

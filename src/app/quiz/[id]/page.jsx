@@ -45,6 +45,7 @@ export default function QuizEngine() {
     updateScore,
     goToQuestion,
     resetQuiz,
+    answers,
   } = useQuiz();
 
   const [favouriteIds, setFavouriteIds] = useState(null);
@@ -56,22 +57,15 @@ export default function QuizEngine() {
   const [showHint, setShowHint] = useState(false);
   const [used5050, setUsed5050] = useState(false);
   const [usedAskAudience, setUsedAskAudience] = useState(false);
-  const [showExplanation, setShowExplanation] = useState(false);
-  const [audienceStats, setAudienceStats] = useState(null);
   const [removedOptions, setRemovedOptions] = useState([]);
+  const [audienceStats, setAudienceStats] = useState(null);
+  const [showExplanation, setShowExplanation] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportData, setReportData] = useState({ questionId: null, issue: '' });
   const [celebrationAnimation, setCelebrationAnimation] = useState(false);
   const [questionTransition, setQuestionTransition] = useState(false);
-  const [performanceData, setPerformanceData] = useState({
-    totalTime: 0,
-    averageTimePerQuestion: 0,
-    correctAnswers: 0,
-    wrongAnswers: 0,
-    hintsUsed: 0,
-    lifelinesUsed: 0,
-    accuracy: 0
-  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showEndConfirmModal, setShowEndConfirmModal] = useState(false);
   const [questionStartTime, setQuestionStartTime] = useState(Date.now());
 
   const category = useMemo(() => {
@@ -139,14 +133,6 @@ export default function QuizEngine() {
       }
     }, 2000); 
     
-    if (status === "finished") {
-      // Small delay before redirecting to results to ensure state is committed
-      const resultTimer = setTimeout(() => {
-        router.replace("/results");
-      }, 100);
-      return () => clearTimeout(resultTimer);
-    }
-    
     return () => clearTimeout(timer);
   }, [status, router]);
 
@@ -165,8 +151,7 @@ export default function QuizEngine() {
       goToQuestion(currentIndex + 1);
     } else {
       finishQuiz();
-      // Use router.push for smoother navigation or router.replace
-      router.replace("/results");
+      router.push("/results"); // Redirect immediately
     }
   }, [currentIndex, questions?.length, goToQuestion, finishQuiz, router]);
 
@@ -198,6 +183,7 @@ export default function QuizEngine() {
   // Reset question start time when question changes
   useEffect(() => {
     setQuestionStartTime(Date.now());
+    setIsSubmitting(false);
     
     // Reset revealed state for new question
     if (window.QuestionCardRef) {
@@ -279,6 +265,26 @@ export default function QuizEngine() {
 
 
 
+  const handleEndQuiz = () => {
+    setShowEndConfirmModal(true);
+  };
+
+  const confirmEndQuiz = () => {
+    setShowEndConfirmModal(false);
+    
+    // Check if user has answered at least one question
+    const attemptedCount = (answers || []).length;
+    
+    if (attemptedCount > 0) {
+      finishQuiz();
+      router.push("/results"); // Redirect immediately
+    } else {
+      // If no questions attempted, just exit to home
+      resetQuiz();
+      router.push("/");
+    }
+  };
+
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(() => {});
@@ -290,7 +296,6 @@ export default function QuizEngine() {
   // Hint System
   const useHint = () => {
     setShowHint(true);
-    setPerformanceData(prev => ({ ...prev, hintsUsed: prev.hintsUsed + 1 }));
     if (score > 5) updateScore(-5);
   };
 
@@ -306,7 +311,6 @@ export default function QuizEngine() {
     const wrongAnswers = currentQuestion.options.map((_, idx) => idx).filter(idx => idx !== correctAnswerIndex);
     const toRemove = wrongAnswers.sort(() => Math.random() - 0.5).slice(0, 2);
     setUsed5050(true);
-    setPerformanceData(prev => ({ ...prev, lifelinesUsed: prev.lifelinesUsed + 1 }));
     updateScore(-3);
     setRemovedOptions(toRemove);
   };
@@ -328,7 +332,6 @@ export default function QuizEngine() {
     const normalizedStats = stats.map(val => Math.round((val / total) * 100));
     setAudienceStats(normalizedStats);
     setUsedAskAudience(true);
-    setPerformanceData(prev => ({ ...prev, lifelinesUsed: prev.lifelinesUsed + 1 }));
     updateScore(-3);
   };
 
@@ -342,31 +345,21 @@ export default function QuizEngine() {
     setTimeout(() => setQuestionTransition(false), 200); 
   };
 
-  const updatePerformanceData = (isCorrect) => {
-    const questionTime = Date.now() - questionStartTime;
-    setPerformanceData(prev => ({
-      ...prev,
-      totalTime: prev.totalTime + questionTime,
-      averageTimePerQuestion: (prev.totalTime + questionTime) / (currentIndex + 1),
-      correctAnswers: isCorrect ? prev.correctAnswers + 1 : prev.correctAnswers,
-      wrongAnswers: !isCorrect ? prev.wrongAnswers + 1 : prev.wrongAnswers,
-      accuracy: ((isCorrect ? prev.correctAnswers + 1 : prev.correctAnswers) / (currentIndex + 1)) * 100
-    }));
-    setQuestionStartTime(Date.now());
-  };
-
   const handleSubmitAnswer = useCallback((answerIndex) => {
-    if (showExplanation) return; // Prevent multiple submissions
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     
     const currentQuestion = questions[currentIndex];
-    if (!currentQuestion) return;
+    if (!currentQuestion) {
+      setIsSubmitting(false);
+      return;
+    }
     
     // Normalize comparison for score calculation
     const selectedOptionText = answerIndex !== null ? String(currentQuestion.options[answerIndex] || "").trim() : "";
     const correctAnswerText = String(currentQuestion.correctAnswer || "").trim();
     const isCorrect = selectedOptionText === correctAnswerText;
     
-    updatePerformanceData(isCorrect);
     setShowExplanation(true);
     submitAnswer(currentQuestion.id, answerIndex);
 
@@ -389,7 +382,7 @@ export default function QuizEngine() {
       triggerQuestionTransition();
       moveToNextQuestion();
     }, 2000);
-  }, [currentIndex, questions, updatePerformanceData, submitAnswer, soundEnabled, moveToNextQuestion, showExplanation]);
+  }, [currentIndex, questions, submitAnswer, soundEnabled, moveToNextQuestion, showExplanation, isSubmitting]);
 
   const handleToggleStory = () => {
     if (!showStory) {
@@ -400,6 +393,22 @@ export default function QuizEngine() {
       setShowStory(false);
     }
   };
+
+  const currentQuestion = useMemo(() => {
+    if (!questions || questions.length === 0) return null;
+    
+    // During active play, return current question
+    if (status === "active") {
+      return questions[currentIndex] || null;
+    }
+    
+    // When finished, fallback to the last question so we can still render the background UI
+    return questions[questions.length - 1];
+  }, [questions, currentIndex, status]);
+
+  const handleTimerExpire = useCallback(() => {
+    if (status === "active") handleSubmitAnswer(null);
+  }, [status, handleSubmitAnswer]);
 
   // Early return while loading or redirecting
   if (status === "idle" || !questions || questions.length === 0 || isTranslating) {
@@ -417,24 +426,17 @@ export default function QuizEngine() {
     );
   }
 
-  // Handle finished state separately
-  if (status === "finished") {
+  // Guard against crash if status is active but questions are missing
+  if (status === "active" && (!questions || questions.length === 0)) {
     return (
       <div className={styles.page}>
         <div className={styles.loadingContainer}>
-          <p>{language === "hi" ? "परिणाम तैयार किए जा रहे हैं..." : "Preparing results..."}</p>
+          <p>{language === "hi" ? "प्रश्नोत्तरी तैयार की जा रही है..." : "Preparing quiz..."}</p>
           <div className={styles.spinner}></div>
         </div>
       </div>
     );
   }
-
-  const currentQuestion = questions[currentIndex];
-  if (!currentQuestion) return null;
-
-  const handleTimerExpire = () => {
-    handleSubmitAnswer(null);
-  };
 
   return (
     <main
@@ -446,7 +448,13 @@ export default function QuizEngine() {
           {/* Top Bar */}
           <div className={styles.topBar}>
             <div className={styles.topLeft}>
-              {timerSetting > 0 && (
+              <div className={styles.scoreInfo}>
+                <span className={styles.scoreLabel}>{language === "hi" ? "स्कोर" : "Score"}</span>
+                <span className={styles.scoreValue}>{score}</span>
+              </div>
+            </div>
+            <div className={styles.topCenter}>
+              {timerSetting > 0 && status === "active" && currentQuestion && (
                 <Timer
                   seconds={timerSetting}
                   onExpire={handleTimerExpire}
@@ -455,113 +463,110 @@ export default function QuizEngine() {
                 />
               )}
             </div>
-            <div className={styles.topCenter}>
-              <span className={styles.questionCounter}>
-                {language === "hi" ? "प्रश्न" : "Question"} {currentIndex + 1} / {questions.length}
-              </span>
-            </div>
             <div className={styles.topRight}>
-              <div className={styles.controls}>
-                {/* Hint Button */}
+              <div className={styles.topRightContent}>
+                <span className={styles.questionCounter}>
+                  {language === "hi" ? "प्रश्न" : "Question"} {currentIndex + 1} / {questions.length}
+                </span>
                 <button
-                  className={`${styles.controlBtn} ${showHint ? styles.active : ""}`}
-                  onClick={useHint}
-                  disabled={showHint}
-                  title="Get Hint (-5 points)"
-                  data-icon="💡"
+                  className={styles.endQuizBtn}
+                  onClick={handleEndQuiz}
+                  title="End Quiz and see results"
                 >
-                  💡
+                  End Quiz
                 </button>
-                
-                {/* 50/50 Lifeline */}
-                <button
-                  className={`${styles.controlBtn} ${used5050 ? styles.disabled : ""}`}
-                  onClick={use5050}
-                  disabled={used5050}
-                  title="50/50 Lifeline (-3 points)"
-                  data-icon="50/50"
-                >
-                  50/50
-                </button>
-                
-                {/* Ask Audience */}
-                <button
-                  className={`${styles.controlBtn} ${usedAskAudience ? styles.disabled : ""}`}
-                  onClick={useAskAudience}
-                  disabled={usedAskAudience}
-                  title="Ask Audience (-3 points)"
-                  data-icon="👥"
-                >
-                  👥
-                </button>
-                
-                {/* Font Size - Hidden on small mobile */}
-                <button
-                  className={styles.controlBtn}
-                  onClick={toggleFontSize}
-                  title="Adjust font size"
-                  data-icon="A"
-                >
-                  A
-                </button>
-                
-                {/* Language Toggle - Hidden on small mobile */}
-                <button
-                  className={styles.controlBtn}
-                  onClick={() => toggleLanguage(storyTextToDisplay)}
-                  title={language === "hi" ? "Switch to English" : "Switch to Hindi"}
-                  data-icon={language === "hi" ? "EN" : "हि"}
-                >
-                  {language === "hi" ? "EN" : "हि"}
-                </button>
-                
-                {/* Sound Toggle */}
-                <button 
-                  className={`${styles.controlBtn} ${!soundEnabled ? styles.disabled : ""}`} 
-                  onClick={toggleSound}
-                  title={soundEnabled ? "Disable Sound" : "Enable Sound"}
-                  data-icon={soundEnabled ? "🔊" : "🔇"}
-                >
-                  {soundEnabled ? "🔊" : "🔇"}
-                </button>
-                
-                {/* Fullscreen Toggle */}
-                <button 
-                  className={styles.controlBtn} 
-                  onClick={toggleFullscreen}
-                  title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
-                  data-icon={isFullscreen ? "↙️" : "↗️"}
-                >
-                  {isFullscreen ? "↙️" : "↗️"}
-                </button>
-              </div>
-              <div className={styles.scoreInfo}>
-                <span className={styles.scoreLabel}>{language === "hi" ? "स्कोर" : "Score"}</span>
-                <span className={styles.scoreValue}>{score}</span>
               </div>
             </div>
+          </div>
+
+          {/* Controls */}
+          <div className={styles.controls}>
+            {/* 1. 50/50 Lifeline */}
+            <button
+              className={`${styles.controlBtn} ${used5050 ? styles.disabled : ""}`}
+              onClick={use5050}
+              disabled={used5050}
+              title="50/50 Lifeline (-3 points)"
+              data-icon="50/50"
+            >
+              50/50
+            </button>
+            
+            {/* 2. Ask Audience */}
+            <button
+              className={`${styles.controlBtn} ${usedAskAudience ? styles.disabled : ""}`}
+              onClick={useAskAudience}
+              disabled={usedAskAudience}
+              title="Ask Audience (-3 points)"
+              data-icon="👥"
+            >
+              👥
+            </button>
+            
+            {/* 3. Language Toggle */}
+            <button
+              className={`${styles.controlBtn} ${isTranslating ? styles.loading : ""}`}
+              onClick={() => toggleLanguage(category?.storyText)}
+              title={language === "hi" ? "Switch to English" : "Switch to Hindi"}
+              data-icon="🌐"
+              disabled={isTranslating}
+            >
+              {isTranslating ? "⌛" : "🌐"}
+            </button>
+
+            {/* 4. Font Size */}
+            <button
+              className={styles.controlBtn}
+              onClick={toggleFontSize}
+              title="Adjust font size"
+              data-icon="Aa"
+            >
+              Aa
+            </button>
+            
+            {/* 5. Sound Toggle */}
+            <button 
+              className={`${styles.controlBtn} ${!soundEnabled ? styles.disabled : ""}`} 
+              onClick={toggleSound}
+              title={soundEnabled ? "Disable Sound" : "Enable Sound"}
+              data-icon={soundEnabled ? "🔊" : "🔇"}
+            >
+              {soundEnabled ? "🔊" : "🔇"}
+            </button>
+            
+            {/* 6. Fullscreen Toggle */}
+            <button 
+              className={styles.controlBtn} 
+              onClick={toggleFullscreen}
+              title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+              data-icon={isFullscreen ? "↙️" : "↗️"}
+            >
+              {isFullscreen ? "↙️" : "↗️"}
+            </button>
           </div>
 
           {/* Progress */}
-          <ProgressBar current={currentIndex} total={questions.length} />
+          <ProgressBar current={currentIndex} total={questions.length} showPercentage={true} />
 
           {/* Question */}
-          <div className={`${isPaused || showStory ? styles.pausedContent : ""} ${questionTransition ? styles.transitioning : ""}`}>
-            <QuestionCard
-              key={currentQuestion.id}
-              question={currentQuestion}
-              onAnswer={handleSubmitAnswer}
-              favouriteIds={favouriteIds}
-              quizId={params?.id}
-              disabled={isPaused || showStory}
-              userAnswer={currentQuestion.userAnswer}
-              showHint={showHint}
-              removedOptions={removedOptions}
-              audienceStats={audienceStats}
-              showExplanation={showExplanation}
-              explanation={currentQuestion.explanation}
-            />
-          </div>
+          {currentQuestion && (
+            <div className={`${isPaused || showStory ? styles.pausedContent : ""} ${questionTransition ? styles.transitioning : ""}`}>
+              <QuestionCard
+                key={currentQuestion.id}
+                question={currentQuestion}
+                onAnswer={handleSubmitAnswer}
+                favouriteIds={favouriteIds}
+                quizId={params?.id}
+                disabled={isPaused || showStory || status === "finished"}
+                userAnswer={currentQuestion.userAnswer}
+                showHint={showHint}
+                removedOptions={removedOptions}
+                audienceStats={audienceStats}
+                showExplanation={showExplanation}
+                explanation={currentQuestion.explanation}
+              />
+            </div>
+          )}
 
           {/* Celebration Animation */}
           {celebrationAnimation && (
@@ -619,48 +624,25 @@ export default function QuizEngine() {
         totalQuestions={questions.length}
       />
 
-      {/* Performance Analytics (shown at quiz end) */}
-      {status === "finished" && (
+      {/* End Quiz Confirmation Modal */}
+      {showEndConfirmModal && (
         <div className={styles.modalOverlay}>
-          <div className={`${styles.performanceModal} glass-card`}>
-            <h2 className={styles.modalTitle}>📊 Performance Analytics</h2>
-            <div className={styles.performanceGrid}>
-              <div className={styles.performanceItem}>
-                <span className={styles.performanceLabel}>Total Score</span>
-                <span className={styles.performanceValue}>{score}</span>
-              </div>
-              <div className={styles.performanceItem}>
-                <span className={styles.performanceLabel}>Accuracy</span>
-                <span className={styles.performanceValue}>{performanceData.accuracy.toFixed(1)}%</span>
-              </div>
-              <div className={styles.performanceItem}>
-                <span className={styles.performanceLabel}>Total Time</span>
-                <span className={styles.performanceValue}>{Math.round(performanceData.totalTime / 1000)}s</span>
-              </div>
-              <div className={styles.performanceItem}>
-                <span className={styles.performanceLabel}>Avg Time/Question</span>
-                <span className={styles.performanceValue}>{Math.round(performanceData.averageTimePerQuestion / 1000)}s</span>
-              </div>
-              <div className={styles.performanceItem}>
-                <span className={styles.performanceLabel}>Correct Answers</span>
-                <span className={styles.performanceValue}>{performanceData.correctAnswers}</span>
-              </div>
-              <div className={styles.performanceItem}>
-                <span className={styles.performanceLabel}>Wrong Answers</span>
-                <span className={styles.performanceValue}>{performanceData.wrongAnswers}</span>
-              </div>
-              <div className={styles.performanceItem}>
-                <span className={styles.performanceLabel}>Hints Used</span>
-                <span className={styles.performanceValue}>{performanceData.hintsUsed}</span>
-              </div>
-              <div className={styles.performanceItem}>
-                <span className={styles.performanceLabel}>Lifelines Used</span>
-                <span className={styles.performanceValue}>{performanceData.lifelinesUsed}</span>
-              </div>
-            </div>
-            <div className={styles.modalActions}>
-              <button className={styles.primaryBtn} onClick={() => router.push('/results')}>
-                View Detailed Results
+          <div className={`${styles.exitModal} glass-card`}>
+            <h2 className={styles.exitModalTitle}>⚠️ End Quiz?</h2>
+            <p className={styles.exitModalText}>
+              Are you sure you want to end the quiz now? 
+              <br />
+              { (answers || []).length > 0 
+                ? `You have answered ${answers.length} question${answers.length === 1 ? '' : 's'}. Your results will be calculated.`
+                : "You haven&apos;t answered any questions yet. Ending now will return you to the home page."
+              }
+            </p>
+            <div className={styles.exitModalActions}>
+              <button className={styles.exitModalCancel} onClick={() => setShowEndConfirmModal(false)}>
+                Cancel
+              </button>
+              <button className={styles.exitModalConfirm} onClick={confirmEndQuiz}>
+                Yes, End Quiz
               </button>
             </div>
           </div>

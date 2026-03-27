@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useQuiz } from "@/context/QuizContext";
 import { useData } from "@/context/DataContext";
@@ -11,7 +11,7 @@ function getMotivation(percentage) {
   if (percentage >= 80) return { text: "Great Job!", emoji: "🎉" };
   if (percentage >= 60) return { text: "Good Effort!", emoji: "👍" };
   if (percentage >= 40) return { text: "Keep Practicing!", emoji: "💪" };
-  return { text: "Don't Give Up!", emoji: "📚" };
+  return { text: "Don&apos;t Give Up!", emoji: "📚" };
 }
 
 const CONFETTI_COLORS = ["#4361ee", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#00e5ff"];
@@ -22,9 +22,56 @@ export default function ResultPage() {
   const { quizzes } = useData();
   const [showReview, setShowReview] = useState(false);
   const [confetti, setConfetti] = useState([]);
+  const [showPostQuizPopup, setShowPostQuizPopup] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const total = questions.length;
-  const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
+  const category = useMemo(() => {
+    return (quizzes || []).find((q) => q.id === quizId);
+  }, [quizzes, quizId]);
+
+  const filteredQuizzes = useMemo(() => {
+    if (!quizzes || !Array.isArray(quizzes)) return [];
+    const validQuizzes = quizzes.filter(q => q && q.topic && !q.hidden);
+    if (!searchQuery) return validQuizzes.slice(0, 10);
+    const query = searchQuery.toLowerCase();
+    return validQuizzes.filter(q => 
+      (q.topic && q.topic.toLowerCase().includes(query)) ||
+      (q.description && q.description.toLowerCase().includes(query))
+    ).slice(0, 10);
+  }, [quizzes, searchQuery]);
+
+  // Show suggestions after 2.5 seconds
+  useEffect(() => {
+    if (questions && questions.length > 0) {
+      const timer = setTimeout(() => {
+        setShowPostQuizPopup(true);
+      }, 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [questions]);
+
+  const handleContinueNextSet = () => {
+     router.push(`/category/${quizId}`);
+   };
+
+   const handleSuggestionClick = (suggestionId) => {
+     setShowPostQuizPopup(false);
+     router.push(`/category/${suggestionId}`);
+   };
+
+  const performance = useMemo(() => {
+    if (!questions || questions.length === 0) return null;
+    const total = questions.length;
+    const correct = score;
+    const skipped = total - answers.length;
+    const wrong = total - correct - skipped;
+    const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
+
+    return { correct, wrong, skipped, total, accuracy };
+  }, [questions, score, answers]);
+
+  const total = performance?.total || 0;
+  const percentage = performance?.accuracy || 0;
   const motivation = getMotivation(percentage);
 
   // Always call this hook - handle redirection logic inside
@@ -119,6 +166,24 @@ export default function ResultPage() {
                 <span>{motivation.text}</span>
               </div>
               <div className={styles.percentage}>{percentage}%</div>
+              <div className={styles.stats}>
+                <div className={styles.statItem}>
+                  <span className={styles.statLabel}>Total</span>
+                  <span className={styles.statValue}>{total}</span>
+                </div>
+                <div className={`${styles.statItem} ${styles.correct}`}>
+                  <span className={styles.statLabel}>Correct</span>
+                  <span className={styles.statValue}>{performance.correct}</span>
+                </div>
+                <div className={`${styles.statItem} ${styles.wrong}`}>
+                  <span className={styles.statLabel}>Wrong</span>
+                  <span className={styles.statValue}>{performance.wrong}</span>
+                </div>
+                <div className={`${styles.statItem} ${styles.skipped}`}>
+                  <span className={styles.statLabel}>Skipped</span>
+                  <span className={styles.statValue}>{performance.skipped}</span>
+                </div>
+              </div>
             </div>
 
             {/* Action Buttons */}
@@ -141,38 +206,38 @@ export default function ResultPage() {
             {showReview && (
               <div className={styles.review}>
                 <h2 className={styles.reviewTitle}>Answer Review</h2>
-                {answers.map((answer, index) => {
-                  const question = questions.find((q) => q.id === answer.questionId);
-                  if (!question) return null;
+                {questions.map((question, index) => {
+                  const answer = answers.find((a) => a.questionId === question.id);
+                  const isAnswered = !!answer;
+                  const isCorrect = answer?.isCorrect || false;
                   
-                  const selectedOptionText = answer.selected !== null && answer.selected !== undefined 
+                  const selectedOptionText = isAnswered && answer.selected !== null && answer.selected !== undefined 
                     ? question.options[answer.selected] 
-                    : "No answer";
+                    : (answer?.selected === null ? "Timed Out" : "Skipped");
                   
                   return (
                     <div
-                      key={answer.questionId}
+                      key={question.id}
                       className={`${styles.reviewItem} ${
-                        answer.isCorrect ? styles.reviewCorrect : styles.reviewWrong
+                        !isAnswered ? styles.reviewSkipped : (isCorrect ? styles.reviewCorrect : styles.reviewWrong)
                       }`}
                     >
                       <div className={styles.reviewHeader}>
                         <span className={styles.reviewNum}>Q{index + 1}</span>
-                        <span className={styles.reviewBadge}>
-                          {answer.isCorrect ? "✓ Correct" : "✗ Wrong"}
+                        <span className={`${styles.reviewBadge} ${!isAnswered ? styles.badgeSkipped : (isCorrect ? styles.badgeCorrect : styles.badgeWrong)}`}>
+                          {!isAnswered ? "✗ Skipped" : (isCorrect ? "✓ Correct" : "✗ Wrong")}
                         </span>
                       </div>
                       <p className={styles.reviewQuestion}>{question.text}</p>
-                      {!answer.isCorrect && (
-                        <div className={styles.reviewAnswers}>
-                          <p className={styles.yourAnswer}>
-                            Your answer: <strong>{selectedOptionText}</strong>
-                          </p>
-                          <p className={styles.correctAnswer}>
-                            Correct answer: <strong>{answer.correct}</strong>
-                          </p>
-                        </div>
-                      )}
+                      
+                      <div className={styles.reviewAnswers}>
+                        <p className={styles.yourAnswer}>
+                          Your answer: <strong>{selectedOptionText}</strong>
+                        </p>
+                        <p className={styles.correctAnswer}>
+                          Correct answer: <strong>{question.correctAnswer}</strong>
+                        </p>
+                      </div>
                     </div>
                   );
                 })}
@@ -195,6 +260,55 @@ export default function ResultPage() {
               ))}
             </div>
           </aside>
+        </div>
+      )}
+
+      {/* Post Quiz Suggestions Popup (shown after a delay) */}
+      {showPostQuizPopup && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.suggestionsPopup}>
+            <button className={styles.closeBtn} onClick={() => setShowPostQuizPopup(false)}>✕</button>
+            
+            <div className={styles.popupHeader}>
+              <h2 className={styles.popupTitle}>🎉 Great Job! What&apos;s Next?</h2>
+              <div className={styles.searchBar}>
+                <input 
+                  type="text" 
+                  placeholder="Search other quizzes..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className={styles.searchInput}
+                />
+              </div>
+            </div>
+
+            <div className={styles.popupContent}>
+              {quizId && (
+                <button 
+                  className={styles.nextSetBtn}
+                  onClick={handleContinueNextSet}
+                >
+                  Continue Next Set of {category?.topic || 'this category'}
+                </button>
+              )}
+
+              <div className={styles.suggestionsList}>
+                <h3 className={styles.suggestionsLabel}>Recommended for you:</h3>
+                <div className={styles.miniSuggestionsGrid}>
+                  {filteredQuizzes.map(quiz => (
+                    <div 
+                      key={quiz.id} 
+                      className={styles.miniSuggestionCard}
+                      onClick={() => handleSuggestionClick(quiz.id)}
+                    >
+                      <span className={styles.miniSuggestionEmoji}>{quiz.emoji || '📚'}</span>
+                      <span className={styles.miniSuggestionTitle}>{quiz.topic}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </main>

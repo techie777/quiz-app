@@ -381,10 +381,35 @@ const MainCategorySection = React.memo(({ category, categorizedData }) => {
 });
 
 export default function LandingPage() {
-  const { quizzes, settings, loaded } = useData();
+  const { settings, loaded, quizzes } = useData();
   const [sections, setSections] = useState([]);
   const [sectionsLoaded, setSectionsLoaded] = useState(false);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  
+  // New state for paginated data
+  const [visibleCategories, setVisibleCategories] = useState([]);
+  const [totalCategories, setTotalCategories] = useState(0);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const itemsPerPage = 12;
+
+  // Debounced search logic
+  const debouncedSearchHandler = useCallback(
+    debounce((value) => {
+      setDebouncedSearch(value);
+      setPage(1); // Reset to first page on search
+    }, 500),
+    []
+  );
+
+  const handleSearchChange = useCallback((value) => {
+    setSearch(value);
+    debouncedSearchHandler(value);
+    setSelectedSuggestionIndex(-1);
+    setShowSuggestions(value.trim().length > 0);
+  }, [debouncedSearchHandler]);
 
   // Fetch sections from DB
   useEffect(() => {
@@ -416,7 +441,61 @@ export default function LandingPage() {
   const [userProgress, setUserProgress] = useState({});
   const [previewCategory, setPreviewCategory] = useState(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
-  const isLoading = !loaded || !sectionsLoaded;
+
+  // Fetch paginated categories
+  const fetchCategories = useCallback(async (reset = false) => {
+    if (reset) {
+      setLoading(true);
+      setPage(1);
+    } else {
+      setLoadingMore(true);
+    }
+
+    try {
+      const currentPage = reset ? 1 : page;
+      const skip = (currentPage - 1) * itemsPerPage;
+      
+      const params = new URLSearchParams({
+        limit: itemsPerPage.toString(),
+        skip: skip.toString(),
+        search: debouncedSearch,
+        sortBy: sortBy,
+        difficulty: difficultyFilter,
+        questionCount: questionCountFilter,
+        chips: activeFilters.join(",")
+      });
+
+      const res = await fetch(`/api/categories?${params}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (reset) {
+          setVisibleCategories(data.categories || []);
+        } else {
+          setVisibleCategories(prev => [...prev, ...(data.categories || [])]);
+        }
+        setTotalCategories(data.total || 0);
+      }
+    } catch (error) {
+      console.error("Failed to fetch categories:", error);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, [page, debouncedSearch, sortBy, difficultyFilter, questionCountFilter, activeFilters]);
+
+  useEffect(() => {
+    fetchCategories(true);
+  }, [debouncedSearch, sortBy, difficultyFilter, questionCountFilter, activeFilters]);
+
+  const handleLoadMore = () => {
+    setPage(prev => prev + 1);
+  };
+
+  useEffect(() => {
+    if (page > 1) {
+      fetchCategories(false);
+    }
+  }, [page]);
 
   // Cleanup effect for any timers or animations
   useEffect(() => {
@@ -506,12 +585,6 @@ export default function LandingPage() {
     );
   }, []);
 
-  const handleSearchChange = useCallback((value) => {
-    setSearch(value);
-    setSelectedSuggestionIndex(-1);
-    setShowSuggestions(value.trim().length > 0);
-  }, []);
-
   const handleSearchKeyDown = useCallback((e) => {
     if (!showSuggestions || searchSuggestions.length === 0) return;
 
@@ -577,90 +650,16 @@ export default function LandingPage() {
     return [TRENDING_CHIP, ...withoutTrending];
   }, [settings?.homeChips]);
 
-  // Memoize the daily category IDs to avoid recalculating on every render
+  // For sections, we still use the full list for now as they are specialized
+  // but we should eventually optimize /api/sections to return only what's needed.
   const dailyCategoryIds = useMemo(() => getDailyCategoryIds(quizzes), [quizzes]);
-
-  // Memoize base filtered categories (without search and filters)
   const baseFilteredCategories = useMemo(() => {
     return quizzes.filter((c) => !c.hidden && !c.parentId && !dailyCategoryIds.has(c.id));
   }, [quizzes, dailyCategoryIds]);
 
-  // Memoize categorized quizzes for sub-sections
   const categorizedQuizzes = useMemo(() => {
     return categorizeQuizzes(baseFilteredCategories, sections);
   }, [baseFilteredCategories, sections]);
-
-  // Memoize search filtered categories
-  const searchFilteredCategories = useMemo(() => {
-    if (!search.trim()) return baseFilteredCategories;
-    const searchTerm = search.toLowerCase();
-    return baseFilteredCategories.filter((c) => 
-      c.topic.toLowerCase().includes(searchTerm)
-    );
-  }, [baseFilteredCategories, search]);
-
-  // Final visible categories with all filters applied
-  const visibleCategories = useMemo(() => {
-    let filtered = searchFilteredCategories;
-
-    // Apply difficulty filter
-    if (difficultyFilter !== "all") {
-      filtered = filtered.filter(c => {
-        const difficulties = c.questions.map(q => q.difficulty);
-        return difficulties.includes(difficultyFilter);
-      });
-    }
-
-    // Apply question count filter
-    if (questionCountFilter !== "all") {
-      filtered = filtered.filter(c => {
-        const count = c.questions.length;
-        switch (questionCountFilter) {
-          case "small": return count <= 10;
-          case "medium": return count > 10 && count <= 25;
-          case "large": return count > 25;
-          default: return true;
-        }
-      });
-    }
-
-    // Apply active chips filter
-    if (activeFilters.length > 0) {
-      filtered = filtered.filter(c => {
-        const catChips = Array.isArray(c.chips) ? c.chips.map((x) => String(x).toLowerCase()) : [];
-        return activeFilters.every((f) => {
-          const key = String(f || "").toLowerCase().trim();
-          if (!key) return true;
-          if (key === TRENDING_CHIP.toLowerCase() || key === "trending") return !!c.isTrending;
-          if (key === "gk") return c.topic.toLowerCase() === "general knowledge";
-          if (key.includes("quick")) return c.questions.length <= 20;
-          return (
-            catChips.includes(key) ||
-            c.topic.toLowerCase().includes(key) ||
-            (c.description || "").toLowerCase().includes(key)
-          );
-        });
-      });
-    }
-
-    // Apply sorting
-    if (sortBy !== "default") {
-      filtered = [...filtered].sort((a, b) => {
-        switch (sortBy) {
-          case "alphabetical":
-            return a.topic.localeCompare(b.topic);
-          case "newest":
-            return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0);
-          case "popular":
-            return (b.questions?.length || 0) - (a.questions?.length || 0);
-          default:
-            return 0;
-        }
-      });
-    }
-
-    return filtered;
-  }, [searchFilteredCategories, sortBy, difficultyFilter, questionCountFilter, activeFilters]);
 
   return (
     <main className={styles.page}>
@@ -669,8 +668,7 @@ export default function LandingPage() {
         <h1>Test Your Knowledge with Thousands of Free Online Quizzes</h1>
         <p>Challenge yourself with our comprehensive collection of educational quizzes. From science and mathematics to history and current affairs, learn new facts and track your progress with detailed analytics.</p>
         <div>
-          <span>{quizzes.filter(q => !q.hidden).length} Quiz Categories</span>
-          <span>{quizzes.reduce((total, q) => total + (q.questions?.length || 0), 0)} Questions</span>
+          <span>{totalCategories} Quiz Categories</span>
           <span>Free To Play</span>
         </div>
         <h2>Why Choose Our Online Quiz Platform?</h2>
@@ -695,17 +693,17 @@ export default function LandingPage() {
       <div className={styles.searchContainer}>
         <div className={styles.searchBox}>
           <span className={styles.searchIcon}>
-            {isSearching ? "⏳" : "🔍"}
+            {loading ? "⏳" : "🔍"}
           </span>
           <input
             type="text"
             className={styles.searchInput}
-            placeholder={isSearching ? "Searching..." : "Search for any topic..."}
+            placeholder={loading ? "Searching..." : "Search for any topic..."}
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
             onKeyDown={handleSearchKeyDown}
             onFocus={() => setShowSuggestions(search.trim().length > 0 && searchSuggestions.length > 0)}
-            disabled={isLoading}
+            disabled={loading}
             aria-label="Search quiz categories"
             aria-expanded={showSuggestions}
             aria-haspopup="listbox"
@@ -826,7 +824,7 @@ export default function LandingPage() {
             key={filter}
             className={`${styles.chip} ${activeFilters.includes(filter) ? styles.activeChip : ''}`}
             onClick={() => handleFilterClick(filter)}
-            disabled={isLoading}
+            disabled={loading}
           >
             {filter.startsWith("#") ? filter : `#${filter}`}
           </button>
@@ -850,7 +848,7 @@ export default function LandingPage() {
       {(search || activeFilters.length > 0) && (
         <>
           <h2 className={styles.sectionTitle}>All Categories</h2>
-          {isLoading && <div className={styles.loadingHint}>Loading categories…</div>}
+          {loading && visibleCategories.length === 0 && <div className={styles.loadingHint}>Loading categories…</div>}
           <motion.div 
             className={styles.grid}
             variants={{ 
@@ -914,7 +912,7 @@ export default function LandingPage() {
             </motion.div>
 
             {/* Regular Quiz Cards */}
-            {isLoading
+            {loading && visibleCategories.length === 0
               ? Array.from({ length: 9 }).map((_, idx) => (
                   <motion.div
                     key={`sk-${idx}`}
@@ -1019,10 +1017,30 @@ export default function LandingPage() {
                   );
                 })}
           </motion.div>
+
+          {/* Load More Button */}
+          {visibleCategories.length < totalCategories && (
+            <div className={styles.loadMoreContainer}>
+              <button 
+                className={styles.loadMoreButton} 
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+              >
+                {loadingMore ? (
+                  <>
+                    <span className={styles.loader}></span>
+                    Loading...
+                  </>
+                ) : (
+                  'Load More Quizzes'
+                )}
+              </button>
+            </div>
+          )}
         </>
       )}
 
-      {!isLoading && visibleCategories.length === 0 && (search || activeFilters.length > 0) && (
+      {!loading && visibleCategories.length === 0 && (search || activeFilters.length > 0) && (
         <p className={styles.empty}>
           No categories match your criteria.
         </p>

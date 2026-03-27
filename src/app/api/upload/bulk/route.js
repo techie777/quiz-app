@@ -11,14 +11,14 @@ export async function POST(request) {
     return NextResponse.json({ error: "Master admin only" }, { status: 403 });
   }
 
-  console.log("[BulkAPI] POST received");
+  // Log to monitoring service in production
   try {
     const body = await request.json();
     const { categories, questions, categoryId } = body;
 
     // Mode 1: Full JSON import (array of categories with questions)
     if (categories) {
-      console.log("[BulkAPI] Mode: Categories", categories.length);
+      // Log to monitoring service in production
       for (const cat of categories) {
         // Find existing category by ID (if 24-char) or Topic
         const catId = (cat.id && cat.id.length === 24) ? cat.id : undefined;
@@ -46,11 +46,11 @@ export async function POST(request) {
             },
           });
           targetCatId = newCat.id;
-          console.log("[BulkAPI] Created category:", cat.topic, targetCatId);
+          // Log to monitoring service in production
         }
 
         if (cat.questions) {
-          console.log(`[BulkAPI] Adding ${cat.questions.length} questions to ${cat.topic}`);
+          // Log to monitoring service in production
           for (const q of cat.questions) {
             await prisma.question.create({
               data: {
@@ -69,7 +69,7 @@ export async function POST(request) {
 
     // Mode 2: Excel-parsed questions into a specific category
     if (questions && categoryId) {
-      console.log("[BulkAPI] Mode: Questions into Category", categoryId, questions.length);
+      // Log to monitoring service in production
       for (const q of questions) {
         await prisma.question.create({
           data: {

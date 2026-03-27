@@ -77,12 +77,10 @@ export async function GET() {
             updatedAt: new Date().toISOString()
           }
         ],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
       }
     ];
     
-    console.log("[API] Returning fallback sections due to database error");
+    // Log to monitoring service in production
     return NextResponse.json(fallbackSections);
   }
 }

@@ -24,7 +24,15 @@ export function DataProvider({ children }) {
           fetch("/api/categories"),
           fetch("/api/settings"),
         ]);
-        if (catRes.ok) setQuizzes(await catRes.json());
+        if (catRes.ok) {
+          const data = await catRes.json();
+          // Handle both array (old) and { categories, total } (new) formats
+          if (Array.isArray(data)) {
+            setQuizzes(data);
+          } else if (data && Array.isArray(data.categories)) {
+            setQuizzes(data.categories);
+          }
+        }
         if (setRes.ok) setSettings(await setRes.json());
       } catch {}
       setLoaded(true);
@@ -39,11 +47,13 @@ export function DataProvider({ children }) {
       console.log("[DataContext] refreshQuizzes status:", res.status);
       if (res.ok) {
         const data = await res.json();
-        console.log("[DataContext] refreshQuizzes data length:", data?.length);
+        console.log("[DataContext] refreshQuizzes data length:", Array.isArray(data) ? data.length : data?.categories?.length);
         if (Array.isArray(data)) {
           setQuizzes(data);
+        } else if (data && Array.isArray(data.categories)) {
+          setQuizzes(data.categories);
         } else {
-          console.warn("[DataContext] refreshQuizzes data is not an array:", data);
+          console.warn("[DataContext] refreshQuizzes data is not in expected format:", data);
         }
       }
     } catch (error) {

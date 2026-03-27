@@ -127,6 +127,7 @@ export default function AdminSettingsPage() {
   const { adminUser } = useAdmin();
   const [companyName, setCompanyName] = useState(settings.companyName || "QuizWeb");
   const [companyWebsite, setCompanyWebsite] = useState(settings.companyWebsite || "");
+  const [quizSetCount, setQuizSetCount] = useState(settings.quizSetCount || 20);
   const [saved, setSaved] = useState(false);
   const [companyDirty, setCompanyDirty] = useState(false);
   const [chipsDraft, setChipsDraft] = useState(() => {
@@ -162,8 +163,9 @@ export default function AdminSettingsPage() {
     if (!companyDirty) {
       setCompanyName(settings.companyName || "QuizWeb");
       setCompanyWebsite(settings.companyWebsite || "");
+      setQuizSetCount(settings.quizSetCount || 20);
     }
-  }, [companyDirty, settings.companyName, settings.companyWebsite]);
+  }, [companyDirty, settings.companyName, settings.companyWebsite, settings.quizSetCount]);
 
   useEffect(() => {
     if (chipsDirty) return;
@@ -251,7 +253,11 @@ export default function AdminSettingsPage() {
   }, [footerSectionsDraft]);
 
   const handleSaveCompany = async () => {
-    const success = await updateSettings({ companyName, companyWebsite });
+    const success = await updateSettings({
+      companyName,
+      companyWebsite,
+      quizSetCount,
+    });
     if (success) {
       toast.success("Company settings saved!");
       setSaved(true);
@@ -429,6 +435,18 @@ export default function AdminSettingsPage() {
               setCompanyWebsite(e.target.value);
             }}
             placeholder="https://quizweb.com"
+          />
+        </div>
+        <div className={styles.field}>
+          <label>Quiz Set Count</label>
+          <input
+            type="number"
+            className={styles.input}
+            value={quizSetCount}
+            onChange={(e) => {
+              setCompanyDirty(true);
+              setQuizSetCount(Number(e.target.value));
+            }}
           />
         </div>
         {saved && (

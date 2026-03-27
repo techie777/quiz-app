@@ -41,10 +41,10 @@ export default function QuestionCard({
 
   // Check if this question is already favourited
   useEffect(() => {
-    if (favouriteIds) {
+    if (favouriteIds && question) {
       setFav(favouriteIds.has(question.id));
     }
-  }, [question.id, favouriteIds]);
+  }, [question?.id, favouriteIds, question]);
 
   // Set up ref for external access
   useEffect(() => {
@@ -61,7 +61,7 @@ export default function QuestionCard({
   }, []);
 
   const handleFavClick = async () => {
-    if (disabled) return;
+    if (disabled || !question) return;
     // If not logged in, show login prompt
     if (status !== "authenticated" || !isUser) {
       setLoginPrompt(true);
@@ -84,7 +84,7 @@ export default function QuestionCard({
   };
 
   const handleShare = async () => {
-    if (sharing || disabled) return;
+    if (sharing || disabled || !question) return;
     setSharing(true);
     try {
       await shareQuestion(question, quizId);
@@ -95,7 +95,7 @@ export default function QuestionCard({
   };
 
   const handleSelect = (optionIndex) => {
-    if (revealed || disabled) return;
+    if (revealed || disabled || !question) return;
     
     // Normalize comparison
     const selectedOptionText = String(question.options[optionIndex] || "").trim();
@@ -121,7 +121,7 @@ export default function QuestionCard({
     // Always return base option class
     let className = styles.option;
     
-    if (!revealed) return className;
+    if (!revealed || !question) return className;
     
     // Normalize comparison for Hindi and other characters
     const selectedOptionText = String(question.options[optionIndex] || "").trim();
@@ -145,7 +145,7 @@ export default function QuestionCard({
   };
 
   const getOptionIndicator = (optionIndex) => {
-    if (!revealed) return null;
+    if (!revealed || !question) return null;
     // Normalize comparison
     const selectedOptionText = String(question.options[optionIndex] || "").trim();
     const correctAnswerText = String(question.correctAnswer || "").trim();
@@ -155,6 +155,9 @@ export default function QuestionCard({
     if (optionIndex === selected && !isCorrect) return '✗';
     return null;
   };
+
+  // Guard against missing question
+  if (!question) return null;
 
   return (
     <div className={styles.questionSection}>

@@ -270,39 +270,42 @@
   }
   
   .suggestionsGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr; /* 2 cards instead of 1 */
     gap: 12px;
     margin-bottom: 20px;
   }
   
   .suggestionImage {
-    height: 120px;
+    height: 100px; /* Reduced height for 2 columns */
   }
   
   .suggestionEmojiFallback {
-    font-size: 2.5rem;
+    font-size: 2rem;
   }
   
   .suggestionContent {
-    padding: 12px;
+    padding: 10px;
   }
   
   .suggestionQuizTitle {
-    font-size: 0.95rem;
+    font-size: 0.85rem;
   }
   
   .suggestionDescription {
-    font-size: 0.8rem;
-    margin-bottom: 10px;
+    display: none; /* Hide description on very small screens to save space */
   }
   
   .suggestionMeta {
-    font-size: 0.7rem;
-    margin-bottom: 10px;
+    font-size: 0.65rem;
+    margin-bottom: 8px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
   }
   
   .suggestionButton {
-    padding: 6px 12px;
-    font-size: 0.8rem;
+    padding: 4px 8px;
+    font-size: 0.7rem;
+    width: 100%;
   }
 }

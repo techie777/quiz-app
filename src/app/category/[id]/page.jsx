@@ -59,39 +59,55 @@ export default function CategorySetsPage() {
   const { startQuizSet } = useQuiz();
 
   const [category, setCategory] = useState(null);
+  const [questions, setQuestions] = useState([]);
   const [loaded, setLoaded] = useState(false);
-
+  const [questionsLoaded, setQuestionsLoaded] = useState(false);
+  const [setSize, setSetSize] = useState(20);
 
   const [timer, setTimer] = useState(0);
   const [language, setLanguage] = useState("en");
   const [selectedSet, setSelectedSet] = useState(null);
   const [page, setPage] = useState(1);
 
+  // Load category metadata first for instant UI
   useEffect(() => {
     if (params.id) {
-      fetch(`/api/categories/${params.id}`)
+      // Fetch only metadata first
+      fetch(`/api/categories/${params.id}?metaOnly=true`)
         .then(res => res.json())
         .then(data => {
           setCategory(data);
           setLoaded(true);
-        });
+          
+          // Now fetch all questions in the background
+          fetch(`/api/categories/${params.id}`)
+            .then(res => res.json())
+            .then(fullData => {
+              setQuestions(fullData.questions || []);
+              setQuestionsLoaded(true);
+            })
+            .catch(err => console.error("Error loading questions:", err));
+        })
+        .catch(err => console.error("Error loading category:", err));
     }
   }, [params.id]);
 
   const sets = useMemo(() => {
-    if (!category || !category.questions) return [];
+    if (!category || !setSize || setSize <= 0) return [];
+    const count = category.questionCount || 0;
     const result = [];
-    const qs = category.questions;
-    for (let i = 0; i < qs.length; i += SET_SIZE) {
+    
+    for (let i = 0; i < count; i += setSize) {
       result.push({
         index: result.length + 1,
         start: i,
-        end: Math.min(i + SET_SIZE, qs.length),
-        questions: qs.slice(i, i + SET_SIZE),
+        end: Math.min(i + setSize, count),
+        // Note: actual questions are added only if questionsLoaded is true
+        questions: questions.slice(i, i + setSize),
       });
     }
     return result;
-  }, [category]);
+  }, [category, questions, setSize]);
 
   const paginatedSets = useMemo(() => {
     return sets.slice(
@@ -111,8 +127,12 @@ export default function CategorySetsPage() {
     return (
       <main className={styles.page}>
         <div className={styles.loadingContainer}>
-          <div className={styles.spinner}></div>
-          <p>Loading category...</p>
+          <div className={styles.loaderWrapper}>
+            <div className={styles.loaderCircle}></div>
+            <div className={styles.loaderCircle}></div>
+            <div className={styles.loaderCircle}></div>
+            <div className={styles.loaderText}>Loading</div>
+          </div>
         </div>
       </main>
     );
@@ -132,6 +152,10 @@ export default function CategorySetsPage() {
   }
 
   const handlePlay = (set) => {
+    if (!questionsLoaded) {
+      alert("Still loading questions, please wait a moment...");
+      return;
+    }
     setSelectedSet(set);
     setTimer(0);
     // Auto-detect the language of the quiz content
@@ -141,7 +165,7 @@ export default function CategorySetsPage() {
 
   const handleStart = () => {
     if (!selectedSet) return;
-    startQuizSet(category.id, selectedSet.questions, timer, language);
+    startQuizSet(category.id, selectedSet.questions, timer, language, selectedSet.index);
     router.push(`/quiz/${category.id}`);
   };
 
@@ -170,7 +194,7 @@ export default function CategorySetsPage() {
                 {category.difficulty || 'Medium'}
               </span>
               <span className={styles.questionCount}>
-                {category.questions.length} questions
+                {category.questionCount} questions
               </span>
             </div>
           </div>
@@ -185,7 +209,7 @@ export default function CategorySetsPage() {
             <div className={styles.statItem}>
               <span className={styles.statIcon}>⏱️</span>
               <span className={styles.statText}>
-                ~{Math.ceil(category.questions.length * 0.3)} mins
+                ~{Math.ceil(category.questionCount * 0.3)} mins
               </span>
             </div>
             <div className={styles.statItem}>
@@ -236,7 +260,8 @@ export default function CategorySetsPage() {
             Quiz Sets
           </h2>
           <p className={styles.setsSubtitle}>
-            Choose a set to start practicing. Each set contains {SET_SIZE} questions.
+            Choose a set to start practicing. Each set contains {setSize} questions.
+            {!questionsLoaded && <span className={styles.backgroundLoading}> (Loading questions in background...)</span>}
           </p>
         </div>
 
@@ -273,7 +298,7 @@ export default function CategorySetsPage() {
                         Q {set.start + 1} – {set.end}
                       </span>
                       <span className={styles.setTime}>
-                        ~{Math.ceil(set.questions.length * 0.3)} mins
+                        ~{Math.ceil((set.end - set.start) * 0.3)} mins
                       </span>
                     </div>
                   </div>
@@ -332,7 +357,7 @@ export default function CategorySetsPage() {
                 {category.topic} — Set {selectedSet.index}
               </h2>
               <p className={styles.modalDesc}>
-                {selectedSet.questions.length} questions (Q
+                {selectedSet.end - selectedSet.start} questions (Q
                 {selectedSet.start + 1}–{selectedSet.end})
               </p>
             </div>

@@ -55,7 +55,7 @@ export async function POST(request) {
     // Return the URL that can be used to access the file
     const fileUrl = `/uploads/${filename}`;
     
-    console.log('Image uploaded successfully:', filename);
+    // Image uploaded successfully
     
     return NextResponse.json({ 
       success: true,
@@ -64,7 +64,7 @@ export async function POST(request) {
     });
 
   } catch (error) {
-    console.error('Image upload error:', error);
+    // Log to monitoring service in production
     return NextResponse.json({ 
       error: "Failed to upload image", 
       details: error.message 
