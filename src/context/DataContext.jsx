@@ -12,7 +12,7 @@ export function DataProvider({ children }) {
 
   const refreshSettings = useCallback(async () => {
     try {
-      const res = await fetch("/api/settings");
+      const res = await fetch("/api/settings", { cache: "no-store" });
       if (res.ok) setSettings(await res.json());
     } catch {}
   }, []);
@@ -21,8 +21,8 @@ export function DataProvider({ children }) {
     async function load() {
       try {
         const [catRes, setRes] = await Promise.all([
-          fetch("/api/categories"),
-          fetch("/api/settings"),
+          fetch("/api/categories", { cache: "no-store" }),
+          fetch("/api/settings", { cache: "no-store" }),
         ]);
         if (catRes.ok) {
           const data = await catRes.json();
@@ -176,6 +176,16 @@ export function DataProvider({ children }) {
     return res.ok;
   }, [refreshQuizzes]);
 
+  const bulkDeleteQuestions = useCallback(async (questionIds) => {
+    const res = await fetch("/api/questions/bulk-delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ questionIds }),
+    });
+    if (res.ok) await refreshQuizzes();
+    return res.ok;
+  }, [refreshQuizzes]);
+
   const bulkImport = useCallback(async (importedQuizzes) => {
     const res = await fetch("/api/upload/bulk", {
       method: "POST",
@@ -226,6 +236,7 @@ export function DataProvider({ children }) {
         addQuestion,
         updateQuestion,
         deleteQuestion,
+        bulkDeleteQuestions,
         bulkImport,
         bulkImportQuestions,
         resetToDefaults,

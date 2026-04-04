@@ -169,3 +169,106 @@
 }
 
 .modalActions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+/* Multi-select Styles */
+.selectActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  background: var(--bg-primary);
+  border: 1px solid var(--card-border);
+  border-radius: var(--border-radius-md);
+  margin-bottom: 24px;
+  transition: all 0.3s ease;
+}
+
+.activeSelection {
+  background: rgba(var(--accent-rgb), 0.08);
+  border-color: var(--accent);
+  box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.1);
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.mainCheckbox {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+.selectionText {
+  color: var(--text-primary);
+}
+
+.bulkDeleteBtn {
+  background: var(--danger);
+  color: white;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+}
+
+.bulkDeleteBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  padding: 0;
+  transition: all 0.2s ease;
+  border: 1px solid var(--card-border);
+}
+
+.rowSelected {
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.04);
+}
+
+.rowSelector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid var(--card-border);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.rowSelector input {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+.rowContent {
+  padding: 20px 24px;
+}
+
+.rowBadges {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.rowTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+

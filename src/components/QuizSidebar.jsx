@@ -1,195 +1,156 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useQuiz } from "@/context/QuizContext";
 import { useData } from "@/context/DataContext";
-import Timer from "@/components/Timer";
 import styles from "@/styles/QuizSidebar.module.css";
 
-export default function QuizSidebar({ category, questions, currentIndex, score, timerSetting, isPaused, pauseQuiz, resumeQuiz }) {
+export default function QuizSidebar({ 
+  category, 
+  questions, 
+  currentIndex, 
+  score, 
+  timerSetting, 
+  isPaused, 
+  pauseQuiz, 
+  resumeQuiz,
+  onNavigate,
+  onBack,
+  onResume,
+  onExit,
+  startTime,
+  answers,
+  TimerComponent
+}) {
   const { status } = useQuiz();
+  // State for elapsed time
+  const [elapsed, setElapsed] = useState(0);
+
+  // Sync elapsed time
+  useEffect(() => {
+    if (status !== 'active' || isPaused) return;
+    const interval = setInterval(() => {
+      setElapsed(Math.round((Date.now() - startTime) / 1000));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [startTime, status, isPaused]);
+
+  // Hotkeys for sidebar navigation (Arrow Left/Right)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'ArrowLeft' && currentIndex > 0) onBack();
+      if (e.key === 'ArrowRight' && currentIndex < questions.length - 1) onResume();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentIndex, questions.length, onBack, onResume]);
 
   // Calculate progress
   const progress = useMemo(() => {
     return questions.length > 0 ? Math.round(((currentIndex + 1) / questions.length) * 100) : 0;
   }, [currentIndex, questions.length]);
 
-  // Calculate estimated time remaining
-  const avgTimePerQuestion = 20; // seconds
-  const remainingQuestions = Math.max(0, questions.length - currentIndex - 1);
-  const estimatedRemainingTime = remainingQuestions * avgTimePerQuestion;
-
-  // Format time
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  // Handle exit quiz
-  const handleExitQuiz = () => {
-    if (window.onExitQuiz) {
-      window.onExitQuiz();
-    }
-  };
+  const displayTime = useMemo(() => {
+    const min = Math.floor(elapsed / 60);
+    const sec = elapsed % 60;
+    return `${min}:${sec.toString().padStart(2, "0")}s`;
+  }, [elapsed]);
 
   return (
-    <aside className={styles.quizSidebar}>
-      {/* Compact Header */}
-      <div className={styles.compactHeader}>
-        <div className={styles.quizInfo}>
-          <span className={styles.quizEmoji}>{category?.emoji || '📝'}</span>
-          <div className={styles.quizDetails}>
-            <h3 className={styles.quizTitle}>{category?.topic || 'Quiz'}</h3>
-            <span className={styles.quizMeta}>{questions.length} Questions</span>
-          </div>
-        </div>
-        <div className={styles.scoreDisplay}>
-          <span className={styles.scoreValue}>{score}</span>
-          <span className={styles.scoreLabel}>Score</span>
-        </div>
-      </div>
-
-      {/* Progress Bar */}
-      <div className={styles.compactProgress}>
-        <div className={styles.progressBar}>
-          <div 
-            className={styles.progressFill} 
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-        <span className={styles.progressText}>{progress}%</span>
-      </div>
-
-      {/* Timer Section */}
-      {timerSetting && timerSetting !== 'off' && (
-        <div className={styles.compactTimer}>
-          <div className={styles.timerHeader}>
-            <span className={styles.timerLabel}>Time</span>
-            <button
-              className={styles.pauseButton}
-              onClick={isPaused ? resumeQuiz : pauseQuiz}
-              disabled={status !== 'active'}
-            >
-              {isPaused ? '▶️' : '⏸️'}
-            </button>
+    <aside className={styles.sidebar}>
+      {/* Neural Performance Ring Overlay */}
+      {status === 'active' && (
+        <div className={styles.performanceStats}>
+          <div className={styles.streakInfo}>
+            <span className={styles.streakEmoji}>🔥</span>
+            <span className={styles.streakCount}>{score} Correct</span>
           </div>
           <div className={styles.timerDisplay}>
-            <Timer 
-              seconds={timerSetting} 
-              onExpire={() => console.log('Time up!')}
-              isPaused={isPaused}
-              questionKey={currentIndex}
-            />
+            {TimerComponent && (
+              <TimerComponent 
+                seconds={timerSetting} 
+                onExpire={() => console.log('Time up!')}
+                isPaused={isPaused}
+                questionKey={currentIndex}
+              />
+            )}
           </div>
         </div>
       )}
 
-      {/* Navigation Controls */}
-      <div className={styles.navigationControls}>
-        <button
-          className={styles.navButton}
-          onClick={() => {
-            if (window.onGoBack) window.onGoBack();
-          }}
-          disabled={currentIndex === 0}
-          title="Go back to previous question"
-        >
-          ← Back
-        </button>
-        
-        <div className={styles.questionIndicator}>
-          <span className={styles.questionText}>Q{currentIndex + 1}/{questions.length}</span>
+      {/* Mission Map Navigation */}
+      <div className={styles.missionMap}>
+        <div className={styles.missionHeader}>
+          <div className={styles.navControls}>
+            <button 
+              className={styles.navBtn} 
+              onClick={onBack} 
+              disabled={currentIndex === 0}
+              title="Previous Question (Arrow Left)"
+            >
+              <span className={styles.navIcon}>←</span>
+              <span>Back</span>
+            </button>
+            <div className={styles.missionCounter}>
+              <span className={styles.missionLabel}>Mission</span>
+              <span className={styles.missionValue}>Q{currentIndex + 1} / {questions.length}</span>
+            </div>
+            <button 
+              className={styles.navBtn} 
+              onClick={onResume} 
+              disabled={currentIndex === questions.length - 1}
+              title="Next Question (Arrow Right)"
+            >
+              <span>Next</span>
+              <span className={styles.navIcon}>→</span>
+            </button>
+          </div>
         </div>
-        
-        {currentIndex < questions.length - 1 && (
-          <button
-            className={styles.navButton}
-            onClick={() => {
-              if (window.onResumeQuiz) window.onResumeQuiz();
-            }}
-            title="Continue to next question"
-          >
-            Resume →
-          </button>
-        )}
-      </div>
-
-      {/* Compact Question Grid */}
-      <div className={styles.compactNavigation}>
-        <h4 className={styles.sectionTitle}>Questions</h4>
-        <div className={styles.miniQuestionGrid}>
+        <div className={styles.nodeGrid}>
           {questions.map((question, index) => {
-            const isAnswered = question.userAnswer !== undefined;
             const isCurrent = index === currentIndex;
-            // Normalize comparison for Sidebar indicators
-            const isCorrect = isAnswered && 
-              String(question.options[question.userAnswer] || "").trim() === String(question.correctAnswer || "").trim();
-            const canNavigate = index <= currentIndex;
+            const isAnswered = question.userAnswer !== undefined;
+            const isCorrect = isAnswered && String(question.options[question.userAnswer]).trim() === String(question.correctAnswer).trim();
             
+            let nodeClass = styles.node;
+            if (isCurrent) nodeClass += ` ${styles.activeNode}`;
+            if (isAnswered) {
+              nodeClass += isCorrect ? ` ${styles.correctNode}` : ` ${styles.wrongNode}`;
+            }
+
             return (
               <button
-                key={question.id}
-                className={`${styles.miniQuestionButton} ${
-                  isCurrent ? styles.current : ''
-                } ${
-                  isAnswered ? `${styles.answered} ${isCorrect ? styles.correct : styles.incorrect}` : ''
-                } ${
-                  !canNavigate ? styles.disabled : ''
-                }`}
-                disabled={!canNavigate}
-                onClick={() => {
-                  if (canNavigate && window.onNavigateToQuestion) {
-                    window.onNavigateToQuestion(index);
-                  }
-                }}
-                title={`Q${index + 1}${isAnswered ? (isCorrect ? ' ✓ Correct' : ' ✗ Wrong') : (isCurrent ? ' 👁 Current' : ' - Upcoming')}`}
+                key={index}
+                className={nodeClass}
+                onClick={() => onNavigate(index)}
+                title={`Question ${index + 1}`}
               >
-                <span className={styles.questionNumber}>{index + 1}</span>
-                {isCurrent && !isAnswered && (
-                  <span className={styles.answerIndicator}>
-                    👁
-                  </span>
-                )}
+                {index + 1}
                 {isAnswered && (
-                  <span className={styles.answerIndicator}>
-                    {isCorrect ? '✓' : '✗'}
+                  <span className={styles.nodeStatus}>
+                    {isCorrect ? "✓" : "✗"}
                   </span>
                 )}
               </button>
             );
           })}
         </div>
-        
-        {/* Quick Stats */}
-        <div className={styles.quickStats}>
-          <span className={styles.statItem}>
-            ✓ {questions.filter(q => q.userAnswer !== undefined && 
-                String(q.options[q.userAnswer] || "").trim() === String(q.correctAnswer || "").trim()).length}
-          </span>
-          <span className={styles.statItem}>
-            ✗ {questions.filter(q => q.userAnswer !== undefined && 
-                String(q.options[q.userAnswer] || "").trim() !== String(q.correctAnswer || "").trim()).length}
-          </span>
-          <span className={styles.statItem}>
-            ⏱ {Math.round((Date.now() - (window.quizStartTime || Date.now())) / 1000)}s
-          </span>
+        <div className={styles.mapFooter}>
+          <span className={styles.mapTime}>✓ {Array.isArray(answers) ? answers.filter(a => a.isCorrect).length : 0}</span>
+          <span className={styles.mapTime}>⌛ {displayTime}</span>
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className={styles.quickActions}>
-        <button className={styles.actionButton}>
-          📝 Notes
+      {/* Tactical Actions */}
+      <div className={styles.actions}>
+        <button className={styles.actionBtn} onClick={() => console.log('Notes')}>
+          <span className={styles.btnEmoji}>📝</span> Notes
         </button>
-        <button className={styles.actionButton}>
-          💡 Hint
+        <button className={styles.actionBtn} onClick={() => console.log('Report')}>
+          <span className={styles.btnEmoji}>💡</span> Hint
         </button>
-        <button 
-          className={`${styles.actionButton} ${styles.exitButton}`}
-          onClick={handleExitQuiz}
-        >
-          🏠 Exit
+        <button className={`${styles.actionBtn} ${styles.exitBtn}`} onClick={onExit}>
+          <span className={styles.btnEmoji}>🚨</span> Exit
         </button>
       </div>
     </aside>

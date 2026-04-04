@@ -17,11 +17,14 @@
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  gap: 16px; /* Reduced gap further */
+  gap: 24px;
+  position: relative;
+  margin-top: 20px;
 }
 
 .quizArea {
-  flex: 0 1 680px; /* Slightly wider */
+  flex: 1;
+  max-width: 800px;
   width: 100%;
 }
 
@@ -104,30 +107,42 @@
 /* Controls */
 .controls {
   display: flex;
-  gap: 6px; /* Reduced from 8px */
-  margin-bottom: 8px; /* Reduced from 12px */
-  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 24px;
   justify-content: center;
+  align-items: center;
 }
 
 .controlBtn {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 6px;
-  width: 30px; /* Reduced from 32px */
-  height: 30px; /* Reduced from 32px */
+  background: var(--console-bg);
+  border: 1px solid var(--console-border);
+  border-radius: 12px;
+  padding: 8px 16px;
+  height: auto;
+  min-width: 60px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  font-size: 0.85rem; /* Smaller */
-  cursor: pointer;
-  transition: all 0.2s;
+  gap: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.controlBtn::before {
+  content: attr(data-icon);
+  font-size: 1.2rem;
 }
 
 .controlBtn:hover {
-  background: var(--accent-light);
   border-color: var(--accent);
-  transform: translateY(-1px); /* Less movement */
+  background: var(--bg-secondary);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 229, 255, 0.2);
+  color: var(--accent);
 }
 
 .endQuizBtn {
@@ -483,27 +498,26 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px; /* Reduced from 12px */
-  gap: 12px; /* Reduced from 16px */
+  padding: 12px 24px;
+  background: var(--console-bg);
+  border: 1px solid var(--console-border);
+  border-radius: 16px;
+  margin-bottom: 24px;
+  box-shadow: var(--console-glow);
 }
 
-.topLeft {
+.topLeft, .topCenter, .topRight {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 6px; /* Reduced from 8px */
 }
 
 .topCenter {
-  flex: 0 0 auto;
-  text-align: center;
+  justify-content: center;
 }
 
 .topRight {
-  flex: 1;
-  display: flex;
   justify-content: flex-end;
-  align-items: center;
 }
 
 .topRightContent {
@@ -573,49 +587,66 @@
 }
 
 .questionCard {
-  padding: 24px 20px; /* Reduced padding */
-  margin-bottom: 16px; /* Reduced margin */
+  padding: 40px;
+  margin-bottom: 24px;
   text-align: center;
+  position: relative;
+  background: var(--console-bg) !important;
+  border: 1px solid var(--console-border) !important;
+  box-shadow: var(--console-glow) !important;
+  border-radius: 24px;
+  overflow: hidden;
 }
 
 .questionHeader {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between; /* Changed from center to space-between */
-  gap: 8px; /* Reduced gap */
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
 }
 
 .questionText {
-  font-size: calc(1.2rem * var(--quizFontScale, 1)); /* Smaller */
-  font-weight: 600;
+  font-size: calc(1.5rem * var(--quizFontScale, 1));
+  font-weight: 700;
   color: var(--text-primary);
-  line-height: 1.4; /* Tighter */
-  flex: 1; /* Take remaining space */
-  text-align: left; /* Left align text */
-  margin-right: 8px; /* Space for buttons */
+  line-height: var(--line-height-tight);
+  text-align: center;
+  font-family: 'Outfit', sans-serif;
+  letter-spacing: -0.02em;
+  padding: 0 50px; /* Strong defensive padding for absolute icons */
 }
 
 .actionBtns {
+  position: absolute;
+  top: 16px;
+  right: 16px;
   display: flex;
-  gap: 4px; /* Reduced gap */
-  flex-shrink: 0; /* Don't shrink */
-  align-items: flex-start; /* Align to top */
+  flex-direction: column; /* Stacked looks cleaner in corners */
+  gap: 12px;
+  z-index: 5;
 }
 
 .favBtn,
 .shareBtn {
-  background: none;
-  border: none;
-  font-size: 1.1rem; /* Smaller */
+  background: var(--bg-secondary);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  font-size: 1rem;
   cursor: pointer;
-  padding: 4px; /* Reduced padding */
-  transition: transform 0.2s;
-  border-radius: 6px;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-.favBtn:hover,
-.shareBtn:hover {
-  transform: scale(1.1); /* Less scaling */
-  background: rgba(0,0,0,0.04);
+
+.favBtn:hover, .shareBtn:hover {
+  transform: scale(1.1) rotate(5deg);
+  border-color: var(--accent);
+  box-shadow: 0 0 15px var(--accent-light);
 }
 .shareBtn:disabled {
   opacity: 0.5;
@@ -663,77 +694,78 @@
 .optionsGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px; /* Reduced gap */
+  gap: 16px;
+  margin-top: 24px;
 }
 
 .option {
-  padding: 14px 12px; /* Reduced padding */
-  border-radius: var(--border-radius);
+  padding: 20px;
+  border-radius: 16px;
   background: var(--card-bg);
-  border: 2px solid var(--card-border);
+  border: 1px solid var(--card-border);
   color: var(--text-primary);
-  font-size: calc(0.9rem * var(--quizFontScale, 1)); /* Smaller */
-  font-weight: 500;
+  font-size: calc(1.1rem * var(--quizFontScale, 1));
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
-  text-align: center;
-  word-break: break-word;
-  position: relative;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: left;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
-.optionIndicator {
-  font-size: 1.2rem;
-  font-weight: bold;
-  min-width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  margin-left: 8px;
+.hotkey {
+  font-size: 0.75rem;
+  background: rgba(0,0,0,0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-right: 12px;
+  opacity: 0.6;
+  border: 1px solid var(--card-border);
+  font-family: monospace;
 }
 
-.optionText {
-  flex: 1;
-  text-align: center;
+[data-theme="dark"] .hotkey {
+  background: rgba(255,255,255,0.1);
 }
 
 .option:hover:not(:disabled) {
   border-color: var(--accent);
-  background: var(--accent-light);
-  transform: translateY(-1px); /* Less movement */
+  background: var(--bg-secondary);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.option:active:not(:disabled) {
+  transform: translateY(1px);
 }
 
 .option.correct {
-  background: #10b981;
-  border-color: #10b981;
-  color: white;
-  animation: flashCorrect 0.4s ease;
-}
-
-.option.correct .optionIndicator {
-  background: white;
-  color: #10b981;
+  background: var(--success) !important;
+  border-color: var(--success) !important;
+  color: white !important;
+  box-shadow: var(--success-glow) !important;
 }
 
 .option.wrong {
-  background: #ef4444;
-  border-color: #ef4444;
-  color: white;
-  animation: flashWrong 0.4s ease;
+  background: var(--danger) !important;
+  border-color: var(--danger) !important;
+  color: white !important;
+  box-shadow: var(--danger-glow) !important;
 }
 
-.option.wrong .optionIndicator {
-  background: white;
-  color: #ef4444;
-}
-
-.option.unattempted .optionIndicator {
-  background: var(--accent);
-  color: white;
+.optionIndicator {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: 900;
+  background: rgba(255,255,255,0.2);
 }
 
 .nextQuestionBtn {

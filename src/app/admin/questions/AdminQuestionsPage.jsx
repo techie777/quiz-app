@@ -22,7 +22,7 @@ async function submitPending(type, payload) {
 }
 
 export default function AdminQuestionsPage() {
-  const { quizzes, addQuestion, updateQuestion, deleteQuestion } = useData();
+  const { quizzes, addQuestion, updateQuestion, deleteQuestion, bulkDeleteQuestions } = useData();
   const { adminUser } = useAdmin();
   const isJr = adminUser?.role === "jr";
   const allowed = adminUser?.role === "master" || adminUser?.permissions?.questions !== false;
@@ -34,6 +34,7 @@ export default function AdminQuestionsPage() {
   const [editingQ, setEditingQ] = useState(null);
   const [form, setForm] = useState(EMPTY_Q);
   const [formCatId, setFormCatId] = useState("");
+  const [selectedIds, setSelectedIds] = useState([]);
 
   // Build flat list
   const allQuestions = useMemo(() => {
@@ -149,12 +150,39 @@ export default function AdminQuestionsPage() {
   };
 
   const handleDelete = async (catId, qId) => {
-    if (isJr) {
-      await submitPending("delete_question", { categoryId: catId, questionId: qId });
+    if (confirm("Are you sure you want to delete this question?")) {
+      if (isJr) {
+        await submitPending("delete_question", { categoryId: catId, questionId: qId });
+      } else {
+        const success = await deleteQuestion(catId, qId);
+        if (success) toast.success("Question deleted successfully!");
+        else toast.error("Failed to delete question.");
+      }
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    if (confirm(`Are you sure you want to delete ${selectedIds.length} questions?`)) {
+      const success = await bulkDeleteQuestions(selectedIds);
+      if (success) {
+        toast.success(`Deleted ${selectedIds.length} questions.`);
+        setSelectedIds([]);
+      } else {
+        toast.error("Failed to delete questions.");
+      }
+    }
+  };
+
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === filtered.length) {
+      setSelectedIds([]);
     } else {
-      const success = await deleteQuestion(catId, qId);
-      if (success) toast.success("Question deleted successfully!");
-      else toast.error("Failed to delete question.");
+      setSelectedIds(filtered.map(q => q.id));
     }
   };
 
@@ -216,40 +244,73 @@ export default function AdminQuestionsPage() {
         </select>
       </div>
 
+      {/* Selection Status Bar */}
+      <div className={`${styles.selectActions} ${selectedIds.length > 0 ? styles.activeSelection : ''}`}>
+        <label className={styles.checkboxLabel}>
+          <input 
+            type="checkbox" 
+            className={styles.mainCheckbox}
+            checked={filtered.length > 0 && selectedIds.length === filtered.length}
+            onChange={toggleSelectAll}
+          />
+          <span className={styles.selectionText}>
+            {selectedIds.length > 0 ? `${selectedIds.length} questions selected` : 'Select All Questions'}
+          </span>
+        </label>
+        {selectedIds.length > 0 && !isJr && (
+          <button className={styles.bulkDeleteBtn} onClick={handleBulkDelete}>
+            🗑️ Delete Selected
+          </button>
+        )}
+      </div>
+
       {/* Question List */}
       <div className={styles.list}>
         {filtered.map((q) => (
-          <div key={q.id} className={`${styles.row} glass-card`}>
-            <div className={styles.rowTop}>
-              <span className={styles.catBadge}>
-                {q.categoryEmoji} {q.categoryTopic}
-              </span>
-              <span className={`${styles.diffBadge} ${styles[q.difficulty]}`}>
-                {q.difficulty}
-              </span>
+          <div key={q.id} className={`${styles.row} glass-card ${selectedIds.includes(q.id) ? styles.rowSelected : ''}`}>
+            <div className={styles.rowSelector}>
+              <input 
+                type="checkbox" 
+                checked={selectedIds.includes(q.id)}
+                onChange={() => toggleSelect(q.id)}
+              />
             </div>
-            <p className={styles.questionText}>{q.text}</p>
-            {q.image && <img src={q.image} alt="" className={styles.questionImg} />}
-            <div className={styles.optionsList}>
-              {q.options.map((opt, i) => (
-                <span
-                  key={i}
-                  className={`${styles.optTag} ${opt === q.correctAnswer ? styles.correctTag : ""}`}
-                >
-                  {opt}
-                </span>
-              ))}
-            </div>
-            <div className={styles.rowActions}>
-              <button className={styles.editBtn} onClick={() => openEdit(q)}>
-                ✏️ Edit
-              </button>
-              <button
-                className={styles.deleteBtn}
-                onClick={() => handleDelete(q.categoryId, q.id)}
-              >
-                🗑️ Delete
-              </button>
+            <div className={styles.rowContent}>
+              <div className={styles.rowTop}>
+                <div className={styles.rowBadges}>
+                  <span className={styles.catBadge}>
+                    {q.categoryEmoji} {q.categoryTopic}
+                  </span>
+                  <span className={`${styles.diffBadge} ${styles[q.difficulty]}`}>
+                    {q.difficulty}
+                  </span>
+                </div>
+                <div className={styles.rowActions}>
+                  <button className={styles.editBtn} onClick={() => openEdit(q)} title="Edit">
+                    ✏️ Edit
+                  </button>
+                  <button
+                    className={styles.deleteBtn}
+                    onClick={() => handleDelete(q.categoryId, q.id)}
+                    title="Delete"
+                  >
+                    🗑️ Delete
+                  </button>
+                </div>
+              </div>
+              <p className={styles.questionText}>{q.text}</p>
+              {q.image && <img src={q.image} alt="" className={styles.questionImg} />}
+              <div className={styles.optionsList}>
+                {q.options.map((opt, i) => (
+                  <span
+                    key={i}
+                    className={`${styles.optTag} ${opt === q.correctAnswer ? styles.correctTag : ""}`}
+                  >
+                    {opt}
+                    {opt === q.correctAnswer && " ✓"}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         ))}

@@ -55,7 +55,7 @@ export default function GovtExamManagement() {
       const response = await fetch('/api/govt-exams');
       if (response.ok) {
         const data = await response.json();
-        setExams(data);
+        setExams(data.exams || data);
       }
     } catch (error) {
       console.error('Failed to fetch exams:', error);

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
+import { usePathname } from "next/navigation";
 import ThemeToggle from "./ThemeToggle";
 import { useUI } from "@/context/UIContext";
 import styles from "@/styles/Header.module.css";
@@ -10,6 +11,9 @@ export default function Header() {
   const { data: session, status } = useSession();
   const { toggleMobileMenu, isMobileMenuOpen } = useUI();
   const isUser = session?.user && !session.user.isAdmin;
+  const pathname = usePathname();
+
+  if (pathname?.startsWith("/admin")) return null;
 
   return (
     <header className={styles.header}>

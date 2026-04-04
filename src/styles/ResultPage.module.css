@@ -130,6 +130,34 @@
   text-align: center;
   padding: 48px 32px;
   animation: scaleIn 0.5s ease;
+  position: relative;
+}
+
+.nextSetTeaser {
+  margin-bottom: 24px;
+  animation: fadeIn 0.8s ease;
+}
+
+.nextSetLink {
+  background: var(--accent-light);
+  color: var(--accent);
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nextSetLink:hover {
+  background: var(--accent);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.2);
 }
 
 .trophy {

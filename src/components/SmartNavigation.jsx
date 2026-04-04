@@ -12,20 +12,30 @@ const navigationItems = [
   {
     name: "Home",
     href: "/",
+    icon: "🏠",
     description: "Return to the main quiz homepage",
     keywords: "quiz, homepage, main, start"
   },
   {
+    name: "Daily Quiz",
+    href: "/daily",
+    icon: "🏆",
+    description: "Take our daily quiz to test your knowledge",
+    keywords: "daily quiz, test, knowledge, practice"
+  },
+  {
     name: "Daily Current Affairs",
     href: "/daily-current-affairs",
-    description: "Latest daily current affairs and news updates with filtering and pagination",
-    keywords: "current affairs, news, daily updates, exam preparation, filtering, pagination"
+    icon: "📰",
+    description: "Latest daily current affairs and news updates",
+    keywords: "current affairs, news, daily updates"
   },
   {
     name: "Govt Jobs Alerts",
     href: "/govt-jobs-alerts",
+    icon: "💼",
     description: "Government job notifications and alerts",
-    keywords: "government jobs, sarkari naukri, job alerts, notifications"
+    keywords: "government jobs, sarkari naukri, job alerts"
   }
 ];
 
@@ -35,7 +45,6 @@ export default function SmartNavigation() {
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const isUser = session?.user && !session.user.isAdmin;
-
   useEffect(() => {
     const handleScroll = () => {
       const offset = window.scrollY;
@@ -49,6 +58,8 @@ export default function SmartNavigation() {
   useEffect(() => {
     // Close mobile menu when route changes handled by UIContext
   }, [pathname]);
+
+  if (pathname?.startsWith("/admin")) return null;
 
   return (
     <>
@@ -90,19 +101,20 @@ export default function SmartNavigation() {
                     title={item.description}
                     data-keywords={item.keywords}
                   >
-                    <span className={styles.navText}>{item.name}</span>
                     {isActive && (
                       <motion.div
-                        className={styles.activeIndicator}
-                        layoutId="activeIndicator"
+                        className={styles.activePill}
+                        layoutId="activePill"
                         initial={false}
                         transition={{
                           type: "spring",
-                          stiffness: 500,
+                          stiffness: 400,
                           damping: 30
                         }}
                       />
                     )}
+                    <span className={styles.navIcon}>{item.icon}</span>
+                    <span className={styles.navText}>{item.name}</span>
                   </Link>
                 </li>
               );
@@ -133,10 +145,13 @@ export default function SmartNavigation() {
                           aria-current={isActive ? "page" : undefined}
                           onClick={closeMobileMenu}
                         >
-                          <span className={styles.mobileNavText}>{item.name}</span>
-                          <span className={styles.mobileNavDescription}>
-                            {item.description}
-                          </span>
+                          <div className={styles.mobileNavIcon}>{item.icon}</div>
+                          <div className={styles.mobileNavInfo}>
+                            <span className={styles.mobileNavText}>{item.name}</span>
+                            <span className={styles.mobileNavDescription}>
+                              {item.description}
+                            </span>
+                          </div>
                           {isActive && (
                             <span className={styles.mobileActiveIndicator}>✓</span>
                           )}

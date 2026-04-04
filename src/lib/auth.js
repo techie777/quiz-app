@@ -41,15 +41,7 @@ export const authOptions = {
         let user = await prisma.user.findUnique({ where: { email } });
 
         if (credentials.isNewUser === "true") {
-          if (user) throw new Error("User already exists");
-          // Create new user with PIN
-          user = await prisma.user.create({
-            data: {
-              email,
-              pin,
-              name: email.split("@")[0],
-            },
-          });
+          throw new Error("New user registration is administratively restricted.");
         } else {
           if (!user) throw new Error("User not found");
           if (!user.pin) throw new Error("No PIN set for this account. Please contact admin.");

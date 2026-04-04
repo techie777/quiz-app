@@ -12,7 +12,8 @@ import styles from "@/styles/LandingPage.module.css";
 
 // Import safe JSON parsing utility
 function safeJsonParse(json, fallback = []) {
-  if (!json || typeof json !== 'string') return fallback;
+  if (!json) return fallback;
+  if (typeof json !== 'string') return json;
   try {
     const parsed = JSON.parse(json);
     return Array.isArray(parsed) ? parsed : fallback;
@@ -266,7 +267,7 @@ const SubSection = React.memo(({ title, quizzes, onViewAll }) => {
         </button>
       </div>
       <div className={`${styles.subSectionGrid} ${!isExpanded ? styles.collapsed : ''}`}>
-        {isExpanded && (quizzes || []).map((quiz) => (
+        {(quizzes || []).map((quiz) => (
           <motion.div
             key={quiz.id}
             className={styles.subSectionCard}
@@ -415,7 +416,7 @@ export default function LandingPage() {
   useEffect(() => {
     const fetchSections = async () => {
       try {
-        const res = await fetch('/api/sections');
+        const res = await fetch('/api/sections', { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
           setSections(data);
@@ -465,7 +466,7 @@ export default function LandingPage() {
         chips: activeFilters.join(",")
       });
 
-      const res = await fetch(`/api/categories?${params}`);
+      const res = await fetch(`/api/categories?${params}`, { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         if (reset) {
@@ -663,173 +664,160 @@ export default function LandingPage() {
 
   return (
     <main className={styles.page}>
-      {/* Hidden SEO Content - Visually Hidden for SEO Only */}
-      <div className={styles.seoOnlyContent} style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
-        <h1>Test Your Knowledge with Thousands of Free Online Quizzes</h1>
-        <p>Challenge yourself with our comprehensive collection of educational quizzes. From science and mathematics to history and current affairs, learn new facts and track your progress with detailed analytics.</p>
-        <div>
-          <span>{totalCategories} Quiz Categories</span>
-          <span>Free To Play</span>
-        </div>
-        <h2>Why Choose Our Online Quiz Platform?</h2>
-        <div>
-          <h3>Comprehensive Subject Coverage</h3>
-          <p>Explore quizzes across Science, Mathematics, History, Geography, Sports, Entertainment, and more. Each category is carefully curated to provide the best learning experience.</p>
-          <h3>Track Your Progress</h3>
-          <p>Monitor your performance with detailed analytics, identify areas for improvement, and celebrate your achievements as you master different subjects.</p>
-          <h3>Competitive Learning</h3>
-          <p>Challenge yourself with timed quizzes, compete for high scores, and join a community of knowledge seekers dedicated to continuous learning.</p>
-        </div>
-        <h2>Explore Quiz Categories</h2>
-        <p>Choose from our wide range of educational quizzes. Each category is designed to test your knowledge and help you learn new concepts.</p>
-      </div>
-
-      {/* Original Clean Design */}
+      {/* Search Orbs & Hero Section */}
       <div className={styles.bgOrbs} aria-hidden="true">
         <div className={`${styles.orb} ${styles.orb1}`} />
         <div className={`${styles.orb} ${styles.orb2}`} />
       </div>
 
-      <div className={styles.searchContainer}>
-        <div className={styles.searchBox}>
-          <span className={styles.searchIcon}>
-            {loading ? "⏳" : "🔍"}
-          </span>
-          <input
-            type="text"
-            className={styles.searchInput}
-            placeholder={loading ? "Searching..." : "Search for any topic..."}
-            value={search}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            onKeyDown={handleSearchKeyDown}
-            onFocus={() => setShowSuggestions(search.trim().length > 0 && searchSuggestions.length > 0)}
-            disabled={loading}
-            aria-label="Search quiz categories"
-            aria-expanded={showSuggestions}
-            aria-haspopup="listbox"
-            aria-autocomplete="list"
-            role="combobox"
-          />
-          {search.trim() && (
-            <button
-              className={styles.clearButton}
-              onClick={() => handleSearchChange("")}
-              aria-label="Clear search"
+      <motion.section 
+        className={styles.hero}
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <div className={styles.heroContent}>
+          <span className={styles.heroBadge}>#1 Interactive Learning Platform</span>
+          <h1 className={styles.heroTitle}>Level Up Your Knowledge Today</h1>
+          
+          {/* Integrated Search Command Center */}
+          <div className={styles.heroSearchWrapper}>
+            <div className={styles.searchBox}>
+              <span className={styles.searchIcon}>
+                {loading ? "⏳" : "🔍"}
+              </span>
+              <input
+                id="search-box"
+                type="text"
+                className={styles.searchInput}
+                placeholder={loading ? "Searching..." : "Search for any topic..."}
+                value={search}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                onFocus={() => setShowSuggestions(search.trim().length > 0 && searchSuggestions.length > 0)}
+                disabled={loading}
+              />
+              {search.trim() && (
+                <button
+                  className={styles.clearButton}
+                  onClick={() => handleSearchChange("")}
+                >✕</button>
+              )}
+            </div>
+            
+            {showSuggestions && searchSuggestions.length > 0 && (
+              <div className={styles.suggestionsDropdown}>
+                {searchSuggestions.map((suggestion, index) => (
+                  <button
+                    key={suggestion.id}
+                    className={`${styles.suggestionItem} ${
+                      index === selectedSuggestionIndex ? styles.selected : ""
+                    }`}
+                    onClick={() => handleSuggestionClick(suggestion)}
+                  >
+                    <span className={styles.suggestionEmoji}>{suggestion.emoji}</span>
+                    <div className={styles.suggestionContent}>
+                      <strong className={styles.suggestionName}>{suggestion.topic}</strong>
+                      <p className={styles.suggestionDescription}>{suggestion.description}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Advanced Filters Nested in Hero */}
+          <div className={styles.heroFiltersWrapper}>
+            <button 
+              className={styles.advancedFiltersToggle}
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
             >
-              ✕
+              <span>Advanced Filters</span>
+              <span className={`${styles.filterArrow} ${showAdvancedFilters ? styles.filterArrowUp : ''}`}>
+                ▼
+              </span>
             </button>
-          )}
-        </div>
-        
-        {showSuggestions && searchSuggestions.length > 0 && (
-          <div className={styles.suggestionsDropdown}>
-            {searchSuggestions.map((suggestion, index) => (
-              <button
-                key={suggestion.id}
-                className={`${styles.suggestionItem} ${
-                  index === selectedSuggestionIndex ? styles.selected : ""
-                }`}
-                onClick={() => handleSuggestionClick(suggestion)}
-              >
-                <span className={styles.suggestionEmoji}>{suggestion.emoji}</span>
-                <div className={styles.suggestionContent}>
-                  <span className={styles.suggestionName}>{suggestion.topic}</span>
-                  <span className={suggestion.description}>{suggestion.description}</span>
+
+            {showAdvancedFilters && (
+              <div className={styles.advancedFiltersPanel}>
+                <div className={styles.filterGroup}>
+                  <span className={styles.filterLabel}>Sort By</span>
+                  <div className={styles.filterOptions}>
+                    {[
+                      { id: 'default', label: 'Default' },
+                      { id: 'alphabetical', label: 'A-Z' },
+                      { id: 'newest', label: 'Newest' },
+                      { id: 'popular', label: 'Popular' }
+                    ].map(opt => (
+                      <button
+                        key={opt.id}
+                        className={`${styles.filterOption} ${sortBy === opt.id ? styles.filterOptionActive : ''}`}
+                        onClick={() => setSortBy(opt.id)}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+
+                <div className={styles.filterGroup}>
+                  <span className={styles.filterLabel}>Difficulty</span>
+                  <div className={styles.filterOptions}>
+                    {[
+                      { id: 'all', label: 'All' },
+                      { id: 'easy', label: 'Easy' },
+                      { id: 'medium', label: 'Medium' },
+                      { id: 'hard', label: 'Hard' }
+                    ].map(opt => (
+                      <button
+                        key={opt.id}
+                        className={`${styles.filterOption} ${difficultyFilter === opt.id ? styles.filterOptionActive : ''}`}
+                        onClick={() => setDifficultyFilter(opt.id)}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className={styles.filterGroup}>
+                  <span className={styles.filterLabel}>Questions</span>
+                  <div className={styles.filterOptions}>
+                    {[
+                      { id: 'all', label: 'Any' },
+                      { id: 'small', label: '1-10' },
+                      { id: 'medium', label: '11-25' },
+                      { id: 'large', label: '25+' }
+                    ].map(opt => (
+                      <button
+                        key={opt.id}
+                        className={`${styles.filterOption} ${questionCountFilter === opt.id ? styles.filterOptionActive : ''}`}
+                        onClick={() => setQuestionCountFilter(opt.id)}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Filter Chips Nested in Hero */}
+          <div className={styles.heroChipsWrapper}>
+            {chips.map((filter) => (
+              <button 
+                key={filter}
+                className={`${styles.chip} ${activeFilters.includes(filter) ? styles.activeChip : ''}`}
+                onClick={() => handleFilterClick(filter)}
+                disabled={loading}
+              >
+                {filter.startsWith("#") ? filter : `#${filter}`}
               </button>
             ))}
           </div>
-        )}
-      </div>
-
-      <div className={styles.advancedFiltersSection}>
-        <button 
-          className={styles.advancedFiltersToggle}
-          onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-        >
-          <span>Advanced Filters</span>
-          <span className={`${styles.filterArrow} ${showAdvancedFilters ? styles.filterArrowUp : ''}`}>
-            ▼
-          </span>
-        </button>
-
-        {showAdvancedFilters && (
-          <div className={styles.advancedFiltersPanel}>
-            <div className={styles.filterGroup}>
-              <span className={styles.filterLabel}>Sort By</span>
-              <div className={styles.filterOptions}>
-                {[
-                  { id: 'default', label: 'Default' },
-                  { id: 'alphabetical', label: 'A-Z' },
-                  { id: 'newest', label: 'Newest' },
-                  { id: 'popular', label: 'Popular' }
-                ].map(opt => (
-                  <button
-                    key={opt.id}
-                    className={`${styles.filterOption} ${sortBy === opt.id ? styles.filterOptionActive : ''}`}
-                    onClick={() => setSortBy(opt.id)}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className={styles.filterGroup}>
-              <span className={styles.filterLabel}>Difficulty</span>
-              <div className={styles.filterOptions}>
-                {[
-                  { id: 'all', label: 'All' },
-                  { id: 'easy', label: 'Easy' },
-                  { id: 'medium', label: 'Medium' },
-                  { id: 'hard', label: 'Hard' }
-                ].map(opt => (
-                  <button
-                    key={opt.id}
-                    className={`${styles.filterOption} ${difficultyFilter === opt.id ? styles.filterOptionActive : ''}`}
-                    onClick={() => setDifficultyFilter(opt.id)}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className={styles.filterGroup}>
-              <span className={styles.filterLabel}>Question Count</span>
-              <div className={styles.filterOptions}>
-                {[
-                  { id: 'all', label: 'Any' },
-                  { id: 'small', label: '1-10' },
-                  { id: 'medium', label: '11-25' },
-                  { id: 'large', label: '25+' }
-                ].map(opt => (
-                  <button
-                    key={opt.id}
-                    className={`${styles.filterOption} ${questionCountFilter === opt.id ? styles.filterOptionActive : ''}`}
-                    onClick={() => setQuestionCountFilter(opt.id)}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className={styles.filterChips}>
-        {chips.map((filter) => (
-          <button 
-            key={filter}
-            className={`${styles.chip} ${activeFilters.includes(filter) ? styles.activeChip : ''}`}
-            onClick={() => handleFilterClick(filter)}
-            disabled={loading}
-          >
-            {filter.startsWith("#") ? filter : `#${filter}`}
-          </button>
-        ))}
-      </div>
+        </div>
+      </motion.section>
 
       {/* Main Category Sections */}
       {!search && !activeFilters.length && (

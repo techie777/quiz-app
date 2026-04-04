@@ -29,6 +29,7 @@ export default function QuestionCard({
   const [fav, setFav] = useState(false);
   const [loginPrompt, setLoginPrompt] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [shaking, setShaking] = useState(false);
   const isUser = session?.user && !session.user.isAdmin;
 
   // Update selected when userAnswer changes (navigation)
@@ -52,6 +53,7 @@ export default function QuestionCard({
       resetQuestion: () => {
         setSelected(null);
         setRevealed(false);
+        setShaking(false);
       }
     };
     
@@ -59,6 +61,20 @@ export default function QuestionCard({
       delete window.QuestionCardRef;
     };
   }, []);
+
+  // Hotkey Listener
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (revealed || disabled) return;
+      const key = e.key.toUpperCase();
+      const map = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
+      if (map[key] !== undefined && question.options[map[key]]) {
+        handleSelect(map[key]);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [revealed, disabled, question]);
 
   const handleFavClick = async () => {
     if (disabled || !question) return;
@@ -106,12 +122,14 @@ export default function QuestionCard({
     setSelected(optionIndex);
     setRevealed(true);
     
-    // ONLY sound feedback - NO celebration
+    // ONLY sound feedback
     if (soundEnabled) {
       if (isCorrect) {
         playCorrectSound();
       } else {
         playWrongSound();
+        setShaking(true);
+        setTimeout(() => setShaking(false), 500);
       }
     }
     onAnswer(optionIndex);
@@ -160,8 +178,8 @@ export default function QuestionCard({
   if (!question) return null;
 
   return (
-    <div className={styles.questionSection}>
-      <div className={`${styles.questionCard} glass-card`}>
+    <div className={`${styles.questionSection} ${shaking ? "animate-vibrate" : ""}`}>
+      <div className={styles.questionCard}>
         <div className={styles.questionHeader}>
           <p className={styles.questionText}>{question.text}</p>
           <div className={styles.actionBtns}>
@@ -244,6 +262,7 @@ export default function QuestionCard({
       <div className={styles.optionsGrid}>
         {question.options.map((option, idx) => {
           const isRemoved = removedOptions.includes(idx);
+          const hotkeys = ['A', 'B', 'C', 'D'];
           
           if (isRemoved) return null;
           
@@ -256,7 +275,11 @@ export default function QuestionCard({
               onClick={() => handleSelect(idx)}
               disabled={revealed || disabled}
             >
-              <span className={styles.optionText}>{option}</span>
+              <div className={styles.optionContent}>
+                <span className={styles.hotkey}>{hotkeys[idx]}</span>
+                <span className={styles.optionText}>{option}</span>
+              </div>
+              
               {revealed && (
                 <span className={styles.optionIndicator}>
                   {getOptionIndicator(idx)}

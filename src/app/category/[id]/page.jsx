@@ -5,12 +5,13 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useData } from "@/context/DataContext";
 import { useQuiz } from "@/context/QuizContext";
+import { motion, AnimatePresence } from "framer-motion";
+import toast from "react-hot-toast";
 import styles from "@/styles/CategorySets.module.css";
 
 // Helper function to detect if text is Hindi
 function isHindiText(text) {
   if (!text || typeof text !== 'string') return false;
-  // Hindi Unicode range: \u0900-\u097F
   const hindiRegex = /[\u0900-\u097F]/;
   return hindiRegex.test(text);
 }
@@ -18,38 +19,21 @@ function isHindiText(text) {
 // Helper function to detect quiz language
 function detectQuizLanguage(questions) {
   if (!questions || !Array.isArray(questions) || questions.length === 0) return 'en';
-  
-  // Check first few questions to determine language
   const sampleQuestions = questions.slice(0, Math.min(3, questions.length));
   let hindiCount = 0;
-  
   sampleQuestions.forEach(q => {
     const hasHindi = isHindiText(q.text) || (Array.isArray(q.options) && q.options.some(opt => isHindiText(opt)));
-    if (hasHindi) {
-      hindiCount++;
-    }
+    if (hasHindi) hindiCount++;
   });
-  
-  // If majority of sample questions have Hindi text, consider it Hindi
   return hindiCount > sampleQuestions.length / 2 ? 'hi' : 'en';
 }
 
-const SET_SIZE = 30;
 const SETS_PER_PAGE = 6;
 const TIMER_OPTIONS = [
   { label: "No Timer", value: 0 },
-  { label: "30 seconds", value: 30 },
-  { label: "60 seconds", value: 60 },
-  { label: "90 seconds", value: 90 },
-];
-
-const CARD_GRADIENTS = [
-  "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-  "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-  "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
-  "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
-  "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
-  "linear-gradient(135deg, #ec4899 0%, #db2777 100%)",
+  { label: "30s", value: 30 },
+  { label: "60s", value: 60 },
+  { label: "90s", value: 90 },
 ];
 
 export default function CategorySetsPage() {
@@ -68,19 +52,24 @@ export default function CategorySetsPage() {
   const [language, setLanguage] = useState("en");
   const [selectedSet, setSelectedSet] = useState(null);
   const [page, setPage] = useState(1);
+  const [searchQuestion, setSearchQuestion] = useState("");
+  const [revealedAnswers, setRevealedAnswers] = useState(new Set());
+  const [isTranslatingIndex, setIsTranslatingIndex] = useState(false);
+
+  // Sync index language with quiz context when clicking toggle
+  const { translateQuiz } = useQuiz();
 
   // Load category metadata first for instant UI
   useEffect(() => {
     if (params.id) {
-      // Fetch only metadata first
-      fetch(`/api/categories/${params.id}?metaOnly=true`)
+      fetch(`/api/categories/${params.id}?metaOnly=true`, { cache: 'no-store' })
         .then(res => res.json())
         .then(data => {
           setCategory(data);
           setLoaded(true);
           
           // Now fetch all questions in the background
-          fetch(`/api/categories/${params.id}`)
+          fetch(`/api/categories/${params.id}`, { cache: 'no-store' })
             .then(res => res.json())
             .then(fullData => {
               setQuestions(fullData.questions || []);
@@ -102,7 +91,6 @@ export default function CategorySetsPage() {
         index: result.length + 1,
         start: i,
         end: Math.min(i + setSize, count),
-        // Note: actual questions are added only if questionsLoaded is true
         questions: questions.slice(i, i + setSize),
       });
     }
@@ -110,326 +98,307 @@ export default function CategorySetsPage() {
   }, [category, questions, setSize]);
 
   const paginatedSets = useMemo(() => {
-    return sets.slice(
-      (page - 1) * SETS_PER_PAGE,
-      page * SETS_PER_PAGE
-    );
+    return sets.slice((page - 1) * SETS_PER_PAGE, page * SETS_PER_PAGE);
   }, [sets, page]);
 
   const totalPages = Math.ceil(sets.length / SETS_PER_PAGE);
+
+  const filteredQuestions = useMemo(() => {
+    if (!searchQuestion.trim()) return questions;
+    return questions.filter(q => 
+      q.text.toLowerCase().includes(searchQuestion.toLowerCase()) ||
+      (q.options && q.options.some(opt => opt.toLowerCase().includes(searchQuestion.toLowerCase())))
+    );
+  }, [questions, searchQuestion]);
 
   const subCategories = useMemo(() => {
     if (!category || !quizzes) return [];
     return (quizzes || []).filter((c) => c.parentId === category.id && !c.hidden);
   }, [quizzes, category]);
 
+  // JSON-LD Schema for SEO
+  const jsonLd = useMemo(() => {
+    if (!category || !questionsLoaded) return null;
+    return {
+      "@context": "https://schema.org",
+      "@type": "Quiz",
+      "name": category.topic,
+      "description": category.description,
+      "educationalAlignment": [
+        {
+          "@type": "AlignmentObject",
+          "educationalFramework": "Educational Knowledge",
+          "targetName": category.topic
+        }
+      ],
+      "hasPart": questions.slice(0, 50).map((q, idx) => {
+        const correctText = String(q.correctAnswer || "").trim();
+        const correctIdx = Array.isArray(q.options) 
+          ? q.options.findIndex(opt => String(opt).trim() === correctText)
+          : -1;
+        
+        return {
+          "@type": "Question",
+          "name": q.text,
+          "educationalLevel": category.difficulty || "Beginner",
+          "suggestedAnswer": [
+            {
+              "@type": "Answer",
+              "text": correctIdx !== -1 ? q.options[correctIdx] : correctText
+            }
+          ]
+        };
+      })
+    };
+  }, [category, questions, questionsLoaded]);
+
   if (!loaded) {
     return (
       <main className={styles.page}>
-        <div className={styles.loadingContainer}>
-          <div className={styles.loaderWrapper}>
-            <div className={styles.loaderCircle}></div>
-            <div className={styles.loaderCircle}></div>
-            <div className={styles.loaderCircle}></div>
-            <div className={styles.loaderText}>Loading</div>
-          </div>
+        <div className={styles.skeletonPage}>
+          <div className={styles.skeletonHeader}><div className={`${styles.skeletonCircle} ${styles.shimmer}`}></div></div>
+          <div className={styles.skeletonGrid}>{[1,2,3,4,5,6].map(i => <div key={i} className={styles.skeletonCard}></div>)}</div>
         </div>
       </main>
     );
   }
 
-  if (!category) {
-    return (
-      <main className={styles.page}>
-        <div className={styles.empty}>
-          <h2>Category not found</h2>
-          <button className="btn-primary" onClick={() => router.push("/")}>
-            Back to Home
-          </button>
-        </div>
-      </main>
-    );
-  }
+  const handleLanguageToggle = async (targetLang) => {
+    if (isTranslatingIndex || targetLang === language) return;
+    
+    // Only translate if actually needed
+    const currentContentLang = detectQuizLanguage(questions);
+    if (currentContentLang === targetLang) {
+      setLanguage(targetLang);
+      return;
+    }
+
+    setIsTranslatingIndex(true);
+    try {
+      const translated = await translateQuiz(questions, currentContentLang, targetLang);
+      if (translated) {
+        // translateQuiz updates context, but we need local state for the index too if it's not synced
+        // However, translateQuiz in context updates the global state. 
+        // We might need to handle the returned questions if we want to update the local 'questions' array.
+      }
+      setLanguage(targetLang);
+    } finally {
+      setIsTranslatingIndex(false);
+    }
+  };
 
   const handlePlay = (set) => {
     if (!questionsLoaded) {
-      alert("Still loading questions, please wait a moment...");
+      toast.error("Loading questions...");
       return;
     }
     setSelectedSet(set);
-    setTimer(0);
-    // Auto-detect the language of the quiz content
     const detectedLang = detectQuizLanguage(set.questions);
     setLanguage(detectedLang);
   };
 
   const handleStart = () => {
-    if (!selectedSet) return;
+    if (!selectedSet || !questionsLoaded) return;
     startQuizSet(category.id, selectedSet.questions, timer, language, selectedSet.index);
     router.push(`/quiz/${category.id}`);
   };
 
-  const closeModal = () => {
-    setSelectedSet(null);
-    setTimer(0);
-    setLanguage(category?.originalLang || "en");
+  const toggleAnswer = (idx) => {
+    setRevealedAnswers(prev => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx);
+      else next.add(idx);
+      return next;
+    });
   };
 
   return (
     <main className={styles.page}>
-      {/* Category Header */}
-      <div className={styles.header}>
-        <div className={styles.headerImage}>
-          {category.image ? (
-            <img src={category.image} alt={category.topic} className={styles.headerImg} />
-          ) : (
-            <span className={styles.headerEmoji}>{category.emoji}</span>
-          )}
-        </div>
-        <div className={styles.headerInfo}>
-          <div className={styles.headerTop}>
-            <h1 className={styles.title}>{category.topic}</h1>
-            <div className={styles.headerMeta}>
-              <span className={styles.difficultyBadge}>
-                {category.difficulty || 'Medium'}
-              </span>
-              <span className={styles.questionCount}>
-                {category.questionCount} questions
-              </span>
+      {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />}
+      
+      <div className={styles.heroSection}>
+        <div className={styles.categoryHeroGlass}>
+          <div className={styles.heroLayout}>
+            <div className={styles.heroIconBox}>
+                {category.image ? <img src={category.image} alt={category.topic} className={styles.heroImg} /> : <span className={styles.heroEmoji}>{category.emoji}</span>}
             </div>
-          </div>
-          <p className={styles.desc}>{category.description}</p>
-          <div className={styles.headerStats}>
-            <div className={styles.statItem}>
-              <span className={styles.statIcon}>📚</span>
-              <span className={styles.statText}>
-                {sets.length} {sets.length === 1 ? "set" : "sets"}
-              </span>
-            </div>
-            <div className={styles.statItem}>
-              <span className={styles.statIcon}>⏱️</span>
-              <span className={styles.statText}>
-                ~{Math.ceil(category.questionCount * 0.3)} mins
-              </span>
-            </div>
-            <div className={styles.statItem}>
-              <span className={styles.statIcon}>🎯</span>
-              <span className={styles.statText}>
-                {category.difficulty || 'Medium'} level
-              </span>
+            <div className={styles.heroContent}>
+                <div className={styles.heroBadgeRow}>
+                    <span className={styles.heroBadge}>{category.difficulty || 'Expert Mode'}</span>
+                    <span className={styles.heroBadgeSecondary}>{category.questionCount} Questions</span>
+                </div>
+                <h1 className={styles.heroTitle}>{category.topic}</h1>
+                <p className={styles.heroDesc}>{category.description || "Master these concepts with our curated study sets."}</p>
+                <div className={styles.heroStatsRow}>
+                    <div className={styles.heroStat}><span className={styles.hIcon}>📚</span> {sets.length} Sets</div>
+                    <div className={styles.heroStat}><span className={styles.hIcon}>⏱️</span> ~{Math.ceil(category.questionCount * 0.3)}m</div>
+                    <div className={styles.heroStat}><span className={styles.hIcon}>🌍</span> Multi-lang</div>
+                </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Sub-categories */}
-      {subCategories.length > 0 && (
-        <div className={styles.subCategories}>
-          <h2 className={styles.subTitle}>
-            <span className={styles.subTitleIcon}>🔍</span>
-            Explore Sub-categories
-          </h2>
-          <div className={styles.subGrid}>
-            {subCategories.map((sub) => (
-                <Link
-                  key={sub.id}
-                  href={`/category/${sub.id}`}
-                  className={`${styles.subCard} glass-card`}
-                >
-                  <div className={styles.subCardImage}>
-                    <span className={styles.subEmoji}>{sub.emoji}</span>
-                  </div>
-                  <div className={styles.subInfo}>
-                    <span className={styles.subName}>{sub.topic}</span>
-                    <span className={styles.subCount}>
-                      {sub.questions?.length || 0} questions
-                    </span>
-                  </div>
-                  <div className={styles.subArrow}>→</div>
-                </Link>
-              ))}
-          </div>
-        </div>
-      )}
+      <div className={styles.contentWrap}>
+        {/* Sets Navigation */}
+        <section className={styles.setsNavigation}>
+            <div className={styles.sectionHeader}>
+                <h2 className={styles.sectionTitle}>🎯 Interactive Practice Sets</h2>
+                <p className={styles.sectionLead}>Each set is optimized for focus and quick learning.</p>
+            </div>
 
-      {/* Quiz Sets Section */}
-      <div className={styles.setsSection}>
-        <div className={styles.setsHeader}>
-          <h2 className={styles.setsTitle}>
-            <span className={styles.setsTitleIcon}>🎮</span>
-            Quiz Sets
-          </h2>
-          <p className={styles.setsSubtitle}>
-            Choose a set to start practicing. Each set contains {setSize} questions.
-            {!questionsLoaded && <span className={styles.backgroundLoading}> (Loading questions in background...)</span>}
-          </p>
-        </div>
-
-        {sets.length === 0 ? (
-          <div className={styles.emptyState}>
-            <div className={styles.emptyIcon}>📭</div>
-            <h3 className={styles.emptyTitle}>No Questions Yet</h3>
-            <p className={styles.emptyDesc}>
-              This category doesn't have any questions at the moment. Check back later!
-            </p>
-          </div>
-        ) : (
-          <>
-            <div className={styles.grid}>
-              {paginatedSets.map((set, i) => (
-                <div key={set.index} className={styles.setCard}>
-                  <div className={styles.setCardImage}>
-                    <div className={styles.setCardIcon}>
-                      <span className={styles.setEmoji}>🎮</span>
-                    </div>
-                  </div>
-                  <div className={styles.setCardBody}>
-                    <h3 className={styles.setCardTitle}>Set {set.index}</h3>
-                    
-                    <button
-                      className={styles.playBtn}
-                      onClick={() => handlePlay(set)}
+            <div className={styles.setsGrid}>
+                {paginatedSets.map((set) => (
+                    <motion.div 
+                        key={set.index} 
+                        className={styles.setCard}
+                        whileHover={{ y: -8, scale: 1.02 }}
+                        transition={{ type: "spring", stiffness: 300 }}
                     >
-                      Play Quiz
-                    </button>
-
-                    <div className={styles.setCardFooter}>
-                      <span className={styles.setRange}>
-                        Q {set.start + 1} – {set.end}
-                      </span>
-                      <span className={styles.setTime}>
-                        ~{Math.ceil((set.end - set.start) * 0.3)} mins
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                        <div className={styles.setCardHeader}>
+                            <h3 className={styles.setCardTitle}>Study Set {set.index}</h3>
+                            <span className={styles.setRange}>Q {set.start + 1} – {set.end}</span>
+                        </div>
+                        <p className={styles.setCardInfo}>Contains {set.end - set.start} targeted questions.</p>
+                        <button className={styles.playIconButton} onClick={() => handlePlay(set)}>
+                            <span>Start Exploring</span>
+                            <span className={styles.playArrow}>→</span>
+                        </button>
+                    </motion.div>
+                ))}
             </div>
 
-            {/* Pagination */}
             {totalPages > 1 && (
-              <div className={styles.pagination}>
-                <button
-                  className={styles.pageBtn}
-                  disabled={page <= 1}
-                  onClick={() => setPage(page - 1)}
-                >
-                  ← Previous
-                </button>
-                <div className={styles.pageNumbers}>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                    (p) => (
-                      <button
-                        key={p}
-                        className={`${styles.pageNum} ${
-                          p === page ? styles.pageNumActive : ""
-                        }`}
-                        onClick={() => setPage(p)}
-                      >
-                        {p}
-                      </button>
-                    )
-                  )}
+                <div className={styles.paginationArea}>
+                    <button className={styles.pageArrow} disabled={page === 1} onClick={() => setPage(page-1)}>←</button>
+                    <div className={styles.pageDots}>
+                        {Array.from({ length: totalPages }).map((_, i) => (
+                            <button key={i} className={`${styles.pageDot} ${page === i+1 ? styles.dotActive : ""}`} onClick={() => setPage(i+1)}>{i+1}</button>
+                        ))}
+                    </div>
+                    <button className={styles.pageArrow} disabled={page === totalPages} onClick={() => setPage(page+1)}>→</button>
                 </div>
-                <button
-                  className={styles.pageBtn}
-                  disabled={page >= totalPages}
-                  onClick={() => setPage(page + 1)}
-                >
-                  Next →
-                </button>
-              </div>
             )}
-          </>
-        )}
+        </section>
+
+        {/* --- Senior Strategy: SEO Question Index --- */}
+        <section className={styles.seoIndexSection}>
+             <div className={styles.indexHeader}>
+                <div className={styles.indexTitleGroup}>
+                    <h2 className={styles.indexTitle}>📑 Question Index & Study Guide</h2>
+                    <div className={styles.indexLangToggle}>
+                        <button 
+                            className={language === "en" ? styles.langActive : ""} 
+                            onClick={() => handleLanguageToggle("en")}
+                            disabled={isTranslatingIndex}
+                        >{isTranslatingIndex && language !== "en" ? "..." : "English Index"}</button>
+                        <button 
+                            className={language === "hi" ? styles.langActive : ""} 
+                            onClick={() => handleLanguageToggle("hi")}
+                            disabled={isTranslatingIndex}
+                        >{isTranslatingIndex && language !== "hi" ? "..." : "Hindi Index"}</button>
+                    </div>
+                </div>
+                <div className={styles.searchBar}>
+                    <span className={styles.searchIcon}>🔍</span>
+                    <input 
+                        type="text" 
+                        placeholder="Search specific questions..." 
+                        className={styles.searchInput}
+                        value={searchQuestion}
+                        onChange={(e) => setSearchQuestion(e.target.value)}
+                    />
+                </div>
+             </div>
+
+             <div className={styles.questionsList}>
+                 {!questionsLoaded ? <div className={styles.loadingIndex}>Optimizing question index...</div> : (
+                     filteredQuestions.map((q, idx) => (
+                         <div key={idx} className={styles.indexItem}>
+                             {/* Monetization Slot Placeholder */}
+                             {idx > 0 && idx % 10 === 0 && <div className={styles.adPlaceholder}><span>ADVERTISEMENT SLOT</span></div>}
+
+                             <div className={styles.indexQuestion}>
+                                 <span className={styles.qNum}>#{idx + 1}</span>
+                                 <h3 className={styles.qText}>{q.text}</h3>
+                             </div>
+                             
+                             <div className={styles.indexActions}>
+                                 <button className={styles.revealBtn} onClick={() => toggleAnswer(idx)}>
+                                     {revealedAnswers.has(idx) ? "Hide Details" : "Reveal Answer & Options"}
+                                 </button>
+                             </div>
+
+                             <AnimatePresence>
+                                {revealedAnswers.has(idx) && (
+                                    <motion.div 
+                                        className={styles.expandedDetails}
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: "auto", opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                    >
+                                        <ul className={styles.optionsList}>
+                                            {q.options.map((opt, oIdx) => {
+                                                const isCorrect = String(opt).trim() === String(q.correctAnswer).trim();
+                                                return (
+                                                    <li key={oIdx} className={isCorrect ? styles.correctOpt : ""}>
+                                                        {opt} {isCorrect && <span className={styles.check}>✓</span>}
+                                                    </li>
+                                                );
+                                            })}
+                                        </ul>
+                                        {q.explanation && <p className={styles.explanation}><strong>Explanation:</strong> {q.explanation}</p>}
+                                    </motion.div>
+                                )}
+                             </AnimatePresence>
+                         </div>
+                     ))
+                 )}
+                 {questionsLoaded && filteredQuestions.length === 0 && <p className={styles.noResults}>No questions found matching your search.</p>}
+             </div>
+        </section>
       </div>
 
-      {/* Timer Modal */}
+      {/* Timer Modal (unchanged logic, updated UI) */}
       {selectedSet && (
         <div className={styles.overlay} onClick={closeModal}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <button className={styles.closeBtn} onClick={closeModal}>
-              ✕
-            </button>
             <div className={styles.modalHeader}>
               <span className={styles.modalEmoji}>{category.emoji}</span>
-              <h2 className={styles.modalTitle}>
-                {category.topic} — Set {selectedSet.index}
-              </h2>
-              <p className={styles.modalDesc}>
-                {selectedSet.end - selectedSet.start} questions (Q
-                {selectedSet.start + 1}–{selectedSet.end})
-              </p>
+              <h2 className={styles.modalTitle}>Configure Practice: Set {selectedSet.index}</h2>
             </div>
 
             <div className={styles.settingGroup}>
-              <label className={styles.settingLabel}>
-                Select Language
-              </label>
-              <div className={styles.optionRow}>
-                <button
-                  type="button"
-                  className={`${styles.optionBtn} ${
-                    language === "en" ? styles.active : ""
-                  }`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setLanguage("en");
-                  }}
-                >
-                  🇺🇸 English
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.optionBtn} ${
-                    language === "hi" ? styles.active : ""
-                  }`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setLanguage("hi");
-                  }}
-                >
-                  🇮🇳 Hindi
-                </button>
-              </div>
+                <label>Prefer English or Hindi?</label>
+                <div className={styles.tabRow}>
+                    <button className={language === "en" ? styles.tabActive : ""} onClick={() => setLanguage("en")}>English</button>
+                    <button className={language === "hi" ? styles.tabActive : ""} onClick={() => setLanguage("hi")}>Hindi</button>
+                </div>
             </div>
 
             <div className={styles.settingGroup}>
-              <label className={styles.settingLabel}>
-                Timer (per question)
-              </label>
-              <div className={styles.optionRow}>
-                {TIMER_OPTIONS.map((t) => (
-                  <button
-                    key={t.value}
-                    type="button"
-                    className={`${styles.optionBtn} ${
-                      timer === t.value ? styles.active : ""
-                    }`}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setTimer(t.value);
-                    }}
-                  >
-                    {t.label}
-                  </button>
-                ))}
-              </div>
+                <label>Set your pace (Time per question)</label>
+                <div className={styles.tabRow}>
+                    {TIMER_OPTIONS.map(o => <button key={o.value} className={timer === o.value ? styles.tabActive : ""} onClick={() => setTimer(o.value)}>{o.label}</button>)}
+                </div>
             </div>
 
-            <button
-              type="button"
-              className={`btn-primary ${styles.startBtn}`}
-              onClick={(e) => {
-                e.preventDefault();
-                handleStart();
-              }}
+            <button 
+                className={`${styles.btnLaunch} ${!questionsLoaded ? styles.btnDisabled : ""}`} 
+                onClick={handleStart}
+                disabled={!questionsLoaded}
             >
-              🚀 Start Quiz
+                {questionsLoaded ? "🚀 Start Mastering" : "⌛ Preparing Content..."}
             </button>
+            <button className={styles.btnLater} onClick={closeModal}>Decide Later</button>
           </div>
         </div>
       )}
     </main>
   );
+
+  function closeModal() {
+    setSelectedSet(null);
+    setTimer(0);
+  }
 }

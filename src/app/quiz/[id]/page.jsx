@@ -1,21 +1,89 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useQuiz } from "@/context/QuizContext";
 import { useData } from "@/context/DataContext";
-import Timer from "@/components/Timer";
 import QuestionCard from "@/components/QuestionCard";
 import ProgressBar from "@/components/ProgressBar";
 import QuizSidebar from "@/components/QuizSidebar";
 import QuizSuggestions from "@/components/QuizSuggestions";
 import ExitConfirmModal from "@/components/ExitConfirmModal";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import styles from "@/styles/QuizEngine.module.css";
 import { initSounds, playCorrectSound, playWrongSound } from "@/lib/sounds";
+import timerStyles from "@/styles/Timer.module.css";
+
+// Persistent-Fix Local Timer Component
+const QuizTimerComponent = ({ seconds, onExpire, questionKey, isPaused }) => {
+  const [timeLeft, setTimeLeft] = useState(seconds);
+  const timerRef = useRef(null);
+
+  useEffect(() => {
+    setTimeLeft(seconds);
+  }, [questionKey, seconds]);
+
+  useEffect(() => {
+    if (isPaused) {
+      if (timerRef.current) clearInterval(timerRef.current);
+      return;
+    }
+    if (timeLeft <= 0) {
+      onExpire();
+      return;
+    }
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timerRef.current);
+  }, [timeLeft === 0, questionKey, isPaused, onExpire]);
+
+  const progress = (timeLeft / seconds) * 100;
+  const radius = 20;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (progress / 100) * circumference;
+  const isTimeLow = timeLeft <= 5;
+  const displayMins = String(Math.floor(timeLeft / 60)).padStart(2, "0");
+  const displaySecs = String(timeLeft % 60).padStart(2, "0");
+
+  return (
+    <div className={`${timerStyles.timerContainer} ${isTimeLow ? timerStyles.low : ""}`}>
+      <svg className={timerStyles.timerRing} width="50" height="50">
+        <circle className={timerStyles.ringTrack} cx="25" cy="25" r={radius} />
+        <circle
+          className={timerStyles.ringFill}
+          cx="25" cy="25" r={radius}
+          style={{
+            strokeDasharray: circumference,
+            strokeDashoffset: isNaN(offset) ? 0 : offset
+          }}
+        />
+      </svg>
+      <div className={timerStyles.timeDisplay}>
+        {displayMins}:{displaySecs}
+      </div>
+    </div>
+  );
+};
 
 export default function QuizEngine() {
+  return (
+    <ErrorBoundary>
+      <QuizEngineContent />
+    </ErrorBoundary>
+  );
+}
+
+function QuizEngineContent() {
   const router = useRouter();
+  console.log("Quiz Console Initializing...");
   const params = useParams();
   const { data: session } = useSession();
   const { quizzes } = useData();
@@ -36,6 +104,7 @@ export default function QuizEngine() {
     setFullscreen,
     isTranslating,
     language,
+    setLanguage,
     translateTarget,
     translatedStory,
     toggleLanguage,
@@ -67,6 +136,7 @@ export default function QuizEngine() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showEndConfirmModal, setShowEndConfirmModal] = useState(false);
   const [questionStartTime, setQuestionStartTime] = useState(Date.now());
+  const [searchQuestion, setSearchQuestion] = useState("");
 
   const category = useMemo(() => {
     return (quizzes || []).find((q) => q.id === params?.id);
@@ -145,7 +215,7 @@ export default function QuizEngine() {
     return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, [setFullscreen]);
 
-  // Manually move to next question
+const QuizEngineTimer = QuizTimerComponent;
   const moveToNextQuestion = useCallback(() => {
     if (currentIndex < (questions?.length || 0) - 1) {
       goToQuestion(currentIndex + 1);
@@ -410,6 +480,23 @@ export default function QuizEngine() {
     if (status === "active") handleSubmitAnswer(null);
   }, [status, handleSubmitAnswer]);
 
+  // Navigation handlers for Sidebar
+  const handleNavigate = useCallback((index) => {
+    goToQuestion(index);
+    setQuestionTransition(true);
+    setTimeout(() => setQuestionTransition(false), 300);
+  }, [goToQuestion]);
+
+  const handleBack = useCallback(() => {
+    if (currentIndex > 0) handleNavigate(currentIndex - 1);
+  }, [currentIndex, handleNavigate]);
+
+  const handleResume = useCallback(() => {
+    if (currentIndex < questions.length - 1) handleNavigate(currentIndex + 1);
+  }, [currentIndex, questions.length, handleNavigate]);
+
+  const startTime = useMemo(() => Date.now(), []);
+
   // Early return while loading or redirecting
   if (status === "idle" || !questions || questions.length === 0 || isTranslating) {
     const target = translateTarget || language;
@@ -438,6 +525,9 @@ export default function QuizEngine() {
     );
   }
 
+  const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+  const displayTime = `${String(Math.floor(elapsedSeconds / 60)).padStart(2, "0")}:${String(elapsedSeconds % 60).padStart(2, "0")}`;
+
   return (
     <main
       className={`${styles.page} ${isFullscreen ? styles.fullscreen : ""}`}
@@ -455,7 +545,7 @@ export default function QuizEngine() {
             </div>
             <div className={styles.topCenter}>
               {timerSetting > 0 && status === "active" && currentQuestion && (
-                <Timer
+                <QuizTimerComponent
                   seconds={timerSetting}
                   onExpire={handleTimerExpire}
                   questionKey={currentQuestion.id}
@@ -479,70 +569,52 @@ export default function QuizEngine() {
             </div>
           </div>
 
-          {/* Controls */}
+          {/* Controls / Power-Up Dock */}
           <div className={styles.controls}>
-            {/* 1. 50/50 Lifeline */}
             <button
               className={`${styles.controlBtn} ${used5050 ? styles.disabled : ""}`}
               onClick={use5050}
               disabled={used5050}
               title="50/50 Lifeline (-3 points)"
               data-icon="50/50"
-            >
-              50/50
-            </button>
+            />
             
-            {/* 2. Ask Audience */}
             <button
               className={`${styles.controlBtn} ${usedAskAudience ? styles.disabled : ""}`}
               onClick={useAskAudience}
               disabled={usedAskAudience}
               title="Ask Audience (-3 points)"
               data-icon="👥"
-            >
-              👥
-            </button>
+            />
             
-            {/* 3. Language Toggle */}
             <button
               className={`${styles.controlBtn} ${isTranslating ? styles.loading : ""}`}
               onClick={() => toggleLanguage(category?.storyText)}
               title={language === "hi" ? "Switch to English" : "Switch to Hindi"}
               data-icon="🌐"
               disabled={isTranslating}
-            >
-              {isTranslating ? "⌛" : "🌐"}
-            </button>
+            />
 
-            {/* 4. Font Size */}
             <button
               className={styles.controlBtn}
               onClick={toggleFontSize}
               title="Adjust font size"
               data-icon="Aa"
-            >
-              Aa
-            </button>
+            />
             
-            {/* 5. Sound Toggle */}
             <button 
               className={`${styles.controlBtn} ${!soundEnabled ? styles.disabled : ""}`} 
               onClick={toggleSound}
               title={soundEnabled ? "Disable Sound" : "Enable Sound"}
               data-icon={soundEnabled ? "🔊" : "🔇"}
-            >
-              {soundEnabled ? "🔊" : "🔇"}
-            </button>
+            />
             
-            {/* 6. Fullscreen Toggle */}
             <button 
               className={styles.controlBtn} 
               onClick={toggleFullscreen}
               title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
               data-icon={isFullscreen ? "↙️" : "↗️"}
-            >
-              {isFullscreen ? "↙️" : "↗️"}
-            </button>
+            />
           </div>
 
           {/* Progress */}
@@ -588,6 +660,13 @@ export default function QuizEngine() {
           isPaused={isPaused || showStory}
           pauseQuiz={pauseQuiz}
           resumeQuiz={resumeQuiz}
+          onNavigate={handleNavigate}
+          onBack={handleBack}
+          onResume={handleResume}
+          onExit={handleEndQuiz}
+          startTime={startTime}
+          answers={answers}
+          TimerComponent={QuizTimerComponent}
         />
       </div>
 
@@ -617,11 +696,11 @@ export default function QuizEngine() {
       {/* Exit Confirmation Modal */}
       <ExitConfirmModal
         isOpen={showExitModal}
-        onClose={() => setShowExitModal(false)}
-        onConfirm={confirmExitQuiz}
-        progress={questions.length > 0 ? Math.round(((currentIndex + 1) / questions.length) * 100) : 0}
-        score={score}
-        totalQuestions={questions.length}
+        onConfirm={() => {
+          setShowExitModal(false);
+          router.replace("/");
+        }}
+        onCancel={() => setShowExitModal(false)}
       />
 
       {/* End Quiz Confirmation Modal */}

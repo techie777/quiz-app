@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useReducer, useCallback } from "react";
+import { createContext, useContext, useReducer, useCallback, useEffect } from "react";
 import { useData } from "@/context/DataContext";
 import toast from "react-hot-toast";
 
@@ -33,6 +33,7 @@ function detectQuizLanguage(questions) {
 }
 
 function shuffleArray(arr) {
+  if (!arr || !Array.isArray(arr)) return [];
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -60,6 +61,9 @@ const initialState = {
   fontScale: 1,
   selectedSetIndex: null,
 };
+
+// Key for storage
+const STORAGE_KEY = 'global_quiz_state';
 
 function quizReducer(state, action) {
   switch (action.type) {
@@ -98,7 +102,7 @@ function quizReducer(state, action) {
       // Deep shuffle: shuffle questions AND their options
       const shuffledQuestions = shuffleArray(questions).map(q => ({
         ...q,
-        options: shuffleArray(q.options)
+        options: Array.isArray(q.options) ? shuffleArray(q.options) : []
       }));
 
       return {
@@ -180,6 +184,8 @@ function quizReducer(state, action) {
       return { ...state, isFullscreen: action.payload };
     case "RESET_QUIZ":
       return { ...initialState, soundEnabled: state.soundEnabled, isFullscreen: state.isFullscreen };
+    case "LOAD_STATE":
+      return { ...state, ...action.payload, status: action.payload.status === 'finished' ? 'idle' : action.payload.status };
     default:
       return state;
   }
@@ -188,6 +194,34 @@ function quizReducer(state, action) {
 export function QuizProvider({ children }) {
   const { quizzes } = useData();
   const [state, dispatch] = useReducer(quizReducer, initialState);
+
+  // Persistence: Save state
+  useEffect(() => {
+    if (state.status === 'active') {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        ...state,
+        // Don't save transient UI states
+        isTranslating: false,
+        translateTarget: null,
+        showStory: false,
+      }));
+    }
+  }, [state]);
+
+  // Persistence: Load state
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.status === 'active' && parsed.questions.length > 0) {
+          dispatch({ type: "LOAD_STATE", payload: parsed });
+        }
+      } catch (e) {
+        console.error("Failed to load quiz state", e);
+      }
+    }
+  }, []);
 
   const submitAnswer = useCallback((questionId, selected) => {
     dispatch({ type: "SUBMIT_ANSWER", payload: { questionId, selected } });

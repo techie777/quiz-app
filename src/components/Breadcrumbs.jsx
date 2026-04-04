@@ -12,8 +12,8 @@ const Breadcrumbs = () => {
   const { quizzes } = useData();
   const { selectedSetIndex, quizId } = useQuiz();
   
-  // Don't show breadcrumbs on the home page
-  if (pathname === '/') return null;
+  // Don't show breadcrumbs on the home page or admin routes
+  if (pathname === '/' || pathname?.startsWith('/admin')) return null;
 
   const pathSegments = pathname.split('/').filter((segment) => segment !== '');
 

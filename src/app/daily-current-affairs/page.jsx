@@ -17,6 +17,26 @@ function formatDate(d) {
   }
 }
 
+const CATEGORY_ICONS = {
+  "all": "🌐",
+  "science & technology": "🧪",
+  "international": "🌍",
+  "national": "🇮🇳",
+  "sports": "🏆",
+  "economy": "📈",
+  "polity": "⚖️",
+  "environment": "🌿",
+  "defense": "🛡️",
+  "banking": "🏦",
+  "important days": "📅",
+  "awards": "🏅"
+};
+
+function getCategoryIcon(cat) {
+  if (!cat) return "🗞️";
+  return CATEGORY_ICONS[cat.toLowerCase()] || "🗞️";
+}
+
 function clamp(n, min, max) {
   return Math.min(max, Math.max(min, n));
 }
@@ -426,13 +446,13 @@ export default function DailyCurrentAffairsPage() {
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           <div>
-            <h1 className={styles.title}>Daily Current Affairs</h1>
+            <h1 className={styles.title}>Intelligence Briefing</h1>
             <p className={styles.subtitle}>
               {selectedDate && selectedDate === getTodayDateString()
-                ? `Today's Current Affairs - ${formatDate(selectedDate)}`
+                ? `Active Directives - ${formatDate(selectedDate)}`
                 : selectedDate
-                ? `Current Affairs for ${formatDate(selectedDate)}`
-                : 'Browse current affairs date-wise and category-wise.'}
+                ? `Archived Briefs for ${formatDate(selectedDate)}`
+                : 'Browse intelligence feeds date-wise and category-wise.'}
             </p>
           </div>
           <div className={styles.headerFilters}>
@@ -478,7 +498,7 @@ export default function DailyCurrentAffairsPage() {
           </div>
         </div>
         <a className={styles.exportBtn} href={exportHref} target="_blank" rel="noreferrer">
-          Export
+           <span>📥</span> Export Intel
         </a>
       </div>
 
@@ -489,7 +509,8 @@ export default function DailyCurrentAffairsPage() {
             className={`${styles.sideItem} ${selectedCategory === "all" ? styles.sideActive : ""}`}
             onClick={() => setSelectedCategory("all")}
           >
-            All
+            <span className={styles.sideIcon}>🌐</span>
+            <span className={styles.sideText}>All Intelligence</span>
           </button>
           {categories.map((c) => (
             <button
@@ -497,7 +518,8 @@ export default function DailyCurrentAffairsPage() {
               className={`${styles.sideItem} ${selectedCategory === c ? styles.sideActive : ""}`}
               onClick={() => setSelectedCategory(c)}
             >
-              {c}
+              <span className={styles.sideIcon}>{getCategoryIcon(c)}</span>
+              <span className={styles.sideText}>{c}</span>
             </button>
           ))}
         </aside>
@@ -524,7 +546,7 @@ export default function DailyCurrentAffairsPage() {
               {/* Show Today's Current Affairs indicator */}
               {selectedDate && selectedDate === getTodayDateString() && (
                 <div className={styles.todayIndicator}>
-                  <span className={styles.todayBadge}>📅 Today's Current Affairs</span>
+                  <span className={styles.todayBadge}>📡 Live Intelligence Stream</span>
                   <span className={styles.todayDate}>{formatDate(selectedDate)}</span>
                 </div>
               )}
@@ -536,7 +558,9 @@ export default function DailyCurrentAffairsPage() {
                       {it.image ? (
                         <img src={it.image} alt={it.heading} className={styles.image} />
                       ) : (
-                        <div className={styles.imageFallback}>🗞️</div>
+                        <div className={styles.imageFallback}>
+                          <span className={styles.fallbackIcon}>{getCategoryIcon(it.category)}</span>
+                        </div>
                       )}
                       <button
                         className={styles.favOverlay}
@@ -569,15 +593,16 @@ export default function DailyCurrentAffairsPage() {
                       <p className={styles.desc}>{it.description}</p>
                       <div className={styles.actionsRow}>
                         <button className={styles.readMoreBtn} onClick={() => handleReadMore(it)}>
-                          Read More
+                          <span>VIEW BRIEF</span>
                           {status !== "authenticated" && (
                             <span className={styles.freeReadIndicator}>
                               {freeReadsUsed < maxFreeReads 
                                 ? `(${maxFreeReads - freeReadsUsed} free left)` 
-                                : "(Sign in required)"
+                                : "(Tactical Lock)"
                               }
                             </span>
                           )}
+                          <span className={styles.btnArrow}>→</span>
                         </button>
                       </div>
                     </div>
@@ -652,13 +677,20 @@ export default function DailyCurrentAffairsPage() {
               <div className={styles.modalMetaWithActions}>
                 <div className={styles.modalMetaLeft}>
                   <span className={styles.postedBy}>Posted by: Admin</span>
+                  <span className={styles.metaSeparator}>•</span>
                   {reading.category && (
-                    <span className={styles.chip} style={chipStyle(reading.category)}>
-                      {reading.category}
-                    </span>
+                    <>
+                      <span className={styles.chip} style={chipStyle(reading.category)}>
+                        {reading.category}
+                      </span>
+                      <span className={styles.metaSeparator}>•</span>
+                    </>
                   )}
                   {readItems.has(reading.id) && (
-                    <span className={styles.readIndicator}>✓ Read</span>
+                    <>
+                      <span className={styles.readIndicator}>✓ Read</span>
+                      <span className={styles.metaSeparator}>•</span>
+                    </>
                   )}
                   {status !== "authenticated" && freeReadsUsed < maxFreeReads && (
                     <span className={styles.freeReadsBadge}>

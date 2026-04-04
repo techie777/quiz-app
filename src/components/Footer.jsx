@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useData } from "@/context/DataContext";
 import styles from "@/styles/Footer.module.css";
+import { useMemo } from "react";
 
 export default function Footer() {
   const pathname = usePathname();
@@ -15,169 +16,143 @@ export default function Footer() {
   const brandDesc =
     (typeof settings?.footerBrandDesc === "string" && settings.footerBrandDesc.trim()
       ? settings.footerBrandDesc
-      : "Test your knowledge with thousands of interactive quizzes. From science to history, challenge yourself and learn new facts every day!");
+      : "The ultimate global quiz destination. Empowering learners worldwide with thousands of interactive quizzes, daily insights, and academic resources.");
 
-  const bottomText =
-    (typeof settings?.footerBottomText === "string" && settings.footerBottomText.trim()
-      ? settings.footerBottomText
-      : "Empowering learners worldwide with engaging educational content.");
+  // --- Dynamic SEO Data Logic ---
+  const dynamicSEOData = useMemo(() => {
+    if (!quizzes || quizzes.length === 0) return { popular: [], recent: [], tags: [] };
 
-  // Generate quiz categories for SEO
-  const popularCategories = quizzes
-    .filter(q => !q.hidden && q.questions && q.questions.length > 0)
-    .slice(0, 8)
-    .map(q => ({
-      id: q.id,
-      label: q.topic,
-      href: `/category/${q.id}`,
-      emoji: q.emoji || '📚'
-    }));
+    const activeQuizzes = quizzes.filter(q => !q.hidden && q.questions && q.questions.length > 0);
+    
+    // 1. Top 10 Popular Categories (by question count)
+    const popular = [...activeQuizzes]
+      .sort((a, b) => (b.questions?.length || 0) - (a.questions?.length || 0))
+      .slice(0, 10)
+      .map(q => ({ id: q.id, label: `${q.topic} Quiz`, href: `/category/${q.id}` }));
 
-  // Always return JSX - never return null
+    // 2. 6 Most Recent Challenges
+    const recent = [...activeQuizzes]
+      .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+      .slice(0, 6)
+      .map(q => ({ id: q.id, label: q.topic, href: `/category/${q.id}` }));
+
+    // 3. SEO Tag Cloud
+    const allTopics = activeQuizzes.map(q => q.topic);
+    const tags = Array.from(new Set(allTopics)).sort().slice(0, 20);
+
+    return { popular, recent, tags };
+  }, [quizzes]);
+
   if (shouldHide) {
-    return <div style={{ display: 'none' }} />; // Hidden div instead of null
+    return <div style={{ display: 'none' }} />;
   }
-
-  const sections = (function () {
-    const raw = settings?.footerSections;
-    if (typeof raw !== "string" || !raw.trim()) {
-      return [
-        { 
-          id: "quizzes", 
-          heading: "Popular Quizzes", 
-          links: popularCategories.map(cat => ({
-            id: cat.id,
-            label: `${cat.emoji} ${cat.label}`,
-            href: cat.href
-          }))
-        },
-        { 
-          id: "topics", 
-          heading: "Quiz Topics", 
-          links: [
-            { id: "science", label: "🔬 Science Quizzes", href: "/?filter=Science" },
-            { id: "math", label: "🔢 Mathematics", href: "/?filter=Math" },
-            { id: "history", label: "📚 History", href: "/?filter=History" },
-            { id: "geography", label: "🌍 Geography", href: "/?filter=Geography" },
-            { id: "sports", label: "⚽ Sports", href: "/?filter=Sports" },
-            { id: "entertainment", label: "🎬 Entertainment", href: "/?filter=Entertainment" },
-          ]
-        },
-        { 
-          id: "resources", 
-          heading: "Learning Resources", 
-          links: [
-            { id: "daily", label: "Daily Quiz", href: "/?filter=Daily" },
-            { id: "current", label: "Current Affairs", href: "/?filter=Current" },
-            { id: "gk", label: "General Knowledge", href: "/?filter=GK" },
-            { id: "practice", label: "Practice Tests", href: "/" },
-          ]
-        },
-        {
-          id: "company",
-          heading: "About",
-          links: [
-            { id: "about", label: "About Us", href: "/about" },
-            { id: "contact", label: "Contact", href: "/contact" },
-            { id: "blog", label: "Quiz Blog", href: "/blog" },
-          ],
-        },
-        {
-          id: "legal",
-          heading: "Legal",
-          links: [
-            { id: "terms", label: "Terms of Service", href: "/terms" },
-            { id: "privacy", label: "Privacy Policy", href: "/privacy" },
-            { id: "cookies", label: "Cookie Policy", href: "/cookies" },
-            { id: "sitemap", label: "Sitemap", href: "/sitemap.xml" },
-          ],
-        },
-      ];
-    }
-    try {
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed)) return [];
-      return parsed
-        .map((s) => ({
-          id: String(s?.id || s?.heading || Math.random().toString(36).slice(2, 8)).trim(),
-          heading: String(s?.heading || "").trim(),
-          links: Array.isArray(s?.links)
-            ? s.links
-                .map((l) => ({
-                  id: String(l?.id || l?.label || Math.random().toString(36).slice(2, 8)).trim(),
-                  label: String(l?.label || "").trim(),
-                  href: String(l?.href || "").trim(),
-                }))
-                .filter((l) => l.label && l.href)
-            : [],
-        }))
-        .filter((s) => s.heading && s.links.length > 0);
-    } catch {
-      return [];
-    }
-  })();
 
   return (
     <footer className={styles.footer}>
       <div className={styles.container}>
-        <div className={styles.grid}>
-          {/* Brand Section */}
-          <div className={styles.brand}>
-            <Link href="/" className={styles.logo}>
-              <span className={styles.logoEmoji}>🧠</span>
-              <span className={styles.logoText}>QuizWeb</span>
+        <div className={styles.contentGrid}>
+          {/* Column 1: Brand & Global Presence */}
+          <div className={styles.brandBox}>
+            <Link href="/" className={styles.footerLogo}>
+              <span className={styles.brandEmoji}>🧠</span>
+              <span className={styles.brandName}>QuizWeb <span className={styles.brandHighlight}>Pro</span></span>
             </Link>
-            <p className={styles.brandDesc}>{brandDesc}</p>
-            <div className={styles.seoTags}>
-              <span className={styles.tag}>#QuizPlatform</span>
-              <span className={styles.tag}>#KnowledgeTest</span>
-              <span className={styles.tag}>#Learning</span>
-              <span className={styles.tag}>#Education</span>
+            <p className={styles.brandStatement}>{brandDesc}</p>
+            <div className={styles.socialFollow}>
+              <span className={styles.socialHint}>Follow Our Journey</span>
+              <div className={styles.socialRow}>
+                <a href="#" className={styles.socialCircle} aria-label="X">𝕏</a>
+                <a href="#" className={styles.socialCircle} aria-label="Facebook">𝑓</a>
+                <a href="#" className={styles.socialCircle} aria-label="YouTube">▶</a>
+                <a href="#" className={styles.socialCircle} aria-label="LinkedIn">in</a>
+              </div>
             </div>
           </div>
 
-          {sections.map((section) => (
-            <div key={section.id} className={styles.section}>
-              <h3 className={styles.heading}>{section.heading}</h3>
-              <ul className={styles.list}>
-                {section.links.map((l) => (
-                  <li key={l.id}>
-                    <Link href={l.href} className={styles.link}>
-                      {l.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
+          {/* Column 2: Popular Trending */}
+          <div className={styles.footerColumn}>
+            <h3 className={styles.colHeading}>Trending Now</h3>
+            <ul className={styles.linkList}>
+              {dynamicSEOData.popular.map((l) => (
+                <li key={l.id}>
+                  <Link href={l.href} className={styles.navLink}>{l.label}</Link>
+                </li>
+              ))}
+            </ul>
+          </div>
 
-        {/* SEO Keywords Section */}
-        <div className={styles.seoSection}>
-          <h4 className={styles.seoTitle}>Popular Quiz Topics</h4>
-          <div className={styles.seoKeywords}>
-            <span className={styles.keyword}>Science Quiz</span>
-            <span className={styles.keyword}>Math Test</span>
-            <span className={styles.keyword}>History Questions</span>
-            <span className={styles.keyword}>Geography Challenge</span>
-            <span className={styles.keyword}>Sports Trivia</span>
-            <span className={styles.keyword}>Entertainment Quiz</span>
-            <span className={styles.keyword}>Current Affairs</span>
-            <span className={styles.keyword}>General Knowledge</span>
-            <span className={styles.keyword}>Educational Games</span>
-            <span className={styles.keyword}>Online Quiz</span>
-            <span className={styles.keyword}>Free Tests</span>
-            <span className={styles.keyword}>Learning Platform</span>
+          {/* Column 3: Fresh Additions */}
+          <div className={styles.footerColumn}>
+            <h3 className={styles.colHeading}>New Releases</h3>
+            <ul className={styles.linkList}>
+              {dynamicSEOData.recent.map((l) => (
+                <li key={l.id}>
+                  <Link href={l.href} className={styles.navLink}>{l.label}</Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Column 4: Global Services */}
+          <div className={styles.footerColumn}>
+            <h3 className={styles.colHeading}>E-Learning Hub</h3>
+            <ul className={styles.linkList}>
+              <li><Link href="/daily-quiz" className={styles.navLink}>Daily Quiz Challenge</Link></li>
+              <li><Link href="/current-affairs" className={styles.navLink}>Current Affairs Hub</Link></li>
+              <li><Link href="/govt-alerts" className={styles.navLink}>Job & Career Alerts</Link></li>
+              <li><Link href="/study-material" className={styles.navLink}>Study Resources</Link></li>
+              <li><Link href="/blog" className={styles.navLink}>Knowledge Blog</Link></li>
+            </ul>
+          </div>
+
+          {/* Column 5: Support & Info */}
+          <div className={styles.footerColumn}>
+            <h3 className={styles.colHeading}>Organization</h3>
+            <ul className={styles.linkList}>
+              <li><Link href="/about" className={styles.navLink}>Our Story</Link></li>
+              <li><Link href="/contact" className={styles.navLink}>Get In Touch</Link></li>
+              <li><Link href="/privacy" className={styles.navLink}>Privacy Policy</Link></li>
+              <li><Link href="/terms" className={styles.navLink}>Terms of Service</Link></li>
+              <li><Link href="/sitemap.xml" className={styles.navLink}>Portal Sitemap</Link></li>
+            </ul>
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className={styles.bottom}>
-          <p className={styles.copyright}>
-            © {currentYear} QuizWeb. {bottomText}
-          </p>
-          <div className={styles.seoInfo}>
-            <span className={styles.seoMeta}>Thousands of quizzes • Free to play • Educational content</span>
+        {/* --- High Density SEO Tag Cloud --- */}
+        <div className={styles.seoCloudArea}>
+          <div className={styles.cloudHeader}>
+            <span className={styles.cloudLine}></span>
+            <h4 className={styles.cloudTitle}>Global Topic Explorer</h4>
+            <span className={styles.cloudLine}></span>
+          </div>
+          <div className={styles.cloudFlex}>
+            {dynamicSEOData.tags.map((tag) => (
+              <Link key={tag} href={`/?search=${tag}`} className={styles.cloudTag}>
+                {tag} Quiz
+              </Link>
+            ))}
+            <span className={styles.cloudTag}>Free Learning</span>
+            <span className={styles.cloudTag}>Online Assessment</span>
+            <span className={styles.cloudTag}>Daily Trivia</span>
+          </div>
+        </div>
+
+        {/* --- Global Bottom Bar --- */}
+        <div className={styles.footerBottomBar}>
+          <div className={styles.bottomMain}>
+            <p className={styles.legalNotice}>
+              © {currentYear} <strong>QuizWeb International</strong>. Excellence in digital education.
+            </p>
+            <div className={styles.trustSignals}>
+              <span className={styles.signal}>Global Reach</span>
+              <span className={styles.signalDivider}>•</span>
+              <span className={styles.signal}>Secure Platform</span>
+              <span className={styles.signalDivider}>•</span>
+              <span className={styles.signal}>Verified Content</span>
+            </div>
+          </div>
+          <div className={styles.footerMissionStatement}>
+            Designing a world where knowledge is inclusive, interactive, and entirely accessible to everyone, everywhere.
           </div>
         </div>
       </div>

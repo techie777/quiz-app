@@ -178,3 +178,35 @@
   overflow-x: auto;
   color: var(--text-primary);
 }
+
+.progressContainer {
+  margin-top: 20px;
+  background: var(--bg-secondary);
+  padding: 16px;
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--card-border);
+}
+
+.progressHeader {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.progressBar {
+  height: 8px;
+  background: var(--card-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s ease;
+  box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.5);
+}
+

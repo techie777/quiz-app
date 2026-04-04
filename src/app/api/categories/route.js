@@ -17,17 +17,38 @@ export async function GET(request) {
     const qCount = searchParams.get("questionCount") || "all";
     const chipsParam = searchParams.get("chips") || "";
 
+    const session = await getServerSession(authOptions);
+    const isAdmin = session?.user?.isAdmin;
+
     // Build the "where" clause for Prisma
-    let where = {
-      hidden: false,
-      parentId: null, // Only top-level categories for home page
-    };
+    let where = {};
+    const andConditions = [];
+
+    if (!isAdmin) {
+      where.hidden = false;
+      // Only top-level categories for home page display if they are requesting paginated lists
+      // Handle Prisma MongoDB limitation where missing fields need isSet: false
+      if (limit > 0) {
+         andConditions.push({
+           OR: [
+             { parentId: null },
+             { parentId: { isSet: false } }
+           ]
+         });
+      }
+    }
 
     if (search) {
-      where.OR = [
-        { topic: { contains: search, mode: "insensitive" } },
-        { description: { contains: search, mode: "insensitive" } },
-      ];
+      andConditions.push({
+        OR: [
+          { topic: { contains: search, mode: "insensitive" } },
+          { description: { contains: search, mode: "insensitive" } },
+        ]
+      });
+    }
+
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
     }
 
     if (difficulty !== "all") {
@@ -72,7 +93,9 @@ export async function GET(request) {
     // Fetch categories with optional limit and skip
     const categories = await prisma.category.findMany({
       where,
-      include: { questions: true },
+      include: { 
+        questions: true 
+      },
       orderBy,
       ...(limit > 0 ? { take: limit } : {}),
       ...(skip > 0 ? { skip: skip } : {}),
@@ -99,16 +122,10 @@ export async function GET(request) {
       showSubCategoriesOnHome: cat.showSubCategoriesOnHome,
       createdAt: cat.createdAt,
       updatedAt: cat.updatedAt,
-      questions: cat.questions.map((q) => ({
-        id: q.id,
-        text: q.text,
-        options: safeJsonParse(q.options),
-        correctAnswer: q.correctAnswer,
-        difficulty: q.difficulty,
-        image: q.image,
-        categoryId: q.categoryId,
-        createdAt: q.createdAt,
-        updatedAt: q.updatedAt,
+      questionCount: cat.questions?.length || 0,
+      questions: cat.questions.map(q => ({
+        ...q,
+        options: safeJsonParse(q.options) || []
       })),
     }));
     
@@ -132,10 +149,12 @@ export async function POST(request) {
     console.log("[API/categories] Request body topic:", body.topic);
     const { topic, emoji, description, categoryClass, hidden, image, parentId, showSubCategoriesOnHome, storyText, storyImage, originalLang, isTrending, chips } = body;
     
-    if (!topic || !emoji) {
-      console.warn("[API/categories] Missing topic or emoji");
-      return NextResponse.json({ error: "topic and emoji are required" }, { status: 400 });
+    if (!topic) {
+      console.warn("[API/categories] Missing topic");
+      return NextResponse.json({ error: "topic is required" }, { status: 400 });
     }
+
+    const emojiStr = emoji || "";
 
     const maxSort = await prisma.category.aggregate({ _max: { sortOrder: true } });
     console.log("[API/categories] maxSort:", maxSort._max.sortOrder);
@@ -143,7 +162,7 @@ export async function POST(request) {
     const category = await prisma.category.create({
       data: {
         topic,
-        emoji,
+        emoji: emojiStr,
         description: description || "",
         categoryClass: categoryClass || `category-${topic.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")}`,
         hidden: !!hidden,

@@ -161,20 +161,12 @@ function AdminShell({ children }) {
 
 export default function AdminLayout({ children }) {
   return (
-    <html lang="en">
-      <head>
-        <title>Admin Panel - QuizWeb</title>
-        <meta name="description" content="QuizWeb Admin Panel" />
-        <meta name="robots" content="noindex, nofollow" />
-        <link rel="icon" href="/favicon.ico" />
-      </head>
-      <body className={styles.adminBody}>
-        <AdminProvider>
-          <Suspense>
-            <AdminShell>{children}</AdminShell>
-          </Suspense>
-        </AdminProvider>
-      </body>
-    </html>
+    <div className={styles.adminBody}>
+      <AdminProvider>
+        <Suspense>
+          <AdminShell>{children}</AdminShell>
+        </Suspense>
+      </AdminProvider>
+    </div>
   );
 }

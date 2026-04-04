@@ -32,6 +32,10 @@ export async function DELETE(request, { params }) {
   }
 
   const { id } = params;
+  
+  // Cascade delete favorites
+  await prisma.favourite.deleteMany({ where: { questionId: id } });
+  
   await prisma.question.delete({ where: { id } });
   return NextResponse.json({ success: true });
 }

@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700&display=swap');
+
 /* ===== CSS Reset & Base ===== */
 *,
 *::before,
@@ -12,12 +14,16 @@ html {
 }
 
 body {
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family: 'Inter', -apple-system, sans-serif;
   line-height: 1.6;
   transition: background-color 0.3s ease, color 0.3s ease;
   background: var(--bg-primary);
   color: var(--text-primary);
   min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Outfit', sans-serif;
 }
 
 a {
@@ -34,26 +40,27 @@ button {
 /* ===== Light Theme (default) ===== */
 :root,
 [data-theme="light"] {
-  --bg-primary: #f0f2f8;
+  --bg-primary: #f8fafc;
   --bg-secondary: #ffffff;
-  --bg-gradient: linear-gradient(135deg, #e8eaf6 0%, #f3e5f5 50%, #e3f2fd 100%);
-  --bg-hero: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  --bg-hero: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  --brand-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
 
   --card-bg: rgba(255, 255, 255, 0.7);
-  --card-border: rgba(255, 255, 255, 0.5);
-  --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-  --card-hover-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
-  --card-backdrop: blur(12px);
+  --card-border: rgba(255, 255, 255, 0.6);
+  --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  --card-hover-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  --card-backdrop: blur(16px);
 
-  --text-primary: #1a1a2e;
-  --text-secondary: #555770;
-  --text-muted: #8b8da3;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
   --text-on-accent: #ffffff;
 
-  --accent: #4361ee;
-  --accent-hover: #3a56d4;
-  --accent-light: rgba(67, 97, 238, 0.1);
-  --accent-rgb: 67, 97, 238;
+  --accent: #6366f1;
+  --accent-hover: #4f46e5;
+  --accent-light: rgba(99, 102, 241, 0.1);
+  --accent-rgb: 99, 102, 241;
 
   --success: #10b981;
   --success-bg: rgba(16, 185, 129, 0.12);
@@ -61,22 +68,29 @@ button {
   --danger-bg: rgba(239, 68, 68, 0.12);
   --warning: #f59e0b;
 
-  --border-radius: 16px;
-  --border-radius-sm: 10px;
-  --border-radius-lg: 24px;
+  --border-radius: 20px;
+  --border-radius-sm: 12px;
+  --border-radius-lg: 32px;
 
-  --navbar-bg: rgba(255, 255, 255, 0.8);
-  --navbar-border: rgba(0, 0, 0, 0.06);
+  --navbar-bg: rgba(255, 255, 255, 0.85);
+  --navbar-border: rgba(226, 232, 240, 0.8);
 
-  --modal-overlay: rgba(0, 0, 0, 0.4);
+  --modal-overlay: rgba(0, 0, 0, 0.5);
   --modal-bg: #ffffff;
 
-  --progress-bg: #e2e8f0;
+  --progress-bg: #f1f5f9;
   --progress-fill: var(--accent);
 
   --btn-secondary-bg: #f1f5f9;
   --btn-secondary-text: #334155;
   --btn-secondary-hover: #e2e8f0;
+
+  /* Console Specifics (Light) */
+  --console-bg: rgba(255, 255, 255, 0.8);
+  --console-border: rgba(99, 102, 241, 0.2);
+  --console-glow: 0 0 20px rgba(99, 102, 241, 0.1);
+  --success-glow: 0 0 15px rgba(16, 185, 129, 0.4);
+  --danger-glow: 0 0 15px rgba(239, 68, 68, 0.4);
 }
 
 /* Quiz Answer Color Indicators */
@@ -141,6 +155,13 @@ button.wrong-answer {
   --btn-secondary-bg: #1e2148;
   --btn-secondary-text: #a0a4b8;
   --btn-secondary-hover: #282d5a;
+
+  /* Console Specifics (Dark) */
+  --console-bg: rgba(10, 14, 39, 0.7);
+  --console-border: rgba(0, 229, 255, 0.3);
+  --console-glow: 0 0 30px rgba(0, 229, 255, 0.15);
+  --success-glow: 0 0 20px rgba(52, 211, 153, 0.5);
+  --danger-glow: 0 0 20px rgba(248, 113, 113, 0.5);
 }
 
 /* ===== Category Accent Colors ===== */
@@ -253,4 +274,41 @@ button.wrong-answer {
 @keyframes pulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.05); }
+}
+
+/* ===== Immersive Console Animations ===== */
+@keyframes console-vibrate {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+  20%, 40%, 60%, 80% { transform: translateX(2px); }
+}
+
+@keyframes liquid-fill {
+  0% { transform: scaleX(0); }
+  100% { transform: scaleX(1); }
+}
+
+@keyframes neon-pulse {
+  0%, 100% { box-shadow: 0 0 5px var(--accent), 0 0 10px var(--accent); }
+  50% { box-shadow: 0 0 15px var(--accent), 0 0 25px var(--accent); }
+}
+
+@keyframes victory-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-vibrate { animation: console-vibrate 0.4s linear; }
+.animate-glow { animation: neon-pulse 2s infinite ease-in-out; }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }

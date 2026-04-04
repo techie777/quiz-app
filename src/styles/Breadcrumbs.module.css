@@ -1,10 +1,15 @@
 .breadcrumbsContainer {
-  padding: 0.5rem 1.5rem;
+  padding: 0.4rem 1.5rem;
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--card-border);
   position: sticky;
-  top: 128px;
-  z-index: 10;
+  top: 128px; /* Below Header (64px) + SmartNav (64px) */
+  z-index: 1002;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  height: 40px;
+  display: flex;
+  align-items: center;
 }
 
 .breadcrumbsList {
@@ -53,11 +58,16 @@
 
 @media (max-width: 768px) {
   .breadcrumbsContainer {
-    margin: 0.5rem auto;
-    font-size: 0.8rem;
+    padding: 0.4rem 1rem;
+    top: 64px; /* Directly below Header (SmartNav is hidden) */
+    font-size: 0.75rem;
   }
   
   .separator {
-    margin: 0 0.4rem;
+    margin: 0 0.3rem;
+  }
+
+  .homeIcon {
+    font-size: 0.9rem;
   }
 }

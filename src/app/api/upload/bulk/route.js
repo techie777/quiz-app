@@ -49,38 +49,32 @@ export async function POST(request) {
           // Log to monitoring service in production
         }
 
-        if (cat.questions) {
-          // Log to monitoring service in production
-          for (const q of cat.questions) {
-            await prisma.question.create({
-              data: {
-                text: q.text,
-                options: JSON.stringify(q.options),
-                correctAnswer: q.correctAnswer,
-                difficulty: q.difficulty || "easy",
-                categoryId: targetCatId,
-              },
-            });
-          }
+        if (cat.questions && cat.questions.length > 0) {
+          await prisma.question.createMany({
+            data: cat.questions.map((q) => ({
+              text: q.text,
+              options: JSON.stringify(q.options),
+              correctAnswer: q.correctAnswer,
+              difficulty: q.difficulty || "easy",
+              categoryId: targetCatId,
+            })),
+          });
         }
       }
       return NextResponse.json({ success: true });
     }
 
     // Mode 2: Excel-parsed questions into a specific category
-    if (questions && categoryId) {
-      // Log to monitoring service in production
-      for (const q of questions) {
-        await prisma.question.create({
-          data: {
-            text: q.text,
-            options: JSON.stringify(q.options),
-            correctAnswer: q.correctAnswer,
-            difficulty: q.difficulty || "easy",
-            categoryId,
-          },
-        });
-      }
+    if (questions && questions.length > 0 && categoryId) {
+      await prisma.question.createMany({
+        data: questions.map((q) => ({
+          text: q.text,
+          options: JSON.stringify(q.options),
+          correctAnswer: q.correctAnswer,
+          difficulty: q.difficulty || "easy",
+          categoryId: categoryId,
+        })),
+      });
       return NextResponse.json({ success: true });
     }
 

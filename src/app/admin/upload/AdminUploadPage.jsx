@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useData } from "@/context/DataContext";
 import { useAdmin } from "@/context/AdminContext";
 import styles from "@/styles/AdminUpload.module.css";
@@ -118,10 +118,16 @@ async function submitPending(type, payload) {
 }
 
 export default function AdminUploadPage() {
-  const { quizzes, addQuestion, bulkImport } = useData();
+  const { quizzes, addQuestion, bulkImport, bulkImportQuestions } = useData();
   const { adminUser } = useAdmin();
   const isJr = adminUser?.role === "jr";
   const [tab, setTab] = useState("excel"); // "excel" | "json"
+
+  // Upload state
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadTotal, setUploadTotal] = useState(0);
+  const [uploadCurrent, setUploadCurrent] = useState(0);
 
   // Excel state
   const [selectedCatId, setSelectedCatId] = useState(quizzes[0]?.id || "");
@@ -134,6 +140,13 @@ export default function AdminUploadPage() {
   const [jsonErrors, setJsonErrors] = useState([]);
   const [jsonPreview, setJsonPreview] = useState(null);
   const [jsonSuccess, setJsonSuccess] = useState(false);
+
+  // Set default category when quizzes load
+  useEffect(() => {
+    if (quizzes.length > 0 && !selectedCatId) {
+      setSelectedCatId(quizzes[0].id);
+    }
+  }, [quizzes, selectedCatId]);
 
   const allowed = adminUser?.role === "master" || adminUser?.permissions?.upload !== false;
   if (!allowed) {
@@ -155,6 +168,7 @@ export default function AdminUploadPage() {
     const reader = new FileReader();
     reader.onload = async (ev) => {
       try {
+        const XLSX = await import("xlsx");
         const wb = XLSX.read(ev.target.result, { type: "array" });
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(ws);
@@ -180,24 +194,43 @@ export default function AdminUploadPage() {
   };
 
   const handleExcelImport = async () => {
-    if (!excelPreview || !selectedCatId) return;
+    if (!excelPreview || !selectedCatId || isUploading) return;
+    
+    setIsUploading(true);
+    setUploadTotal(excelPreview.length);
+    setUploadCurrent(0);
+    setUploadProgress(0);
+
     try {
       if (isJr) {
         await submitPending("bulk_add_questions", { categoryId: selectedCatId, questions: excelPreview });
         setExcelSuccess(true);
         setExcelPreview(null);
       } else {
-        const success = await bulkImportQuestions(selectedCatId, excelPreview);
-        if (success) {
-          setExcelSuccess(true);
-          setExcelPreview(null);
-        } else {
-          alert("Bulk import failed. Check console for details.");
+        const CHUNK_SIZE = 50;
+        const total = excelPreview.length;
+        
+        for (let i = 0; i < total; i += CHUNK_SIZE) {
+          const chunk = excelPreview.slice(i, i + CHUNK_SIZE);
+          const success = await bulkImportQuestions(selectedCatId, chunk);
+          
+          if (!success) {
+            throw new Error(`Failed to upload chunk starting at ${i}`);
+          }
+          
+          const current = Math.min(i + CHUNK_SIZE, total);
+          setUploadCurrent(current);
+          setUploadProgress(Math.floor((current / total) * 100));
         }
+
+        setExcelSuccess(true);
+        setExcelPreview(null);
       }
     } catch (err) {
       console.error("Bulk upload error:", err);
-      alert("An error occurred during import.");
+      alert("An error occurred during import: " + err.message);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -224,15 +257,41 @@ export default function AdminUploadPage() {
   };
 
   const handleJsonImport = async () => {
-    if (!jsonPreview) return;
-    if (isJr) {
-      await submitPending("bulk_import", { categories: jsonPreview });
-    } else {
-      bulkImport(jsonPreview);
+    if (!jsonPreview || isUploading) return;
+    
+    setIsUploading(true);
+    const total = jsonPreview.reduce((sum, c) => sum + (c.questions?.length || 0), 0);
+    setUploadTotal(total);
+    setUploadCurrent(0);
+    setUploadProgress(0);
+
+    try {
+      if (isJr) {
+        await submitPending("bulk_import", { categories: jsonPreview });
+        setJsonSuccess(true);
+        setJsonPreview(null);
+        setJsonText("");
+      } else {
+        // For JSON, we import one category at a time to show progress
+        let processedCount = 0;
+        for (const category of jsonPreview) {
+          const success = await bulkImport([category]);
+          if (!success) throw new Error(`Failed to import category: ${category.topic}`);
+          
+          processedCount += (category.questions?.length || 0);
+          setUploadCurrent(processedCount);
+          setUploadProgress(Math.floor((processedCount / total) * 100));
+        }
+        
+        setJsonSuccess(true);
+        setJsonPreview(null);
+        setJsonText("");
+      }
+    } catch (err) {
+      alert("Import failed: " + err.message);
+    } finally {
+      setIsUploading(false);
     }
-    setJsonSuccess(true);
-    setJsonPreview(null);
-    setJsonText("");
   };
 
   const handleJsonFile = (e) => {
@@ -341,8 +400,26 @@ export default function AdminUploadPage() {
                   <p className={styles.previewMore}>...and {excelPreview.length - 5} more</p>
                 )}
               </div>
-              <button className="btn-primary" onClick={handleExcelImport}>
-                🚀 Import {excelPreview.length} Questions
+
+              {isUploading && (
+                <div className={styles.progressContainer}>
+                  <div className={styles.progressHeader}>
+                    <span>📥 Uploading questions...</span>
+                    <span>{uploadCurrent} / {uploadTotal}</span>
+                  </div>
+                  <div className={styles.progressBar}>
+                    <div className={styles.progressFill} style={{ width: `${uploadProgress}%` }}></div>
+                  </div>
+                </div>
+              )}
+
+              <button 
+                className="btn-primary" 
+                onClick={handleExcelImport}
+                disabled={isUploading}
+                style={{ width: '100%', marginTop: '20px' }}
+              >
+                {isUploading ? `🚀 Uploading (${uploadProgress}%)` : `🚀 Import ${excelPreview.length} Questions`}
               </button>
             </div>
           )}
@@ -412,8 +489,26 @@ export default function AdminUploadPage() {
                   </div>
                 ))}
               </div>
-              <button className="btn-primary" onClick={handleJsonImport}>
-                🚀 Import Now
+
+              {isUploading && (
+                <div className={styles.progressContainer}>
+                  <div className={styles.progressHeader}>
+                    <span>📥 Uploading categories...</span>
+                    <span>{uploadCurrent} / {uploadTotal} questions</span>
+                  </div>
+                  <div className={styles.progressBar}>
+                    <div className={styles.progressFill} style={{ width: `${uploadProgress}%` }}></div>
+                  </div>
+                </div>
+              )}
+
+              <button 
+                className="btn-primary" 
+                onClick={handleJsonImport}
+                disabled={isUploading}
+                style={{ width: '100%', marginTop: '20px' }}
+              >
+                {isUploading ? `🚀 Uploading (${uploadProgress}%)` : `🚀 Import Now`}
               </button>
             </div>
           )}

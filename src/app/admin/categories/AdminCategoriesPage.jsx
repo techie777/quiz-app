@@ -309,16 +309,16 @@ export default function AdminCategoriesPage() {
     console.log("[AdminCategories] handleSave called:", { isNew, topic: formData.topic });
     try {
       // Basic validation with existence check
-      if (!formData || !formData.topic || !formData.emoji) {
-        toast.error("Topic and Emoji are required!");
+      if (!formData || !formData.topic) {
+        toast.error("Topic is required!");
         return;
       }
 
       const topicStr = String(formData.topic).trim();
-      const emojiStr = String(formData.emoji).trim();
+      const emojiStr = formData.emoji ? String(formData.emoji).trim() : "";
 
-      if (!topicStr || !emojiStr) {
-        toast.error("Topic and Emoji cannot be empty!");
+      if (!topicStr) {
+        toast.error("Topic cannot be empty!");
         return;
       }
 

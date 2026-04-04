@@ -18,7 +18,7 @@ const CONFETTI_COLORS = ["#4361ee", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", 
 
 export default function ResultPage() {
   const router = useRouter();
-  const { score, questions, answers, quizId, difficulty, timerSetting, language, resetQuiz, startQuiz } = useQuiz();
+  const { score, questions, answers, quizId, difficulty, timerSetting, language, selectedSetIndex, resetQuiz, startQuiz } = useQuiz();
   const { quizzes } = useData();
   const [showReview, setShowReview] = useState(false);
   const [confetti, setConfetti] = useState([]);
@@ -96,7 +96,7 @@ export default function ResultPage() {
   }, [total]);
 
   const handlePlayAgain = () => {
-    startQuiz(quizId, difficulty, timerSetting, language);
+    startQuizSet(quizId, questions, timerSetting, language);
     router.push(`/quiz/${quizId}`);
   };
 
@@ -154,6 +154,13 @@ export default function ResultPage() {
 
             {/* Score Card */}
             <div className={`${styles.scoreCard} glass-card`}>
+              {quizId && (
+                <div className={styles.nextSetTeaser}>
+                  <button className={styles.nextSetLink} onClick={handleContinueNextSet}>
+                    🚀 Continue to {category?.topic || "Next Set"} ({selectedSetIndex ? `Set ${selectedSetIndex + 1}` : "Next"})
+                  </button>
+                </div>
+              )}
               <div className={styles.trophy}>🏆</div>
               <h1 className={styles.heading}>Quiz Completed!</h1>
               <div className={styles.scoreCircle}>
