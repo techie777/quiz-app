@@ -330,8 +330,7 @@ const SubSection = React.memo(({ title, quizzes, onViewAll }) => {
     </div>
   );
 });
-
-
+SubSection.displayName = "SubSection";
 
 // Function to categorize quizzes based on sections
 function categorizeQuizzes(quizzes, sections) {
@@ -380,6 +379,7 @@ const MainCategorySection = React.memo(({ category, categorizedData }) => {
     </div>
   );
 });
+MainCategorySection.displayName = "MainCategorySection";
 
 export default function LandingPage() {
   const { settings, loaded, quizzes } = useData();

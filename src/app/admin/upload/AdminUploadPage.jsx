@@ -339,7 +339,7 @@ export default function AdminUploadPage() {
         <div>
           {excelSuccess && (
             <div className={styles.successBanner}>
-              ✅ Successfully imported {excelPreview?.length ?? ""} questions into "{selectedCatName}"!
+              {`✅ Successfully imported ${excelPreview?.length ?? ""} questions into "${selectedCatName}"!`}
             </div>
           )}
 
@@ -388,7 +388,7 @@ export default function AdminUploadPage() {
           {excelPreview && (
             <div className={styles.previewBox}>
               <h3>Preview</h3>
-              <p>{excelPreview.length} questions ready to import into "{selectedCatName}"</p>
+              <p>{`${excelPreview.length} questions ready to import into "${selectedCatName}"`}</p>
               <div className={styles.previewList}>
                 {excelPreview.slice(0, 5).map((q, i) => (
                   <div key={i} className={`${styles.previewCard} glass-card`}>

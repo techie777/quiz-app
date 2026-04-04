@@ -30,36 +30,6 @@
       "static/css/app/results/page.css",
       "static/chunks/app/results/page.js"
     ],
-    "/admin/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/css/app/admin/page.css",
-      "static/chunks/app/admin/page.js"
-    ],
-    "/admin/layout": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/css/app/admin/layout.css",
-      "static/chunks/app/admin/layout.js"
-    ],
-    "/daily/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/css/app/daily/page.css",
-      "static/chunks/app/daily/page.js"
-    ],
-    "/daily-current-affairs/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/css/app/daily-current-affairs/page.css",
-      "static/chunks/app/daily-current-affairs/page.js"
-    ],
-    "/govt-jobs-alerts/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/css/app/govt-jobs-alerts/page.css",
-      "static/chunks/app/govt-jobs-alerts/page.js"
-    ],
     "/_not-found/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",

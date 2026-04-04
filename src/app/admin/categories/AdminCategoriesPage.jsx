@@ -491,7 +491,7 @@ export default function AdminCategoriesPage() {
 
                 {confirm === cat.id && (
                   <div className={styles.confirmBar}>
-                    <span>Delete "{cat.topic}" and all its questions?</span>
+                    <span>{`Delete "${cat.topic}" and all its questions?`}</span>
                     <button
                       className={styles.confirmYes}
                       onClick={() => handleDelete(cat.id)}
@@ -574,7 +574,7 @@ export default function AdminCategoriesPage() {
                       </div>
                       {confirm === sub.id && (
                         <div className={styles.confirmBar}>
-                          <span>Delete "{sub.topic}" and all its questions?</span>
+                          <span>{`Delete "${sub.topic}" and all its questions?`}</span>
                           <button
                             className={styles.confirmYes}
                             onClick={() => handleDelete(sub.id)}

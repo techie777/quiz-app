@@ -91,7 +91,7 @@ export default function OfflinePage() {
           color: '#6b7280'
         }}>
           <p style={{ margin: 0 }}>
-            <strong>Note:</strong> Your quiz progress and favorites will be synced when you're back online.
+            <strong>Note:</strong> Your quiz progress and favorites will be synced when you{"'"}re back online.
           </p>
         </div>
       </div>

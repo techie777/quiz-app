@@ -377,7 +377,7 @@ export default function AdminCurrentAffairsPage() {
           {/* Show Today's Current Affairs indicator */}
           {selectedDate && selectedDate === getTodayDateString() && (
             <div className={styles.todayIndicator}>
-              <span className={styles.todayBadge}>📅 Today's Current Affairs</span>
+              <span className={styles.todayBadge}>📅 Today{"'"}s Current Affairs</span>
               <span className={styles.todayDate}>{formatDate(selectedDate)}</span>
             </div>
           )}

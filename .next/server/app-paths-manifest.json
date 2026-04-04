@@ -1,12 +1,8 @@
 {
-  "/daily/page": "app/daily/page.js",
-  "/daily-current-affairs/page": "app/daily-current-affairs/page.js",
-  "/govt-jobs-alerts/page": "app/govt-jobs-alerts/page.js",
   "/page": "app/page.js",
-  "/api/exam-categories/route": "app/api/exam-categories/route.js",
-  "/api/govt-exams/route": "app/api/govt-exams/route.js",
-  "/api/current-affairs/route": "app/api/current-affairs/route.js",
-  "/api/sections/route": "app/api/sections/route.js",
-  "/api/categories/route": "app/api/categories/route.js",
-  "/admin/page": "app/admin/page.js"
+  "/category/[id]/page": "app/category/[id]/page.js",
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/api/categories/[id]/route": "app/api/categories/[id]/route.js",
+  "/quiz/[id]/page": "app/quiz/[id]/page.js",
+  "/results/page": "app/results/page.js"
 }

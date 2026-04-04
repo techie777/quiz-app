@@ -16,7 +16,7 @@ export default function AboutPage() {
         <h2 style={{ fontSize: '1.8rem', fontWeight: '700', marginTop: '40px', marginBottom: '20px' }}>Our Vision</h2>
         <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)', lineHeight: '1.7', marginBottom: '20px' }}>
           We believe that knowledge should be free, engaging, and always within reach. 
-          Whether you're a student preparing for exams or just someone who loves trivia, 
+          Whether you{"'"}re a student preparing for exams or just someone who loves trivia, 
           QuizWeb is designed to help you grow.
         </p>
       </div>
