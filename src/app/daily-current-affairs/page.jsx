@@ -461,6 +461,7 @@ export default function DailyCurrentAffairsPage() {
               <input
                 type="date"
                 value={selectedDate}
+                max={getTodayDateString()}
                 onChange={(e) => {
                   setSelectedDate(e.target.value);
                   if (e.target.value) setSelectedMonth("");

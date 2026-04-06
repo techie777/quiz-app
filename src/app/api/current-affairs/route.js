@@ -8,22 +8,34 @@ function normalizeString(v) {
   return String(v || "").trim();
 }
 
-function loadAll(itemsRaw) {
-  const list = safeJsonParse(itemsRaw, []);
-  if (!Array.isArray(list)) return [];
-  return list
-    .map((x) => ({
-      id: normalizeString(x?.id),
-      date: normalizeString(x?.date),
-      category: normalizeString(x?.category),
-      heading: normalizeString(x?.heading),
-      description: normalizeString(x?.description),
-      image: typeof x?.image === "string" ? x.image : "",
-      hidden: !!x?.hidden,
-      createdAt: x?.createdAt ? new Date(x.createdAt).toISOString() : null,
-      updatedAt: x?.updatedAt ? new Date(x.updatedAt).toISOString() : null,
-    }))
-    .filter((x) => x.id && x.date && x.heading);
+async function ensureMigrated() {
+  const row = await prisma.setting.findUnique({
+    where: { key: "currentAffairs" },
+  });
+  if (!row) return;
+
+  const items = safeJsonParse(row.value, []);
+  if (Array.isArray(items) && items.length > 0) {
+    // Migration: insert into CurrentAffair table
+    for (const it of items) {
+      if (!it.heading || !it.date) continue;
+      await prisma.currentAffair.create({
+        data: {
+          date: normalizeString(it.date),
+          category: normalizeString(it.category) || "General",
+          heading: normalizeString(it.heading),
+          description: normalizeString(it.description),
+          image: typeof it.image === "string" ? it.image : "",
+          hidden: !!it.hidden,
+          createdAt: it.createdAt ? new Date(it.createdAt) : new Date(),
+          updatedAt: it.updatedAt ? new Date(it.updatedAt) : new Date(),
+        },
+      }).catch(err => console.error("Migration error for item:", it.id, err));
+    }
+  }
+
+  // Delete the old setting to mark migration as done
+  await prisma.setting.delete({ where: { key: "currentAffairs" } }).catch(() => {});
 }
 
 export async function GET(request) {
@@ -35,91 +47,44 @@ export async function GET(request) {
   const pageSize = Math.min(500, Math.max(6, parseInt(searchParams.get("pageSize") || "10", 10) || 10));
 
   try {
-    const row = await prisma.setting.findUnique({
-      where: { key: "currentAffairs" },
-      select: { value: true },
+    // Run migration check once per request or similar (low overhead if setting is gone)
+    await ensureMigrated();
+
+    const where = { hidden: false };
+    if (date) {
+      where.date = date;
+    } else if (month) {
+      where.date = { startsWith: `${month}-` };
+    }
+    if (category && category !== "all") {
+      where.category = { equals: category, mode: "insensitive" };
+    }
+
+    const [items, total] = await Promise.all([
+      prisma.currentAffair.findMany({
+        where,
+        orderBy: [
+          { date: "desc" },
+          { createdAt: "desc" }
+        ],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.currentAffair.count({ where }),
+    ]);
+
+    // Get unique categories and months for filters from public items only
+    const allPublicItems = await prisma.currentAffair.findMany({
+      where: { hidden: false },
+      select: { category: true, date: true }
     });
-
-    const all = loadAll(row?.value || "[]");
-    const publicItems = all.filter((x) => !x.hidden);
-
-    const filtered = publicItems.filter((x) => {
-      if (date && x.date !== date) return false;
-      if (!date && month && !x.date.startsWith(`${month}-`)) return false;
-      if (category && category !== "all" && x.category.toLowerCase() !== category.toLowerCase()) return false;
-      return true;
-    });
-
-    filtered.sort((a, b) => {
-      if (a.date !== b.date) return b.date.localeCompare(a.date);
-      const at = a.createdAt || "";
-      const bt = b.createdAt || "";
-      return bt.localeCompare(at);
-    });
-
-    const total = filtered.length;
-    const start = (page - 1) * pageSize;
-    const items = filtered.slice(start, start + pageSize);
-
-    const categories = Array.from(
-      new Set(publicItems.map((x) => x.category).filter(Boolean).map((c) => c.trim()))
-    ).sort((a, b) => a.localeCompare(b));
-
-    const months = Array.from(
-      new Set(publicItems.map((x) => x.date.slice(0, 7)).filter((m) => /^\d{4}-\d{2}$/.test(m)))
-    ).sort((a, b) => b.localeCompare(a));
+    
+    const categories = Array.from(new Set(allPublicItems.map(x => x.category).filter(Boolean))).sort();
+    const months = Array.from(new Set(allPublicItems.map(x => x.date.slice(0, 7)).filter(m => /^\d{4}-\d{2}$/.test(m)))).sort((a, b) => b.localeCompare(a));
 
     return NextResponse.json({ items, total, page, pageSize, categories, months });
   } catch (error) {
     console.error("Current affairs API error:", error);
-    
-    // Fallback data when database is unavailable
-    const fallbackItems = [
-      {
-        id: "ca-1",
-        date: "2024-03-27",
-        category: "National",
-        heading: "Government Announces New Education Policy",
-        description: "The government today announced a comprehensive new education policy aimed at transforming the learning landscape across the country. The policy focuses on digital learning, skill development, and inclusive education.\n\nKey highlights include:\n- Introduction of AI-powered learning tools\n- Emphasis on vocational training\n- Increased funding for rural education\n- New assessment frameworks\n\nThe policy will be implemented in phases starting from the next academic year.",
-        image: null,
-        hidden: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      },
-      {
-        id: "ca-2",
-        date: "2024-03-27",
-        category: "International",
-        heading: "Global Climate Summit Reaches Historic Agreement",
-        description: "World leaders have reached a groundbreaking agreement at the Global Climate Summit, committing to unprecedented measures to combat climate change.\n\nThe agreement includes:\n- Carbon neutrality targets by 2050\n- $100 billion climate fund for developing nations\n- Phasing out coal power\n- Investing in renewable energy\n\nEnvironmental groups have welcomed the agreement as a major step forward in global climate action.",
-        image: null,
-        hidden: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      },
-      {
-        id: "ca-3",
-        date: "2024-03-26",
-        category: "Technology",
-        heading: "Breakthrough in Quantum Computing Achieved",
-        description: "Scientists have achieved a major breakthrough in quantum computing, successfully demonstrating a quantum computer that can solve complex problems in minutes that would take traditional computers thousands of years.\n\nThis advancement could revolutionize:\n- Drug discovery and medical research\n- Financial modeling and cryptography\n- Climate change modeling\n- Artificial intelligence development\n\nThe research team says practical applications could be available within the next decade.",
-        image: null,
-        hidden: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
-    ];
-
-    const categories = ["National", "International", "Technology", "Business", "Sports"];
-    const months = ["2024-03", "2024-02", "2024-01"];
-
-    return NextResponse.json({ 
-      items: fallbackItems, 
-      total: fallbackItems.length, 
-      page, 
-      pageSize, 
-      categories, 
-      months 
-    });
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

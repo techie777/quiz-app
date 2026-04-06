@@ -10,30 +10,34 @@ function normalizeString(v) {
   return String(v || "").trim();
 }
 
-function loadAll(itemsRaw) {
-  const list = safeJsonParse(itemsRaw, []);
-  if (!Array.isArray(list)) return [];
-  return list
-    .map((x) => ({
-      id: normalizeString(x?.id),
-      date: normalizeString(x?.date),
-      category: normalizeString(x?.category),
-      heading: normalizeString(x?.heading),
-      description: normalizeString(x?.description),
-      image: typeof x?.image === "string" ? x.image : "",
-      hidden: !!x?.hidden,
-      createdAt: x?.createdAt ? new Date(x.createdAt).toISOString() : null,
-      updatedAt: x?.updatedAt ? new Date(x.updatedAt).toISOString() : null,
-    }))
-    .filter((x) => x.id && x.date && x.heading);
-}
-
-async function saveAll(list) {
-  await prisma.setting.upsert({
+async function ensureMigrated() {
+  const row = await prisma.setting.findUnique({
     where: { key: "currentAffairs" },
-    update: { value: JSON.stringify(list) },
-    create: { key: "currentAffairs", value: JSON.stringify(list) },
   });
+  if (!row) return;
+
+  const items = safeJsonParse(row.value, []);
+  if (Array.isArray(items) && items.length > 0) {
+    // Migration: insert into CurrentAffair table
+    for (const it of items) {
+      if (!it.heading || !it.date) continue;
+      await prisma.currentAffair.create({
+        data: {
+          date: normalizeString(it.date),
+          category: normalizeString(it.category) || "General",
+          heading: normalizeString(it.heading),
+          description: normalizeString(it.description),
+          image: typeof it.image === "string" ? it.image : "",
+          hidden: !!it.hidden,
+          createdAt: it.createdAt ? new Date(it.createdAt) : new Date(),
+          updatedAt: it.updatedAt ? new Date(it.updatedAt) : new Date(),
+        },
+      }).catch(err => console.error("Migration error for item:", it.id, err));
+    }
+  }
+
+  // Delete the old setting to mark migration as done
+  await prisma.setting.delete({ where: { key: "currentAffairs" } }).catch(() => {});
 }
 
 function requireMaster(session) {
@@ -64,35 +68,41 @@ export async function GET(request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  // Run migration check once per request or similar (low overhead if setting is gone)
+  await ensureMigrated();
+
   const { searchParams } = new URL(request.url);
   const date = normalizeString(searchParams.get("date"));
   const month = normalizeString(searchParams.get("month"));
   const category = normalizeString(searchParams.get("category"));
 
-  const row = await prisma.setting.findUnique({
-    where: { key: "currentAffairs" },
-    select: { value: true },
+  const where = {};
+  if (date) {
+    where.date = date;
+  } else if (month) {
+    where.date = { startsWith: `${month}-` };
+  }
+  if (category && category !== "all") {
+    where.category = { equals: category, mode: "insensitive" };
+  }
+
+  const items = await prisma.currentAffair.findMany({
+    where,
+    orderBy: [
+      { date: "desc" },
+      { createdAt: "desc" }
+    ],
   });
 
-  const all = loadAll(row?.value || "[]");
-  const filtered = all.filter((x) => {
-    if (date && x.date !== date) return false;
-    if (!date && month && !x.date.startsWith(`${month}-`)) return false;
-    if (category && category !== "all" && x.category.toLowerCase() !== category.toLowerCase()) return false;
-    return true;
+  // Get unique categories and months for filters
+  const allItems = await prisma.currentAffair.findMany({
+    select: { category: true, date: true }
   });
+  
+  const categories = Array.from(new Set(allItems.map(x => x.category).filter(Boolean))).sort();
+  const months = Array.from(new Set(allItems.map(x => x.date.slice(0, 7)).filter(m => /^\d{4}-\d{2}$/.test(m)))).sort((a, b) => b.localeCompare(a));
 
-  filtered.sort((a, b) => {
-    if (a.date !== b.date) return b.date.localeCompare(a.date);
-    const at = a.createdAt || "";
-    const bt = b.createdAt || "";
-    return bt.localeCompare(at);
-  });
-
-  const categories = Array.from(new Set(all.map((x) => x.category).filter(Boolean))).sort((a, b) => a.localeCompare(b));
-  const months = Array.from(new Set(all.map((x) => x.date.slice(0, 7)).filter((m) => /^\d{4}-\d{2}$/.test(m)))).sort((a, b) => b.localeCompare(a));
-
-  return NextResponse.json({ items: filtered, categories, months });
+  return NextResponse.json({ items, categories, months });
 }
 
 export async function POST(request) {
@@ -105,7 +115,7 @@ export async function POST(request) {
   const date = normalizeString(body?.date);
   const heading = normalizeString(body?.heading);
   const description = normalizeString(body?.description);
-  const category = normalizeString(body?.category);
+  const category = normalizeString(body?.category) || "General";
   const image = typeof body?.image === "string" ? body.image : "";
   const hidden = !!body?.hidden;
 
@@ -115,19 +125,9 @@ export async function POST(request) {
   if (!heading) return NextResponse.json({ error: "Heading is required" }, { status: 400 });
   if (!description) return NextResponse.json({ error: "Description is required" }, { status: 400 });
 
-  const row = await prisma.setting.findUnique({
-    where: { key: "currentAffairs" },
-    select: { value: true },
+  const item = await prisma.currentAffair.create({
+    data: { date, category, heading, description, image, hidden },
   });
-  const all = loadAll(row?.value || "[]");
-
-  const now = new Date().toISOString();
-  const id = `ca_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  const next = [
-    ...all,
-    { id, date, category, heading, description, image, hidden, createdAt: now, updatedAt: now },
-  ];
-  await saveAll(next);
 
   await prisma.adminActivityLog.create({
     data: {
@@ -137,5 +137,5 @@ export async function POST(request) {
     },
   });
 
-  return NextResponse.json({ id }, { status: 201 });
+  return NextResponse.json(item, { status: 201 });
 }

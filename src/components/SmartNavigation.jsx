@@ -36,6 +36,13 @@ const navigationItems = [
     icon: "💼",
     description: "Government job notifications and alerts",
     keywords: "government jobs, sarkari naukri, job alerts"
+  },
+  {
+    name: "Book My Course",
+    href: "/book-my-course",
+    icon: "📚",
+    description: "Order school courses and books online",
+    keywords: "school books, course booking, parent portal, education"
   }
 ];
 

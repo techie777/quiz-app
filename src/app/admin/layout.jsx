@@ -18,6 +18,7 @@ const JR_NAV = [
   { href: "/admin/questions", label: "Questions", icon: "❓", perm: "questions" },
   { href: "/admin/upload", label: "Bulk Upload", icon: "📤", perm: "upload" },
   { href: "/admin/notifications", label: "Notifications", icon: "🔔", perm: "notifications" },
+  { href: "/admin/book-my-course", label: "Book My Course", icon: "📚", perm: "bookMyCourse" },
   { href: "/admin/settings", label: "Settings", icon: "⚙️", perm: "settings" },
 ];
 
@@ -35,6 +36,7 @@ const MASTER_NAV = [
   { href: "/admin/accounts?type=user", label: "User Accounts", icon: "👤", perm: "users" },
   { href: "/admin/logs", label: "Activity Logs", icon: "📋", perm: "logs" },
   { href: "/admin/notifications", label: "Notifications", icon: "🔔", perm: "notifications" },
+  { href: "/admin/book-my-course", label: "Book My Course", icon: "📚", perm: "bookMyCourse" },
   { href: "/admin/settings", label: "Settings", icon: "⚙️", perm: "settings" },
 ];
 

@@ -5,8 +5,18 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const key = searchParams.get("key");
+
+    if (key) {
+      const setting = await prisma.setting.findUnique({
+        where: { key }
+      });
+      return NextResponse.json(setting || { key, value: null });
+    }
+
     const rows = await prisma.setting.findMany();
     const settings = {};
     rows.forEach((r) => {

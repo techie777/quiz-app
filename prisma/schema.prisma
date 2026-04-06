@@ -278,3 +278,68 @@ model SchoolProgress {
 
   @@unique([userId, chapterId])
 }
+
+model CurrentAffair {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  date        String   // YYYY-MM-DD
+  category    String   @default("General")
+  heading     String
+  description String
+  image       String?
+  hidden      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model CoursePackage {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  board       String   // CBSE, ICSE, State
+  class       Int      // 1-12
+  name        String
+  price       Float
+  bookCount   Int
+  images      String   @default("[]") // JSON array of image URLs
+  description String   @default("")
+  hidden      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orders      CourseOrder[]
+
+  @@unique([board, class])
+}
+
+model CourseOrder {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  packageId       String?        @db.ObjectId
+  package         CoursePackage? @relation(fields: [packageId], references: [id])
+  
+  parentName      String
+  childName       String
+  board           String
+  class           Int
+  deliveryAddress String
+  contactNumber   String?
+  isWhatsApp      Boolean  @default(true)
+  
+  totalAmount     Float
+  status          String   @default("PENDING") // PENDING, PAID, SHIPPED, DELIVERED
+  paymentId       String?
+  
+  userId          String?  @db.ObjectId // Optional, if user is logged in
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model PromoCode {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  code          String    @unique
+  discountType  String    @default("PERCENTAGE") // PERCENTAGE or FIXED
+  discountValue Float
+  status        String    @default("ACTIVE") // ACTIVE, PAUSED
+  expiryDate    DateTime?
+  usageCount    Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}

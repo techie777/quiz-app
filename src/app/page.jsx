@@ -9,6 +9,7 @@ import { debounce } from "lodash";
 import { useSession, signIn } from "next-auth/react";
 import toast from "react-hot-toast";
 import styles from "@/styles/LandingPage.module.css";
+import WelcomePromoPopup from "@/components/WelcomePromoPopup";
 
 // Import safe JSON parsing utility
 function safeJsonParse(json, fallback = []) {

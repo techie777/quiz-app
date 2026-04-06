@@ -424,3 +424,29 @@
   }
 }
 
+.bulkActions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.fileInputWrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.bulkPreview {
+  margin-top: 20px;
+  padding: 16px;
+  border-radius: 12px;
+  background: rgba(var(--bg-secondary-rgb), 0.5);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.bulkPreview p {
+  margin-bottom: 10px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+

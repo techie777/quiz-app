@@ -1,4 +1,4 @@
-// File: C:\Users\TECHIE777\Desktop\quiz-app\src\app\api\categories\[id]\route.js
+// File: C:\Users\TECHIE777\Desktop\All Projects\quiz-app\src\app\api\categories\[id]\route.js
 import * as entry from '../../../../../../src/app/api/categories/[id]/route.js'
 import type { NextRequest } from 'next/server.js'
 
