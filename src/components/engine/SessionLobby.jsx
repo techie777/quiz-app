@@ -10,6 +10,43 @@ import axios from 'axios';
  * Filtered self from active squadron list and fixed kick logic synchronization.
  */
 
+// Web Audio API Synthesizer for Tactical UI Sounds
+const playAudioAlert = (type) => {
+    try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+        
+        osc.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        
+        if (type === 'new_request') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.1); 
+            gainNode.gain.setValueAtTime(0, ctx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.1, ctx.currentTime + 0.05);
+            gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.3);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.3);
+        } else if (type === 'approved') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+            osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1);
+            gainNode.gain.setValueAtTime(0, ctx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.1, ctx.currentTime + 0.05);
+            // sustain slightly
+            gainNode.gain.setValueAtTime(0.1, ctx.currentTime + 0.1);
+            gainNode.gain.linearRampToValueAtTime(0.1, ctx.currentTime + 0.15);
+            gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.3);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.4);
+        }
+    } catch (e) {}
+};
+
 export default function SessionLobby({ sessionId, isHost }) {
   const { participants, pendingParticipants, session, sendAction } = useSessionEngine();
   const [mounted, setMounted] = useState(false);
@@ -21,6 +58,15 @@ export default function SessionLobby({ sessionId, isHost }) {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [prevPendingCount, setPrevPendingCount] = useState(0);
+
+  // Tactical Audio Alert for New Guests
+  useEffect(() => {
+     if (isHost && pendingParticipants.length > prevPendingCount) {
+         playAudioAlert('new_request');
+     }
+     setPrevPendingCount(pendingParticipants.length);
+  }, [pendingParticipants.length, isHost, prevPendingCount]);
 
   useEffect(() => {
     setMounted(true);
@@ -112,12 +158,12 @@ export default function SessionLobby({ sessionId, isHost }) {
   }
 
   return (
-    <div className="w-full max-w-5xl bg-white rounded-[3.5rem] shadow-2xl overflow-hidden border border-slate-100 flex flex-col p-6 sm:p-14 space-y-12">
+    <div className="w-full max-w-5xl bg-white rounded-3xl sm:rounded-[3.5rem] shadow-2xl overflow-hidden border border-slate-100 flex flex-col p-4 sm:p-14 space-y-8 sm:space-y-12">
       
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-8 border-b-2 border-slate-50 pb-12">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-6 sm:gap-8 border-b-2 border-slate-50 pb-6 sm:pb-12">
         <div className="text-center md:text-left">
-           <h2 className="text-4xl font-black text-slate-900 tracking-tighter">Mission Control</h2>
+           <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tighter">Mission Control</h2>
            <p className="text-[11px] font-black text-slate-400 mt-2 tracking-widest uppercase">Room Protocol: <span className="text-indigo-600 font-black">{sessionId}</span></p>
         </div>
         {isHost && (
@@ -131,14 +177,14 @@ export default function SessionLobby({ sessionId, isHost }) {
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-12">
           
           {/* SIDEBAR */}
-          <div className="lg:col-span-4 space-y-10">
+          <div className="lg:col-span-4 space-y-8 sm:space-y-10">
               
               {/* 1. SECURITY STATUS (Always visible for host) */}
               {isHost && (
-                  <div className="p-5 bg-indigo-50 border-2 border-indigo-100 rounded-3xl flex items-center justify-between">
+                  <div className="p-4 sm:p-5 bg-indigo-50 border-2 border-indigo-100 rounded-2xl sm:rounded-3xl flex items-center justify-between">
                      <div className="flex items-center gap-3">
                         <span className="w-2 h-2 bg-green-500 rounded-full animate-ping"></span>
                         <span className="text-[10px] font-black text-indigo-700 uppercase tracking-widest">Command Link Active</span>
@@ -156,7 +202,7 @@ export default function SessionLobby({ sessionId, isHost }) {
                             <div key={p.userId} className="flex items-center justify-between p-4 bg-red-50 rounded-2xl border-2 border-red-100">
                                 <span className="text-xs font-black text-slate-900 truncate max-w-[100px]">{p.userName}</span>
                                 <div className="flex gap-2">
-                                    <button onClick={() => sendAction('APPROVE_GUEST', { userId: p.userId })} className="w-8 h-8 bg-green-500 text-white rounded-lg font-black transition-all hover:scale-110">✓</button>
+                                    <button onClick={() => { playAudioAlert('approved'); sendAction('APPROVE_GUEST', { userId: p.userId }); }} className="w-8 h-8 bg-green-500 text-white rounded-lg font-black transition-all hover:scale-110">✓</button>
                                     <button onClick={() => sendAction('REJECT_GUEST', { userId: p.userId })} className="w-8 h-8 bg-red-500 text-white rounded-lg font-black transition-all hover:scale-110">×</button>
                                 </div>
                             </div>
@@ -166,10 +212,10 @@ export default function SessionLobby({ sessionId, isHost }) {
               )}
 
               {/* ACTIVE */}
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                   <label className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-900">Active Squadron</label>
                   <div className="space-y-3">
-                      <div className="flex items-center gap-4 p-5 bg-white rounded-3xl border-2 border-indigo-600 shadow-xl shadow-indigo-50">
+                      <div className="flex items-center gap-4 p-4 sm:p-5 bg-white rounded-2xl sm:rounded-3xl border-2 border-indigo-600 shadow-xl shadow-indigo-50">
                          <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black shadow-sm">H</div>
                          <div><p className="text-xs font-black text-slate-900 uppercase">Commander (You)</p></div>
                       </div>
@@ -199,11 +245,11 @@ export default function SessionLobby({ sessionId, isHost }) {
           </div>
 
           {/* MAIN */}
-          <div className="lg:col-span-8 flex flex-col h-full bg-slate-50/30 rounded-[3rem] border border-slate-100 p-8 md:p-12">
+          <div className="lg:col-span-8 flex flex-col h-full bg-slate-50/30 rounded-3xl sm:rounded-[3rem] border border-slate-100 p-5 sm:p-8 md:p-12">
             {isHost ? (
-               <div className="flex flex-col h-full space-y-10">
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-6 px-1">
-                      <h3 className="text-2xl font-black text-slate-900 tracking-tighter">Tactical Library</h3>
+               <div className="flex flex-col h-full space-y-6 sm:space-y-10">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6 px-1">
+                      <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tighter">Tactical Library</h3>
                       <input 
                         placeholder="SEARCH..." 
                         value={search} onChange={(e) => setSearch(e.target.value)}
@@ -211,10 +257,10 @@ export default function SessionLobby({ sessionId, isHost }) {
                       />
                   </div>
 
-                  <div className="flex-1 min-h-[300px] max-h-[350px] overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-5 pr-3 custom-scrollbar">
-                        {loading ? <div className="p-20 text-center col-span-2 text-slate-400 font-bold uppercase animate-pulse">Scanning Protocols...</div> : 
+                  <div className="flex-1 min-h-[300px] max-h-[350px] overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 pr-2 sm:pr-3 custom-scrollbar">
+                        {loading ? <div className="p-10 sm:p-20 text-center col-span-1 sm:col-span-2 text-slate-400 font-bold uppercase animate-pulse">Scanning Protocols...</div> : 
                           filteredCategories.map(c => (
-                            <button key={c.id} onClick={() => setSelectedCategory(c)} className={`flex items-center gap-4 p-5 rounded-[2rem] border-2 transition-all ${selectedCategory?.id === c.id ? 'bg-indigo-600 border-indigo-600 text-white shadow-2xl' : 'bg-white border-slate-50 text-slate-900 hover:border-indigo-600'}`}>
+                            <button key={c.id} onClick={() => setSelectedCategory(c)} className={`flex items-center gap-4 p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] border-2 transition-all ${selectedCategory?.id === c.id ? 'bg-indigo-600 border-indigo-600 text-white shadow-2xl' : 'bg-white border-slate-50 text-slate-900 hover:border-indigo-600'}`}>
                                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl ${selectedCategory?.id === c.id ? 'bg-indigo-500' : 'bg-slate-50'}`}>{c.emoji || '🎒'}</div>
                                 <div className="text-left truncate">
                                     <p className="text-xs font-black uppercase tracking-tight truncate">{c.topic || c.name}</p>
@@ -224,10 +270,34 @@ export default function SessionLobby({ sessionId, isHost }) {
                         ))}
                   </div>
 
-                  <button 
-                    onClick={handleStart} disabled={!selectedCategory}
-                    className={`w-full py-6 rounded-[2.5rem] text-xl font-black tracking-tighter transition-all ${selectedCategory ? 'bg-slate-900 text-white hover:scale-[1.02]' : 'bg-slate-100 text-slate-300'}`}
-                  >READY FOR LAUNCH 🚀</button>
+                  <div className="space-y-4 sm:space-y-6">
+                      {selectedCategory && (
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 bg-indigo-50 rounded-2xl sm:rounded-[2rem] border-2 border-indigo-100 gap-4 transition-all animate-in fade-in slide-in-from-bottom-4">
+                              <div className="flex flex-col text-left">
+                                  <span className="text-[11px] font-black uppercase tracking-widest text-indigo-900">Set Question Limit</span>
+                                  <span className="text-[10px] font-bold text-indigo-500 mt-1 uppercase">Max Available: {selectedCategory.questionCount || 0}</span>
+                              </div>
+                              <div className="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-sm border border-indigo-50 max-w-fit">
+                                  <button onClick={() => setMaxQuestions(Math.max(1, maxQuestions - 1))} className="w-8 h-8 rounded-xl bg-slate-50 text-slate-600 hover:bg-slate-200 font-black transition-colors">-</button>
+                                  <input 
+                                     value={maxQuestions} 
+                                     onChange={(e) => {
+                                         let val = parseInt(e.target.value);
+                                         if (isNaN(val)) val = 1;
+                                         setMaxQuestions(Math.min(selectedCategory.questionCount || 10, Math.max(1, val)));
+                                     }}
+                                     className="text-sm font-black w-10 text-center text-slate-800 bg-transparent outline-none"
+                                  />
+                                  <button onClick={() => setMaxQuestions(Math.min(selectedCategory.questionCount || 10, maxQuestions + 1))} className="w-8 h-8 rounded-xl bg-slate-50 text-slate-600 hover:bg-slate-200 font-black transition-colors">+</button>
+                              </div>
+                          </div>
+                      )}
+
+                      <button 
+                        onClick={handleStart} disabled={!selectedCategory}
+                        className={`w-full py-4 sm:py-6 rounded-2xl sm:rounded-[2.5rem] text-lg sm:text-xl font-black tracking-tighter transition-all ${selectedCategory ? 'bg-slate-900 text-white hover:scale-[1.02] shadow-2xl shadow-slate-900/20' : 'bg-slate-100 text-slate-300'}`}
+                      >READY FOR LAUNCH 🚀</button>
+                  </div>
                </div>
             ) : (
                 <div className="flex flex-col items-center justify-center h-full text-center space-y-8 animate-pulse">
