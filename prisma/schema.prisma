@@ -22,9 +22,10 @@ model User {
   pin           String?
   accounts      Account[]
   favourites    Favourite[]
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
   schoolProgress SchoolProgress[]
+  chapterAttempts ChapterAttempt[]
 }
 
 model VerificationToken {
@@ -205,6 +206,7 @@ model SubSection {
 model SchoolBoard {
   id        String        @id @default(auto()) @map("_id") @db.ObjectId
   name      String
+  slug      String        @unique
   sortOrder Int           @default(0)
   hidden    Boolean       @default(false)
   classes   SchoolClass[]
@@ -246,6 +248,7 @@ model SchoolChapter {
   sortOrder Int              @default(0)
   questions SchoolQuestion[]
   progress  SchoolProgress[]
+  attempts  ChapterAttempt[]
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
 }
@@ -379,4 +382,18 @@ model CareerSection {
 
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+}
+
+model ChapterAttempt {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String   @db.ObjectId
+  chapterId  String   @db.ObjectId
+  score      Int
+  maxScore   Int
+  timeSpent  Int      // in seconds
+  details    String   // JSON string: { mcq: {correct, total}, fib: {...}, ... }
+  createdAt  DateTime @default(now())
+  
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chapter    SchoolChapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
 }

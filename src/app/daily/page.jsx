@@ -3,6 +3,7 @@
 import { useData } from "@/context/DataContext";
 import Link from "next/link";
 import styles from "@/styles/DailyIndex.module.css";
+import LiveStudyButton from "@/components/engine/LiveStudyButton";
 
 const ITEMS = [
   { 
@@ -26,6 +27,10 @@ export default function DailyIndexPage() {
     <div className={styles.page}>
       <h1 className={styles.title}>Daily Quizzes</h1>
       <p className={styles.subtitle}>Test your knowledge every day with our curated quizzes</p>
+      
+      <div className="max-w-md mx-auto mb-10 overflow-hidden">
+        <LiveStudyButton />
+      </div>
 
       <div className={styles.grid}>
         {ITEMS.map((item) => (

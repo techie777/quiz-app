@@ -7,32 +7,34 @@ import { ensureSchoolSeed } from "@/lib/schoolSeed";
 import styles from "@/styles/SchoolStudy.module.css";
 
 export default async function SchoolStudyPage() {
+  // session is optional for landing page
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id || session.user.isAdmin) {
-    redirect(`/signin?callbackUrl=${encodeURIComponent("/school-study")}`);
-  }
-
+  
   await ensureSchoolSeed();
   const boards = await prisma.schoolBoard.findMany({
     where: { hidden: false },
     orderBy: { sortOrder: "asc" },
-    select: { id: true, name: true },
+    select: { id: true, name: true, slug: true },
   });
 
   return (
     <div className={styles.page}>
       <div className={styles.header}>
+        <div className={styles.crumbs}>
+          <Link href="/">Home</Link> / School study
+        </div>
         <div>
-          <h1 className={styles.title}>School study</h1>
-          <p className={styles.subtitle}>Select a board to start chapter-wise practice.</p>
+          <h1 className={styles.title}>School Revision</h1>
+          <p className={styles.subtitle}>Chapter-wise practice for Class 6-12.</p>
         </div>
       </div>
 
       <div className={styles.grid}>
         {boards.map((b) => (
-          <Link key={b.id} href={`/school-study/${b.id}`} className={`${styles.card} glass-card`}>
+          <Link key={b.id} href={`/school-study/${b.slug}`} className={`${styles.card} glass-card`}>
             <div className={styles.cardTitle}>{b.name}</div>
-            <div className={styles.cardMeta}>Boards</div>
+            <div className={styles.cardMeta}>Academic Board</div>
+            <div style={{ marginTop: '20px', fontSize: '1.2rem' }}>➔</div>
           </Link>
         ))}
       </div>

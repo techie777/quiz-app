@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node server.js",
     "build": "prisma generate && next build",
     "postinstall": "prisma generate",
-    "start": "next start",
+    "start": "NODE_ENV=production node server.js",
     "lint": "next lint",
     "analyze": "ANALYZE=true next build",
     "type-check": "tsc --noEmit"
@@ -20,6 +20,7 @@
     "axios": "^1.13.6",
     "bcryptjs": "^3.0.3",
     "framer-motion": "^12.37.0",
+    "ioredis": "^5.10.1",
     "jspdf": "^4.2.0",
     "jspdf-autotable": "^5.0.7",
     "lodash": "^4.17.23",
@@ -32,8 +33,11 @@
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "react-hot-toast": "^2.6.0",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
     "translate-google-api": "^1.0.4",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^14.2.0",
@@ -41,10 +45,13 @@
     "@types/node": "^20.0.0",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.16",
     "critters": "^0.0.25",
     "dotenv": "^17.3.1",
     "eslint": "8.57.1",
     "eslint-config-next": "14.2.35",
+    "postcss": "^8.4.31",
+    "tailwindcss": "^3.4.1",
     "typescript": "^5.4.0"
   },
   "engines": {

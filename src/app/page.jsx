@@ -10,6 +10,7 @@ import { useSession, signIn } from "next-auth/react";
 import toast from "react-hot-toast";
 import styles from "@/styles/LandingPage.module.css";
 import WelcomePromoPopup from "@/components/WelcomePromoPopup";
+import LiveStudyButton from "@/components/engine/LiveStudyButton";
 
 // Import safe JSON parsing utility
 function safeJsonParse(json, fallback = []) {
@@ -680,6 +681,10 @@ export default function LandingPage() {
         <div className={styles.heroContent}>
           <span className={styles.heroBadge}>#1 Interactive Learning Platform</span>
           <h1 className={styles.heroTitle}>Level Up Your Knowledge Today</h1>
+          
+          <div className="max-w-sm mx-auto mb-14">
+            <LiveStudyButton />
+          </div>
           
           {/* Integrated Search Command Center */}
           <div className={styles.heroSearchWrapper}>

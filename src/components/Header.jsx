@@ -4,13 +4,13 @@ import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import ThemeToggle from "./ThemeToggle";
+import UserMenu from "./UserMenu";
 import { useUI } from "@/context/UIContext";
 import styles from "@/styles/Header.module.css";
 
 export default function Header() {
   const { data: session, status } = useSession();
   const { toggleMobileMenu, isMobileMenuOpen } = useUI();
-  const isUser = session?.user && !session.user.isAdmin;
   const pathname = usePathname();
 
   if (pathname?.startsWith("/admin")) return null;
@@ -41,16 +41,8 @@ export default function Header() {
           <div className={styles.desktopAuth}>
             {status === "loading" ? (
               <div className={styles.loading}>Loading...</div>
-            ) : isUser ? (
-              <div className={styles.userMenu}>
-                <span className={styles.welcomeText}>Welcome, {session.user.name}</span>
-                <button 
-                  className={styles.signOutBtn}
-                  onClick={() => signOut({ callbackUrl: '/' })}
-                >
-                  Sign Out
-                </button>
-              </div>
+            ) : session ? (
+              <UserMenu />
             ) : (
               <Link href="/signin" className={styles.signInBtn}>
                 Sign In

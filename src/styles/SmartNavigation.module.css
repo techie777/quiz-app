@@ -1,7 +1,7 @@
 .navigation {
   position: sticky;
   top: 64px;
-  background: var(--navbar-bg);
+  background: var(--bg-primary);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--navbar-border);
@@ -77,14 +77,32 @@
 
 /* Mobile Menu */
 .mobileMenu {
-  position: fixed;
-  top: 64px;
+  position: absolute;
+  top: 0;
   left: 0;
   right: 0;
-  background: var(--bg-secondary);
+  background: var(--bg-primary);
   border-bottom: 1px solid var(--card-border);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-  z-index: 998;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  z-index: 1050;
+  max-height: calc(100svh - 68px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--card-border) transparent;
+}
+
+/* Custom Scrollbar for Mobile Menu */
+.mobileMenu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.mobileMenu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.mobileMenu::-webkit-scrollbar-thumb {
+  background-color: var(--card-border);
+  border-radius: 20px;
 }
 
 .mobileMenuContainer {
@@ -152,30 +170,171 @@
   line-height: 1.4;
 }
 
+/* Mobile Active Indicator */
+.mobileActiveIndicator {
+  color: var(--accent);
+  font-weight: bold;
+}
+
 /* Mobile Menu Footer */
 .mobileMenuFooter {
-  margin-top: 2rem;
+  margin-top: 1.5rem;
   padding-top: 1.5rem;
   border-top: 1px solid var(--card-border);
+  display: flex;
+  justify-content: center;
+  text-align: center;
+}
+
+.mobileMenuInfo {
+  width: 100%;
+}
+
+.badgeText {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.hotBadge {
+  background: linear-gradient(135deg, #ff416c, #ff4b2b);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 6px;
+  box-shadow: 0 4px 10px rgba(255, 75, 43, 0.3);
+}
+
+/* Auth Header Styles */
+.mobileMenuHeader {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--card-border);
 }
 
 .mobileUserMenu {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;
+}
+
+.mobileUserStats {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px;
+}
+
+.mobileUserAvatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 18px;
+  background: var(--brand-gradient);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.5rem;
+  box-shadow: 0 8px 16px rgba(var(--accent-rgb), 0.2);
+}
+
+.mobileUserName {
+  margin: 0;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+}
+
+.mobileUserEmail {
+  margin: 2px 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.mobileUserLinks {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.mobileUserLink {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--bg-secondary);
+  border-radius: 14px;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  border: 1px solid var(--card-border);
+}
+
+.userMenuIcon {
+  font-size: 1.1rem;
+}
+
+.mobileSignOutBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px;
+  background: rgba(255, 77, 77, 0.05);
+  color: #ff4d4d;
+  border: 1px dashed rgba(255, 77, 77, 0.3);
+  border-radius: 14px;
+  font-weight: 800;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.mobileAuthActions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mobileGoogleBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px;
+  background: white;
+  color: #3c4043;
+  border: 1px solid #dadce0;
+  border-radius: 14px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.googleIcon {
+  flex-shrink: 0;
 }
 
 .mobileSignInBtn {
   display: block;
   width: 100%;
-  padding: 16px;
+  padding: 14px;
   background: var(--brand-gradient);
   color: white;
   text-align: center;
   border-radius: 14px;
   font-weight: 700;
-  font-size: 1.1rem;
-  box-shadow: 0 10px 20px rgba(99, 102, 241, 0.2);
+  font-size: 1rem;
+  box-shadow: 0 10px 20px rgba(var(--accent-rgb), 0.2);
 }
 
 .overlay {

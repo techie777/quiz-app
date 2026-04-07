@@ -4,23 +4,19 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
-// Only include Google provider if real credentials are configured
-const googleId = process.env.GOOGLE_CLIENT_ID ?? "";
-const googleSecret = process.env.GOOGLE_CLIENT_SECRET ?? "";
-const hasGoogleCreds = googleId && !googleId.startsWith("your-") && googleSecret && !googleSecret.startsWith("your-");
-
 export const authOptions = {
   adapter: PrismaAdapter(prisma),
+  secret: process.env.NEXTAUTH_SECRET,
   session: { 
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
-    updateAge: 24 * 60 * 60, // 24 hours
   },
   providers: [
     // Google OAuth
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      allowDangerousEmailAccountLinking: true,
     }),
     // User login with Email PIN
     CredentialsProvider({

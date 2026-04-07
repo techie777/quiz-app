@@ -1,56 +1,72 @@
 import Link from "next/link";
-import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { ensureSchoolSeed } from "@/lib/schoolSeed";
+import { generateMetaTags } from "@/lib/seo";
 import styles from "@/styles/SchoolStudy.module.css";
 
+export async function generateMetadata({ params }) {
+  const { boardId } = params;
+  const board = await prisma.schoolBoard.findUnique({
+    where: { slug: boardId },
+    select: { name: true, slug: true }
+  });
+
+  if (!board) return generateMetaTags({ title: "Board Not Found" });
+
+  return generateMetaTags({
+    title: `${board.name} Online Study Materials`,
+    description: `Access free practice quizzes, revision notes, and test series for ${board.name} classes 6 to 12. Boost your exam results with QuizWeb.`,
+    keywords: `${board.name}, school study, practice quizzes, exam prep, free education`,
+    canonical: `/school-study/${board.slug}`
+  });
+}
+
 export default async function BoardClassesPage({ params }) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id || session.user.isAdmin) {
-    redirect(`/signin?callbackUrl=${encodeURIComponent(`/school-study/${params.boardId}`)}`);
+  const { boardId } = params;
+  
+  if (boardId === 'practice') {
+     return redirect('/school-study');
   }
 
-  await ensureSchoolSeed();
-
   const board = await prisma.schoolBoard.findUnique({
-    where: { id: params.boardId },
-    select: { id: true, name: true, hidden: true },
+    where: { slug: boardId },
+    include: {
+      classes: {
+        orderBy: { number: "asc" },
+      },
+    },
   });
-  if (!board || board.hidden) redirect("/school-study");
 
-  const classes = await prisma.schoolClass.findMany({
-    where: { boardId: board.id },
-    orderBy: { number: "asc" },
-    select: { id: true, number: true },
-  });
+  if (!board) return <div className={styles.empty}>Board not found</div>;
 
   return (
     <div className={styles.page}>
       <div className={styles.header}>
+        <div className={styles.crumbs}>
+          <Link href="/school-study">Home</Link>
+          <span className={styles.separator}>&gt;</span>
+          <span className={styles.current}>{board.name}</span>
+        </div>
         <div>
-          <div className={styles.crumbs}>School study / {board.name}</div>
-          <h1 className={styles.title}>Select class</h1>
-          <p className={styles.subtitle}>Choose a class to see subjects and chapters.</p>
+          <h1 className={styles.title}>{board.name} Curriculum</h1>
+          <p className={styles.subtitle}>Select your grade level to access study materials.</p>
         </div>
       </div>
 
       <div className={styles.grid}>
-        {classes.map((c) => (
-          <Link
-            key={c.id}
-            href={`/school-study/${board.id}/class/${c.number}`}
-            className={`${styles.card} glass-card`}
-          >
-            <div className={styles.cardTitle}>Class {c.number}</div>
-            <div className={styles.cardMeta}>{board.name}</div>
+        {board.classes.map((c) => (
+          <Link key={c.id} href={`/school-study/${boardId}/${c.number}`} className={styles.card}>
+            <div className={styles.cardTitle}>Grade {c.number}</div>
+            <div className={styles.cardMeta}>Class Level</div>
+            <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+               <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{c.subjects?.length || 0} Subjects</span>
+               <span style={{ fontSize: '1.2rem' }}>➔</span>
+            </div>
           </Link>
         ))}
       </div>
 
-      {classes.length === 0 && <div className={styles.empty}>No classes available.</div>}
+      {board.classes.length === 0 && <div className={styles.empty}>No classes listed for this board yet.</div>}
     </div>
   );
 }
-

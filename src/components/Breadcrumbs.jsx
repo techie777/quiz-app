@@ -20,15 +20,25 @@ const Breadcrumbs = () => {
   const breadcrumbs = [];
   
   pathSegments.forEach((segment, index) => {
-    // Skip "category" and "quiz" segments to keep breadcrumbs clean
-    if (segment === 'category' || segment === 'quiz') return;
+    // Skip "category", "quiz", and "practice" segments to keep breadcrumbs clean
+    if (segment === 'category' || segment === 'quiz' || segment === 'practice') return;
 
     const href = `/${pathSegments.slice(0, index + 1).join('/')}`;
     let label = segment;
     let finalHref = href;
 
-    // Try to find category topic if the segment is a category ID
-    if (segment.length === 24) {
+    // School Study Specific Handling
+    if (pathSegments[0] === 'school-study') {
+      if (segment === 'school-study') {
+        label = 'School Study';
+      } else if (segment.length === 24) {
+        // It's likely a MongoDB ID (Chapter/Board/Subject)
+        // For now, capitalize it or skip linking if we don't have the context
+        // Ideally we'd fetch the name, but to fix the "Board not found" we must ensure
+        // that we don't link segments that lead to dead ends.
+        label = 'Practice Session';
+      }
+    } else if (segment.length === 24) {
       const category = quizzes?.find(q => q.id === segment);
       if (category) {
         label = category.topic;

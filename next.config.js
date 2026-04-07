@@ -2,21 +2,29 @@
 const nextConfig = {
   // Performance optimizations
   experimental: {
-    optimizeCss: true,
     optimizePackageImports: ['framer-motion', 'lodash'],
-    turbo: {
-      rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js',
-        },
-      },
-    },
   },
   
   // Image optimization
   images: {
-    domains: ['localhost'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**.amazonaws.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.mongodb.net',
+      },
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com', // For Google Auth avatars
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+      },
+    ],
     formats: ['image/webp', 'image/avif'],
     minimumCacheTTL: 60 * 60 * 24 * 7, // 7 days
     dangerouslyAllowSVG: true,

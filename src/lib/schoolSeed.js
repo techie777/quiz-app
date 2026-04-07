@@ -6,8 +6,8 @@ export async function ensureSchoolSeed() {
 
   const board = await prisma.schoolBoard.create({
     data: {
-      id: "cbse",
       name: "CBSE",
+      slug: "cbse",
       sortOrder: 0,
       hidden: false,
       classes: {

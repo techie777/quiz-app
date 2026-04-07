@@ -1,107 +1,211 @@
 .page {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 28px 24px 80px;
+  padding: 32px 24px 100px;
 }
 
 .header {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 18px;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 40px;
+  position: relative;
 }
 
 .title {
   margin: 0;
-  font-size: 1.9rem;
+  font-size: 2.2rem;
   font-weight: 900;
   color: var(--text-primary);
+  letter-spacing: -0.5px;
 }
 
 .subtitle {
-  margin: 8px 0 0;
+  margin: 0;
   color: var(--text-secondary);
+  font-size: 1.1rem;
+  opacity: 0.8;
 }
 
 .crumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   color: var(--text-secondary);
-  font-weight: 700;
-  font-size: 0.9rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 24px;
+  opacity: 0.7;
+}
+
+.crumbs a {
+  color: var(--accent);
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.crumbs a:hover {
+  opacity: 0.8;
+  text-decoration: underline;
 }
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
 }
 
 .card {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 16px;
-  border-radius: 18px;
+  justify-content: space-between;
+  padding: 24px;
+  border-radius: 24px;
   border: 1px solid var(--card-border);
   background: var(--card-bg);
+  backdrop-filter: blur(10px);
   text-decoration: none;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(45deg, transparent, rgba(var(--accent-rgb), 0.05), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
 }
 
 .card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-lg);
-  border-color: rgba(var(--accent-rgb), 0.35);
+  transform: translateY(-5px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+  border-color: rgba(var(--accent-rgb), 0.4);
+}
+
+.card:hover::before {
+  transform: translateX(100%);
 }
 
 .cardTitle {
-  font-weight: 900;
+  font-weight: 800;
   color: var(--text-primary);
-  font-size: 1.1rem;
+  font-size: 1.3rem;
+  margin-bottom: 12px;
 }
 
 .cardMeta {
   color: var(--text-secondary);
   font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.pillRow {
+.list {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 4px;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-radius: 20px;
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  transition: all 0.2s ease;
+  gap: 20px;
+}
+
+.row:hover {
+  border-color: rgba(var(--accent-rgb), 0.3);
+  background: rgba(var(--bg-secondary-rgb), 0.4);
+  transform: translateX(5px);
+}
+
+.rowInfo {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex: 1;
+}
+
+.emoji {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: var(--bg-secondary);
+  font-size: 1.4rem;
+  border: 1px solid var(--card-border);
+}
+
+.name {
+  display: block;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.desc {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+.rowMeta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .pill {
-  padding: 6px 10px;
+  padding: 6px 12px;
   border-radius: 999px;
-  border: 1px solid var(--card-border);
-  background: var(--bg-secondary);
   font-weight: 800;
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-}
-
-.pillGood {
-  color: #16a34a;
-  border-color: rgba(22,163,74,0.35);
-  background: rgba(22,163,74,0.08);
-}
-
-.pillWarn {
-  color: #f59e0b;
-  border-color: rgba(245,158,11,0.35);
-  background: rgba(245,158,11,0.08);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid transparent;
 }
 
 .empty {
+  text-align: center;
+  padding: 60px 20px;
   color: var(--text-muted);
-  margin-top: 10px;
+  font-size: 1.1rem;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 768px) {
+  .page {
+    padding: 24px 16px 80px;
+  }
+  .title {
+    font-size: 1.8rem;
+  }
+  .row {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 20px;
+  }
+  .rowMeta {
+    width: 100%;
+    justify-content: space-between;
+    margin-top: 10px;
+  }
   .grid {
     grid-template-columns: 1fr;
   }
 }
-
