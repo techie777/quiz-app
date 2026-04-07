@@ -343,3 +343,40 @@ model PromoCode {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
+
+// ── Career Guide Module ──
+
+model CareerGuide {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  slug        String   @unique
+  name        String
+  category    String   @default("Government Job")
+  description String
+  icon        String   @default("🧭")
+  difficulty  String   @default("Medium")
+  competition String   @default("High")
+  avgSalary   String   @default("")
+  workType    String   @default("Field + Office")
+  
+  hidden      Boolean  @default(false)
+  sortOrder   Int      @default(0)
+
+  sections    CareerSection[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model CareerSection {
+  id            String      @id @default(auto()) @map("_id") @db.ObjectId
+  careerGuideId String      @db.ObjectId
+  careerGuide   CareerGuide @relation(fields: [careerGuideId], references: [id], onDelete: Cascade)
+  
+  title         String
+  type          String      @default("TEXT") // TEXT, LIST, FAQs
+  content       String      // Stores JSON depending on type
+  sortOrder     Int         @default(0)
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}

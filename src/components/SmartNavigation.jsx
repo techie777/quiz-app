@@ -43,6 +43,13 @@ const navigationItems = [
     icon: "📚",
     description: "Order school courses and books online",
     keywords: "school books, course booking, parent portal, education"
+  },
+  {
+    name: "Career Guide",
+    href: "/career-guide",
+    icon: "🧭",
+    description: "Complete career guidance and roadmaps",
+    keywords: "career, jobs, guidance, roadmap, career guide"
   }
 ];
 

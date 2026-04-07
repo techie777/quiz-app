@@ -1,0 +1,572 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  font-family: var(--font-family-sans, 'Inter', sans-serif);
+}
+
+.pageHeader {
+  text-align: center;
+  margin-bottom: 3rem;
+  padding: 3rem 1rem;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%);
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+.pageTitle {
+  font-size: 3rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.pageSubtitle {
+  font-size: 1.2rem;
+  color: var(--text-secondary, #64748b);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.careersGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.careerCard {
+  background: var(--bg-surface, #ffffff);
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-color, #e2e8f0);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.careerCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+  border-color: #3b82f6;
+}
+
+.careerCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s ease;
+}
+
+.careerCard:hover::before {
+  transform: scaleX(1);
+}
+
+.careerIcon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  background: var(--bg-soft, #f1f5f9);
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+.careerName {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary, #1e293b);
+  margin-bottom: 0.5rem;
+}
+
+.careerCategory {
+  font-size: 0.875rem;
+  color: #3b82f6;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+}
+
+.careerDesc {
+  color: var(--text-secondary, #64748b);
+  flex-grow: 1;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.exploreBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: #3b82f6;
+  color: white;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.exploreBtn:hover {
+  background: #2563eb;
+}
+
+/* IAS Guide Specific Styles */
+.hero {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.05) 0%, rgba(56, 189, 248, 0.05) 100%);
+  border-radius: 24px;
+  margin-bottom: 4rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.categoryTag {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+}
+
+.heroTitle {
+  font-size: 3.5rem;
+  font-weight: 900;
+  color: var(--text-primary, #0f172a);
+  margin-bottom: 1rem;
+  line-height: 1.2;
+}
+
+.heroDesc {
+  font-size: 1.25rem;
+  color: var(--text-secondary, #475569);
+  max-width: 800px;
+  margin: 0 auto 2.5rem;
+  line-height: 1.6;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.statCard {
+  background: var(--bg-surface, #ffffff);
+  padding: 1.5rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.statLabel {
+  font-size: 0.875rem;
+  color: var(--text-secondary, #64748b);
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.statValue {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary, #1e293b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.section {
+  margin-bottom: 4rem;
+}
+
+.sectionTitle {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text-primary, #0f172a);
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.sectionTitle span {
+  font-size: 2.5rem;
+}
+
+.twoCol {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+@media (max-width: 768px) {
+  .twoCol {
+    grid-template-columns: 1fr;
+  }
+}
+
+.prosCard, .consCard {
+  padding: 2rem;
+  border-radius: 16px;
+  height: 100%;
+}
+
+.prosCard {
+  background: rgba(34, 197, 94, 0.05);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.consCard {
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.prosConsList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.prosConsList li {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  color: var(--text-primary, #334155);
+}
+
+.prosConsList li span {
+  font-size: 1.25rem;
+}
+
+/* Inspiration Section */
+.storyGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.storyCard {
+  background: var(--bg-surface, #ffffff);
+  border-radius: 20px;
+  padding: 2.5rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-color, #e2e8f0);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s;
+}
+
+.storyCard:hover {
+  transform: translateY(-5px);
+}
+
+.quoteIcon {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  font-size: 3rem;
+  opacity: 0.1;
+  color: #3b82f6;
+  font-family: serif;
+}
+
+.storyBg {
+  font-size: 0.875rem;
+  color: #6366f1;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.storyStruggle {
+  font-size: 1.1rem;
+  color: var(--text-primary, #334155);
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+  font-weight: 500;
+}
+
+.storyLearning {
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color, #e2e8f0);
+}
+
+.learningLabel {
+  font-size: 0.875rem;
+  color: var(--text-secondary, #64748b);
+  margin-bottom: 0.5rem;
+}
+
+.learningText {
+  color: #059669;
+  font-weight: 600;
+}
+
+/* Roadmap Stepper */
+.roadmapStepper {
+  position: relative;
+  padding-left: 2rem;
+}
+
+.roadmapStepper::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #cbd5e1;
+}
+
+.stepperItem {
+  position: relative;
+  padding-bottom: 3rem;
+}
+
+.stepperItem:last-child {
+  padding-bottom: 0;
+}
+
+.stepperIcon {
+  position: absolute;
+  left: -3rem;
+  top: 0;
+  width: 2rem;
+  height: 2rem;
+  background: white;
+  border: 2px solid #3b82f6;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  z-index: 1;
+}
+
+.stepperContent {
+  background: var(--bg-surface, #ffffff);
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.stepperTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary, #0f172a);
+  margin-bottom: 0.5rem;
+}
+
+/* Base Cards */
+.gridCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.infoCard {
+  background: var(--bg-surface, #ffffff);
+  padding: 1.5rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.cardTitle {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary, #1e293b);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cardList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.cardList li {
+  margin-bottom: 0.5rem;
+  padding-left: 1.5rem;
+  position: relative;
+  color: var(--text-secondary, #475569);
+  line-height: 1.5;
+}
+
+.cardList li::before {
+  content: '•';
+  color: #3b82f6;
+  position: absolute;
+  left: 0;
+  font-weight: bold;
+}
+
+/* FAQ Accordion */
+.faqSection {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.faqItem {
+  margin-bottom: 1rem;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 12px;
+  background: var(--bg-surface, #ffffff);
+  overflow: hidden;
+}
+
+.faqQuestion {
+  width: 100%;
+  text-align: left;
+  padding: 1.25rem 1.5rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary, #1e293b);
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.faqQuestion:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.faqIcon {
+  font-size: 1.25rem;
+  transition: transform 0.3s;
+}
+
+.faqQuestion[aria-expanded="true"] .faqIcon {
+  transform: rotate(180deg);
+}
+
+.faqAnswer {
+  padding: 0 1.5rem 1.25rem;
+  color: var(--text-secondary, #475569);
+  line-height: 1.6;
+}
+
+/* CTA Section */
+.ctaSection {
+  background: linear-gradient(135deg, #2563eb, #6366f1);
+  border-radius: 24px;
+  padding: 4rem 2rem;
+  text-align: center;
+  color: white;
+  margin-top: 4rem;
+}
+
+.ctaTitle {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 1.5rem;
+  color: white;
+}
+
+.ctaActions {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.btnPrimary, .btnSecondary {
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  font-size: 1.125rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.btnPrimary {
+  background: white;
+  color: #2563eb;
+}
+
+.btnPrimary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.btnSecondary {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.btnSecondary:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Dark mode adjustments - assumes standard app pattern */
+:global([data-theme="dark"]) .pageHeader,
+:global([data-theme="dark"]) .hero {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.8) 100%);
+}
+
+:global([data-theme="dark"]) .careerCard,
+:global([data-theme="dark"]) .statCard,
+:global([data-theme="dark"]) .stepperContent,
+:global([data-theme="dark"]) .infoCard,
+:global([data-theme="dark"]) .storyCard,
+:global([data-theme="dark"]) .faqItem {
+  background: var(--bg-surface, #1e293b);
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+:global([data-theme="dark"]) .heroTitle,
+:global([data-theme="dark"]) .sectionTitle,
+:global([data-theme="dark"]) .cardTitle,
+:global([data-theme="dark"]) .stepperTitle,
+:global([data-theme="dark"]) .faqQuestion {
+  color: var(--text-primary, #f8fafc);
+}
+
+:global([data-theme="dark"]) .heroDesc,
+:global([data-theme="dark"]) .careerDesc,
+:global([data-theme="dark"]) .statLabel,
+:global([data-theme="dark"]) .cardList li,
+:global([data-theme="dark"]) .faqAnswer {
+  color: var(--text-secondary, #94a3b8);
+}
