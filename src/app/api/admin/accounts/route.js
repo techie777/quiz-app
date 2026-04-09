@@ -1,16 +1,13 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireAdmin } from "@/lib/adminSessionServer";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.isAdmin || session.user.role !== "master") {
-    return NextResponse.json({ error: "Master admin only" }, { status: 403 });
-  }
+  const admin = await requireAdmin({ masterOnly: true });
+  if (!admin.ok) return NextResponse.json({ error: admin.error }, { status: admin.status });
 
   const { searchParams } = new URL(request.url);
   const type = searchParams.get("type") || "admin";
@@ -42,10 +39,8 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.isAdmin || session.user.role !== "master") {
-    return NextResponse.json({ error: "Master admin only" }, { status: 403 });
-  }
+  const admin = await requireAdmin({ masterOnly: true });
+  if (!admin.ok) return NextResponse.json({ error: admin.error }, { status: admin.status });
   const { username, password, displayName } = await request.json();
   if (!username || !password) {
     return NextResponse.json({ error: "Username and password required" }, { status: 400 });
@@ -95,7 +90,7 @@ export async function POST(request) {
   });
 
   await prisma.adminActivityLog.create({
-    data: { adminId: session.user.adminId, action: "create_admin", details: `Created Jr Admin: ${username}` },
+    data: { adminId: admin.admin.id, action: "create_admin", details: `Created Jr Admin: ${username}` },
   });
 
   return NextResponse.json(

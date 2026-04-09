@@ -13,7 +13,7 @@ export default function Header() {
   const { toggleMobileMenu, isMobileMenuOpen } = useUI();
   const pathname = usePathname();
 
-  if (pathname?.startsWith("/admin")) return null;
+  if (pathname?.startsWith("/admin") || pathname?.includes("/mock-tests/paper/")) return null;
 
   return (
     <header className={styles.header}>

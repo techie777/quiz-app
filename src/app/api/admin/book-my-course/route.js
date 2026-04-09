@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireAdmin } from "@/lib/adminSessionServer";
 
 // Check if user is admin
 async function isAdmin() {
   try {
-    const session = await getServerSession(authOptions);
-    return !!session?.user?.isAdmin;
+    const admin = await requireAdmin();
+    return admin.ok;
   } catch (err) {
     console.error("[BookMyCourse API] isAdmin check failed:", err);
     return false;

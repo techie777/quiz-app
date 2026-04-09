@@ -38,6 +38,13 @@ const navigationItems = [
     keywords: "government jobs, sarkari naukri, job alerts"
   },
   {
+    name: "Mock Tests",
+    href: "/mock-tests",
+    icon: "✍️",
+    description: "TCS/NTA style practice papers for competitive exams",
+    keywords: "mock tests, practice papers, SSC, IBPS, exam prep"
+  },
+  {
     name: "Book My Course",
     href: "/book-my-course",
     icon: "📚",
@@ -80,7 +87,7 @@ export default function SmartNavigation() {
     // Close mobile menu when route changes handled by UIContext
   }, [pathname]);
 
-  if (pathname?.startsWith("/admin")) return null;
+  if (pathname?.startsWith("/admin") || pathname?.includes("/mock-tests/paper/")) return null;
 
   return (
     <>

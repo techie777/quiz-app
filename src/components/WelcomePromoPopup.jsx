@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 import styles from "@/styles/WelcomePromoPopup.module.css";
 
 export default function WelcomePromoPopup() {
@@ -98,7 +99,13 @@ export default function WelcomePromoPopup() {
                     exit={{ opacity: 0, x: -20 }} 
                     className={styles.popupSlide}
                   >
-                    <img src={banners[currentIndex]} alt="Latest Offer" />
+                    <Image 
+                      src={banners[currentIndex]} 
+                      alt="Latest Offer" 
+                      width={500} 
+                      height={300} 
+                      style={{ objectFit: 'cover', borderRadius: '12px' }}
+                    />
                   </motion.div>
                 </AnimatePresence>
               </div>

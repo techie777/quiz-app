@@ -99,7 +99,7 @@ export default function SessionLobby({ sessionId, isHost }) {
     const list = categories.length > 0 ? categories : [];
     if (!search) return list.slice(0, 12);
     return list.filter(c => {
-        const title = (c.topic || c.name || '').toLowerCase();
+        const title = (c?.topic || c?.name || '').toLowerCase();
         const q = search.toLowerCase();
         return title.includes(q);
     }).slice(0, 12);
@@ -107,8 +107,10 @@ export default function SessionLobby({ sessionId, isHost }) {
 
   // SQUADRON RECON: Filter out current user from the list to avoid self-kicking
   const squadMembers = useMemo(() => {
-     return participants.filter(p => p.userId !== session?.userId);
+     return (participants || []).filter(p => p?.userId !== session?.userId);
   }, [participants, session?.userId]);
+
+  const [timeLimit, setTimeLimit] = useState(0); // 0 = unlimited
 
   const handleStart = () => {
     if (!selectedCategory) {
@@ -118,9 +120,10 @@ export default function SessionLobby({ sessionId, isHost }) {
     sendAction('START_SESSION', { 
       status: 'ACTIVE', 
       type: 'QUIZ', 
-      activeContentId: selectedCategory.id,
-      missionName: selectedCategory.topic || selectedCategory.name,
-      questionLimit: maxQuestions
+      activeContentId: selectedCategory?.id,
+      missionName: selectedCategory?.topic || selectedCategory?.name,
+      questionLimit: maxQuestions,
+      timeLimit: timeLimit
     });
   };
 
@@ -189,21 +192,21 @@ export default function SessionLobby({ sessionId, isHost }) {
                         <span className="w-2 h-2 bg-green-500 rounded-full animate-ping"></span>
                         <span className="text-[10px] font-black text-indigo-700 uppercase tracking-widest">Command Link Active</span>
                      </div>
-                     <span className="text-[10px] font-black text-slate-400">{pendingParticipants.length} Waiting</span>
+                     <span className="text-[10px] font-black text-slate-400">{(pendingParticipants || []).length} Waiting</span>
                   </div>
               )}
 
               {/* 2. PENDING CLEARANCES (Host Only) */}
-              {isHost && pendingParticipants.length > 0 && (
+              {isHost && (pendingParticipants || []).length > 0 && (
                   <div className="space-y-6">
-                    <label className="text-[11px] font-black uppercase tracking-[0.3em] text-red-500">Pending Admission ({pendingParticipants.length})</label>
+                    <label className="text-[11px] font-black uppercase tracking-[0.3em] text-red-500">Pending Admission ({(pendingParticipants || []).length})</label>
                     <div className="space-y-3">
-                        {pendingParticipants.map(p => (
-                            <div key={p.userId} className="flex items-center justify-between p-4 bg-red-50 rounded-2xl border-2 border-red-100">
-                                <span className="text-xs font-black text-slate-900 truncate max-w-[100px]">{p.userName}</span>
+                        {(pendingParticipants || []).map(p => (
+                            <div key={p?.userId || Math.random()} className="flex items-center justify-between p-4 bg-red-50 rounded-2xl border-2 border-red-100">
+                                <span className="text-xs font-black text-slate-900 truncate max-w-[100px]">{p?.userName}</span>
                                 <div className="flex gap-2">
-                                    <button onClick={() => { playAudioAlert('approved'); sendAction('APPROVE_GUEST', { userId: p.userId }); }} className="w-8 h-8 bg-green-500 text-white rounded-lg font-black transition-all hover:scale-110">✓</button>
-                                    <button onClick={() => sendAction('REJECT_GUEST', { userId: p.userId })} className="w-8 h-8 bg-red-500 text-white rounded-lg font-black transition-all hover:scale-110">×</button>
+                                    <button onClick={() => { playAudioAlert('approved'); sendAction('APPROVE_GUEST', { userId: p?.userId }); }} className="w-8 h-8 bg-green-500 text-white rounded-lg font-black transition-all hover:scale-110">✓</button>
+                                    <button onClick={() => sendAction('REJECT_GUEST', { userId: p?.userId })} className="w-8 h-8 bg-red-500 text-white rounded-lg font-black transition-all hover:scale-110">×</button>
                                 </div>
                             </div>
                         ))}
@@ -257,45 +260,64 @@ export default function SessionLobby({ sessionId, isHost }) {
                       />
                   </div>
 
-                  <div className="flex-1 min-h-[300px] max-h-[350px] overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 pr-2 sm:pr-3 custom-scrollbar">
-                        {loading ? <div className="p-10 sm:p-20 text-center col-span-1 sm:col-span-2 text-slate-400 font-bold uppercase animate-pulse">Scanning Protocols...</div> : 
+                  <div className="flex-1 min-h-[250px] max-h-[300px] overflow-y-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pr-2 custom-scrollbar">
+                        {loading ? <div className="p-10 text-center col-span-full text-slate-400 font-bold uppercase animate-pulse">Scanning Protocols...</div> : 
                           filteredCategories.map(c => (
-                            <button key={c.id} onClick={() => setSelectedCategory(c)} className={`flex items-center gap-4 p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] border-2 transition-all ${selectedCategory?.id === c.id ? 'bg-indigo-600 border-indigo-600 text-white shadow-2xl' : 'bg-white border-slate-50 text-slate-900 hover:border-indigo-600'}`}>
-                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl ${selectedCategory?.id === c.id ? 'bg-indigo-500' : 'bg-slate-50'}`}>{c.emoji || '🎒'}</div>
+                            <button key={c.id} onClick={() => setSelectedCategory(c)} className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${selectedCategory?.id === c.id ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg scale-[0.98]' : 'bg-white border-slate-100 text-slate-900 hover:border-indigo-400'}`}>
+                                <div className={`w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center text-xl ${selectedCategory?.id === c.id ? 'bg-indigo-500' : 'bg-slate-50'}`}>{c.emoji || '🎒'}</div>
                                 <div className="text-left truncate">
-                                    <p className="text-xs font-black uppercase tracking-tight truncate">{c.topic || c.name}</p>
-                                    <p className={`text-[9px] font-bold mt-1 opacity-70`}>{c.questionCount} Qs</p>
+                                    <p className="text-[10px] font-black uppercase tracking-tight truncate">{c.topic || c.name}</p>
+                                    <p className={`text-[8px] font-bold mt-0.5 opacity-70`}>{c.questionCount} Qs</p>
                                 </div>
                             </button>
                         ))}
                   </div>
 
-                  <div className="space-y-4 sm:space-y-6">
+                  <div className="space-y-4">
                       {selectedCategory && (
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 bg-indigo-50 rounded-2xl sm:rounded-[2rem] border-2 border-indigo-100 gap-4 transition-all animate-in fade-in slide-in-from-bottom-4">
-                              <div className="flex flex-col text-left">
-                                  <span className="text-[11px] font-black uppercase tracking-widest text-indigo-900">Set Question Limit</span>
-                                  <span className="text-[10px] font-bold text-indigo-500 mt-1 uppercase">Max Available: {selectedCategory.questionCount || 0}</span>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-in fade-in slide-in-from-bottom-2">
+                              <div className="flex items-center justify-between p-3 bg-indigo-50 rounded-2xl border border-indigo-100">
+                                  <div className="flex flex-col text-left">
+                                      <span className="text-[9px] font-black uppercase tracking-widest text-indigo-900">Objectives</span>
+                                      <span className="text-[8px] font-bold text-indigo-500 uppercase">Max: {selectedCategory.questionCount || 0}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl shadow-sm border border-indigo-50">
+                                      <button onClick={() => setMaxQuestions(Math.max(1, maxQuestions - 1))} className="w-6 h-6 rounded-lg bg-slate-50 text-slate-600 hover:bg-slate-200 font-black">-</button>
+                                      <input 
+                                         value={maxQuestions} 
+                                         onChange={(e) => {
+                                             let val = parseInt(e.target.value);
+                                             if (isNaN(val)) val = 1;
+                                             setMaxQuestions(Math.min(selectedCategory.questionCount || 10, Math.max(1, val)));
+                                         }}
+                                         className="text-xs font-black w-6 text-center text-slate-800 bg-transparent outline-none"
+                                      />
+                                      <button onClick={() => setMaxQuestions(Math.min(selectedCategory.questionCount || 10, maxQuestions + 1))} className="w-6 h-6 rounded-lg bg-slate-50 text-slate-600 hover:bg-slate-200 font-black">+</button>
+                                  </div>
                               </div>
-                              <div className="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-sm border border-indigo-50 max-w-fit">
-                                  <button onClick={() => setMaxQuestions(Math.max(1, maxQuestions - 1))} className="w-8 h-8 rounded-xl bg-slate-50 text-slate-600 hover:bg-slate-200 font-black transition-colors">-</button>
-                                  <input 
-                                     value={maxQuestions} 
-                                     onChange={(e) => {
-                                         let val = parseInt(e.target.value);
-                                         if (isNaN(val)) val = 1;
-                                         setMaxQuestions(Math.min(selectedCategory.questionCount || 10, Math.max(1, val)));
-                                     }}
-                                     className="text-sm font-black w-10 text-center text-slate-800 bg-transparent outline-none"
-                                  />
-                                  <button onClick={() => setMaxQuestions(Math.min(selectedCategory.questionCount || 10, maxQuestions + 1))} className="w-8 h-8 rounded-xl bg-slate-50 text-slate-600 hover:bg-slate-200 font-black transition-colors">+</button>
+
+                              <div className="flex items-center justify-between p-3 bg-slate-900 rounded-2xl border border-slate-700">
+                                  <div className="flex flex-col text-left">
+                                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-300">Tactical Timer</span>
+                                      <span className="text-[8px] font-bold text-slate-500 uppercase">{timeLimit === 0 ? 'Off' : `${timeLimit}s/Q`}</span>
+                                  </div>
+                                  <select 
+                                    value={timeLimit} 
+                                    onChange={(e) => setTimeLimit(parseInt(e.target.value))}
+                                    className="bg-slate-800 text-white text-[9px] font-black px-2 py-1.5 rounded-xl outline-none border border-slate-700 cursor-pointer appearance-none text-center min-w-[70px]"
+                                  >
+                                      <option value={0}>OFF</option>
+                                      <option value={15}>15s</option>
+                                      <option value={30}>30s</option>
+                                      <option value={60}>60s</option>
+                                  </select>
                               </div>
                           </div>
                       )}
 
                       <button 
                         onClick={handleStart} disabled={!selectedCategory}
-                        className={`w-full py-4 sm:py-6 rounded-2xl sm:rounded-[2.5rem] text-lg sm:text-xl font-black tracking-tighter transition-all ${selectedCategory ? 'bg-slate-900 text-white hover:scale-[1.02] shadow-2xl shadow-slate-900/20' : 'bg-slate-100 text-slate-300'}`}
+                        className={`w-full py-4 rounded-2xl text-base font-black tracking-widest transition-all ${selectedCategory ? 'bg-slate-900 text-white hover:bg-black shadow-lg' : 'bg-slate-100 text-slate-300'}`}
                       >READY FOR LAUNCH 🚀</button>
                   </div>
                </div>

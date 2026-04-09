@@ -2,7 +2,6 @@ import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
-import bcrypt from "bcryptjs";
 
 export const authOptions = {
   adapter: PrismaAdapter(prisma),
@@ -53,52 +52,26 @@ export const authOptions = {
         };
       },
     }),
-    // Admin login (kept separate for management)
-    CredentialsProvider({
-      id: "admin-login",
-      name: "Admin Login",
-      credentials: {
-        username: { label: "Username", type: "text" },
-        password: { label: "Password", type: "password" },
-      },
-      async authorize(credentials) {
-        if (!credentials?.username || !credentials?.password) return null;
-        const admin = await prisma.adminAccount.findUnique({
-          where: { username: credentials.username },
-        });
-        if (!admin) return null;
-        if (admin.status !== "active") return null;
-        const valid = await bcrypt.compare(credentials.password, admin.passwordHash);
-        if (!valid) return null;
-
-        // Log the login
-        await prisma.adminActivityLog.create({
-          data: { adminId: admin.id, action: "login", details: "Admin logged in" },
-        });
-
-        return {
-          id: admin.id,
-          name: admin.displayName || admin.username,
-          email: `admin:${admin.username}`,
-          role: admin.role,
-          adminId: admin.id,
-          username: admin.username,
-        };
-      },
-    }),
   ],
   callbacks: {
     async jwt({ token, user, account }) {
       if (user) {
         token.userId = user.id;
-        if (account?.provider === "admin-login") {
-          token.role = user.role;
-          token.adminId = user.adminId;
-          token.username = user.username;
-          token.isAdmin = true;
-        } else {
-          token.role = "user";
-          token.isAdmin = false;
+        token.role = "user";
+        token.isAdmin = false;
+
+        // Enforce 1-user-1-device: bump sessionVersion on each fresh sign-in.
+        // Old tokens will become invalid when their sessionVersion mismatches.
+        try {
+          const updated = await prisma.user.update({
+            where: { id: user.id },
+            data: { sessionVersion: { increment: 1 }, lastLoginAt: new Date() },
+            select: { sessionVersion: true },
+          });
+          token.sessionVersion = updated.sessionVersion;
+        } catch {
+          // If DB is temporarily unavailable, fall back to existing token behavior.
+          token.sessionVersion = token.sessionVersion ?? 0;
         }
       }
       return token;
@@ -108,29 +81,20 @@ export const authOptions = {
         session.user.id = token.userId;
         session.user.role = token.role;
         session.user.isAdmin = token.isAdmin;
-        if (token.isAdmin) {
-          session.user.adminId = token.adminId;
-          session.user.username = token.username;
-          try {
-            const admin = await prisma.adminAccount.findUnique({
-              where: { id: token.adminId },
-              select: { role: true, status: true, displayName: true, username: true },
-            });
-            if (admin?.status !== "active") {
-              session.user.isAdmin = false;
-            } else {
-              session.user.role = admin.role;
-              session.user.username = admin.username;
-              session.user.name = admin.displayName || admin.username;
-              const permRow = await prisma.setting.findUnique({
-                where: { key: `adminPerms:${token.adminId}` },
-                select: { value: true },
-              });
-              session.user.permissions = permRow?.value || "{}";
-            }
-          } catch {
-            session.user.permissions = "{}";
+
+        // Validate sessionVersion against DB for single-device enforcement.
+        try {
+          const row = await prisma.user.findUnique({
+            where: { id: token.userId },
+            select: { sessionVersion: true },
+          });
+          const dbV = row?.sessionVersion ?? 0;
+          const tokV = Number.isFinite(token.sessionVersion) ? token.sessionVersion : Number(token.sessionVersion ?? 0);
+          if (tokV !== dbV) {
+            return null;
           }
+        } catch {
+          // If DB read fails, don't hard-lock users out.
         }
       }
       return session;

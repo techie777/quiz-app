@@ -1,16 +1,13 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireAdmin } from "@/lib/adminSessionServer";
 import { prisma } from "@/lib/prisma";
 import { safeJsonParse } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.isAdmin) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const admin = await requireAdmin();
+  if (!admin.ok) return NextResponse.json({ error: admin.error }, { status: admin.status });
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status") || "pending";
 
@@ -26,10 +23,8 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.isAdmin) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const admin = await requireAdmin();
+  if (!admin.ok) return NextResponse.json({ error: admin.error }, { status: admin.status });
   try {
     const body = await request.json();
     const actionType = body.type || body.actionType;
@@ -59,7 +54,7 @@ export async function POST(request) {
 
     const task = await prisma.pendingTask.create({
       data: {
-        adminId: session.user.adminId,
+        adminId: admin.admin.id,
         actionType,
         entityType,
         entityId,
@@ -70,7 +65,7 @@ export async function POST(request) {
     // Log the submission
     await prisma.adminActivityLog.create({
       data: {
-        adminId: session.user.adminId,
+        adminId: admin.admin.id,
         action: "submit_pending",
         details: `Submitted ${actionType} for approval`,
       },

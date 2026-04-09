@@ -1,0 +1,230 @@
+﻿
+> quizweb@1.0.0 build
+> prisma generate && next build
+
+npm : warn The configuration property `package.json#prisma` is deprecated and will be removed in Prisma 7. Please 
+migrate to a Prisma config file (e.g., `prisma.config.ts`).
+At line:1 char:1
++ npm run build > build_output.log 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (warn The config...ma.config.ts`).:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+For more information, see: https://pris.ly/prisma-config
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+
+Γ£ö Generated Prisma Client (v6.19.3) to .\node_modules\.prisma\client in 391ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
+
+  Γû▓ Next.js 14.2.35
+  - Environments: .env.local, .env
+
+   Creating an optimized production build ...
+ ΓÜá Compiled with warnings
+
+./src/app/api/mock-tests/attempt/[attemptId]/route.js
+Attempted import error: 'authOptions' is not exported from '@/app/api/auth/[...nextauth]/route' (imported as 
+'authOptions').
+
+Import trace for requested module:
+./src/app/api/mock-tests/attempt/[attemptId]/route.js
+
+./src/app/api/mock-tests/attempt/submit/route.js
+Attempted import error: 'authOptions' is not exported from '@/app/api/auth/[...nextauth]/route' (imported as 
+'authOptions').
+
+Import trace for requested module:
+./src/app/api/mock-tests/attempt/submit/route.js
+
+   Linting and checking validity of types ...
+
+Failed to compile.
+
+./src/app/admin/AdminPage.jsx
+90:17  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from 
+`next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: 
+https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/admin/book-my-course/AdminBookMyCoursePage.jsx
+70:6  Warning: React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency 
+array.  react-hooks/exhaustive-deps
+301:17  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from 
+`next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: 
+https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/admin/categories/AdminCategoriesPage.jsx
+172:15  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from 
+`next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: 
+https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+253:15  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from 
+`next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: 
+https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+444:21  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from 
+`next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: 
+https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+532:27  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from 
+`next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: 
+https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/admin/current-affairs/AdminCurrentAffairsPage.jsx
+93:6  Warning: React Hook useEffect has a missing dependency: 'fetchItems'. Either include it or remove the dependency 
+array.  react-hooks/exhaustive-deps
+336:60  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from 
+`next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: 
+https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/admin/logs/AdminLogsPage.jsx
+19:37  Warning: React Hook useEffect has a missing dependency: 'fetchLogs'. Either include it or remove the dependency 
+array.  react-hooks/exhaustive-deps
+
+./src/app/admin/notifications/AdminNotificationsPage.jsx
+38:6  Warning: React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency 
+array.  react-hooks/exhaustive-deps
+
+./src/app/admin/pending/AdminPendingPage.jsx
+20:38  Warning: React Hook useEffect has a missing dependency: 'fetchTasks'. Either include it or remove the 
+dependency array.  react-hooks/exhaustive-deps
+
+./src/app/admin/questions/AdminQuestionsPage.jsx
+302:27  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from 
+`next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: 
+https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+405:19  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from 
+`next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: 
+https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/admin/school-study/page.jsx
+41:6  Warning: React Hook useEffect has a missing dependency: 'fetchItems'. Either include it or remove the dependency 
+array.  react-hooks/exhaustive-deps
+
+./src/app/book-my-course/page.jsx
+215:19  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from 
+`next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: 
+https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/category/[id]/page.jsx
+252:35  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from 
+`next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: 
+https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/daily-current-affairs/page.jsx
+560:25  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from 
+`next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: 
+https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+720:19  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from 
+`next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: 
+https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/govt-jobs-alerts/page.jsx
+36:34  Warning: React Hook useCallback received a function whose dependencies are unknown. Pass an inline function 
+instead.  react-hooks/exhaustive-deps
+56:6  Warning: React Hook useEffect has a missing dependency: 'fetchExams'. Either include it or remove the dependency 
+array.  react-hooks/exhaustive-deps
+142:6  Warning: React Hook useEffect has a missing dependency: 'fetchExams'. Either include it or remove the 
+dependency array.  react-hooks/exhaustive-deps
+154:6  Warning: React Hook useEffect has a missing dependency: 'fetchExams'. Either include it or remove the 
+dependency array.  react-hooks/exhaustive-deps
+
+./src/app/mock-tests/paper/[paperId]/instructions/page.jsx
+112:23  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+112:39  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+123:21  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from 
+`next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: 
+https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/mock-tests/paper/[paperId]/test/page.jsx
+102:6  Warning: React Hook useEffect has a missing dependency: 'handleAutoSubmit'. Either include it or remove the 
+dependency array.  react-hooks/exhaustive-deps
+124:6  Warning: React Hook useEffect has missing dependencies: 'currentQuestion' and 'getStatus'. Either include them 
+or remove the dependency array.  react-hooks/exhaustive-deps
+352:21  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from 
+`next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: 
+https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/notes/page.jsx
+309:30  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from 
+`next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: 
+https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/page.jsx
+360:19  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from 
+`next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: 
+https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+487:34  Warning: React Hook useCallback received a function whose dependencies are unknown. Pass an inline function 
+instead.  react-hooks/exhaustive-deps
+576:6  Warning: React Hook useEffect has a missing dependency: 'fetchCategories'. Either include it or remove the 
+dependency array.  react-hooks/exhaustive-deps
+586:6  Warning: React Hook useEffect has a missing dependency: 'fetchCategories'. Either include it or remove the 
+dependency array.  react-hooks/exhaustive-deps
+1084:29  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from 
+`next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: 
+https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/profile/page.jsx
+65:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from 
+`next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: 
+https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/quiz/[id]/page.jsx
+46:6  Warning: React Hook useEffect has a missing dependency: 'timeLeft'. Either include it or remove the dependency 
+array.  react-hooks/exhaustive-deps
+46:7  Warning: React Hook useEffect has a complex expression in the dependency array. Extract it to a separate 
+variable so it can be statically checked.  react-hooks/exhaustive-deps
+455:6  Warning: React Hook useCallback has an unnecessary dependency: 'showExplanation'. Either exclude it or remove 
+the dependency array.  react-hooks/exhaustive-deps
+680:17  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from 
+`next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: 
+https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/school-study/practice/[chapterId]/PracticeClient.jsx
+32:6  Warning: React Hook useMemo has a missing dependency: 'typeOrder'. Either include it or remove the dependency 
+array.  react-hooks/exhaustive-deps
+36:6  Warning: React Hook useMemo has a missing dependency: 'typeOrder'. Either include it or remove the dependency 
+array.  react-hooks/exhaustive-deps
+
+./src/components/engine/SessionLobby.jsx
+96:6  Warning: React Hook useEffect has a missing dependency: 'maxQuestions'. Either include it or remove the 
+dependency array.  react-hooks/exhaustive-deps
+
+./src/components/LazyImage.jsx
+32:35  Warning: The ref value 'imgRef.current' will likely have changed by the time this effect cleanup function runs. 
+If this ref points to a node rendered by React, copy 'imgRef.current' to a variable inside the effect, and use that 
+variable in the cleanup function.  react-hooks/exhaustive-deps
+61:9  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from 
+`next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: 
+https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/QuestionCard.jsx
+77:6  Warning: React Hook useEffect has a missing dependency: 'handleSelect'. Either include it or remove the 
+dependency array.  react-hooks/exhaustive-deps
+204:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from 
+`next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: 
+https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/QuizSuggestions.jsx
+90:19  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from 
+`next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: 
+https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/WelcomePromoPopup.jsx
+101:21  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from 
+`next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: 
+https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/context/QuizContext.jsx
+238:6  Warning: React Hook useCallback has a missing dependency: 'syncProgressToDB'. Either include it or remove the 
+dependency array.  react-hooks/exhaustive-deps
+274:6  Warning: React Hook useCallback has a missing dependency: 'syncProgressToDB'. Either include it or remove the 
+dependency array.  react-hooks/exhaustive-deps
+
+./src/engine/players/QuizPlayer.jsx
+99:6  Warning: React Hook useEffect has a missing dependency: 'handleAnswer'. Either include it or remove the 
+dependency array.  react-hooks/exhaustive-deps
+
+info  - Need to disable some ESLint rules? Learn more here: 
+https://nextjs.org/docs/basic-features/eslint#disabling-rules

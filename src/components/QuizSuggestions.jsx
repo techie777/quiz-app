@@ -4,7 +4,32 @@ import { useMemo, useState } from "react";
 import { useData } from "@/context/DataContext";
 import { useQuiz } from "@/context/QuizContext";
 import ExitConfirmModal from "@/components/ExitConfirmModal";
+import Image from "next/image";
 import styles from "@/styles/QuizSuggestions.module.css";
+
+function SuggestionImage({ src, alt, emoji }) {
+  const [error, setError] = useState(false);
+
+  if (!src || error) {
+    return (
+      <div className={styles.suggestionEmojiFallback}>
+        {emoji || '📚'}
+      </div>
+    );
+  }
+
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      width={300}
+      height={120}
+      className={styles.suggestionImg}
+      onError={() => setError(true)}
+      style={{ objectFit: 'cover' }}
+    />
+  );
+}
 
 export default function QuizSuggestions({ currentCategory }) {
   const { quizzes } = useData();
@@ -86,20 +111,11 @@ export default function QuizSuggestions({ currentCategory }) {
               onClick={(e) => handleQuizClick(e, quiz)}
             >
               <div className={styles.suggestionImage}>
-                {quiz.image ? (
-                  <img
-                    src={quiz.image}
-                    alt={quiz.topic}
-                    className={styles.suggestionImg}
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                      e.currentTarget.nextElementSibling.style.display = "flex";
-                    }}
-                  />
-                ) : null}
-                <div className={styles.suggestionEmojiFallback}>
-                  {quiz.emoji || '📚'}
-                </div>
+                <SuggestionImage 
+                  src={quiz.image} 
+                  alt={quiz.topic} 
+                  emoji={quiz.emoji} 
+                />
               </div>
               
               <div className={styles.suggestionContent}>

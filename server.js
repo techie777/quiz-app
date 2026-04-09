@@ -4,8 +4,18 @@ const next = require('next');
 const { Server } = require('socket.io');
 
 const dev = process.env.NODE_ENV !== 'production';
-const hostname = 'localhost';
-const port = process.env.PORT || 3000;
+const hostname = '0.0.0.0'; // Bind to all interfaces for Render/Production
+const port = parseInt(process.env.PORT || '3000', 10);
+
+// Ensure NextAuth + SEO base URLs match the actual dev port.
+// This prevents Google OAuth callbacks from pointing to localhost:3000 when running on another port.
+if (dev) {
+  const baseUrl = `http://${hostname}:${port}`;
+  process.env.NEXTAUTH_URL = process.env.NEXTAUTH_URL || baseUrl;
+  process.env.NEXTAUTH_URL_INTERNAL = process.env.NEXTAUTH_URL_INTERNAL || baseUrl;
+  process.env.NEXT_PUBLIC_SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || baseUrl;
+}
+
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
@@ -17,7 +27,7 @@ app.prepare()
     const httpServer = createServer(async (req, res) => {
       try {
         const parsedUrl = parse(req.url, true);
-        await handle(req, res, parsedUrl);
+        await handle(req, res);
       } catch (err) {
         console.error('Error occurred handling', req.url, err);
         res.statusCode = 500;
@@ -36,11 +46,17 @@ app.prepare()
         const { sessionId, role, userId, userName } = data;
         
         if (!rooms.has(sessionId)) {
-          rooms.set(sessionId, { 
-              participants: [], 
-              pendingParticipants: [],
-              state: { status: 'LOBBY', type: 'QUIZ' } 
-          });
+            if (role === 'HOST') {
+                rooms.set(sessionId, { 
+                    participants: [], 
+                    pendingParticipants: [],
+                    messages: [],
+                    state: { status: 'LOBBY', type: 'QUIZ', timeLimit: 0 } 
+                });
+            } else {
+                socket.emit('STATE_UPDATE', { action: 'EXPIRED', payload: { status: 'EXPIRED' } });
+                return;
+            }
         }
         
         const room = rooms.get(sessionId);
@@ -121,13 +137,26 @@ app.prepare()
             const pIdx = room.participants.findIndex(p => p.userId === payload.userId);
             if (pIdx !== -1) {
                 const p = room.participants[pIdx];
-                room.participants.splice(pIdx, 1);
-                io.to(p.socketId).emit('STATE_UPDATE', { action: 'DISCONTINUED', payload: { status: 'REJECTED' } });
+                p.status = 'KICKED';
+                p.isOnline = false;
+                io.to(p.socketId).emit('STATE_UPDATE', { action: 'DISCONTINUED', payload: { status: 'KICKED' } });
                 const pSocket = io.sockets.sockets.get(p.socketId);
                 if (pSocket) pSocket.leave(sessionId);
                 io.in(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
-                console.log(`🛑 DISMISSED: ${p.userName}`);
+                console.log(`🛑 KICKED OFF: ${p.userName}`);
             }
+            return;
+        }
+        
+        if (action === 'TERMINATE') {
+            room.state.status = 'TERMINATED';
+            io.in(sessionId).emit('STATE_UPDATE', { action: 'TERMINATED', payload: room.state });
+            setTimeout(() => {
+                if (rooms.has(sessionId) && rooms.get(sessionId).state.status === 'TERMINATED') {
+                    rooms.delete(sessionId);
+                    console.log(`🗑️ Room ${sessionId} purged.`);
+                }
+            }, 30000);
             return;
         }
 
@@ -139,6 +168,43 @@ app.prepare()
         io.in(sessionId).emit('STATE_UPDATE', { action, payload });
       });
 
+      socket.on('SEND_CHAT', (data) => {
+        const { sessionId, userId, userName, text, role } = data;
+        const room = rooms.get(sessionId);
+        if (room) {
+            const msg = { 
+                id: Date.now() + Math.random().toString(36).substr(2, 5),
+                userId, userName, text, role, 
+                timestamp: new Date().toISOString() 
+            };
+            room.messages.push(msg);
+            if (room.messages.length > 50) room.messages.shift();
+            io.in(sessionId).emit('SYNC_CHAT', room.messages);
+        }
+      });
+
+      socket.on('SEND_REACTION', (data) => {
+        const { sessionId, userId, userName, emoji } = data;
+        io.in(sessionId).emit('MISSION_REACTION', { userId, userName, emoji });
+      });
+
+      socket.on('SEND_BROADCAST', (data) => {
+        const { sessionId, text } = data;
+        io.in(sessionId).emit('MISSION_BROADCAST', { text, type: 'PROCLAMATION' });
+      });
+
+      socket.on('UPDATE_STATUS', (data) => {
+        const { sessionId, userId, status } = data;
+        const room = rooms.get(sessionId);
+        if (room && room.participants) {
+            const p = room.participants.find(p => p.userId === userId);
+            if (p) {
+                p.status = status;
+                io.in(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
+            }
+        }
+      });
+
       socket.on('SUBMIT_SCORE', (data) => {
         const { sessionId, userId, score, progress } = data;
         const room = rooms.get(sessionId);
@@ -147,6 +213,8 @@ app.prepare()
             if (p) {
                 p.score = score;
                 p.progress = progress;
+                // If they are submitting score, they are Active
+                if (p.status !== 'ACTIVE') p.status = 'ACTIVE'; 
                 io.in(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
             }
         }
@@ -159,6 +227,7 @@ app.prepare()
             const p = room.participants[idx];
             if (room.state.status === 'ACTIVE') {
                 p.isOnline = false;
+                p.status = 'LEFT';
                 io.in(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
             } else {
                 room.participants.splice(idx, 1);

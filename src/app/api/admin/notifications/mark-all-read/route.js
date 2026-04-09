@@ -1,20 +1,17 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireAdmin } from "@/lib/adminSessionServer";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export async function POST() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.isAdmin) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const admin = await requireAdmin();
+  if (!admin.ok) return NextResponse.json({ error: admin.error }, { status: admin.status });
 
   await prisma.setting.upsert({
-    where: { key: `adminNotifSeen:${session.user.adminId}` },
+    where: { key: `adminNotifSeen:${admin.admin.id}` },
     update: { value: new Date().toISOString() },
-    create: { key: `adminNotifSeen:${session.user.adminId}`, value: new Date().toISOString() },
+    create: { key: `adminNotifSeen:${admin.admin.id}`, value: new Date().toISOString() },
   });
 
   return NextResponse.json({ success: true });

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useQuiz } from "@/context/QuizContext";
 import { playCorrectSound, playWrongSound } from "@/lib/sounds";
 import { shareQuestion } from "@/lib/shareImage";
+import Image from "next/image";
 import styles from "@/styles/QuizEngine.module.css";
 
 export default function QuestionCard({ 
@@ -201,7 +202,17 @@ export default function QuestionCard({
           </div>
         </div>
         {question.image && (
-          <img src={question.image} alt="" className={styles.questionImage} />
+          <div className={styles.imageWrapper}>
+            <Image 
+              src={question.image} 
+              alt={question.text || "Question image"} 
+              width={600}
+              height={300}
+              className={styles.questionImage}
+              style={{ objectFit: 'contain', width: '100%', height: 'auto' }}
+              priority={true}
+            />
+          </div>
         )}
       </div>
 

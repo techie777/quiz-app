@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireAdmin } from "@/lib/adminSessionServer";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -23,10 +22,8 @@ const DAILY_CATEGORIES = [
 ];
 
 export async function POST() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.isAdmin || session.user.role !== "master") {
-    return NextResponse.json({ error: "Master admin only" }, { status: 403 });
-  }
+  const admin = await requireAdmin({ masterOnly: true });
+  if (!admin.ok) return NextResponse.json({ error: admin.error }, { status: admin.status });
 
   const maxSort = await prisma.category.aggregate({ _max: { sortOrder: true } });
   let nextSort = (maxSort._max.sortOrder ?? -1) + 1;
@@ -68,7 +65,7 @@ export async function POST() {
 
   await prisma.adminActivityLog.create({
     data: {
-      adminId: session.user.adminId,
+      adminId: admin.admin.id,
       action: "ensure_daily_categories",
       details: createdOrUpdated.join(", "),
     },

@@ -1,20 +1,17 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireAdmin } from "@/lib/adminSessionServer";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.isAdmin) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const admin = await requireAdmin();
+  if (!admin.ok) return NextResponse.json({ error: admin.error }, { status: admin.status });
 
   const { searchParams } = new URL(request.url);
   const unread = searchParams.get("unread") === "1";
 
-  const isMaster = session.user.role === "master";
+  const isMaster = admin.admin.role === "master";
 
   if (isMaster) {
     const tasks = await prisma.pendingTask.findMany({
@@ -38,14 +35,14 @@ export async function GET(request) {
   }
 
   const seenRow = await prisma.setting.findUnique({
-    where: { key: `adminNotifSeen:${session.user.adminId}` },
+    where: { key: `adminNotifSeen:${admin.admin.id}` },
     select: { value: true },
   });
   const seenAt = seenRow?.value ? new Date(seenRow.value) : new Date(0);
   const validSeenAt = isNaN(seenAt.getTime()) ? new Date(0) : seenAt;
 
   const tasks = await prisma.pendingTask.findMany({
-    where: { adminId: session.user.adminId, status: { in: ["approved", "rejected"] } },
+    where: { adminId: admin.admin.id, status: { in: ["approved", "rejected"] } },
     orderBy: { updatedAt: "desc" },
     take: 200,
   });

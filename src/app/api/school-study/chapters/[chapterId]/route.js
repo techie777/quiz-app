@@ -4,10 +4,14 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ensureSchoolSeed } from "@/lib/schoolSeed";
 import { safeJsonParse } from "@/lib/utils";
+import { enforceRateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request, { params }) {
+  const rl = enforceRateLimit(rateLimitKey(request, "api:school:chapter:get"), { windowMs: 60_000, max: 40 });
+  if (!rl.ok) return rateLimitResponse(rl.retryAfterSeconds);
+
   const session = await getServerSession(authOptions);
   if (!session?.user?.id || session.user.isAdmin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

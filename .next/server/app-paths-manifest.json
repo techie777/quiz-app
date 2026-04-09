@@ -1,4 +1,11 @@
 {
   "/page": "app/page.js",
-  "/live/[sessionId]/page": "app/live/[sessionId]/page.js"
+  "/daily/page": "app/daily/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/categories/route": "app/api/categories/route.js",
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/api/settings/route": "app/api/settings/route.js",
+  "/api/sections/route": "app/api/sections/route.js",
+  "/api/user/profile/route": "app/api/user/profile/route.js",
+  "/api/category-favourites/route": "app/api/category-favourites/route.js"
 }

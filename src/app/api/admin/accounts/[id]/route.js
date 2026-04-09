@@ -1,24 +1,19 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireAdmin } from "@/lib/adminSessionServer";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.isAdmin || session.user.role !== "master") {
-    return NextResponse.json({ error: "Master admin only" }, { status: 403 });
-  }
+  const admin = await requireAdmin({ masterOnly: true });
+  if (!admin.ok) return NextResponse.json({ error: admin.error }, { status: admin.status });
   return NextResponse.json({ error: "Method not allowed" }, { status: 405 });
 }
 
 export async function PUT(request, { params }) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.isAdmin || session.user.role !== "master") {
-    return NextResponse.json({ error: "Master admin only" }, { status: 403 });
-  }
+  const admin = await requireAdmin({ masterOnly: true });
+  if (!admin.ok) return NextResponse.json({ error: admin.error }, { status: admin.status });
   const { id } = params;
   const body = await request.json();
   const data = {};
@@ -98,7 +93,7 @@ export async function PUT(request, { params }) {
   });
   await prisma.adminActivityLog.create({
     data: {
-      adminId: session.user.adminId,
+      adminId: admin.admin.id,
       action: "update_admin",
       details: `Updated ${updated.username}: ${actionDetails.join(", ")}`,
     },
@@ -116,10 +111,8 @@ export async function PUT(request, { params }) {
 
 
 export async function DELETE(request, { params }) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.isAdmin || session.user.role !== "master") {
-    return NextResponse.json({ error: "Master admin only" }, { status: 403 });
-  }
+  const admin = await requireAdmin({ masterOnly: true });
+  if (!admin.ok) return NextResponse.json({ error: admin.error }, { status: admin.status });
   const { id } = params;
   const account = await prisma.adminAccount.findUnique({ where: { id } });
   if (account?.role === "master") {
@@ -129,7 +122,7 @@ export async function DELETE(request, { params }) {
   await prisma.setting.deleteMany({ where: { key: `adminPerms:${id}` } });
 
   await prisma.adminActivityLog.create({
-    data: { adminId: session.user.adminId, action: "delete_admin", details: `Deleted admin: ${account.username}` },
+    data: { adminId: admin.admin.id, action: "delete_admin", details: `Deleted admin: ${account.username}` },
   });
 
   return NextResponse.json({ success: true });

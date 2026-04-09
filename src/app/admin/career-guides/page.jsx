@@ -8,27 +8,56 @@ import toast from "react-hot-toast";
 // --- FULL PAGE EDITOR COMPONENT ---
 function CareerGuideEditor({ initialData, onSave, onCancel }) {
   const isNew = !initialData?.id;
+  const [careerCategories, setCareerCategories] = useState([]);
+  const [loadingCats, setLoadingCats] = useState(false);
   
+  const [editLang, setEditLang] = useState("EN");
   const [formData, setFormData] = useState({
     name: initialData?.name || "", 
+    nameHi: initialData?.nameHi || "",
     slug: initialData?.slug || "", 
     category: initialData?.category || "Government Job", 
+    careerCategoryId: initialData?.careerCategoryId || "",
     description: initialData?.description || "", 
+    descriptionHi: initialData?.descriptionHi || "", 
     icon: initialData?.icon || "🧭", 
     difficulty: initialData?.difficulty || "Medium", 
+    difficultyHi: initialData?.difficultyHi || "", 
     competition: initialData?.competition || "High", 
+    competitionHi: initialData?.competitionHi || "", 
     avgSalary: initialData?.avgSalary || "", 
+    avgSalaryHi: initialData?.avgSalaryHi || "", 
     workType: initialData?.workType || "Field + Office",
+    workTypeHi: initialData?.workTypeHi || "",
     hidden: initialData?.hidden || false
   });
 
   const [sections, setSections] = useState(initialData?.sections || []);
 
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      setLoadingCats(true);
+      try {
+        const res = await fetch("/api/admin/career-categories?includeHidden=1");
+        const data = await res.json();
+        if (mounted && data?.success) setCareerCategories(data.categories || []);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        if (mounted) setLoadingCats(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const addSection = (type) => {
     let defaultContent = "";
     if (type === "LIST" || type === "FAQs") defaultContent = "[]"; 
 
-    setSections([...sections, { title: "New Section", type, content: defaultContent, sortOrder: sections.length + 1 }]);
+    setSections([...sections, { title: "New Section", titleHi: "", type, content: defaultContent, contentHi: defaultContent, sortOrder: sections.length + 1 }]);
   };
 
   const updateSection = (index, field, value) => {
@@ -65,7 +94,7 @@ function CareerGuideEditor({ initialData, onSave, onCancel }) {
   const commitArrayInput = (index, textContent, type) => {
     if (type === "LIST") {
       const arr = textContent.split('\n').filter(s => s.trim() !== "");
-      updateSection(index, "content", JSON.stringify(arr));
+      updateSection(index, editLang === "EN" ? "content" : "contentHi", JSON.stringify(arr));
     }
   };
 
@@ -88,8 +117,27 @@ function CareerGuideEditor({ initialData, onSave, onCancel }) {
     <div className="glass-card" style={{ padding: '32px', marginBottom: '24px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <h2 style={{ fontSize: '24px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-          {isNew ? 'Create New Career Guide' : `Editing Career: ${formData.name}`}
+          {isNew ? 'Create New Career Guide' : `Editing Career: ${formData.name || formData.nameHi}`}
         </h2>
+        
+        {/* Language Switcher */}
+        <div style={{ display: 'flex', background: 'var(--bg-secondary)', padding: '4px', borderRadius: '8px' }}>
+          <button 
+            type="button" 
+            onClick={() => setEditLang("EN")} 
+            style={{ padding: '6px 16px', borderRadius: '6px', border: 'none', background: editLang === "EN" ? '#4361ee' : 'transparent', color: editLang === "EN" ? 'white' : 'var(--text-primary)', cursor: 'pointer', fontWeight: 600, transition: '0.2s' }}
+          >
+            English
+          </button>
+          <button 
+            type="button" 
+            onClick={() => setEditLang("HI")} 
+            style={{ padding: '6px 16px', borderRadius: '6px', border: 'none', background: editLang === "HI" ? '#4361ee' : 'transparent', color: editLang === "HI" ? 'white' : 'var(--text-primary)', cursor: 'pointer', fontWeight: 600, transition: '0.2s' }}
+          >
+            Hindi
+          </button>
+        </div>
+
         <div style={{ display: 'flex', gap: '12px' }}>
           <button className="btn-secondary" onClick={onCancel}>🔙 Back to List</button>
           <button className="btn-primary" onClick={handleSubmit}>💾 Save Configuration</button>
@@ -104,7 +152,7 @@ function CareerGuideEditor({ initialData, onSave, onCancel }) {
           
           <div style={{ marginBottom: '16px' }}>
             <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, marginBottom: '8px' }}>Guide Name (H1)</label>
-            <input required type="text" className="auth-input" style={{ width: '100%' }} value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="e.g. IAS Officer"/>
+            <input required type="text" className="auth-input" style={{ width: '100%' }} value={editLang === "EN" ? formData.name : formData.nameHi} onChange={e => editLang === "EN" ? setFormData({...formData, name: e.target.value}) : setFormData({...formData, nameHi: e.target.value})} placeholder={editLang === "EN" ? "e.g. IAS Officer" : "e.g. आईएएस अधिकारी"}/>
           </div>
           <div style={{ marginBottom: '16px' }}>
             <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, marginBottom: '8px' }}>URL Slug</label>
@@ -118,23 +166,46 @@ function CareerGuideEditor({ initialData, onSave, onCancel }) {
             <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, marginBottom: '8px' }}>Category</label>
             <input type="text" className="auth-input" style={{ width: '100%' }} value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}/>
           </div>
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, marginBottom: '8px' }}>Career Category (Hierarchy)</label>
+            <select
+              className="auth-input"
+              style={{ width: "100%" }}
+              value={formData.careerCategoryId || ""}
+              onChange={(e) => setFormData({ ...formData, careerCategoryId: e.target.value })}
+              disabled={loadingCats}
+            >
+              <option value="">None</option>
+              {careerCategories
+                .slice()
+                .sort((a, b) => (a.depth ?? 0) - (b.depth ?? 0) || (a.pathKey || "").localeCompare(b.pathKey || ""))
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {(Array.isArray(c.pathSlugs) ? c.pathSlugs.join(" > ") : c.name) || c.name}
+                  </option>
+                ))}
+            </select>
+            <p style={{ margin: "6px 0 0 0", fontSize: 12, color: "var(--text-muted)" }}>
+              Keep the old category string above for safe migration.
+            </p>
+          </div>
 
           <h3 style={{ fontSize: '18px', fontWeight: 600, margin: '30px 0 20px 0', borderBottom: '1px solid var(--border)', paddingBottom: '10px' }}>At a Glance Stats</h3>
           <div style={{ marginBottom: '16px' }}>
             <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, marginBottom: '8px' }}>Difficulty</label>
-            <input type="text" className="auth-input" style={{ width: '100%' }} value={formData.difficulty} onChange={e => setFormData({...formData, difficulty: e.target.value})}/>
+            <input type="text" className="auth-input" style={{ width: '100%' }} value={editLang === "EN" ? formData.difficulty : formData.difficultyHi} onChange={e => editLang === "EN" ? setFormData({...formData, difficulty: e.target.value}) : setFormData({...formData, difficultyHi: e.target.value})}/>
           </div>
           <div style={{ marginBottom: '16px' }}>
             <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, marginBottom: '8px' }}>Competition</label>
-            <input type="text" className="auth-input" style={{ width: '100%' }} value={formData.competition} onChange={e => setFormData({...formData, competition: e.target.value})}/>
+            <input type="text" className="auth-input" style={{ width: '100%' }} value={editLang === "EN" ? formData.competition : formData.competitionHi} onChange={e => editLang === "EN" ? setFormData({...formData, competition: e.target.value}) : setFormData({...formData, competitionHi: e.target.value})}/>
           </div>
           <div style={{ marginBottom: '16px' }}>
             <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, marginBottom: '8px' }}>Average Salary</label>
-            <input type="text" className="auth-input" style={{ width: '100%' }} value={formData.avgSalary} onChange={e => setFormData({...formData, avgSalary: e.target.value})}/>
+            <input type="text" className="auth-input" style={{ width: '100%' }} value={editLang === "EN" ? formData.avgSalary : formData.avgSalaryHi} onChange={e => editLang === "EN" ? setFormData({...formData, avgSalary: e.target.value}) : setFormData({...formData, avgSalaryHi: e.target.value})}/>
           </div>
           <div style={{ marginBottom: '16px' }}>
             <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, marginBottom: '8px' }}>Work Type</label>
-            <input type="text" className="auth-input" style={{ width: '100%' }} value={formData.workType} onChange={e => setFormData({...formData, workType: e.target.value})}/>
+            <input type="text" className="auth-input" style={{ width: '100%' }} value={editLang === "EN" ? formData.workType : formData.workTypeHi} onChange={e => editLang === "EN" ? setFormData({...formData, workType: e.target.value}) : setFormData({...formData, workTypeHi: e.target.value})}/>
           </div>
 
           <div style={{ marginTop: '24px' }}>
@@ -149,7 +220,7 @@ function CareerGuideEditor({ initialData, onSave, onCancel }) {
         <div>
            <div style={{ marginBottom: '24px' }}>
             <label style={{ display: 'block', fontSize: '16px', fontWeight: 600, marginBottom: '8px' }}>Hero Description (SEO & Intro)</label>
-            <textarea required className="auth-input" style={{ width: '100%', resize: 'vertical', minHeight: '100px', fontSize: '15px', lineHeight: '1.5' }} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Detailed top-level description of this career path..."/>
+            <textarea required className="auth-input" style={{ width: '100%', resize: 'vertical', minHeight: '100px', fontSize: '15px', lineHeight: '1.5' }} value={editLang === "EN" ? formData.description : formData.descriptionHi} onChange={e => editLang === "EN" ? setFormData({...formData, description: e.target.value}) : setFormData({...formData, descriptionHi: e.target.value})} placeholder="Detailed top-level description of this career path..."/>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '40px 0 20px 0' }}>
@@ -173,7 +244,7 @@ function CareerGuideEditor({ initialData, onSave, onCancel }) {
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flex: 1 }}>
                        <span style={{ fontWeight: 700, color: '#4361ee', background: '#e0e7ff', padding: '4px 8px', borderRadius: '4px', fontSize: '12px' }}>{section.type}</span>
-                       <input type="text" className="auth-input" value={section.title} onChange={(e) => updateSection(idx, 'title', e.target.value)} style={{ flex: 1, padding: '8px', fontSize: '15px', fontWeight: 600 }} placeholder="Section Title (e.g. Roles & Responsibilities)" />
+                       <input type="text" className="auth-input" value={editLang === "EN" ? section.title : (section.titleHi || "")} onChange={(e) => updateSection(idx, editLang === "EN" ? 'title' : 'titleHi', e.target.value)} style={{ flex: 1, padding: '8px', fontSize: '15px', fontWeight: 600 }} placeholder="Section Title (e.g. Roles & Responsibilities)" />
                     </div>
                     <div style={{ display: 'flex', gap: '4px', marginLeft: '12px' }}>
                        <button type="button" onClick={() => moveSection(idx, -1)} disabled={idx===0} style={{ padding: '6px 10px', background: 'var(--bg-secondary)', border: 'none', cursor: idx===0 ? 'not-allowed' : 'pointer', borderRadius: '4px' }}>↑</button>
@@ -183,20 +254,20 @@ function CareerGuideEditor({ initialData, onSave, onCancel }) {
                   </div>
 
                   {section.type === "TEXT" && (
-                     <textarea className="auth-input" value={section.content} onChange={(e) => updateSection(idx, 'content', e.target.value)} style={{ width: '100%', minHeight: '120px', resize: 'vertical', marginTop: '12px' }} placeholder="Write your paragraph(s) here. Standard newlines are respected." />
+                     <textarea className="auth-input" value={editLang === "EN" ? section.content : (section.contentHi || "")} onChange={(e) => updateSection(idx, editLang === "EN" ? 'content' : 'contentHi', e.target.value)} style={{ width: '100%', minHeight: '120px', resize: 'vertical', marginTop: '12px' }} placeholder="Write your paragraph(s) here. Standard newlines are respected." />
                   )}
 
                   {section.type === "LIST" && (
                     <div style={{ marginTop: '12px' }}>
                       <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>Enter list items below. Every new line creates a new bullet point.</p>
-                      <textarea className="auth-input" value={parseArrayInput(section.content)} onChange={(e) => commitArrayInput(idx, e.target.value, "LIST")} style={{ width: '100%', minHeight: '120px', resize: 'vertical' }} placeholder="Bullet 1&#10;Bullet 2&#10;Bullet 3" />
+                      <textarea className="auth-input" value={parseArrayInput(editLang === "EN" ? section.content : (section.contentHi || "[]"))} onChange={(e) => commitArrayInput(idx, e.target.value, "LIST")} style={{ width: '100%', minHeight: '120px', resize: 'vertical' }} placeholder="Bullet 1&#10;Bullet 2&#10;Bullet 3" />
                     </div>
                   )}
 
                   {section.type === "FAQs" && (
                     <div style={{ marginTop: '12px' }}>
                       <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>Strict JSON Array format required. E.g. [{`{"question": "Q1", "answer": "A1"}`}]</p>
-                      <textarea className="auth-input" value={section.content} onChange={(e) => updateSection(idx, 'content', e.target.value)} style={{ width: '100%', minHeight: '120px', resize: 'vertical', fontFamily: 'monospace', fontSize: '13px' }} placeholder='[{"question": "How?", "answer": "Like this."}]' />
+                      <textarea className="auth-input" value={editLang === "EN" ? section.content : (section.contentHi || "[]")} onChange={(e) => updateSection(idx, editLang === "EN" ? 'content' : 'contentHi', e.target.value)} style={{ width: '100%', minHeight: '120px', resize: 'vertical', fontFamily: 'monospace', fontSize: '13px' }} placeholder='[{"question": "How?", "answer": "Like this."}]' />
                     </div>
                   )}
 

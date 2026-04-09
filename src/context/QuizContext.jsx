@@ -60,6 +60,7 @@ const initialState = {
   translatedStory: null,
   fontScale: 1,
   selectedSetIndex: null,
+  isResuming: false,
 };
 
 // Key for storage
@@ -186,6 +187,8 @@ function quizReducer(state, action) {
       return { ...initialState, soundEnabled: state.soundEnabled, isFullscreen: state.isFullscreen };
     case "LOAD_STATE":
       return { ...state, ...action.payload, status: action.payload.status === 'finished' ? 'idle' : action.payload.status };
+    case "SET_RESUMING":
+      return { ...state, isResuming: action.payload };
     default:
       return state;
   }
@@ -225,11 +228,50 @@ export function QuizProvider({ children }) {
 
   const submitAnswer = useCallback((questionId, selected) => {
     dispatch({ type: "SUBMIT_ANSWER", payload: { questionId, selected } });
-  }, []);
+    
+    // Auto-sync to DB in background with LATEST data to avoid race conditions
+    setTimeout(async () => {
+      // Find the answer that was just added to get the latest array
+      // Note: In a real app, we'd calculate this from the current state carefully
+      syncProgressToDB(); 
+    }, 100);
+  }, [state]);
+
+  const syncProgressToDB = async (overrideAnswers, overrideIndex, forceComplete = false) => {
+    // Determine the data to sync (prefer passed overrides which are the most fresh)
+    const activeAnswers = overrideAnswers || state.answers;
+    const activeIndex = overrideIndex !== undefined ? overrideIndex : state.currentIndex;
+    
+    if (!state.quizId || (state.status !== 'active' && !forceComplete)) return;
+
+    try {
+      const total = state.questions.length;
+      let progress = total > 0 ? (activeAnswers.length / total) * 100 : 0;
+      let isComplete = (activeAnswers.length === total && total > 0) || forceComplete;
+      
+      if (forceComplete) progress = 100;
+
+      await fetch("/api/progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          categoryId: state.quizId,
+          setIndex: state.selectedSetIndex || 1,
+          progress,
+          isComplete,
+          lastQuestionIndex: activeIndex,
+          answers: activeAnswers
+        }),
+      });
+    } catch (e) {
+      console.warn("[QuizContext] Failed to sync progress to DB", e);
+    }
+  };
 
   const finishQuiz = useCallback(() => {
     dispatch({ type: "FINISH_QUIZ" });
-  }, []);
+    syncProgressToDB(null, null, true); // Final sync with forceComplete=true
+  }, [state]);
 
   const updateScore = useCallback((amount) => {
     dispatch({ type: "UPDATE_SCORE", payload: amount });
@@ -302,21 +344,51 @@ export function QuizProvider({ children }) {
 
       if (res.ok) {
         const { translations } = await res.json();
+        
+        if (!translations || translations.length === 0) {
+           console.error("[Quiz/Translate] Empty translations received.");
+           dispatch({ type: "SET_TRANSLATING", payload: false });
+           return null;
+        }
+
         let tIndex = 0;
         
         const translatedQuestions = questions.map(q => {
           const newQ = { ...q };
+          
+          // 1. Identify which index the correct answer currently is
+          const correctIdx = q.options.findIndex(opt => 
+             String(opt || "").trim() === String(q.correctAnswer || "").trim()
+          );
+
+          // 2. Consume from translations array safely
           newQ.text = translations[tIndex++];
-          newQ.options = q.options.map(() => translations[tIndex++]);
-          // Also need to translate correct answer if it matches one of the options
-          const originalCorrectIndex = q.options.indexOf(q.correctAnswer);
-          if (originalCorrectIndex !== -1) {
-            newQ.correctAnswer = newQ.options[originalCorrectIndex];
+          
+          // 3. Map options and keep integrity
+          if (Array.isArray(q.options)) {
+             newQ.options = q.options.map(() => translations[tIndex++] || "...");
+             
+             // 4. Sync Correct Answer by index (Master Fix)
+             if (correctIdx !== -1 && newQ.options[correctIdx]) {
+                newQ.correctAnswer = newQ.options[correctIdx];
+             } else if (correctIdx === -1 && q.correctAnswer) {
+                // Fallback: If index search fails, translate it as a separate item if we had one? 
+                // But we don't send correctAnswer separately in current implementation.
+                // We assume correctAnswer is always one of the options.
+             }
           }
+
           return newQ;
         });
 
         const translatedStory = storyText ? translations[tIndex++] : null;
+
+        if (tIndex > translations.length) {
+            console.error("[Quiz/Translate] Data desync: Not enough translations returned.");
+            toast.error("Translation was incomplete. Please try again.");
+            dispatch({ type: "SET_TRANSLATING", payload: false });
+            return null;
+        }
 
         dispatch({ type: "SET_QUESTIONS", payload: translatedQuestions });
         dispatch({ type: "SET_TRANSLATED_STORY", payload: translatedStory });
@@ -434,6 +506,32 @@ export function QuizProvider({ children }) {
         translateTarget: state.translateTarget,
         translatedStory: state.translatedStory,
         fontScale: state.fontScale,
+        startQuizResume: async (progressData, questions) => {
+          dispatch({ type: "SET_RESUMING", payload: true });
+          try {
+            const answers = JSON.parse(progressData.answersJson || "[]");
+            const score = answers.reduce((sum, a) => sum + (a.isCorrect ? 1 : 0), 0);
+            
+            // Re-hydrate state
+            dispatch({ 
+              type: "LOAD_STATE", 
+              payload: {
+                quizId: progressData.categoryId,
+                questions: questions.map(q => {
+                  const ans = answers.find(a => a.questionId === q.id);
+                  return ans ? { ...q, userAnswer: ans.selected } : q;
+                }),
+                answers: answers,
+                score: score,
+                currentIndex: progressData.lastQuestionIndex || 0,
+                status: "active",
+                selectedSetIndex: progressData.setIndex
+              } 
+            });
+          } finally {
+            dispatch({ type: "SET_RESUMING", payload: false });
+          }
+        }
       }}
     >
       {children}

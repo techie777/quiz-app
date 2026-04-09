@@ -42,11 +42,30 @@ export async function ensureSchoolSeed() {
                         options: "[]",
                         answer: "नई दिल्ली",
                       };
+                      const match = {
+                        type: "match_column",
+                        prompt: `(${chapterTitle}) मिलान करें: सही जोड़ी बनाएं।`,
+                        options: JSON.stringify({
+                          left: [
+                            { id: "l1", text: "भारत" },
+                            { id: "l2", text: "फ्रांस" },
+                          ],
+                          right: [
+                            { id: "r1", text: "नई दिल्ली" },
+                            { id: "r2", text: "पेरिस" },
+                          ],
+                          pairs: [
+                            { leftId: "l1", rightId: "r1" },
+                            { leftId: "l2", rightId: "r2" },
+                          ],
+                        }),
+                        answer: "[]",
+                      };
                       return {
                         title: chapterTitle,
                         sortOrder: idx,
                         questions: {
-                          create: [mcq, tf, fib],
+                          create: [mcq, tf, fib, match],
                         },
                       };
                     }),

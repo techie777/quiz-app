@@ -20,12 +20,16 @@ model User {
   nickname      String?
   avatar        String?
   pin           String?
+  sessionVersion Int        @default(0)
+  lastLoginAt    DateTime?
   accounts      Account[]
   favourites    Favourite[]
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
   schoolProgress SchoolProgress[]
   chapterAttempts ChapterAttempt[]
+  quizProgress    UserProgress[]
+  mockAttempts    MockAttempt[]
 }
 
 model VerificationToken {
@@ -82,6 +86,8 @@ model Category {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  progress  UserProgress[]
 }
 
 model Question {
@@ -99,6 +105,28 @@ model Question {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model UserProgress {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String   @db.ObjectId
+  categoryId        String   @db.ObjectId
+  setIndex          Int      // 1-indexed (matching CategorySetsPage logic)
+  
+  progress          Float    @default(0) // 0-100 percentage
+  isComplete        Boolean  @default(false)
+  
+  // Resumption Data
+  lastQuestionIndex Int      @default(0)
+  answersJson       String   @default("[]") // Stringified answers array for restoration
+  
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@unique([userId, categoryId, setIndex])
 }
 
 // ── User Features ──
@@ -353,13 +381,21 @@ model CareerGuide {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   slug        String   @unique
   name        String
+  nameHi      String?
   category    String   @default("Government Job")
   description String
+  descriptionHi String?
   icon        String   @default("🧭")
   difficulty  String   @default("Medium")
+  difficultyHi String?
   competition String   @default("High")
+  competitionHi String?
   avgSalary   String   @default("")
+  avgSalaryHi String?
   workType    String   @default("Field + Office")
+  workTypeHi  String?
+  careerCategoryId String? @db.ObjectId
+  careerCategory   CareerCategory? @relation(fields: [careerCategoryId], references: [id], onDelete: SetNull)
   
   hidden      Boolean  @default(false)
   sortOrder   Int      @default(0)
@@ -370,14 +406,39 @@ model CareerGuide {
   updatedAt   DateTime @updatedAt
 }
 
+model CareerCategory {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  slug      String @unique
+  hidden    Boolean @default(false)
+  sortOrder Int @default(0)
+
+  parentId String? @db.ObjectId
+  parent   CareerCategory? @relation("CareerCategoryTree", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children CareerCategory[] @relation("CareerCategoryTree")
+
+  // Materialized path for fast breadcrumbs + category landing pages
+  pathIds   String[] // ancestor ids including self
+  pathSlugs String[] // ancestor slugs including self
+  pathKey   String   @unique // pathSlugs joined by "/"
+  depth     Int      @default(0)
+
+  guides CareerGuide[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model CareerSection {
   id            String      @id @default(auto()) @map("_id") @db.ObjectId
   careerGuideId String      @db.ObjectId
   careerGuide   CareerGuide @relation(fields: [careerGuideId], references: [id], onDelete: Cascade)
   
   title         String
+  titleHi       String?
   type          String      @default("TEXT") // TEXT, LIST, FAQs
   content       String      // Stores JSON depending on type
+  contentHi     String?
   sortOrder     Int         @default(0)
 
   createdAt     DateTime    @default(now())
@@ -396,4 +457,113 @@ model ChapterAttempt {
   
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   chapter    SchoolChapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+}
+// ── Mock Test System ──
+
+model MockExam {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  name        String      @unique
+  slug        String      @unique
+  emoji       String      @default("📝")
+  description String      @default("")
+  sortOrder   Int         @default(0)
+  hidden      Boolean     @default(false)
+  image       String?
+
+  papers      MockPaper[]
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model MockPaper {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  examId          String         @db.ObjectId
+  exam            MockExam       @relation(fields: [examId], references: [id], onDelete: Cascade)
+  
+  title           String
+  slug            String         @unique
+  timeLimit       Int            @default(60) // In minutes
+  totalMarks      Int            @default(100)
+  negativeMarking Float          @default(0.25)
+  positiveMarking Float          @default(1.0)
+  
+  instructionType String         @default("TCS") // UI layout type
+  showSolutions   Boolean        @default(false) // Controlled by admin
+  isLive          Boolean        @default(false)
+  
+  sections        MockSection[]
+  questions       MockQuestion[]
+  attempts        MockAttempt[]
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model MockSection {
+  id        String         @id @default(auto()) @map("_id") @db.ObjectId
+  paperId   String         @db.ObjectId
+  paper     MockPaper      @relation(fields: [paperId], references: [id], onDelete: Cascade)
+  
+  name      String
+  order     Int            @default(0)
+  questions MockQuestion[]
+
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+}
+
+model MockQuestion {
+  id            String       @id @default(auto()) @map("_id") @db.ObjectId
+  paperId       String       @db.ObjectId
+  paper         MockPaper    @relation(fields: [paperId], references: [id], onDelete: Cascade)
+  
+  sectionId     String?      @db.ObjectId
+  section       MockSection? @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+  
+  // Multilingual content
+  text          String
+  textHi        String?
+  
+  // JSON array of strings
+  options       String       @default("[]")
+  optionsHi     String?      @default("[]")
+  
+  answer        Int          // 0-3 index
+  explanation   String?
+  explanationHi String?
+  image         String?
+  
+  type          String       @default("MCQ") // MCQ, SUBJECTIVE
+  difficulty    String       @default("Medium")
+  
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model MockAttempt {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String    @db.ObjectId
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  paperId       String    @db.ObjectId
+  paper         MockPaper @relation(fields: [paperId], references: [id], onDelete: Cascade)
+  
+  // JSON object: { questionId: { selectedOption, timestamp, status } }
+  // Status: ANSWERED, MARKED, NOT_VISITED, NOT_ANSWERED, MARKED_AND_ANSWERED
+  answersJson   String    @default("{}")
+  
+  status        String    @default("IN_PROGRESS") // IN_PROGRESS, COMPLETED, SUSPENDED
+  timeLeft      Int       // Seconds remaining
+  
+  score         Float     @default(0)
+  correctCount  Int       @default(0)
+  wrongCount    Int       @default(0)
+  attemptedCount Int      @default(0)
+  
+  startedAt     DateTime  @default(now())
+  completedAt   DateTime?
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([userId, paperId, startedAt]) // Allow multiple attempts but track each
 }

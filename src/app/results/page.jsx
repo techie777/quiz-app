@@ -24,6 +24,7 @@ export default function ResultPage() {
   const [confetti, setConfetti] = useState([]);
   const [showPostQuizPopup, setShowPostQuizPopup] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showAllQuizzes, setShowAllQuizzes] = useState(false);
 
   const category = useMemo(() => {
     return (quizzes || []).find((q) => q.id === quizId);
@@ -32,13 +33,19 @@ export default function ResultPage() {
   const filteredQuizzes = useMemo(() => {
     if (!quizzes || !Array.isArray(quizzes)) return [];
     const validQuizzes = quizzes.filter(q => q && q.topic && !q.hidden);
-    if (!searchQuery) return validQuizzes.slice(0, 10);
+    
+    // If showAllQuizzes is false, and no search query, show only first 6 recommendations
+    // If search query is present, search across all valid quizzes
+    if (!showAllQuizzes && !searchQuery) {
+      return validQuizzes.slice(0, 6);
+    }
+    
     const query = searchQuery.toLowerCase();
     return validQuizzes.filter(q => 
       (q.topic && q.topic.toLowerCase().includes(query)) ||
       (q.description && q.description.toLowerCase().includes(query))
-    ).slice(0, 10);
-  }, [quizzes, searchQuery]);
+    ).slice(0, showAllQuizzes ? 50 : 10);
+  }, [quizzes, searchQuery, showAllQuizzes]);
 
   // Show suggestions after 2.5 seconds
   useEffect(() => {
@@ -278,15 +285,21 @@ export default function ResultPage() {
             
             <div className={styles.popupHeader}>
               <h2 className={styles.popupTitle}>🎉 Great Job! What&apos;s Next?</h2>
-              <div className={styles.searchBar}>
-                <input 
-                  type="text" 
-                  placeholder="Search other quizzes..." 
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className={styles.searchInput}
-                />
-              </div>
+               <div className={styles.searchBar}>
+                 <input 
+                   type="text" 
+                   placeholder="Search other quizzes..." 
+                   value={searchQuery}
+                   onChange={(e) => setSearchQuery(e.target.value)}
+                   className={styles.searchInput}
+                 />
+                 <button 
+                   className={`${styles.viewAllBtn} ${showAllQuizzes ? styles.active : ""}`}
+                   onClick={() => setShowAllQuizzes(!showAllQuizzes)}
+                 >
+                   {showAllQuizzes ? "Showing All" : "View All"}
+                 </button>
+               </div>
             </div>
 
             <div className={styles.popupContent}>
@@ -300,7 +313,9 @@ export default function ResultPage() {
               )}
 
               <div className={styles.suggestionsList}>
-                <h3 className={styles.suggestionsLabel}>Recommended for you:</h3>
+                 <h3 className={styles.suggestionsLabel}>
+                   {showAllQuizzes ? "Explore All Categories:" : "Recommended for you:"}
+                 </h3>
                 <div className={styles.miniSuggestionsGrid}>
                   {filteredQuizzes.map(quiz => (
                     <div 

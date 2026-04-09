@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireAdmin } from "@/lib/adminSessionServer";
 import { prisma } from "@/lib/prisma";
 import { safeJsonParse } from "@/lib/utils";
 
@@ -40,18 +39,10 @@ async function ensureMigrated() {
   await prisma.setting.delete({ where: { key: "currentAffairs" } }).catch(() => {});
 }
 
-function requireMaster(session) {
-  return !!session?.user?.isAdmin && session.user.role === "master";
-}
-
-function requireAnyAdmin(session) {
-  return !!session?.user?.isAdmin;
-}
-
-function hasCurrentAffairsAccess(session) {
-  if (!requireAnyAdmin(session)) return false;
-  if (session.user.role === "master") return true;
-  const raw = session.user.permissions;
+function hasCurrentAffairsAccess(admin) {
+  if (!admin) return false;
+  if (admin.role === "master") return true;
+  const raw = admin.permissions;
   if (raw && typeof raw === "object") return raw.currentAffairs !== false;
   if (typeof raw !== "string" || !raw.trim()) return true;
   try {
@@ -63,8 +54,9 @@ function hasCurrentAffairsAccess(session) {
 }
 
 export async function GET(request) {
-  const session = await getServerSession(authOptions);
-  if (!hasCurrentAffairsAccess(session)) {
+  const admin = await requireAdmin();
+  if (!admin.ok) return NextResponse.json({ error: admin.error }, { status: admin.status });
+  if (!hasCurrentAffairsAccess(admin.admin)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -106,10 +98,8 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-  const session = await getServerSession(authOptions);
-  if (!requireMaster(session)) {
-    return NextResponse.json({ error: "Master admin only" }, { status: 403 });
-  }
+  const admin = await requireAdmin({ masterOnly: true });
+  if (!admin.ok) return NextResponse.json({ error: admin.error }, { status: admin.status });
 
   const body = await request.json().catch(() => ({}));
   const date = normalizeString(body?.date);
@@ -131,7 +121,7 @@ export async function POST(request) {
 
   await prisma.adminActivityLog.create({
     data: {
-      adminId: session.user.adminId,
+      adminId: admin.admin.id,
       action: "current_affairs_create",
       details: `${date} ${heading}`,
     },

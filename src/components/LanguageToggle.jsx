@@ -1,15 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import styles from "./LanguageToggle.module.css";
 
 export default function LanguageToggle() {
-  const [isHindi, setIsHindi] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const isHindi = searchParams.get("lang") === "hi";
 
   const toggleLanguage = () => {
-    setIsHindi(!isHindi);
-    // In a real app, this would update a global context or i18n store
-    // For now, it just toggles the UI button
+    const newLang = isHindi ? "en" : "hi";
+    
+    // Create a new URLSearchParams instance and update 'lang'
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("lang", newLang);
+    
+    const newUrl = `${pathname}?${params.toString()}`;
+    router.push(newUrl, { scroll: false });
+    
+    // Fallback force-refresh if soft navigation fails to trigger SC update in custom server context
+    setTimeout(() => {
+      const currentParams = new URLSearchParams(window.location.search);
+      if (currentParams.get("lang") !== newLang) {
+        window.location.href = newUrl;
+      }
+    }, 300);
   };
 
   return (

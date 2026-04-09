@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireAdmin } from "@/lib/adminSessionServer";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -9,15 +8,9 @@ function normalizeString(v) {
   return String(v || "").trim();
 }
 
-function requireMaster(session) {
-  return !!session?.user?.isAdmin && session.user.role === "master";
-}
-
 export async function POST(request) {
-  const session = await getServerSession(authOptions);
-  if (!requireMaster(session)) {
-    return NextResponse.json({ error: "Master admin only" }, { status: 403 });
-  }
+  const admin = await requireAdmin({ masterOnly: true });
+  if (!admin.ok) return NextResponse.json({ error: admin.error }, { status: admin.status });
 
   const body = await request.json().catch(() => ({}));
   const date = normalizeString(body?.date);
@@ -63,7 +56,7 @@ export async function POST(request) {
 
   await prisma.adminActivityLog.create({
     data: {
-      adminId: session.user.adminId,
+      adminId: admin.admin.id,
       action: "current_affairs_bulk_upload",
       details: `Uploaded ${createdItems.length} items for ${date} in ${category}`,
     },

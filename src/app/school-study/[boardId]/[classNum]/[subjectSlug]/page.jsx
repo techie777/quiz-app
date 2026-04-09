@@ -2,9 +2,9 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { generateMetaTags } from "@/lib/seo";
 import styles from "@/styles/SchoolStudy.module.css";
+import LiveStudyButton from "@/components/engine/LiveStudyButton";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import LiveStudyButton from "@/components/engine/LiveStudyButton";
 
 export async function generateMetadata({ params }) {
   const { boardId, classNum, subjectSlug } = params;
@@ -53,6 +53,20 @@ export default async function SubjectChaptersPage({ params }) {
 
   if (!subject) return <div className={styles.empty}>Subject not found</div>;
 
+  const progressRows = session?.user?.id
+    ? await prisma.schoolProgress.findMany({
+        where: { userId: session.user.id, chapter: { subjectId: subject.id } },
+        select: { chapterId: true, attempts: true, bestScore: true },
+      })
+    : [];
+  const progressByChapter = new Map(progressRows.map((p) => [p.chapterId, p]));
+  const questionCounts = await prisma.schoolQuestion.groupBy({
+    by: ["chapterId"],
+    where: { chapter: { subjectId: subject.id } },
+    _count: { _all: true },
+  });
+  const qCountByChapter = new Map(questionCounts.map((r) => [r.chapterId, r._count._all]));
+
   return (
     <div className={styles.page}>
       <div className={styles.header}>
@@ -80,33 +94,44 @@ export default async function SubjectChaptersPage({ params }) {
 
       <div className={styles.list}>
         {subject.chapters.map((ch, idx) => {
-          const isFree = idx < 2; // Chapter 1 & 2 are free
-          const needsLogin = !isFree && !session;
-          
+          const totalQ = qCountByChapter.get(ch.id) || 0;
+          const p = progressByChapter.get(ch.id) || null;
+          const best = p?.bestScore || 0;
+          const attempts = p?.attempts || 0;
+          const pct = totalQ > 0 ? Math.round((best / totalQ) * 100) : 0;
+          const completed = totalQ > 0 && best >= totalQ;
+          const status = attempts === 0 ? "Not started" : completed ? "Completed" : "In progress";
+          const statusTone = attempts === 0 ? "warn" : completed ? "good" : "info";
+
           return (
             <Link 
               key={ch.id} 
-              href={needsLogin ? `/signin?callbackUrl=${encodeURIComponent(`/school-study/practice/${ch.id}`)}` : `/school-study/practice/${ch.id}`}
+              href={`/school-study/${subject.class.board.slug}/${classNum}/${subject.slug}/${ch.id}`}
               className={styles.row}
               style={{ textDecoration: 'none' }}
             >
               <div className={styles.rowInfo}>
                 <div className={styles.emoji}>
-                  {idx + 1}
+                  {completed ? "✓" : idx + 1}
                 </div>
                 <div>
                   <div className={styles.name}>{ch.title.includes('Chapter') ? ch.title : `Chapter ${idx + 1}: ${ch.title}`}</div>
-                  <div className={styles.desc}>Analyze and practice key concepts of this unit.</div>
+                  <div className={styles.desc}>
+                    {totalQ} questions • {status} • {pct}% complete
+                  </div>
                 </div>
               </div>
               <div className={styles.rowMeta}>
-                {isFree ? (
-                  <span className={styles.pill} style={{ color: '#16a34a', background: 'rgba(22, 163, 74, 0.1)', border: '1px solid rgba(22, 163, 74, 0.2)' }}>FREE</span>
-                ) : needsLogin ? (
-                  <span className={styles.pill} style={{ color: '#4361ee', background: 'rgba(67, 97, 238, 0.1)', border: '1px solid rgba(67, 97, 238, 0.2)' }}>LOCKED</span>
+                {attempts === 0 ? (
+                  <span className={`${styles.pill} ${styles.pillWarn}`}>Not started</span>
+                ) : completed ? (
+                  <span className={`${styles.pill} ${styles.pillGood}`}>Completed</span>
                 ) : (
-                  <span className={styles.pill} style={{ color: 'var(--text-secondary)', background: 'var(--bg-secondary)' }}>UNLOCKED</span>
+                  <span className={`${styles.pill} ${styles.pillInfo}`}>In progress</span>
                 )}
+                <span className={styles.pill} style={{ background: "var(--bg-secondary)" }}>
+                  {pct}%
+                </span>
                 <span className="btn-secondary" style={{ padding: '8px 16px', borderRadius: '12px' }}>Start ➔</span>
               </div>
             </Link>

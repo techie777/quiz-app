@@ -448,10 +448,12 @@
 
 .searchBar {
   width: 100%;
+  display: flex;
+  gap: 8px;
 }
 
 .searchInput {
-  width: 100%;
+  flex: 1;
   padding: 12px 16px;
   border-radius: 12px;
   border: 1px solid var(--card-border);
@@ -459,6 +461,32 @@
   color: var(--text-primary);
   font-size: 1rem;
   transition: all 0.2s ease;
+}
+
+.viewAllBtn {
+  flex: 0 0 auto;
+  padding: 0 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.viewAllBtn:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.viewAllBtn.active {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
 }
 
 .searchInput:focus {

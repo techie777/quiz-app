@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { useData } from "@/context/DataContext";
 import { useQuiz } from "@/context/QuizContext";
 import { motion, AnimatePresence } from "framer-motion";
@@ -40,7 +41,8 @@ export default function CategorySetsPage() {
   const params = useParams();
   const router = useRouter();
   const { quizzes } = useData();
-  const { startQuizSet } = useQuiz();
+  const { startQuizSet, startQuizResume } = useQuiz();
+  const { data: session } = useSession();
 
   const [category, setCategory] = useState(null);
   const [questions, setQuestions] = useState([]);
@@ -55,6 +57,8 @@ export default function CategorySetsPage() {
   const [searchQuestion, setSearchQuestion] = useState("");
   const [revealedAnswers, setRevealedAnswers] = useState(new Set());
   const [isTranslatingIndex, setIsTranslatingIndex] = useState(false);
+  const [userProgress, setUserProgress] = useState([]);
+  const [showResumeChoice, setShowResumeChoice] = useState(false);
 
   // Sync index language with quiz context when clicking toggle
   const { translateQuiz } = useQuiz();
@@ -81,6 +85,19 @@ export default function CategorySetsPage() {
     }
   }, [params.id]);
 
+  // Fetch progress if logged in
+  useEffect(() => {
+    if (session?.user && params.id) {
+       fetch(`/api/progress?categoryId=${params.id}`)
+         .then(res => res.json())
+         .then(data => setUserProgress(Array.isArray(data) ? data : []))
+         .catch(err => {
+           console.error("Error fetching progress:", err);
+           setUserProgress([]);
+         });
+    }
+  }, [session, params.id]);
+
   const sets = useMemo(() => {
     if (!category || !setSize || setSize <= 0) return [];
     const count = category.questionCount || 0;
@@ -98,8 +115,13 @@ export default function CategorySetsPage() {
   }, [category, questions, setSize]);
 
   const paginatedSets = useMemo(() => {
-    return sets.slice((page - 1) * SETS_PER_PAGE, page * SETS_PER_PAGE);
-  }, [sets, page]);
+    return sets.map(set => {
+       const progress = Array.isArray(userProgress) 
+         ? userProgress.find(p => p.setIndex === set.index)
+         : null;
+       return { ...set, progress };
+    }).slice((page - 1) * SETS_PER_PAGE, page * SETS_PER_PAGE);
+  }, [sets, page, userProgress]);
 
   const totalPages = Math.ceil(sets.length / SETS_PER_PAGE);
 
@@ -197,9 +219,16 @@ export default function CategorySetsPage() {
     setLanguage(detectedLang);
   };
 
-  const handleStart = () => {
+  const handleStart = (forceNew = false) => {
     if (!selectedSet || !questionsLoaded) return;
-    startQuizSet(category.id, selectedSet.questions, timer, language, selectedSet.index);
+    
+    if (selectedSet.progress && !selectedSet.progress.isComplete && !forceNew) {
+       // Resume last session
+       startQuizResume(selectedSet.progress, selectedSet.questions);
+    } else {
+       // Start new
+       startQuizSet(category.id, selectedSet.questions, timer, language, selectedSet.index);
+    }
     router.push(`/quiz/${category.id}`);
   };
 
@@ -257,11 +286,35 @@ export default function CategorySetsPage() {
                     >
                         <div className={styles.setCardHeader}>
                             <h3 className={styles.setCardTitle}>Study Set {set.index}</h3>
-                            <span className={styles.setRange}>Q {set.start + 1} – {set.end}</span>
+                            {set.progress?.isComplete && (
+                               <span className={styles.masteryTick} title="100% Completed">✓</span>
+                            )}
+                            <div className={styles.setMeta}>
+                              <span className={styles.setRange}>Q {set.start + 1} – {set.end}</span>
+                              {set.progress?.progress > 0 && !set.progress.isComplete && (
+                                <span className={styles.progressPercent}>{Math.round(set.progress.progress)}% Done</span>
+                              )}
+                            </div>
                         </div>
-                        <p className={styles.setCardInfo}>Contains {set.end - set.start} targeted questions.</p>
+                        <div className={styles.setCardBody}>
+                          <p className={styles.setCardInfo}>Contains {set.end - set.start} targeted questions.</p>
+                          {set.progress && (
+                            <div className={styles.scoreLine}>
+                              <span className={styles.scoreLabel}>Last Score:</span>
+                              <span className={styles.bestScore}>
+                                {(() => {
+                                  try {
+                                    const answers = JSON.parse(set.progress.answersJson || "[]");
+                                    const correct = answers.filter(a => a.isCorrect).length;
+                                    return `${correct} / ${set.end - set.start}`;
+                                  } catch (e) { return "0 / 0"; }
+                                })()}
+                              </span>
+                            </div>
+                          )}
+                        </div>
                         <button className={styles.playIconButton} onClick={() => handlePlay(set)}>
-                            <span>Start Exploring</span>
+                            <span>{set.progress?.progress > 0 && !set.progress.isComplete ? "Continue Learning" : "Start Exploring"}</span>
                             <span className={styles.playArrow}>→</span>
                         </button>
                     </motion.div>
@@ -363,6 +416,14 @@ export default function CategorySetsPage() {
       {selectedSet && (
         <div className={styles.overlay} onClick={closeModal}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <button
+              className={styles.modalClose}
+              onClick={closeModal}
+              aria-label="Close"
+              title="Close"
+            >
+              ✕
+            </button>
             <div className={styles.modalHeader}>
               <span className={styles.modalEmoji}>{category.emoji}</span>
               <h2 className={styles.modalTitle}>Configure Practice: Set {selectedSet.index}</h2>
@@ -385,11 +446,14 @@ export default function CategorySetsPage() {
 
             <button 
                 className={`${styles.btnLaunch} ${!questionsLoaded ? styles.btnDisabled : ""}`} 
-                onClick={handleStart}
+                onClick={() => handleStart(false)}
                 disabled={!questionsLoaded}
             >
-                {questionsLoaded ? "🚀 Start Mastering" : "⌛ Preparing Content..."}
+                {selectedSet.progress && !selectedSet.progress.isComplete ? "🚀 Resume Mission" : "🚀 Start Mastering"}
             </button>
+            {selectedSet.progress && !selectedSet.progress.isComplete && (
+               <button className={styles.btnReset} onClick={() => handleStart(true)}>Start Fresh</button>
+            )}
             <button className={styles.btnLater} onClick={closeModal}>Decide Later</button>
           </div>
         </div>

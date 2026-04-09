@@ -1,16 +1,13 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireAdmin } from "@/lib/adminSessionServer";
 import { prisma } from "@/lib/prisma";
 import { safeJsonParse } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export async function PUT(request, { params }) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.isAdmin || session.user.role !== "master") {
-    return NextResponse.json({ error: "Master admin only" }, { status: 403 });
-  }
+  const admin = await requireAdmin({ masterOnly: true });
+  if (!admin.ok) return NextResponse.json({ error: admin.error }, { status: admin.status });
 
   const { id } = params;
   const { action, reviewNote } = await request.json(); // "approve" or "reject"
@@ -205,7 +202,7 @@ export async function PUT(request, { params }) {
     where: { id },
     data: {
       status: action === "approve" ? "approved" : "rejected",
-      reviewedBy: session.user.username,
+      reviewedBy: admin.admin.username,
       reviewNote: reviewNote || null,
     },
   });
@@ -213,7 +210,7 @@ export async function PUT(request, { params }) {
   // Log the action
   await prisma.adminActivityLog.create({
     data: {
-      adminId: session.user.adminId,
+      adminId: admin.admin.id,
       action: `${action}_task`,
       details: `${action === "approve" ? "Approved" : "Rejected"} ${task.actionType} by ${task.adminId}`,
     },

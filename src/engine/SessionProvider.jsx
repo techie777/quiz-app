@@ -15,6 +15,9 @@ export function SessionProvider({ children }) {
   const [session, setSession] = useState(null);
   const [participants, setParticipants] = useState([]);
   const [pendingParticipants, setPendingParticipants] = useState([]);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [reactions, setReactions] = useState([]); // { id, emoji, userId, userName }
+  const [broadcast, setBroadcast] = useState(null); // { text, type }
   const [socket, setSocket] = useState(null);
   const sessionRef = useRef(null);
 
@@ -66,6 +69,21 @@ export function SessionProvider({ children }) {
       toast.success(`${data.userName} joined the Squadron!`);
     });
 
+    s.on('SYNC_CHAT', (msgs) => {
+      setChatMessages(msgs);
+    });
+
+    s.on('MISSION_REACTION', (data) => {
+      setReactions(prev => [...prev.slice(-10), { ...data, id: Date.now() + Math.random() }]);
+    });
+
+    s.on('MISSION_BROADCAST', (data) => {
+      setBroadcast(data);
+      if (data) {
+        setTimeout(() => setBroadcast(null), 8000); // Auto-clear broadcast after 8s
+      }
+    });
+
     return () => {
       socketService.disconnect();
     };
@@ -109,8 +127,55 @@ export function SessionProvider({ children }) {
     }
   }, [socket]);
 
+  const sendChatMessage = useCallback((text) => {
+    const current = sessionRef.current;
+    if (socket && current?.userId && current?.sessionId) {
+      socket.emit('SEND_CHAT', {
+        sessionId: current.sessionId,
+        userId: current.userId,
+        userName: current.userName,
+        role: current.role,
+        text
+      });
+    }
+  }, [socket]);
+
+  const sendReaction = useCallback((emoji) => {
+    const current = sessionRef.current;
+    if (socket && current?.userId && current?.sessionId) {
+      socket.emit('SEND_REACTION', {
+        sessionId: current.sessionId,
+        userId: current.userId,
+        userName: current.userName,
+        emoji
+      });
+    }
+  }, [socket]);
+
+  const sendBroadcast = useCallback((text) => {
+    const current = sessionRef.current;
+    if (socket && current?.role === 'HOST' && current?.sessionId) {
+      socket.emit('SEND_BROADCAST', {
+        sessionId: current.sessionId,
+        text
+      });
+    }
+  }, [socket]);
+
   return (
-    <SessionContext.Provider value={{ session, participants, pendingParticipants, joinSession, sendAction }}>
+    <SessionContext.Provider value={{ 
+      session, 
+      participants, 
+      pendingParticipants, 
+      chatMessages, 
+      reactions,
+      broadcast,
+      joinSession, 
+      sendAction, 
+      sendChatMessage,
+      sendReaction,
+      sendBroadcast
+    }}>
       {children}
     </SessionContext.Provider>
   );

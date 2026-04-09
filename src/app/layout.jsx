@@ -4,6 +4,8 @@ import SmartNavigation from "@/components/SmartNavigation";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import Footer from "@/components/Footer";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import PwaInstallPrompt from "@/components/PwaInstallPrompt";
+import SecurityGuards from "@/components/SecurityGuards";
 import "./globals.css";
 import { Inter } from 'next/font/google';
 import { generateWebsiteStructuredData, generateOrganizationStructuredData } from '@/lib/seo';
@@ -136,6 +138,7 @@ export default function RootLayout({ children }) {
         <link rel="preload" href="/fonts/inter-var.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
       </head>
       <body style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }} className="antialiased">
+        <SecurityGuards />
         <Providers>
           <Header />
           <SmartNavigation />
@@ -147,6 +150,8 @@ export default function RootLayout({ children }) {
           </main>
           <Footer />
         </Providers>
+
+        <PwaInstallPrompt />
         
         {/* Performance monitoring script in production */}
         {process.env.NODE_ENV === 'production' && (

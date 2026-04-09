@@ -11,7 +11,7 @@ export default function Footer() {
   const { settings, quizzes } = useData();
   const currentYear = new Date().getFullYear();
 
-  const shouldHide = pathname?.startsWith("/admin") || pathname?.endsWith("/export") || settings?.footerEnabled === false;
+  const shouldHide = pathname?.startsWith("/admin") || pathname?.includes("/mock-tests/paper/") || pathname?.endsWith("/export") || settings?.footerEnabled === false;
 
   const brandDesc =
     (typeof settings?.footerBrandDesc === "string" && settings.footerBrandDesc.trim()

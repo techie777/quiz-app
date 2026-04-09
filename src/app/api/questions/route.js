@@ -3,16 +3,29 @@ import { prisma } from "@/lib/prisma";
 import { safeJsonParse } from "@/lib/utils";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { enforceRateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request) {
+  const rl = enforceRateLimit(rateLimitKey(request, "api:questions:get"), { windowMs: 60_000, max: 60 });
+  if (!rl.ok) return rateLimitResponse(rl.retryAfterSeconds);
+
   const { searchParams } = new URL(request.url);
   const categoryId = searchParams.get("categoryId");
   const where = {};
   if (categoryId) where.categoryId = categoryId;
 
-  const questions = await prisma.question.findMany({ where, include: { category: true } });
+  // Hard cap to reduce scraping surface
+  const take = Math.min(parseInt(searchParams.get("limit") || "200", 10) || 200, 200);
+  const skip = Math.max(parseInt(searchParams.get("skip") || "0", 10) || 0, 0);
+
+  const questions = await prisma.question.findMany({
+    where,
+    include: { category: true },
+    take,
+    skip,
+  });
   return NextResponse.json(
     questions.map((q) => ({ ...q, options: safeJsonParse(q.options) }))
   );

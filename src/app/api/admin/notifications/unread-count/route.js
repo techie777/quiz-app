@@ -1,24 +1,21 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireAdmin } from "@/lib/adminSessionServer";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.isAdmin) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const admin = await requireAdmin();
+  if (!admin.ok) return NextResponse.json({ error: admin.error }, { status: admin.status });
 
-  const isMaster = session.user.role === "master";
+  const isMaster = admin.admin.role === "master";
   if (isMaster) {
     const count = await prisma.pendingTask.count({ where: { status: "pending" } });
     return NextResponse.json({ count });
   }
 
   const seenRow = await prisma.setting.findUnique({
-    where: { key: `adminNotifSeen:${session.user.adminId}` },
+    where: { key: `adminNotifSeen:${admin.admin.id}` },
     select: { value: true },
   });
   const seenAt = seenRow?.value ? new Date(seenRow.value) : new Date(0);
@@ -26,7 +23,7 @@ export async function GET() {
 
   const count = await prisma.pendingTask.count({
     where: {
-      adminId: session.user.adminId,
+      adminId: admin.admin.id,
       status: { in: ["approved", "rejected"] },
       updatedAt: { gt: validSeenAt },
     },

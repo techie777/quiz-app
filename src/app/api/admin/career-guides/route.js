@@ -1,9 +1,13 @@
-import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/adminSessionServer";
+import { prisma } from "@/lib/prisma";
 
-const prisma = new PrismaClient();
+export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const admin = await requireAdmin();
+  if (!admin.ok) return NextResponse.json({ error: admin.error }, { status: admin.status });
+
   try {
     const guides = await prisma.careerGuide.findMany({
       include: { sections: { orderBy: { sortOrder: 'asc' } } },
@@ -17,6 +21,9 @@ export async function GET() {
 }
 
 export async function POST(req) {
+  const admin = await requireAdmin();
+  if (!admin.ok) return NextResponse.json({ error: admin.error }, { status: admin.status });
+
   try {
     const data = await req.json();
     const { sections, ...guideData } = data;
@@ -24,6 +31,7 @@ export async function POST(req) {
     const newGuide = await prisma.careerGuide.create({
       data: {
         ...guideData,
+        careerCategoryId: guideData.careerCategoryId || null,
         sections: {
           create: sections || []
         }
@@ -38,6 +46,9 @@ export async function POST(req) {
 }
 
 export async function PUT(req) {
+  const admin = await requireAdmin();
+  if (!admin.ok) return NextResponse.json({ error: admin.error }, { status: admin.status });
+
   try {
     const data = await req.json();
     const { id, sections, ...guideData } = data;
@@ -50,8 +61,10 @@ export async function PUT(req) {
     // Reconstruct sections ensuring no nested 'id' fields get pushed accidentally to prisma
     const cleanSections = (sections || []).map((s, index) => ({
       title: s.title,
+      titleHi: s.titleHi || "",
       type: s.type,
       content: s.content,
+      contentHi: s.contentHi || "",
       sortOrder: index + 1
     }));
 
@@ -59,6 +72,7 @@ export async function PUT(req) {
       where: { id: id },
       data: {
         ...guideData,
+        careerCategoryId: guideData.careerCategoryId || null,
         sections: {
           create: cleanSections
         }
@@ -73,6 +87,9 @@ export async function PUT(req) {
 }
 
 export async function DELETE(req) {
+  const admin = await requireAdmin();
+  if (!admin.ok) return NextResponse.json({ error: admin.error }, { status: admin.status });
+
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');

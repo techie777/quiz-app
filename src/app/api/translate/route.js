@@ -40,7 +40,21 @@ export async function POST(request) {
     }
 
     try {
-      const translations = await translate(stringsToTranslate, { from: sourceLang, to });
+      const results = await translate(stringsToTranslate, { from: sourceLang, to });
+      
+      // ENSURE ARRAY: If single string returned, wrap it to maintain index alignment
+      const translations = Array.isArray(results) ? results : [results];
+      
+      console.log(`[Translate API] Received ${translations.length} translated items from external provider.`);
+
+      if (translations.length !== stringsToTranslate.length) {
+        console.error(`[Translate API] LENGTH MISMATCH! Input: ${stringsToTranslate.length}, Output: ${translations.length}`);
+        // Fallback to original text if API returns inconsistent count
+        return NextResponse.json({ 
+          translations: texts,
+          warning: "Translation count mismatch, using original text"
+        });
+      }
       
       const finalTranslations = [...texts];
       translationMap.forEach((originalIndex, i) => {

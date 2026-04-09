@@ -3,14 +3,18 @@ import { prisma } from "@/lib/prisma";
 import { safeJsonParse } from "@/lib/utils";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { enforceRateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request) {
   try {
+    const rl = enforceRateLimit(rateLimitKey(request, "api:categories:get"), { windowMs: 60_000, max: 120 });
+    if (!rl.ok) return rateLimitResponse(rl.retryAfterSeconds);
+
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get("limit")) || 0;
-    const skip = parseInt(searchParams.get("skip")) || 0;
+    const limitRaw = parseInt(searchParams.get("limit")) || 0;
+    const skip = Math.max(parseInt(searchParams.get("skip")) || 0, 0);
     const search = searchParams.get("search") || "";
     const sortBy = searchParams.get("sortBy") || "default";
     const difficulty = searchParams.get("difficulty") || "all";
@@ -28,7 +32,7 @@ export async function GET(request) {
       where.hidden = false;
       // Only top-level categories for home page display if they are requesting paginated lists
       // Handle Prisma MongoDB limitation where missing fields need isSet: false
-      if (limit > 0) {
+      if (limitRaw > 0) {
          andConditions.push({
            OR: [
              { parentId: null },
@@ -47,6 +51,21 @@ export async function GET(request) {
       });
     }
 
+    if (chipsParam) {
+      const activeChips = chipsParam
+        .split(",")
+        .map((c) => String(c || "").trim())
+        .filter(Boolean);
+      if (activeChips.length > 0) {
+        // `chips` is stored as a JSON string in Mongo; match `"ChipName"` to reduce false positives.
+        andConditions.push({
+          OR: activeChips.map((chip) => ({
+            chips: { contains: `"${chip}"`, mode: "insensitive" },
+          })),
+        });
+      }
+    }
+
     if (andConditions.length > 0) {
       where.AND = andConditions;
     }
@@ -55,27 +74,6 @@ export async function GET(request) {
       where.questions = {
         some: { difficulty: difficulty },
       };
-    }
-
-    if (qCount !== "all") {
-      switch (qCount) {
-        case "small":
-          // Prisma doesn't directly support count in where, 
-          // so we'll have to handle it if we want it fully server-side, 
-          // but for simplicity, we'll keep it basic for now.
-          break;
-        case "medium":
-          break;
-        case "large":
-          break;
-      }
-    }
-
-    if (chipsParam) {
-      const activeChips = chipsParam.split(",");
-      // Since chips is a stringified JSON array in MongoDB via Prisma, 
-      // we'll use "contains" if we can, but string matches are tricky.
-      // For now, keep it simple.
     }
 
     // Determine ordering
@@ -87,24 +85,57 @@ export async function GET(request) {
       // since that's what the frontend was doing.
     }
 
-    // Get total count for pagination
-    const total = await prisma.category.count({ where });
+    const needsInMemoryFilteringOrSorting = qCount !== "all" || sortBy === "popular";
+    const limit = limitRaw > 0 ? Math.min(limitRaw, 60) : 0;
 
-    // Fetch categories with optional limit and skip
+    // Fetch categories
     const categories = await prisma.category.findMany({
       where,
-      include: { 
-        questions: true 
+      include: {
+        questions: true,
       },
       orderBy,
-      ...(limit > 0 ? { take: limit } : {}),
-      ...(skip > 0 ? { skip: skip } : {}),
+      ...(needsInMemoryFilteringOrSorting || limit === 0 ? {} : (limit > 0 ? { take: limit } : {})),
+      ...(needsInMemoryFilteringOrSorting || limit === 0 ? {} : (skip > 0 ? { skip: skip } : {})),
     });
 
-    console.log(`[API] Fetching ${categories.length} categories (total: ${total})...`);
+    let filteredCategories = categories;
+
+    // Question count filter (in-memory; Prisma Mongo relation count filters are limited)
+    if (qCount !== "all") {
+      filteredCategories = filteredCategories.filter((cat) => {
+        const count = cat.questions?.length || 0;
+        if (qCount === "small") return count >= 1 && count <= 10;
+        if (qCount === "medium") return count >= 11 && count <= 25;
+        if (qCount === "large") return count >= 26;
+        return true;
+      });
+    }
+
+    // "Popular" sort (proxy: more questions => more content)
+    if (sortBy === "popular") {
+      filteredCategories = [...filteredCategories].sort((a, b) => {
+        const ac = a.questions?.length || 0;
+        const bc = b.questions?.length || 0;
+        if (bc !== ac) return bc - ac;
+        return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
+      });
+    }
+
+    const total = needsInMemoryFilteringOrSorting
+      ? filteredCategories.length
+      : await prisma.category.count({ where });
+
+    // Apply pagination after in-memory filters when needed
+    const paginatedCategories =
+      needsInMemoryFilteringOrSorting && limit > 0
+        ? filteredCategories.slice(skip, skip + limit)
+        : filteredCategories;
+
+    console.log(`[API] Fetching ${paginatedCategories.length} categories (total: ${total})...`);
     
     // Explicitly map all fields to ensure they are returned correctly
-    const result = categories.map((cat) => ({
+    const result = paginatedCategories.map((cat) => ({
       id: cat.id,
       topic: cat.topic,
       emoji: cat.emoji,
