@@ -19,6 +19,8 @@ export function SessionProvider({ children }) {
   const [reactions, setReactions] = useState([]); // { id, emoji, userId, userName }
   const [broadcast, setBroadcast] = useState(null); // { text, type }
   const [socket, setSocket] = useState(null);
+  const [connectionStatus, setConnectionStatus] = useState('disconnected'); // 'disconnected', 'connecting', 'connected', 'error'
+  const [connectionError, setConnectionError] = useState(null);
   const sessionRef = useRef(null);
 
   useEffect(() => {
@@ -26,8 +28,34 @@ export function SessionProvider({ children }) {
   }, [session]);
 
   useEffect(() => {
+    setConnectionStatus('connecting');
+    setConnectionError(null);
+    
     const s = socketService.connect();
     setSocket(s);
+
+    // Enhanced connection monitoring
+    s.on('connect', () => {
+      setConnectionStatus('connected');
+      setConnectionError(null);
+      console.log('???? Session Provider: Socket connected successfully');
+    });
+
+    s.on('connect_error', (error) => {
+      setConnectionStatus('error');
+      setConnectionError(error.message);
+      console.error('???? Session Provider: Connection failed:', error.message);
+      toast.error(`Connection failed: ${error.message}`);
+    });
+
+    s.on('disconnect', (reason) => {
+      setConnectionStatus('disconnected');
+      console.warn('???? Session Provider: Disconnected:', reason);
+      if (reason === 'io server disconnect') {
+        // Server disconnected, try to reconnect
+        s.connect();
+      }
+    });
 
     s.on('STATE_UPDATE', (data) => {
       setSession(prev => {
@@ -41,22 +69,22 @@ export function SessionProvider({ children }) {
 
          // Security Triggers
          if (data.action === 'CLEARANCE_DENIED') {
-            toast.error("MISSION CLEARANCE DENIED BY COMMANDER. 🚫");
+            toast.error("MISSION CLEARANCE DENIED BY COMMANDER. ????");
          }
          if (data.action === 'DISCONTINUED') {
-            toast.error("MISSION TERMINATED: YOU HAVE BEEN DISMISSED. 🛑");
+            toast.error("MISSION TERMINATED: YOU HAVE BEEN DISMISSED. ????");
          }
 
          return newState;
       });
 
       if (data.action === 'START_SESSION') {
-        toast.success("MISSION LAUNCHED! 🚀");
+        toast.success("MISSION LAUNCHED! ???");
       }
     });
 
     s.on('SYNC_PARTICIPANTS', (list) => {
-      console.log('👥 [SYNC] Active Squadron:', list.length);
+      console.log('???? [SYNC] Active Squadron:', list.length);
       setParticipants(list);
     });
 
@@ -170,6 +198,8 @@ export function SessionProvider({ children }) {
       chatMessages, 
       reactions,
       broadcast,
+      connectionStatus,
+      connectionError,
       joinSession, 
       sendAction, 
       sendChatMessage,

@@ -1,10 +1,9 @@
 {
   "pages": {
-    "/page": [
+    "/live/[sessionId]/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/css/app/page.css",
-      "static/chunks/app/page.js"
+      "static/chunks/app/live/[sessionId]/page.js"
     ],
     "/layout": [
       "static/chunks/webpack.js",
@@ -30,71 +29,11 @@
       "static/css/app/_not-found/page.css",
       "static/chunks/app/_not-found/page.js"
     ],
-    "/admin/page": [
+    "/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/css/app/admin/page.css",
-      "static/chunks/app/admin/page.js"
-    ],
-    "/admin/layout": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/css/app/admin/layout.css",
-      "static/chunks/app/admin/layout.js"
-    ],
-    "/admin/login/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/css/app/admin/login/page.css",
-      "static/chunks/app/admin/login/page.js"
-    ],
-    "/admin/daily/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/css/app/admin/daily/page.css",
-      "static/chunks/app/admin/daily/page.js"
-    ],
-    "/admin/current-affairs/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/css/app/admin/current-affairs/page.css",
-      "static/chunks/app/admin/current-affairs/page.js"
-    ],
-    "/admin/govt-exams/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/css/app/admin/govt-exams/page.css",
-      "static/chunks/app/admin/govt-exams/page.js"
-    ],
-    "/admin/mock-tests-manager/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/css/app/admin/mock-tests-manager/page.css",
-      "static/chunks/app/admin/mock-tests-manager/page.js"
-    ],
-    "/admin/study-material/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/css/app/admin/study-material/page.css",
-      "static/chunks/app/admin/study-material/page.js"
-    ],
-    "/admin/sections/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/css/app/admin/sections/page.css",
-      "static/chunks/app/admin/sections/page.js"
-    ],
-    "/admin/categories/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/css/app/admin/categories/page.css",
-      "static/chunks/app/admin/categories/page.js"
-    ],
-    "/admin/questions/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/css/app/admin/questions/page.css",
-      "static/chunks/app/admin/questions/page.js"
+      "static/css/app/page.css",
+      "static/chunks/app/page.js"
     ]
   }
 }

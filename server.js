@@ -2,6 +2,7 @@ const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');
 const { Server } = require('socket.io');
+const redisStore = require('./src/engine/lib/redisStore.js').default;
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = dev ? 'localhost' : '0.0.0.0'; // Use localhost for dev, bind to all for prod
@@ -19,8 +20,8 @@ if (dev) {
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
-// Store active room states in memory
-const rooms = new Map();
+// Initialize Redis store
+let rooms = new Map(); // Fallback in-memory storage
 
 app.prepare()
   .then(() => {
@@ -42,24 +43,26 @@ app.prepare()
     io.on('connection', (socket) => {
       console.log('🔗 Client connected:', socket.id);
 
-      socket.on('JOIN_SESSION', (data) => {
+      socket.on('JOIN_SESSION', async (data) => {
         const { sessionId, role, userId, userName } = data;
         
-        if (!rooms.has(sessionId)) {
+        let room = await redisStore.getRoom(sessionId);
+        
+        if (!room) {
             if (role === 'HOST') {
-                rooms.set(sessionId, { 
+                room = { 
                     participants: [], 
                     pendingParticipants: [],
                     messages: [],
-                    state: { status: 'LOBBY', type: 'QUIZ', timeLimit: 0 } 
-                });
+                    state: { status: 'LOBBY', type: 'QUIZ', timeLimit: 0 },
+                    createdAt: Date.now()
+                };
+                await redisStore.setRoom(sessionId, room);
             } else {
                 socket.emit('STATE_UPDATE', { action: 'EXPIRED', payload: { status: 'EXPIRED' } });
                 return;
             }
         }
-        
-        const room = rooms.get(sessionId);
 
         if (role === 'HOST') {
             socket.join(sessionId);
@@ -73,13 +76,16 @@ app.prepare()
                     score: 0, progress: 0, isOnline: true
                 });
             }
+            // Save to Redis
+            await redisStore.setRoom(sessionId, room);
+            
             // Broadcast active list to everyone in the room
             io.in(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
             socket.emit('STATE_UPDATE', { action: 'REHYDRATE', payload: room.state });
             
             // SECURITY SYNC: Force-push current pending list to the host immediately
             socket.emit('SYNC_PENDING', room.pendingParticipants);
-            console.log(`👑 Commander ${userName} joined room ${sessionId}. Pending queue sent: ${room.pendingParticipants.length}`);
+            console.log(` Commander ${userName} joined room ${sessionId}. Pending queue sent: ${room.pendingParticipants.length}`);
         } else {
             // GUEST SECURITY: Put in pending first
             const guestExists = room.pendingParticipants.find(p => p.userId === userId);
@@ -90,17 +96,19 @@ app.prepare()
                 const g = room.pendingParticipants.find(p => p.userId === userId);
                 g.socketId = socket.id;
             }
+            // Save to Redis
+            await redisStore.setRoom(sessionId, room);
             
             // CRITICAL BROADCAST: Notify all HOSTS in the room about the new guest
-            console.log(`💂 Guest ${userName} requesting clearance for room ${sessionId}. Broadcasting to room...`);
+            console.log(` Guest ${userName} requesting clearance for room ${sessionId}. Broadcasting to room...`);
             io.in(sessionId).emit('SYNC_PENDING', room.pendingParticipants);
             socket.emit('STATE_UPDATE', { action: 'PENDING_CLEARANCE', payload: { status: 'PENDING' } });
         }
       });
 
-      socket.on('HOST_ACTION', (data) => {
+      socket.on('HOST_ACTION', async (data) => {
         const { sessionId, action, payload } = data;
-        const room = rooms.get(sessionId);
+        const room = await redisStore.getRoom(sessionId);
         if (!room) return;
 
         if (action === 'APPROVE_GUEST') {
@@ -110,13 +118,16 @@ app.prepare()
                 room.pendingParticipants.splice(guestIdx, 1);
                 room.participants.push({ ...guest, score: 0, progress: 0, isOnline: true });
                 
+                // Save to Redis
+                await redisStore.setRoom(sessionId, room);
+                
                 io.to(guest.socketId).emit('STATE_UPDATE', { action: 'REHYDRATE', payload: room.state });
                 const guestSocket = io.sockets.sockets.get(guest.socketId);
                 if (guestSocket) guestSocket.join(sessionId);
 
                 io.in(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
                 io.in(sessionId).emit('SYNC_PENDING', room.pendingParticipants);
-                console.log(`✅ Approved: ${guest.userName}`);
+                console.log(`???? Approved: ${guest.userName}`);
             }
             return;
         }
@@ -126,9 +137,12 @@ app.prepare()
             if (guestIdx !== -1) {
                 const guest = room.pendingParticipants[guestIdx];
                 room.pendingParticipants.splice(guestIdx, 1);
+                // Save to Redis
+                await redisStore.setRoom(sessionId, room);
+                
                 io.to(guest.socketId).emit('STATE_UPDATE', { action: 'CLEARANCE_DENIED', payload: { status: 'REJECTED' } });
                 io.in(sessionId).emit('SYNC_PENDING', room.pendingParticipants);
-                console.log(`❌ Rejected: ${guest.userName}`);
+                console.log(`???? Rejected: ${guest.userName}`);
             }
             return;
         }
@@ -139,22 +153,30 @@ app.prepare()
                 const p = room.participants[pIdx];
                 p.status = 'KICKED';
                 p.isOnline = false;
+                // Save to Redis
+                await redisStore.setRoom(sessionId, room);
+                
                 io.to(p.socketId).emit('STATE_UPDATE', { action: 'DISCONTINUED', payload: { status: 'KICKED' } });
                 const pSocket = io.sockets.sockets.get(p.socketId);
                 if (pSocket) pSocket.leave(sessionId);
                 io.in(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
-                console.log(`🛑 KICKED OFF: ${p.userName}`);
+                console.log(`???? KICKED OFF: ${p.userName}`);
             }
             return;
         }
         
         if (action === 'TERMINATE') {
             room.state.status = 'TERMINATED';
+            room.terminatedAt = Date.now();
+            // Save to Redis
+            await redisStore.setRoom(sessionId, room);
+            
             io.in(sessionId).emit('STATE_UPDATE', { action: 'TERMINATED', payload: room.state });
-            setTimeout(() => {
-                if (rooms.has(sessionId) && rooms.get(sessionId).state.status === 'TERMINATED') {
-                    rooms.delete(sessionId);
-                    console.log(`🗑️ Room ${sessionId} purged.`);
+            setTimeout(async () => {
+                const checkRoom = await redisStore.getRoom(sessionId);
+                if (checkRoom && checkRoom.state.status === 'TERMINATED') {
+                    await redisStore.deleteRoom(sessionId);
+                    console.log(`???? Room ${sessionId} purged.`);
                 }
             }, 30000);
             return;
@@ -163,14 +185,19 @@ app.prepare()
         room.state = { ...room.state, ...payload };
         if (action === 'START_SESSION') {
             room.participants.forEach(p => { p.score = 0; p.progress = 0; });
+        }
+        // Save to Redis
+        await redisStore.setRoom(sessionId, room);
+        
+        if (action === 'START_SESSION') {
             io.in(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
         }
         io.in(sessionId).emit('STATE_UPDATE', { action, payload });
       });
 
-      socket.on('SEND_CHAT', (data) => {
+      socket.on('SEND_CHAT', async (data) => {
         const { sessionId, userId, userName, text, role } = data;
-        const room = rooms.get(sessionId);
+        const room = await redisStore.getRoom(sessionId);
         if (room) {
             const msg = { 
                 id: Date.now() + Math.random().toString(36).substr(2, 5),
@@ -179,6 +206,9 @@ app.prepare()
             };
             room.messages.push(msg);
             if (room.messages.length > 50) room.messages.shift();
+            // Save to Redis
+            await redisStore.setRoom(sessionId, room);
+            
             io.in(sessionId).emit('SYNC_CHAT', room.messages);
         }
       });
@@ -193,21 +223,23 @@ app.prepare()
         io.in(sessionId).emit('MISSION_BROADCAST', { text, type: 'PROCLAMATION' });
       });
 
-      socket.on('UPDATE_STATUS', (data) => {
+      socket.on('UPDATE_STATUS', async (data) => {
         const { sessionId, userId, status } = data;
-        const room = rooms.get(sessionId);
+        const room = await redisStore.getRoom(sessionId);
         if (room && room.participants) {
             const p = room.participants.find(p => p.userId === userId);
             if (p) {
                 p.status = status;
+                // Save to Redis
+                await redisStore.setRoom(sessionId, room);
                 io.in(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
             }
         }
       });
 
-      socket.on('SUBMIT_SCORE', (data) => {
+      socket.on('SUBMIT_SCORE', async (data) => {
         const { sessionId, userId, score, progress } = data;
-        const room = rooms.get(sessionId);
+        const room = await redisStore.getRoom(sessionId);
         if (room && room.participants) {
             const p = room.participants.find(p => p.userId === userId);
             if (p) {
@@ -215,33 +247,50 @@ app.prepare()
                 p.progress = progress;
                 // If they are submitting score, they are Active
                 if (p.status !== 'ACTIVE') p.status = 'ACTIVE'; 
+                // Save to Redis
+                await redisStore.setRoom(sessionId, room);
                 io.in(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
             }
         }
       });
 
-      socket.on('disconnect', () => {
-        rooms.forEach((room, sessionId) => {
+      socket.on('disconnect', async () => {
+        const allRooms = await redisStore.getAllRooms();
+        for (const room of allRooms) {
+          // Find sessionId from room data or skip
+          const sessionId = room.sessionId || 'unknown';
+          if (sessionId === 'unknown') continue;
+          
+          let updated = false;
+          
           const idx = room.participants.findIndex(p => p.socketId === socket.id);
           if (idx !== -1) {
             const p = room.participants[idx];
             if (room.state.status === 'ACTIVE') {
-                p.isOnline = false;
-                p.status = 'LEFT';
-                io.in(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
+              p.isOnline = false;
+              p.status = 'LEFT';
+              updated = true;
+              io.in(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
             } else {
-                room.participants.splice(idx, 1);
-                io.in(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
+              room.participants.splice(idx, 1);
+              updated = true;
+              io.in(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
             }
           }
+          
           const pIdx = room.pendingParticipants.findIndex(p => p.socketId === socket.id);
           if (pIdx !== -1) {
               const p = room.pendingParticipants[pIdx];
               room.pendingParticipants.splice(pIdx, 1);
+              updated = true;
               io.in(sessionId).emit('SYNC_PENDING', room.pendingParticipants);
-              console.log(`🚫 Pending Guest ${p.userName} disconnected.`);
+              console.log(`???? Pending Guest ${p.userName} disconnected.`);
           }
-        });
+          
+          if (updated) {
+            await redisStore.setRoom(sessionId, room);
+          }
+        }
       });
     });
 

@@ -79,7 +79,7 @@ const nextConfig = {
       "font-src 'self' data: https://fonts.gstatic.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-      "connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com",
+      "connect-src 'self' ws: wss: https://accounts.google.com https://oauth2.googleapis.com",
       "upgrade-insecure-requests",
     ].join("; ");
 

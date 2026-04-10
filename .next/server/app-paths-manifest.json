@@ -1,11 +1,12 @@
 {
-  "/page": "app/page.js",
-  "/api/admin/notifications/unread-count/route": "app/api/admin/notifications/unread-count/route.js",
-  "/api/admin/logout/route": "app/api/admin/logout/route.js",
+  "/live/[sessionId]/page": "app/live/[sessionId]/page.js",
+  "/api/categories/route": "app/api/categories/route.js",
   "/_not-found/page": "app/_not-found/page.js",
-  "/admin/study-material/page": "app/admin/study-material/page.js",
-  "/admin/sections/page": "app/admin/sections/page.js",
-  "/admin/categories/page": "app/admin/categories/page.js",
-  "/admin/questions/page": "app/admin/questions/page.js",
-  "/admin/login/page": "app/admin/login/page.js"
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/api/settings/route": "app/api/settings/route.js",
+  "/api/user/profile/route": "app/api/user/profile/route.js",
+  "/api/categories/[id]/route": "app/api/categories/[id]/route.js",
+  "/page": "app/page.js",
+  "/api/sections/route": "app/api/sections/route.js",
+  "/api/category-favourites/route": "app/api/category-favourites/route.js"
 }
