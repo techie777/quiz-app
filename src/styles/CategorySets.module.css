@@ -595,8 +595,45 @@
 
 .btnLaunch:hover { transform: translateY(-4px); box-shadow: 0 15px 30px rgba(99, 102, 241, 0.3); }
 
+.modalActions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.btnMastery {
+  width: 100%;
+  padding: 18px;
+  border: 2px solid #fbbf24;
+  background: rgba(251, 191, 36, 0.05);
+  color: #d97706;
+  border-radius: 20px;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.btnMastery:hover {
+  background: #fbbf24;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(251, 191, 36, 0.2);
+}
+
 .btnLater {
-  width: 100%; margin-top: 16px; background: none; border: none; color: var(--text-muted); font-weight: 700; cursor: pointer;
+  width: 100%; 
+  margin-top: 8px; 
+  background: none; 
+  border: none; 
+  color: var(--text-muted); 
+  font-weight: 700; 
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.btnLater:hover {
+  color: var(--text-primary);
 }
 
 /* Skeletons */

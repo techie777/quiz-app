@@ -32,6 +32,7 @@ export const metadata = {
     address: false,
     telephone: false,
   },
+  manifest: "/site.webmanifest",
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
   alternates: {
     canonical: '/',

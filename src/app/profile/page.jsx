@@ -95,7 +95,7 @@ export default function ProfilePage() {
         </button>
 
         <div className={styles.quickLinks}>
-          <Link href="/notes" className={styles.quickLink}>
+          <Link href="/my-favourites" className={styles.quickLink}>
             ❤️ My Favourites / Notes
           </Link>
         </div>

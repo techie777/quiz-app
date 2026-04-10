@@ -10,6 +10,10 @@ export async function GET(request, { params }) {
     const exam = await prisma.mockExam.findUnique({
       where: { id: examId },
       include: {
+        category: true,
+        sections: {
+          orderBy: { sortOrder: 'asc' }
+        },
         papers: {
           where: { isLive: true },
           orderBy: { createdAt: 'desc' },

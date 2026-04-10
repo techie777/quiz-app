@@ -12,7 +12,7 @@ import QuizSuggestions from "@/components/QuizSuggestions";
 import ExitConfirmModal from "@/components/ExitConfirmModal";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import styles from "@/styles/QuizEngine.module.css";
-import { initSounds, playCorrectSound, playWrongSound } from "@/lib/sounds";
+import { initSounds, playCorrectSound, playWrongSound, playTickerSound } from "@/lib/sounds";
 import timerStyles from "@/styles/Timer.module.css";
 
 // Persistent-Fix Local Timer Component
@@ -38,6 +38,9 @@ const QuizTimerComponent = ({ seconds, onExpire, questionKey, isPaused }) => {
         if (prev <= 1) {
           clearInterval(timerRef.current);
           return 0;
+        }
+        if (prev <= 6) { // Plays at 5, 4, 3, 2, 1
+          playTickerSound();
         }
         return prev - 1;
       });
@@ -68,6 +71,43 @@ const QuizTimerComponent = ({ seconds, onExpire, questionKey, isPaused }) => {
       </svg>
       <div className={timerStyles.timeDisplay}>
         {displayMins}:{displaySecs}
+      </div>
+    </div>
+  );
+};
+
+// Ad Simulation Overlay Component
+const AdOverlay = ({ onComplete }) => {
+  const [countdown, setCountdown] = useState(5);
+
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const timer = setInterval(() => setCountdown(c => c - 1), 1000);
+    return () => clearInterval(timer);
+  }, [countdown]);
+
+  return (
+    <div className={styles.adOverlay}>
+      <div className={`${styles.adContent} glass-card`}>
+        <div className={styles.adHeader}>
+          <span className={styles.adBadge}>ADVERTISEMENT</span>
+          <div className={styles.adTimer}>
+            {countdown > 0 ? `Wait ${countdown}s` : (
+              <button className={styles.adCloseBtn} onClick={onComplete}>
+                Close ×
+              </button>
+            )}
+          </div>
+        </div>
+        <div className={styles.adBody}>
+          <div className={styles.adPlaceholder}>
+             <h3>Unlock Lifeline</h3>
+             <p>Support us by watching this short ad simulation.</p>
+             <div className={styles.adVisual}>
+                <div className={styles.adPulse} />
+             </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -137,6 +177,8 @@ function QuizEngineContent() {
   const [showEndConfirmModal, setShowEndConfirmModal] = useState(false);
   const [questionStartTime, setQuestionStartTime] = useState(Date.now());
   const [searchQuestion, setSearchQuestion] = useState("");
+  const [showingAd, setShowingAd] = useState(false);
+  const [adCallback, setAdCallback] = useState(null);
 
   const category = useMemo(() => {
     return (quizzes || []).find((q) => q.id === params?.id);
@@ -363,6 +405,20 @@ const QuizEngineTimer = QuizTimerComponent;
     }
   };
 
+  // Function to trigger ad simulation before lifeline
+  const triggerAd = (callback) => {
+    setAdCallback(() => callback);
+    setShowingAd(true);
+    pauseQuiz();
+  };
+
+  const handleAdComplete = () => {
+    setShowingAd(false);
+    resumeQuiz();
+    if (adCallback) adCallback();
+    setAdCallback(null);
+  };
+
   // Hint System
   const useHint = () => {
     setShowHint(true);
@@ -372,37 +428,41 @@ const QuizEngineTimer = QuizTimerComponent;
   // 50/50 Lifeline
   const use5050 = () => {
     if (used5050) return;
-    const currentQuestion = questions[currentIndex];
-    if (!currentQuestion) return;
-    const correctAnswerText = String(currentQuestion.correctAnswer || "").trim();
-    const correctAnswerIndex = currentQuestion.options.findIndex(option => 
-      String(option || "").trim() === correctAnswerText
-    );
-    const wrongAnswers = currentQuestion.options.map((_, idx) => idx).filter(idx => idx !== correctAnswerIndex);
-    const toRemove = wrongAnswers.sort(() => Math.random() - 0.5).slice(0, 2);
-    setUsed5050(true);
-    updateScore(-3);
-    setRemovedOptions(toRemove);
+    triggerAd(() => {
+      const currentQuestion = questions[currentIndex];
+      if (!currentQuestion) return;
+      const correctAnswerText = String(currentQuestion.correctAnswer || "").trim();
+      const correctAnswerIndex = currentQuestion.options.findIndex(option => 
+        String(option || "").trim() === correctAnswerText
+      );
+      const wrongAnswers = currentQuestion.options.map((_, idx) => idx).filter(idx => idx !== correctAnswerIndex);
+      const toRemove = wrongAnswers.sort(() => Math.random() - 0.5).slice(0, 2);
+      setUsed5050(true);
+      updateScore(-3);
+      setRemovedOptions(toRemove);
+    });
   };
 
   // Ask Audience
   const useAskAudience = () => {
     if (usedAskAudience) return;
-    const currentQuestion = questions[currentIndex];
-    if (!currentQuestion) return;
-    const correctAnswerText = String(currentQuestion.correctAnswer || "").trim();
-    const correctAnswerIndex = currentQuestion.options.findIndex(option => 
-      String(option || "").trim() === correctAnswerText
-    );
-    const stats = currentQuestion.options.map((_, idx) => {
-      if (idx === correctAnswerIndex) return Math.floor(Math.random() * 30) + 40;
-      return Math.floor(Math.random() * 20) + 5;
+    triggerAd(() => {
+      const currentQuestion = questions[currentIndex];
+      if (!currentQuestion) return;
+      const correctAnswerText = String(currentQuestion.correctAnswer || "").trim();
+      const correctAnswerIndex = currentQuestion.options.findIndex(option => 
+        String(option || "").trim() === correctAnswerText
+      );
+      const stats = currentQuestion.options.map((_, idx) => {
+        if (idx === correctAnswerIndex) return Math.floor(Math.random() * 30) + 40;
+        return Math.floor(Math.random() * 20) + 5;
+      });
+      const total = stats.reduce((sum, val) => sum + val, 0);
+      const normalizedStats = stats.map(val => Math.round((val / total) * 100));
+      setAudienceStats(normalizedStats);
+      setUsedAskAudience(true);
+      updateScore(-3);
     });
-    const total = stats.reduce((sum, val) => sum + val, 0);
-    const normalizedStats = stats.map(val => Math.round((val / total) * 100));
-    setAudienceStats(normalizedStats);
-    setUsedAskAudience(true);
-    updateScore(-3);
   };
 
   const triggerCelebration = () => {
@@ -588,19 +648,14 @@ const QuizEngineTimer = QuizTimerComponent;
             />
             
             <button
-              className={`${styles.controlBtn} ${isTranslating ? styles.loading : ""}`}
-              onClick={() => toggleLanguage(category?.storyText)}
-              title={language === "hi" ? "Switch to English" : "Switch to Hindi"}
-              data-icon="🌐"
-              disabled={isTranslating}
-            />
-
-            <button
-              className={styles.controlBtn}
-              onClick={toggleFontSize}
-              title="Adjust font size"
-              data-icon="Aa"
-            />
+               className={`${styles.controlBtn} ${styles.langToggle} ${isTranslating ? styles.loading : ""}`}
+               onClick={() => toggleLanguage(category?.storyText)}
+               title={language === "hi" ? "Switch to English" : "Switch to Hindi"}
+               data-icon={language === "hi" ? "EN" : "HI"}
+               disabled={isTranslating}
+            >
+               <span className={styles.langLabel}>{language === "hi" ? "A" : "अ"}</span>
+            </button>
             
             <button 
               className={`${styles.controlBtn} ${!soundEnabled ? styles.disabled : ""}`} 
@@ -730,6 +785,9 @@ const QuizEngineTimer = QuizTimerComponent;
 
       {/* Quiz Suggestions - Below Console */}
       <QuizSuggestions currentCategory={category} />
+
+      {/* Ad Simulation Overlay */}
+      {showingAd && <AdOverlay onComplete={handleAdComplete} />}
     </main>
   );
 }

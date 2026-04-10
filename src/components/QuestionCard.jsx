@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useQuiz } from "@/context/QuizContext";
 import { playCorrectSound, playWrongSound } from "@/lib/sounds";
 import { shareQuestion } from "@/lib/shareImage";
+import { Share2, Heart } from "lucide-react";
 import Image from "next/image";
 import styles from "@/styles/QuizEngine.module.css";
 
@@ -189,7 +190,7 @@ export default function QuestionCard({
               onClick={handleFavClick}
               title="Favourite"
             >
-              {fav ? "❤️" : "🤍"}
+              <Heart size={18} fill={fav ? "currentColor" : "none"} color={fav ? "#ef4444" : "currentColor"} />
             </button>
             <button
               className={styles.shareBtn}
@@ -197,7 +198,7 @@ export default function QuestionCard({
               disabled={sharing}
               title="Share this question"
             >
-              {sharing ? "⏳" : "📤"}
+              <Share2 size={18} />
             </button>
           </div>
         </div>

@@ -9,6 +9,7 @@ import { useQuiz } from "@/context/QuizContext";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import styles from "@/styles/CategorySets.module.css";
+import ResumeBanner from "@/components/ResumeBanner";
 
 // Helper function to detect if text is Hindi
 function isHindiText(text) {
@@ -197,11 +198,9 @@ export default function CategorySetsPage() {
 
     setIsTranslatingIndex(true);
     try {
-      const translated = await translateQuiz(questions, currentContentLang, targetLang);
-      if (translated) {
-        // translateQuiz updates context, but we need local state for the index too if it's not synced
-        // However, translateQuiz in context updates the global state. 
-        // We might need to handle the returned questions if we want to update the local 'questions' array.
+      const result = await translateQuiz(questions, currentContentLang, targetLang);
+      if (result?.questions) {
+        setQuestions(result.questions);
       }
       setLanguage(targetLang);
     } finally {
@@ -219,12 +218,12 @@ export default function CategorySetsPage() {
     setLanguage(detectedLang);
   };
 
-  const handleStart = (forceNew = false) => {
+  const handleStart = (mode = 'normal') => {
     if (!selectedSet || !questionsLoaded) return;
     
-    if (selectedSet.progress && !selectedSet.progress.isComplete && !forceNew) {
-       // Resume last session
-       startQuizResume(selectedSet.progress, selectedSet.questions);
+    if (selectedSet.progress && !selectedSet.progress.isComplete && mode !== 'fresh') {
+       // Resume last session (mode could be 'last' or 'unanswered')
+       startQuizResume(selectedSet.progress, selectedSet.questions, mode);
     } else {
        // Start new
        startQuizSet(category.id, selectedSet.questions, timer, language, selectedSet.index);
@@ -444,20 +443,43 @@ export default function CategorySetsPage() {
                 </div>
             </div>
 
-            <button 
-                className={`${styles.btnLaunch} ${!questionsLoaded ? styles.btnDisabled : ""}`} 
-                onClick={() => handleStart(false)}
-                disabled={!questionsLoaded}
-            >
-                {selectedSet.progress && !selectedSet.progress.isComplete ? "🚀 Resume Mission" : "🚀 Start Mastering"}
-            </button>
-            {selectedSet.progress && !selectedSet.progress.isComplete && (
-               <button className={styles.btnReset} onClick={() => handleStart(true)}>Start Fresh</button>
-            )}
-            <button className={styles.btnLater} onClick={closeModal}>Decide Later</button>
+            <div className={styles.modalActions}>
+              {selectedSet.progress && !selectedSet.progress.isComplete ? (
+                <>
+                  <button 
+                    className={styles.btnLaunch} 
+                    onClick={() => handleStart('last')}
+                    disabled={!questionsLoaded}
+                  >
+                    🚀 Resume Session
+                  </button>
+                  <button 
+                    className={styles.btnMastery} 
+                    onClick={() => handleStart('unanswered')}
+                    disabled={!questionsLoaded}
+                  >
+                    🎯 Practice Unanswered
+                  </button>
+                  <button className={styles.btnReset} onClick={() => handleStart('fresh')}>
+                    Start Fresh
+                  </button>
+                </>
+              ) : (
+                <button 
+                  className={styles.btnLaunch} 
+                  onClick={() => handleStart('normal')}
+                  disabled={!questionsLoaded}
+                >
+                  🚀 {selectedSet.progress?.isComplete ? "Practice Again" : "Start Mastering"}
+                </button>
+              )}
+              <button className={styles.btnLater} onClick={closeModal}>Decide Later</button>
+            </div>
           </div>
         </div>
       )}
+
+      <ResumeBanner />
     </main>
   );
 

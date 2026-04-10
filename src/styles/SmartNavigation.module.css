@@ -291,10 +291,46 @@
   color: var(--text-muted);
 }
 
-.mobileUserLinks {
-  display: grid;
-  grid-template-columns: 1fr;
+.mobileUserHeaderToggle {
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 20px;
+  transition: all 0.2s ease;
+  background: var(--bg-secondary);
+  border: 1px solid var(--navbar-border);
+}
+
+.mobileUserHeaderToggle:hover {
+  background: rgba(var(--accent-rgb), 0.05);
+  border-color: var(--accent);
+}
+
+.mobileUserNameRow {
+  display: flex;
+  align-items: center;
   gap: 8px;
+}
+.mobileUserLinksWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mobileUserLinksList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mobileUserLinks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 12px;
+  background: rgba(var(--accent-rgb), 0.02);
+  border-radius: 20px;
+  margin-top: 12px;
+  border: 1px solid var(--navbar-border);
 }
 
 .mobileUserLink {
@@ -315,6 +351,12 @@
   font-size: 1.1rem;
 }
 
+.mobileSignOutSection {
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--card-border);
+}
+
 .mobileSignOutBtn {
   display: flex;
   align-items: center;
@@ -328,6 +370,55 @@
   border-radius: 14px;
   font-weight: 800;
   font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mobileSignOutConfirm {
+  background: rgba(255, 77, 77, 0.05);
+  border: 1px solid rgba(255, 77, 77, 0.2);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.signOutLabel {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #ff4d4d;
+  margin: 0;
+}
+
+.signOutBtnGroup {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.confirmBtn {
+  flex: 1;
+  padding: 10px;
+  background: #ff4d4d;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.cancelBtn {
+  flex: 1;
+  padding: 10px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--navbar-border);
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.9rem;
   cursor: pointer;
 }
 

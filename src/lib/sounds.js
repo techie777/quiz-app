@@ -93,3 +93,8 @@ export function playWrongSound() {
   // Low buzzer tone
   playTone(200, 0.35, "square", 0.15);
 }
+
+export function playTickerSound() {
+  // A short, high-pitched "tick" sound
+  playTone(880, 0.05, "sine", 0.1);
+}

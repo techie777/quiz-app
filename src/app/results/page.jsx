@@ -11,7 +11,7 @@ function getMotivation(percentage) {
   if (percentage >= 80) return { text: "Great Job!", emoji: "🎉" };
   if (percentage >= 60) return { text: "Good Effort!", emoji: "👍" };
   if (percentage >= 40) return { text: "Keep Practicing!", emoji: "💪" };
-  return { text: "Don&apos;t Give Up!", emoji: "📚" };
+  return { text: "Don't Give Up!", emoji: "📚" };
 }
 
 const CONFETTI_COLORS = ["#4361ee", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#00e5ff"];

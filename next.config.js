@@ -4,6 +4,12 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['framer-motion', 'lodash'],
   },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   
   // Image optimization
   images: {

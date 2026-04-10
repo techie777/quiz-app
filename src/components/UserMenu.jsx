@@ -97,7 +97,7 @@ export default function UserMenu() {
                     </Link>
                   </li>
                   <li>
-                    <Link href="/notes" className={styles.dropdownLink} onClick={() => setIsOpen(false)}>
+                    <Link href="/my-favourites" className={styles.dropdownLink} onClick={() => setIsOpen(false)}>
                       <span className={styles.menuIcon}>❤️</span> My Favourites
                     </Link>
                   </li>

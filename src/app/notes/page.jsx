@@ -3,7 +3,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useData } from "@/context/DataContext";
 import styles from "@/styles/Notes.module.css";
+import Link from "next/link";
 
 function formatDate(d) {
   if (!d) return "";
@@ -19,11 +21,13 @@ function formatDate(d) {
 export default function NotesPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { quizzes } = useData();
   const [favourites, setFavourites] = useState([]);
   const [caFavourites, setCaFavourites] = useState([]);
+  const [quizFavIds, setQuizFavIds] = useState([]);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("all");
-  const [section, setSection] = useState("questions"); // "questions" | "currentAffairs"
+  const [section, setSection] = useState("questions"); // "questions" | "currentAffairs" | "quizzes"
   const [loading, setLoading] = useState(true);
   const [reading, setReading] = useState(null);
 
@@ -38,6 +42,11 @@ export default function NotesPage() {
       fetch("/api/current-affairs/favourites")
         .then((r) => r.json())
         .then((data) => { setCaFavourites(Array.isArray(data.items) ? data.items : []); })
+        .catch(() => {});
+
+      fetch("/api/category-favourites")
+        .then((r) => r.json())
+        .then((data) => { setQuizFavIds(Array.isArray(data.ids) ? data.ids : []); })
         .catch(() => {});
 
       setLoading(false);
@@ -72,6 +81,13 @@ export default function NotesPage() {
     });
   }, [caFavourites, search]);
 
+  const filteredQuizzes = useMemo(() => {
+    const favs = quizzes.filter(q => quizFavIds.includes(q.id));
+    const s = search.trim().toLowerCase();
+    if (!s) return favs;
+    return favs.filter(q => q.topic.toLowerCase().includes(s));
+  }, [quizzes, quizFavIds, search]);
+
   const handleRemove = async (questionId) => {
     await fetch("/api/favourites", {
       method: "DELETE",
@@ -88,6 +104,15 @@ export default function NotesPage() {
       body: JSON.stringify({ currentAffairId }),
     });
     setCaFavourites((prev) => prev.filter((x) => x.id !== currentAffairId));
+  };
+
+  const handleRemoveQuiz = async (categoryId) => {
+    await fetch("/api/category-favourites", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ categoryId }),
+    });
+    setQuizFavIds((prev) => prev.filter((id) => id !== categoryId));
   };
 
   const chipStyle = (label) => {
@@ -166,7 +191,11 @@ export default function NotesPage() {
       <div className={styles.header}>
         <h1 className={styles.title}>My Favourites</h1>
         <p className={styles.subtitle}>
-          {section === "questions" ? `${favourites.length} favourite questions` : `${caFavourites.length} saved articles`}
+          {section === "questions" 
+            ? `${favourites.length} favourite questions` 
+            : section === "quizzes"
+              ? `${quizFavIds.length} saved quizzes`
+              : `${caFavourites.length} saved articles`}
         </p>
       </div>
 
@@ -179,6 +208,15 @@ export default function NotesPage() {
           }}
         >
           Questions
+        </button>
+        <button
+          className={`${styles.sectionTab} ${section === "quizzes" ? styles.sectionTabActive : ""}`}
+          onClick={() => {
+            setSection("quizzes");
+            setActiveTab("all");
+          }}
+        >
+          Quizzes
         </button>
         <button
           className={`${styles.sectionTab} ${section === "currentAffairs" ? styles.sectionTabActive : ""}`}
@@ -195,6 +233,10 @@ export default function NotesPage() {
         <div className={styles.empty}>
           <p>No favourite questions yet. Play a quiz and mark questions you want to save!</p>
         </div>
+      ) : section === "quizzes" && quizFavIds.length === 0 ? (
+        <div className={styles.empty}>
+          <p>No favourite quizzes yet. Mark your favourite categories to see them here!</p>
+        </div>
       ) : section === "currentAffairs" && caFavourites.length === 0 ? (
         <div className={styles.empty}>
           <p>No saved current affairs yet. Open Current Affairs and tap the heart icon.</p>
@@ -204,7 +246,13 @@ export default function NotesPage() {
           <div className={styles.toolbar}>
             <input
               className={styles.searchInput}
-              placeholder={section === "questions" ? "Search favourites..." : "Search current affairs..."}
+              placeholder={
+                section === "questions" 
+                  ? "Search favourites..." 
+                  : section === "quizzes"
+                    ? "Search quizzes..."
+                    : "Search current affairs..."
+              }
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -256,12 +304,33 @@ export default function NotesPage() {
                 ))}
                 {filtered.length === 0 && <p className={styles.noMatch}>No favourites match your filters.</p>}
               </>
+            ) : section === "quizzes" ? (
+              <>
+                <div className={styles.quizGrid}>
+                  {filteredQuizzes.map((q) => (
+                    <div key={q.id} className={`${styles.quizCard} glass-card`}>
+                      <div className={styles.quizCardTop}>
+                        <span className={styles.quizEmoji}>{q.emoji}</span>
+                        <button className={styles.removeBtn} onClick={() => handleRemoveQuiz(q.id)}>
+                          ✕ Remove
+                        </button>
+                      </div>
+                      <h3 className={styles.quizTopic}>{q.topic}</h3>
+                      <p className={styles.quizDesc}>{q.description?.slice(0, 80)}{q.description?.length > 80 && "..."}</p>
+                      <Link href={`/category/${q.id}`} className={styles.playBtn}>
+                        Play Quiz
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+                {filteredQuizzes.length === 0 && <p className={styles.noMatch}>No quizzes match your search.</p>}
+              </>
             ) : (
               <>
                 {filteredCA.map((it) => (
                   <div key={it.id} className={`${styles.caCard} glass-card`}>
                     <div className={styles.caTop}>
-                      <div className={styles.caMeta}>
+                    <div className={styles.caMeta}>
                         <span>{formatDate(it.date)}</span>
                         {it.category ? (
                           <span className={styles.caChip} style={chipStyle(it.category)}>

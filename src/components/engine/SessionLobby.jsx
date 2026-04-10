@@ -64,6 +64,21 @@ export default function SessionLobby({ sessionId, isHost }) {
   useEffect(() => {
      if (isHost && pendingParticipants.length > prevPendingCount) {
          playAudioAlert('new_request');
+         // Visual Notification
+         const newGuest = pendingParticipants[pendingParticipants.length - 1];
+         if (newGuest?.userName) {
+             toast(`💂 ${newGuest.userName} requesting clearance!`, {
+                 duration: 4000,
+                 icon: '📑',
+                 style: {
+                     borderRadius: '12px',
+                     background: '#1e293b',
+                     color: '#fff',
+                     fontSize: '12px',
+                     fontWeight: 'bold'
+                 }
+             });
+         }
      }
      setPrevPendingCount(pendingParticipants.length);
   }, [pendingParticipants.length, isHost, prevPendingCount]);

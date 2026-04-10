@@ -10,7 +10,7 @@ Allow: /current-affairs
 Allow: /daily/*
 Allow: /govt-exams/*
 Allow: /govt-jobs-alerts
-Allow: /notes
+Allow: /my-favourites
 Allow: /previous-years-papers
 Allow: /about
 Allow: /privacy

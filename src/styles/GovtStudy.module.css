@@ -1,0 +1,262 @@
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px 80px;
+  font-family: 'Inter', sans-serif;
+  color: #334155;
+  background: #f8fafc;
+  min-height: 100vh;
+}
+
+/* FlexBook Overview Header */
+.bookHeader {
+  background: #2b3945;
+  border-radius: 12px;
+  padding: 40px;
+  display: flex;
+  gap: 40px;
+  color: white;
+  margin-bottom: 30px;
+}
+
+.bookCover {
+  width: 200px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+  overflow: hidden;
+  background: white;
+}
+
+.bookCover img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.bookCoverFallback {
+  width: 100%;
+  height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 4rem;
+  background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+}
+
+.bookInfo {
+  flex: 1;
+}
+
+.bookTitle {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+
+.bookMeta {
+  color: #94a3b8;
+  font-size: 0.9rem;
+  margin-bottom: 24px;
+}
+
+.bookMeta strong {
+  color: #10b981;
+}
+
+.tagPublished {
+  display: inline-block;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
+.bookDescription {
+  color: #cbd5e1;
+  line-height: 1.6;
+  margin-bottom: 30px;
+  max-width: 800px;
+}
+
+.actionRow {
+  display: flex;
+  gap: 12px;
+}
+
+.startBtn {
+  background: #059669;
+  color: white;
+  padding: 12px 30px;
+  font-weight: 700;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.startBtn:hover {
+  background: #047857;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 30px;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 30px;
+}
+
+.tab {
+  padding: 12px 0;
+  font-weight: 700;
+  color: #64748b;
+  position: relative;
+  cursor: pointer;
+}
+
+.tab.active {
+  color: #059669;
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: #059669;
+}
+
+/* Chapter Accordion */
+.subjectBlock {
+  margin-bottom: 30px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  overflow: hidden;
+}
+
+.subjectHeader {
+  background: #059669;
+  color: white;
+  padding: 16px 20px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chapterList {
+  padding: 0;
+  list-style: none;
+}
+
+.chapterItem {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.chapterItem:last-child {
+  border-bottom: none;
+}
+
+.chapterLink {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 16px 20px;
+  color: #1e293b;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.chapterLink:hover {
+  background: #f8fafc;
+  color: #059669;
+}
+
+.chapterNumber {
+  width: 30px;
+  height: 30px;
+  border: 2px solid #cbd5e1;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.chapterLink:hover .chapterNumber {
+  border-color: #059669;
+  color: #059669;
+}
+
+/* Grid for selecting a book */
+.bookGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 30px;
+}
+
+.bookCard {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  border: 1px solid #f1f5f9;
+  transition: all 0.3s;
+  display: flex;
+  flex-direction: column;
+}
+
+.bookCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.bookCardCover {
+  height: 180px;
+  background: linear-gradient(135deg, #1e293b, #334155);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  color: white;
+}
+
+.bookCardBody {
+  padding: 24px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.bookCardTitle {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin-bottom: 8px;
+  color: #1e293b;
+}
+
+.bookCardDesc {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin-bottom: 20px;
+  flex: 1;
+}
+
+.bookCardFooter {
+  font-weight: 700;
+  color: #059669;
+}
+
+@media (max-width: 768px) {
+  .bookHeader {
+    flex-direction: column;
+    padding: 30px 20px;
+  }
+}

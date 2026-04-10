@@ -57,7 +57,7 @@ export default function MockInstructions() {
       {/* 📝 MAIN CONTENT AREA */}
       <div className="flex-1 flex overflow-hidden">
         {/* LEFT: INSTRUCTIONS */}
-        <div className="flex-1 overflow-y-auto p-10 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-4 md:p-10 custom-scrollbar">
           <div className="max-w-4xl mx-auto">
             <h1 className="text-sm font-black uppercase text-slate-900 border-b-2 border-slate-900 inline-block mb-6">General Instructions:</h1>
             
@@ -117,7 +117,7 @@ export default function MockInstructions() {
         </div>
 
         {/* RIGHT: PROFILE SIDEBAR */}
-        <div className="w-72 border-l border-slate-200 bg-slate-50/50 flex flex-col items-center p-8">
+        <div className="hidden md:flex w-72 border-l border-slate-200 bg-slate-50/50 flex-col items-center p-8">
             <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-xl mb-6">
                 {session?.user?.image ? (
                     <img src={session.user.image} alt="User" className="w-full h-full object-cover" />
@@ -133,44 +133,46 @@ export default function MockInstructions() {
       </div>
 
       {/* 🚀 BOTTOM BAR (ACTIONS) */}
-      <footer className="h-16 border-t border-slate-200 bg-slate-50 flex items-center justify-between px-8 sticky bottom-0 z-50">
+      <footer className="h-auto md:h-16 border-t border-slate-200 bg-slate-50 flex flex-col md:flex-row items-center justify-between px-4 md:px-8 py-4 md:py-0 sticky bottom-0 z-50 gap-4 md:gap-0">
         <Link 
             href={`/mock-tests/${paper.examId}`}
-            className="text-indigo-600 text-xs font-black uppercase tracking-widest hover:underline"
+            className="text-indigo-600 text-[10px] md:text-xs font-black uppercase tracking-widest hover:underline"
         >
             ← Back to Tests
         </Link>
         
-        <div className="flex items-center gap-6">
-            <div className="flex items-center gap-3">
-                <span className="text-[11px] font-bold text-slate-500 uppercase">View In:</span>
-                <select 
-                    value={language}
-                    onChange={(e) => setLanguage(e.target.value)}
-                    className="bg-white border border-slate-200 rounded-md px-3 py-1 text-[11px] font-bold focus:outline-none focus:ring-2 ring-indigo-500/20"
-                >
-                    <option>English</option>
-                    <option>Hindi</option>
-                </select>
-            </div>
+        <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6 w-full md:w-auto">
+            <div className="flex items-center justify-between md:justify-start gap-6 md:gap-3 w-full md:w-auto">
+                <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase">View In:</span>
+                    <select 
+                        value={language}
+                        onChange={(e) => setLanguage(e.target.value)}
+                        className="bg-white border border-slate-200 rounded-md px-2 py-1 text-[10px] font-bold focus:outline-none focus:ring-2 ring-indigo-500/20"
+                    >
+                        <option>English</option>
+                        <option>Hindi</option>
+                    </select>
+                </div>
 
-            <div className="flex items-center gap-3 mr-4">
-                <input 
-                    type="checkbox" 
-                    id="declare" 
-                    checked={agreed}
-                    onChange={(e) => setAgreed(e.target.checked)}
-                    className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                />
-                <label htmlFor="declare" className="text-[11px] font-bold text-slate-600 cursor-pointer">
-                    I have read and understood the instructions
-                </label>
+                <div className="flex items-center gap-2">
+                    <input 
+                        type="checkbox" 
+                        id="declare" 
+                        checked={agreed}
+                        onChange={(e) => setAgreed(e.target.checked)}
+                        className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <label htmlFor="declare" className="text-[10px] font-bold text-slate-600 cursor-pointer">
+                        I have read and understood
+                    </label>
+                </div>
             </div>
 
             <button 
                 onClick={() => router.push(`/mock-tests/paper/${paperId}/test?lang=${language}`)}
                 disabled={!agreed}
-                className={`px-10 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                className={`w-full md:w-auto px-10 py-3 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-widest transition-all ${
                     agreed 
                     ? 'bg-sky-500 text-white shadow-lg hover:bg-sky-400 hover:shadow-sky-100' 
                     : 'bg-slate-200 text-slate-400 cursor-not-allowed'

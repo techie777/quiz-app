@@ -3,65 +3,84 @@
  * Returns a Blob (image/png).
  */
 export async function generateShareImage(question, quizUrl) {
-  const W = 720;
-  const H = 960;
-  const PAD = 40;
+  const W = 1080; // Higher resolution for modern sharing
+  const H = 1350; // Instagram Portrait aspect ratio
+  const PAD = 60;
   const canvas = document.createElement("canvas");
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext("2d");
 
-  // === Background gradient ===
+  // === Background: Vibrant Mesh Gradient ===
   const bg = ctx.createLinearGradient(0, 0, W, H);
-  bg.addColorStop(0, "#4361ee");
-  bg.addColorStop(1, "#7c3aed");
+  bg.addColorStop(0, "#4f46e5"); // Indigo-600
+  bg.addColorStop(0.5, "#7c3aed"); // Violet-600
+  bg.addColorStop(1, "#c026d3"); // Fuchsia-600
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
 
-  // Subtle pattern overlay
-  ctx.fillStyle = "rgba(255,255,255,0.04)";
-  for (let i = 0; i < 12; i++) {
-    const x = Math.random() * W;
-    const y = Math.random() * H;
-    const r = 30 + Math.random() * 60;
+  // Added ambient light circles for "mesh" effect
+  ctx.globalCompositeOperation = 'screen';
+  const drawLight = (x, y, r, color) => {
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, color);
+    g.addColorStop(1, 'transparent');
+    ctx.fillStyle = g;
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fill();
-  }
+  };
+  drawLight(W * 0.2, H * 0.2, 600, 'rgba(99, 102, 241, 0.4)');
+  drawLight(W * 0.8, H * 0.7, 700, 'rgba(232, 121, 249, 0.3)');
+  ctx.globalCompositeOperation = 'source-over';
 
   // === Header / Branding ===
   ctx.fillStyle = "#fff";
-  ctx.font = "bold 32px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif";
+  ctx.font = "bold 48px 'Outfit', 'Inter', sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("🧠 QuizWeb", W / 2, 60);
+  ctx.fillText("🧠 QuizWeb", W / 2, 100);
 
-  ctx.font = "16px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif";
-  ctx.fillStyle = "rgba(255,255,255,0.7)";
-  ctx.fillText("Can you answer this?", W / 2, 90);
+  ctx.font = "300 24px 'Inter', sans-serif";
+  ctx.fillStyle = "rgba(255,255,255,0.8)";
+  ctx.fillText("CHALLENGE OF THE DAY", W / 2, 140);
 
-  // === Question Card ===
+  // === Question Card: Glassmorphism Effect ===
   const cardX = PAD;
-  const cardY = 120;
+  const cardY = 220;
   const cardW = W - PAD * 2;
-  const cardH = 260;
+  const cardH = 380;
 
-  // Card background
-  ctx.fillStyle = "rgba(255,255,255,0.95)";
-  roundRect(ctx, cardX, cardY, cardW, cardH, 16);
+  // Outer Glow
+  ctx.shadowColor = "rgba(0,0,0,0.3)";
+  ctx.shadowBlur = 40;
+  ctx.shadowOffsetY = 20;
+
+  // Card Body (White with slight transparency)
+  ctx.fillStyle = "rgba(255, 255, 255, 0.98)";
+  roundRect(ctx, cardX, cardY, cardW, cardH, 32);
   ctx.fill();
+  
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+
+  // Title in Card
+  ctx.fillStyle = "#4f46e5";
+  ctx.font = "800 20px 'Inter', sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("QUESTION", W / 2, cardY + 50);
 
   // Question text (wrapped)
-  ctx.fillStyle = "#1a1a2e";
-  ctx.font = "bold 22px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif";
+  ctx.fillStyle = "#111827";
+  ctx.font = "bold 36px 'Inter', sans-serif";
   ctx.textAlign = "center";
-  wrapText(ctx, question.text, W / 2, cardY + 60, cardW - 48, 32);
+  wrapText(ctx, question.text, W / 2, cardY + 120, cardW - 100, 52);
 
   // === Options ===
   const labels = ["A", "B", "C", "D"];
-  const optStartY = cardY + cardH + 30;
-  const optW = (cardW - 20) / 2;
-  const optH = 70;
-  const gap = 20;
+  const optStartY = cardY + cardH + 60;
+  const optW = (cardW - 40) / 2;
+  const optH = 100;
+  const gap = 40;
 
   question.options.forEach((opt, i) => {
     const col = i % 2;
@@ -69,60 +88,59 @@ export async function generateShareImage(question, quizUrl) {
     const x = cardX + col * (optW + gap);
     const y = optStartY + row * (optH + gap);
 
-    // Option background
+    // Option background (Glassy)
     ctx.fillStyle = "rgba(255,255,255,0.15)";
-    roundRect(ctx, x, y, optW, optH, 12);
+    roundRect(ctx, x, y, optW, optH, 20);
     ctx.fill();
 
     // Option border
-    ctx.strokeStyle = "rgba(255,255,255,0.3)";
+    ctx.strokeStyle = "rgba(255,255,255,0.25)";
     ctx.lineWidth = 2;
-    roundRect(ctx, x, y, optW, optH, 12);
+    roundRect(ctx, x, y, optW, optH, 20);
     ctx.stroke();
 
-    // Label circle
-    ctx.fillStyle = "rgba(255,255,255,0.25)";
+    // Label Indicator
+    ctx.fillStyle = "rgba(255,255,255,1)";
     ctx.beginPath();
-    ctx.arc(x + 28, y + optH / 2, 16, 0, Math.PI * 2);
+    ctx.arc(x + 40, y + optH / 2, 22, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = "#fff";
-    ctx.font = "bold 16px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif";
+    ctx.fillStyle = "#4f46e5";
+    ctx.font = "bold 20px 'Inter', sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText(labels[i], x + 28, y + optH / 2 + 5);
+    ctx.fillText(labels[i], x + 40, y + optH / 2 + 7);
 
     // Option text
-    ctx.font = "16px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif";
+    ctx.font = "600 22px 'Inter', sans-serif";
     ctx.fillStyle = "#fff";
     ctx.textAlign = "left";
-    const maxTextW = optW - 60;
+    const maxTextW = optW - 100;
     const truncated = truncateText(ctx, opt, maxTextW);
-    ctx.fillText(truncated, x + 52, y + optH / 2 + 5);
+    ctx.fillText(truncated, x + 80, y + optH / 2 + 8);
   });
 
-  // === Footer ===
-  const footerY = H - 100;
-
-  // Divider line
-  ctx.strokeStyle = "rgba(255,255,255,0.2)";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(PAD, footerY);
-  ctx.lineTo(W - PAD, footerY);
-  ctx.stroke();
+  // === Footer / CTA ===
+  const footerY = H - 160;
 
   ctx.fillStyle = "#fff";
-  ctx.font = "bold 18px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif";
+  ctx.font = "800 32px 'Inter', sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("🎯 Think you know the answer?", W / 2, footerY + 35);
+  ctx.fillText("Think you can beat this?", W / 2, footerY);
 
-  ctx.font = "15px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif";
-  ctx.fillStyle = "rgba(255,255,255,0.75)";
-  ctx.fillText("Play now at:", W / 2, footerY + 60);
+  ctx.font = "500 24px 'Inter', sans-serif";
+  ctx.fillStyle = "rgba(255,255,255,0.7)";
+  ctx.fillText("Join thousands playing now at:", W / 2, footerY + 45);
 
-  ctx.font = "bold 16px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif";
-  ctx.fillStyle = "#fbbf24";
-  ctx.fillText(quizUrl, W / 2, footerY + 82);
+  // Branded URL area
+  const urlH = 80;
+  const urlW = ctx.measureText(quizUrl).width + 80;
+  ctx.fillStyle = "rgba(0,0,0,0.2)";
+  roundRect(ctx, (W - urlW) / 2, footerY + 70, urlW, urlH, 16);
+  ctx.fill();
+
+  ctx.font = "bold 28px 'monospace'";
+  ctx.fillStyle = "#fbbf24"; // Amber-400
+  ctx.fillText(quizUrl, W / 2, footerY + 120);
 
   // Convert to blob
   return new Promise((resolve) => {

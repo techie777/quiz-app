@@ -4,7 +4,7 @@ const next = require('next');
 const { Server } = require('socket.io');
 
 const dev = process.env.NODE_ENV !== 'production';
-const hostname = '0.0.0.0'; // Bind to all interfaces for Render/Production
+const hostname = dev ? 'localhost' : '0.0.0.0'; // Use localhost for dev, bind to all for prod
 const port = parseInt(process.env.PORT || '3000', 10);
 
 // Ensure NextAuth + SEO base URLs match the actual dev port.

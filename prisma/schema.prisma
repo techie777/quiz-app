@@ -460,6 +460,18 @@ model ChapterAttempt {
 }
 // ── Mock Test System ──
 
+model MockCategory {
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  name      String     @unique
+  slug      String     @unique
+  icon      String     @default("📚")
+  sortOrder Int        @default(0)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  
+  exams     MockExam[]
+}
+
 model MockExam {
   id          String      @id @default(auto()) @map("_id") @db.ObjectId
   name        String      @unique
@@ -470,10 +482,28 @@ model MockExam {
   hidden      Boolean     @default(false)
   image       String?
 
+  categoryId  String?     @db.ObjectId
+  category    MockCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
   papers      MockPaper[]
+  sections    MockExamSection[]
 
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+}
+
+model MockExamSection {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  examId    String   @db.ObjectId
+  exam      MockExam @relation(fields: [examId], references: [id], onDelete: Cascade)
+  
+  title     String
+  content   String   // Rich text or HTML
+  type      String   @default("TEXT") // TEXT, TABLE, DATES
+  sortOrder Int      @default(0)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model MockPaper {
@@ -489,12 +519,14 @@ model MockPaper {
   positiveMarking Float          @default(1.0)
   
   instructionType String         @default("TCS") // UI layout type
+  instructions    String?        @default("")    // Custom test-level instructions
   showSolutions   Boolean        @default(false) // Controlled by admin
   isLive          Boolean        @default(false)
   
   sections        MockSection[]
   questions       MockQuestion[]
   attempts        MockAttempt[]
+  studyChapters   StudyChapter[]
 
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
@@ -505,9 +537,12 @@ model MockSection {
   paperId   String         @db.ObjectId
   paper     MockPaper      @relation(fields: [paperId], references: [id], onDelete: Cascade)
   
-  name      String
-  order     Int            @default(0)
-  questions MockQuestion[]
+  name           String
+  order          Int            @default(0)
+  timeLimit      Int?           // Optional per-section timing in minutes
+  totalMarks     Float?         // Optional per-section marks
+  totalQuestions Int?           // Optional per-section question limit
+  questions      MockQuestion[]
 
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
@@ -566,4 +601,83 @@ model MockAttempt {
   updatedAt     DateTime  @updatedAt
 
   @@unique([userId, paperId, startedAt]) // Allow multiple attempts but track each
+}
+
+// ── Study Material System (Govt Exams) ──
+
+model StudyMaterial {
+  id          String         @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  slug        String         @unique
+  image       String?
+  description String?
+  authors     String         @default("Admin")
+  alignedTo   String?        // e.g., "SSC CGL"
+  publishDate DateTime?      @default(now())
+  
+  subjects    StudySubject[]
+  
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model StudySubject {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  materialId  String        @db.ObjectId
+  material    StudyMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  
+  name        String
+  slug        String        @unique
+  sortOrder   Int           @default(0)
+  
+  chapters    StudyChapter[]
+  
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model StudyChapter {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  subjectId   String        @db.ObjectId
+  subject     StudySubject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  
+  title       String
+  slug        String        @unique
+  content     String        // Rich text content
+  videoId     String?       // Optional youtube video ID
+  sortOrder   Int           @default(0)
+  
+  practiceId  String?       @db.ObjectId
+  practice    MockPaper?    @relation(fields: [practiceId], references: [id], onDelete: SetNull)
+  
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+// ── Fun Facts Module ──
+
+model FunFactCategory {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  name      String    @unique
+  nameHi    String?
+  slug      String    @unique
+  image     String?
+  sortOrder Int       @default(0)
+  hidden    Boolean   @default(false)
+  facts     FunFact[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model FunFact {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  categoryId    String    @db.ObjectId
+  category      FunFactCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  description   String
+  descriptionHi String?
+  image         String?
+  views         Int       @default(0)
+  hidden        Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }

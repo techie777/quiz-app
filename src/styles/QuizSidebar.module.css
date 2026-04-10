@@ -44,6 +44,12 @@
   justify-content: center;
 }
 
+@media (max-width: 960px) {
+  .timerDisplay {
+    display: none;
+  }
+}
+
 .missionMap {
   background: var(--console-bg);
   border: 1px solid var(--console-border);

@@ -31,7 +31,7 @@ export async function GET() {
       { url: '/govt-exams/rrb', priority: '0.8', changefreq: 'weekly' },
       { url: '/govt-exams/ibp', priority: '0.8', changefreq: 'weekly' },
       { url: '/govt-jobs-alerts', priority: '0.8', changefreq: 'daily' },
-      { url: '/notes', priority: '0.7', changefreq: 'weekly' },
+      { url: '/my-favourites', priority: '0.7', changefreq: 'weekly' },
       { url: '/previous-years-papers', priority: '0.7', changefreq: 'monthly' },
     ];
     

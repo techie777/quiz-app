@@ -5,6 +5,7 @@ import { useData } from "@/context/DataContext";
 import { useQuiz } from "@/context/QuizContext";
 import ExitConfirmModal from "@/components/ExitConfirmModal";
 import Image from "next/image";
+import { Heart, Share2 } from "lucide-react";
 import styles from "@/styles/QuizSuggestions.module.css";
 
 function SuggestionImage({ src, alt, emoji }) {
@@ -116,6 +117,34 @@ export default function QuizSuggestions({ currentCategory }) {
                   alt={quiz.topic} 
                   emoji={quiz.emoji} 
                 />
+                <div className={styles.cardActions}>
+                  <button 
+                    className={styles.iconBtn} 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // Fav logic would go here
+                    }}
+                    title="Add to Favourites"
+                  >
+                    <Heart size={18} />
+                  </button>
+                  <button 
+                    className={styles.iconBtn} 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (navigator.share) {
+                        navigator.share({
+                          title: quiz.topic,
+                          text: quiz.description,
+                          url: `${window.location.origin}/category/${quiz.id}`
+                        });
+                      }
+                    }}
+                    title="Share Quiz"
+                  >
+                    <Share2 size={18} />
+                  </button>
+                </div>
               </div>
               
               <div className={styles.suggestionContent}>

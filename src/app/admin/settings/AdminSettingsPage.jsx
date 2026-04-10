@@ -405,6 +405,26 @@ export default function AdminSettingsPage() {
             <span className={styles.toggleKnob} />
           </button>
         </div>
+
+        <div className={styles.toggleRow}>
+          <div>
+            <span className={styles.toggleLabel}>Advanced Search Filters</span>
+            <p className={styles.toggleDesc}>
+              Show or hide difficulty and question count filters on the home page.
+            </p>
+          </div>
+          <button
+            className={`${styles.toggleSwitch} ${settings.showAdvancedFilters !== false ? styles.toggleOn : ""}`}
+            onClick={async () => {
+              const current = settings.showAdvancedFilters !== false;
+              const success = await updateSettings({ showAdvancedFilters: !current });
+              if (success) toast.success(`Advanced filters ${!current ? "enabled" : "disabled"}`);
+              else toast.error("Failed to update filter setting.");
+            }}
+          >
+            <span className={styles.toggleKnob} />
+          </button>
+        </div>
       </section>
 
       {/* Company / PDF Settings */}

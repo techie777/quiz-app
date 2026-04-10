@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useData } from "@/context/DataContext";
 import { motion, AnimatePresence } from "framer-motion";
+import { Search, MapPin, Calendar, Clock, BookOpen, User, ArrowRight, Share2, Heart, Filter, SlidersHorizontal, ChevronDown, ChevronUp, Star, LayoutGrid, List, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { debounce } from "lodash";
@@ -259,7 +260,7 @@ const SubSection = React.memo(({ title, quizzes, onViewAll }) => {
     e.preventDefault();
     e.stopPropagation();
     if (!session?.user || session.user.isAdmin) {
-      signIn(undefined, { callbackUrl: window.location.pathname });
+      setShowSignInModal(true);
       return;
     }
 
@@ -368,20 +369,22 @@ const SubSection = React.memo(({ title, quizzes, onViewAll }) => {
                     {getRelevantImage(quiz.topic, quiz.emoji)}
                   </span>
                 )}
-                <button
-                  className={styles.shareBtn}
-                  onClick={(e) => handleShare(e, quiz)}
-                  title="Share"
-                >
-                  🔗
-                </button>
-                <button 
-                  className={`${styles.favoriteBtn} ${favorites.has(quiz.id) ? styles.isFavorite : ''}`}
-                  onClick={(e) => toggleFavorite(e, quiz.id)}
-                  title={favorites.has(quiz.id) ? "Remove from favorites" : "Add to favorites"}
-                >
-                  {favorites.has(quiz.id) ? '❤️' : '🤍'}
-                </button>
+                <div className={styles.cardActions}>
+                  <button 
+                    className={`${styles.favoriteBtn} ${favorites.has(quiz.id) ? styles.isFavorite : ''}`}
+                    onClick={(e) => toggleFavorite(e, quiz.id)}
+                    title={favorites.has(quiz.id) ? "Remove from favorites" : "Add to favorites"}
+                  >
+                    <Heart size={16} fill={favorites.has(quiz.id) ? "currentColor" : "none"} />
+                  </button>
+                  <button
+                    className={styles.shareBtn}
+                    onClick={(e) => handleShare(e, quiz)}
+                    title="Share"
+                  >
+                    <Share2 size={16} />
+                  </button>
+                </div>
               </div>
               <div className={styles.subSectionCardContent}>
                 <h4 className={styles.subSectionCardTitle}>{quiz.topic}</h4>
@@ -526,6 +529,7 @@ export default function LandingPage({ initialCategories = [] }) {
   const [difficultyFilter, setDifficultyFilter] = useState("all"); // all, easy, medium, hard
   const [questionCountFilter, setQuestionCountFilter] = useState("all"); // all, small, medium, large
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [showSignInModal, setShowSignInModal] = useState(false);
   const [userProgress, setUserProgress] = useState({});
   const [previewCategory, setPreviewCategory] = useState(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
@@ -776,8 +780,33 @@ export default function LandingPage({ initialCategories = [] }) {
   // but we should eventually optimize /api/sections to return only what's needed.
   const dailyCategoryIds = useMemo(() => getDailyCategoryIds(quizzes), [quizzes]);
   const baseFilteredCategories = useMemo(() => {
-    return quizzes.filter((c) => !c.hidden && !c.parentId && !dailyCategoryIds.has(c.id));
-  }, [quizzes, dailyCategoryIds]);
+    let list = quizzes.filter((c) => !c.hidden && !c.parentId && !dailyCategoryIds.has(c.id));
+    
+    // Apply Advanced Filters to the main view as well
+    if (difficultyFilter !== "all") {
+      list = list.filter(c => c.questions?.some(q => q.difficulty === difficultyFilter));
+    }
+    
+    if (questionCountFilter !== "all") {
+      list = list.filter(c => {
+        const count = c.questions?.length || 0;
+        if (questionCountFilter === "small") return count >= 1 && count <= 10;
+        if (questionCountFilter === "medium") return count >= 11 && count <= 25;
+        if (questionCountFilter === "large") return count >= 26;
+        return true;
+      });
+    }
+
+    if (sortBy === "alphabetical") {
+      list = [...list].sort((a, b) => a.topic.localeCompare(b.topic));
+    } else if (sortBy === "newest") {
+      list = [...list].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    } else if (sortBy === "popular") {
+      list = [...list].sort((a, b) => (b.questions?.length || 0) - (a.questions?.length || 0));
+    }
+
+    return list;
+  }, [quizzes, dailyCategoryIds, difficultyFilter, questionCountFilter, sortBy]);
 
   const categorizedQuizzes = useMemo(() => {
     return categorizeQuizzes(baseFilteredCategories, sections);
@@ -801,8 +830,14 @@ export default function LandingPage({ initialCategories = [] }) {
           <span className={styles.heroBadge}>#1 Interactive Learning Platform</span>
           <h1 className={styles.heroTitle}>Level Up Your Knowledge Today</h1>
           
-          <div className="max-w-sm mx-auto mb-14">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-14">
             <LiveStudyButton />
+            <Link 
+              href="/fun-facts"
+              className="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white px-6 py-3 rounded-2xl flex items-center gap-2 border border-white/20 transition-all font-bold"
+            >
+              <Sparkles size={18} className="text-yellow-400" /> Factify (Zero-G)
+            </Link>
           </div>
           
           {/* Integrated Search Command Center */}
@@ -832,6 +867,10 @@ export default function LandingPage({ initialCategories = [] }) {
             
             {showSuggestions && searchSuggestions.length > 0 && (
               <div className={styles.suggestionsDropdown}>
+                <div className={styles.suggestionsHeader}>
+                  <span>Search Results</span>
+                  <span className={styles.suggestionCount}>{searchSuggestions.length} found</span>
+                </div>
                 {searchSuggestions.map((suggestion, index) => (
                   <button
                     key={suggestion.id}
@@ -840,10 +879,14 @@ export default function LandingPage({ initialCategories = [] }) {
                     }`}
                     onClick={() => handleSuggestionClick(suggestion)}
                   >
-                    <span className={styles.suggestionEmoji}>{suggestion.emoji}</span>
+                    <span className={styles.suggestionEmoji}>{suggestion.emoji || "📝"}</span>
                     <div className={styles.suggestionContent}>
                       <strong className={styles.suggestionName}>{suggestion.topic}</strong>
-                      <p className={styles.suggestionDescription}>{suggestion.description}</p>
+                      <p className={styles.suggestionDescription}>
+                        {suggestion.description?.length > 70 
+                          ? suggestion.description.substring(0, 70) + "..." 
+                          : suggestion.description || "Interactive quiz category"}
+                      </p>
                     </div>
                   </button>
                 ))}
@@ -852,81 +895,83 @@ export default function LandingPage({ initialCategories = [] }) {
           </div>
 
           {/* Advanced Filters Nested in Hero */}
-          <div className={styles.heroFiltersWrapper}>
-            <button 
-              className={styles.advancedFiltersToggle}
-              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-            >
-              <span>Advanced Filters</span>
-              <span className={`${styles.filterArrow} ${showAdvancedFilters ? styles.filterArrowUp : ''}`}>
-                ▼
-              </span>
-            </button>
+          {settings?.showAdvancedFilters !== false && (
+            <div className={styles.heroFiltersWrapper}>
+              <button 
+                className={styles.advancedFiltersToggle}
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              >
+                <span>Advanced Filters</span>
+                <span className={`${styles.filterArrow} ${showAdvancedFilters ? styles.filterArrowUp : ''}`}>
+                  ▼
+                </span>
+              </button>
 
-            {showAdvancedFilters && (
-              <div className={styles.advancedFiltersPanel}>
-                <div className={styles.filterGroup}>
-                  <span className={styles.filterLabel}>Sort By</span>
-                  <div className={styles.filterOptions}>
-                    {[
-                      { id: 'default', label: 'Default' },
-                      { id: 'alphabetical', label: 'A-Z' },
-                      { id: 'newest', label: 'Newest' },
-                      { id: 'popular', label: 'Popular' }
-                    ].map(opt => (
-                      <button
-                        key={opt.id}
-                        className={`${styles.filterOption} ${sortBy === opt.id ? styles.filterOptionActive : ''}`}
-                        onClick={() => setSortBy(opt.id)}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
+              {showAdvancedFilters && (
+                <div className={styles.advancedFiltersPanel}>
+                  <div className={styles.filterGroup}>
+                    <span className={styles.filterLabel}>Sort By</span>
+                    <div className={styles.filterOptions}>
+                      {[
+                        { id: 'default', label: 'Default' },
+                        { id: 'alphabetical', label: 'A-Z' },
+                        { id: 'newest', label: 'Newest' },
+                        { id: 'popular', label: 'Popular' }
+                      ].map(opt => (
+                        <button
+                          key={opt.id}
+                          className={`${styles.filterOption} ${sortBy === opt.id ? styles.filterOptionActive : ''}`}
+                          onClick={() => setSortBy(opt.id)}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className={styles.filterGroup}>
+                    <span className={styles.filterLabel}>Difficulty</span>
+                    <div className={styles.filterOptions}>
+                      {[
+                        { id: 'all', label: 'All' },
+                        { id: 'easy', label: 'Easy' },
+                        { id: 'medium', label: 'Medium' },
+                        { id: 'hard', label: 'Hard' }
+                      ].map(opt => (
+                        <button
+                          key={opt.id}
+                          className={`${styles.filterOption} ${difficultyFilter === opt.id ? styles.filterOptionActive : ''}`}
+                          onClick={() => setDifficultyFilter(opt.id)}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className={styles.filterGroup}>
+                    <span className={styles.filterLabel}>Questions</span>
+                    <div className={styles.filterOptions}>
+                      {[
+                        { id: 'all', label: 'Any' },
+                        { id: 'small', label: '1-10' },
+                        { id: 'medium', label: '11-25' },
+                        { id: 'large', label: '25+' }
+                      ].map(opt => (
+                        <button
+                          key={opt.id}
+                          className={`${styles.filterOption} ${questionCountFilter === opt.id ? styles.filterOptionActive : ''}`}
+                          onClick={() => setQuestionCountFilter(opt.id)}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
-
-                <div className={styles.filterGroup}>
-                  <span className={styles.filterLabel}>Difficulty</span>
-                  <div className={styles.filterOptions}>
-                    {[
-                      { id: 'all', label: 'All' },
-                      { id: 'easy', label: 'Easy' },
-                      { id: 'medium', label: 'Medium' },
-                      { id: 'hard', label: 'Hard' }
-                    ].map(opt => (
-                      <button
-                        key={opt.id}
-                        className={`${styles.filterOption} ${difficultyFilter === opt.id ? styles.filterOptionActive : ''}`}
-                        onClick={() => setDifficultyFilter(opt.id)}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className={styles.filterGroup}>
-                  <span className={styles.filterLabel}>Questions</span>
-                  <div className={styles.filterOptions}>
-                    {[
-                      { id: 'all', label: 'Any' },
-                      { id: 'small', label: '1-10' },
-                      { id: 'medium', label: '11-25' },
-                      { id: 'large', label: '25+' }
-                    ].map(opt => (
-                      <button
-                        key={opt.id}
-                        className={`${styles.filterOption} ${questionCountFilter === opt.id ? styles.filterOptionActive : ''}`}
-                        onClick={() => setQuestionCountFilter(opt.id)}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
           {/* Filter Chips Nested in Hero */}
           <div className={styles.heroChipsWrapper}>
@@ -1229,6 +1274,44 @@ export default function LandingPage({ initialCategories = [] }) {
                 onClick={closePreviewModal}
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Sign In Modal */}
+      {showSignInModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowSignInModal(false)}>
+          <div className={styles.signInModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>Sign In Required</h3>
+              <button className={styles.modalClose} onClick={() => setShowSignInModal(false)}>✕</button>
+            </div>
+            <div className={styles.modalContent}>
+              <p className={styles.modalDescription}>
+                Please sign in to your account to save your favorite quizzes and track your learning progress.
+              </p>
+              <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl mb-6 text-sm text-indigo-700 dark:text-indigo-300">
+                <strong>Why Sign In?</strong>
+                <ul className="list-disc ml-4 mt-2 space-y-1">
+                  <li>Sync favorites across devices</li>
+                  <li>Unlock personalized learning paths</li>
+                  <li>Track detailed performance analytics</li>
+                </ul>
+              </div>
+            </div>
+            <div className={styles.modalFooter}>
+              <button 
+                className={styles.modalPrimaryButton}
+                onClick={() => signIn(undefined, { callbackUrl: window.location.pathname })}
+              >
+                Sign In Now
+              </button>
+              <button 
+                className={styles.modalSecondaryButton}
+                onClick={() => setShowSignInModal(false)}
+              >
+                Maybe Later
               </button>
             </div>
           </div>

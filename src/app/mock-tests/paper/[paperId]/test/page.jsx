@@ -16,6 +16,17 @@ const STATUS = {
     MARKED_ANSWERED: 'MARKED_ANSWERED'
 };
 
+const getStatusStyle = (status, styles) => {
+    const map = {
+        [STATUS.NOT_VISITED]: styles.notVisited,
+        [STATUS.NOT_ANSWERED]: styles.notAnswered,
+        [STATUS.ANSWERED]: styles.answered,
+        [STATUS.MARKED]: styles.marked,
+        [STATUS.MARKED_ANSWERED]: styles.markedAnswered
+    };
+    return map[status] || styles.notVisited;
+};
+
 export default function MockTestEngine() {
   const { paperId } = useParams();
   const router = useRouter();
@@ -266,38 +277,47 @@ export default function MockTestEngine() {
     <div className={styles.mockWrapper} ref={containerRef}>
       {/* 🏛️ HEADER */}
       <header className={styles.header}>
-        <div className="flex items-center gap-4">
-           <span className="text-xl font-black text-indigo-600 tracking-tighter">QuizWeb!</span>
-           <div className="h-6 w-px bg-slate-200" />
-           <span className="text-[13px] font-bold text-slate-600 uppercase">{paper.title}</span>
+        <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
+           <span className="text-lg md:text-xl font-black text-indigo-600 tracking-tighter shrink-0">QuizWeb!</span>
+           <div className="hidden xs:block h-6 w-px bg-slate-200" />
+           <span className="text-[11px] md:text-[13px] font-bold text-slate-600 uppercase truncate">
+             {paper.title}
+           </span>
         </div>
 
-        <div className="flex items-center gap-6">
-            <div className={`px-4 py-2 rounded-lg border flex items-center gap-3 ${timeLeft < 300 ? 'bg-red-50 border-red-200 text-red-600' : 'bg-slate-50 border-slate-200'}`}>
-                <span className="text-[10px] font-black uppercase tracking-widest">Time Remaining:</span>
-                <span className="text-lg font-black font-mono w-24 text-center">{formatTime(timeLeft)}</span>
+        <div className="flex items-center gap-2 md:gap-6 shrink-0">
+            <div className={`px-2 md:px-4 py-1.5 md:py-2 rounded-lg border flex items-center gap-2 md:gap-3 ${timeLeft < 300 ? 'bg-red-50 border-red-200 text-red-600' : 'bg-slate-50 border-slate-200'}`}>
+                <span className="hidden lg:inline text-[9px] font-black uppercase tracking-widest">Time Remaining:</span>
+                <span className="text-sm md:text-lg font-black font-mono w-16 md:w-24 text-center">{formatTime(timeLeft)}</span>
             </div>
             
-            <button 
-                onClick={() => document.documentElement.requestFullscreen()}
-                className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-indigo-600"
-            >
-                [ Full Screen ]
-            </button>
-            <button 
-                onClick={() => setIsPaused(!isPaused)}
-                className="bg-white border border-slate-200 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-slate-50"
-            >
-                {isPaused ? 'RESUME' : 'PAUSE'}
-            </button>
-
-            {/* Mobile Palette Toggle */}
-            <button 
-                onClick={() => setIsPaletteOpen(!isPaletteOpen)}
-                className={`${styles.paletteToggle} md:hidden bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-lg font-black text-[10px] uppercase tracking-widest`}
-            >
-                {isPaletteOpen ? 'Close Palette' : 'Question Palette'}
-            </button>
+            <div className="flex items-center gap-1.5 md:gap-2">
+                <button 
+                    onClick={() => document.documentElement.requestFullscreen()}
+                    className="flex items-center justify-center p-2 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-slate-50 transition-colors"
+                    title="Full Screen"
+                >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+                    </svg>
+                </button>
+                <button 
+                    onClick={() => setIsPaused(!isPaused)}
+                    className="flex items-center gap-2 bg-white border border-slate-200 px-3 md:px-4 py-2 rounded-lg text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm"
+                >
+                    {isPaused ? (
+                        <>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                            <span className="hidden sm:inline">RESUME</span>
+                        </>
+                    ) : (
+                        <>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                            <span className="hidden sm:inline">PAUSE</span>
+                        </>
+                    )}
+                </button>
+            </div>
         </div>
       </header>
 
@@ -378,8 +398,9 @@ export default function MockTestEngine() {
             </div>
         </div>
 
-        {/* RIGHT: PALETTE */}
+        {/* RIGHT: PALETTE (Lives at bottom on mobile) */}
         <div className={`${styles.rightPane} ${isPaletteOpen ? styles.rightPaneOpen : ''}`}>
+            <div className={styles.paletteScrollArea}>
 
             <div className={styles.paletteHeader}>
                 <div className="flex items-center gap-4">
@@ -442,20 +463,17 @@ export default function MockTestEngine() {
                     return (
                         <div 
                             key={q.id}
-                            onClick={() => {
-                                setCurrentIndex(i);
-                                setIsPaletteOpen(false); // Auto-close on selection for mobile
-                            }}
-                            className={`${styles.paletteItem} ${styles[status.toLowerCase().replace('_', '')]} ${currentIndex === i ? styles.currentQuestion : ''}`}
+                            onClick={() => setCurrentIndex(i)}
+                            className={`${styles.paletteItem} ${getStatusStyle(status, styles)} ${currentIndex === i ? styles.currentQuestion : ''}`}
                         >
                             {i+1}
                         </div>
-
                     );
                 })}
             </div>
+            </div>
 
-            <div className="mt-auto p-4 bg-white/30 border-t border-white">
+            <div className="p-4 bg-white/80 border-t border-slate-200 shrink-0">
                 <button 
                   onClick={() => setShowSummary(true)}
                   className={`${styles.actionBtn} ${styles.btnSubmit} w-full py-4 h-auto rounded-xl text-[13px] font-black shadow-lg shadow-indigo-100`}

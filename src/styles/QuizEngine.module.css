@@ -145,6 +145,31 @@
   color: var(--accent);
 }
 
+.langToggle {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.langLabel {
+  font-size: 1.2rem;
+  font-weight: 900;
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: block;
+  line-height: 1;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .langLabel {
+    font-size: 1.1rem;
+  }
+}
+
 .endQuizBtn {
   background: rgba(239, 68, 68, 0.1);
   color: #ef4444;
@@ -1148,4 +1173,114 @@
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-4px); }
   75% { transform: translateX(4px); }
+}
+
+/* Ad Simulation Styles */
+.adOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.adContent {
+  width: 100%;
+  max-width: 450px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.adHeader {
+  padding: 1rem 1.5rem;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--navbar-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.adBadge {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+}
+
+.adTimer {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--accent);
+}
+
+.adCloseBtn {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.adCloseBtn:hover {
+  filter: brightness(1.1);
+  transform: scale(1.05);
+}
+
+.adBody {
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+}
+
+.adPlaceholder h3 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+.adPlaceholder p {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin-bottom: 2rem;
+}
+
+.adVisual {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto;
+  background: var(--accent-light);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.adPulse {
+  width: 100%;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 50%;
+  opacity: 0.3;
+  animation: pulseAd 2s infinite;
+}
+
+@keyframes pulseAd {
+  0% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 0.4; }
+}
+
+@media (max-width: 480px) {
+  .adContent {
+    max-width: 100%;
+  }
 }

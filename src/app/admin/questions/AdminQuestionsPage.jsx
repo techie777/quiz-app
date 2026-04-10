@@ -35,6 +35,10 @@ export default function AdminQuestionsPage() {
   const [form, setForm] = useState(EMPTY_Q);
   const [formCatId, setFormCatId] = useState("");
   const [selectedIds, setSelectedIds] = useState([]);
+  const [duplicateMatches, setDuplicateMatches] = useState({}); // { qId: { matchId, text, score } }
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanProgress, setScanProgress] = useState(0);
+  const [showOnlyDupes, setShowOnlyDupes] = useState(false);
 
   // Build flat list
   const allQuestions = useMemo(() => {
@@ -52,9 +56,64 @@ export default function AdminQuestionsPage() {
       if (filterCat !== "all" && q.categoryId !== filterCat) return false;
       if (filterDiff !== "all" && q.difficulty !== filterDiff) return false;
       if (search && !q.text.toLowerCase().includes(search.toLowerCase())) return false;
+      if (showOnlyDupes && !duplicateMatches[q.id]) return false;
       return true;
     });
-  }, [allQuestions, filterCat, filterDiff, search]);
+  }, [allQuestions, filterCat, filterDiff, search, showOnlyDupes, duplicateMatches]);
+
+  const startFuzzyScan = async () => {
+    setIsScanning(true);
+    setScanProgress(0);
+    const matches = {};
+    const total = allQuestions.length;
+    
+    // Pre-processing: tokenize all questions
+    const tokenized = allQuestions.map(q => ({
+      id: q.id,
+      text: q.text,
+      words: new Set(q.text.toLowerCase().replace(/[?.,!]/g, "").split(/\s+/).filter(w => w.length > 1))
+    }));
+
+    const CHUNK_SIZE = 50;
+    
+    for (let i = 0; i < total; i++) {
+      const q1 = tokenized[i];
+      if (q1.words.size === 0) continue;
+
+      for (let j = i + 1; j < total; j++) {
+        const q2 = tokenized[j];
+        if (q2.words.size === 0) continue;
+
+        // Jaccard-like similarity Score
+        let intersection = 0;
+        q1.words.forEach(w => { if (q2.words.has(w)) intersection++; });
+        
+        const minLen = Math.min(q1.words.size, q2.words.size);
+        const score = intersection / minLen;
+
+        if (score >= 0.7) {
+          matches[q1.id] = { matchId: q2.id, text: q2.text, score: Math.round(score * 100) };
+          matches[q2.id] = { matchId: q1.id, text: q1.text, score: Math.round(score * 100) };
+        }
+      }
+
+      // Batch UI updates and avoid freezing
+      if (i % CHUNK_SIZE === 0) {
+        setScanProgress(Math.round((i / total) * 100));
+        await new Promise(r => setTimeout(r, 0));
+      }
+    }
+
+    setDuplicateMatches(matches);
+    setIsScanning(false);
+    setScanProgress(100);
+    if (Object.keys(matches).length > 0) {
+      toast.success(`Scan complete! Found ${Object.keys(matches).length / 2} potential duplicate pairs.`);
+      setShowOnlyDupes(true);
+    } else {
+      toast.success("Scan complete! No duplicates found.");
+    }
+  };
 
   if (!allowed) {
     return (
@@ -242,6 +301,25 @@ export default function AdminQuestionsPage() {
           <option value="medium">Medium</option>
           <option value="hard">Hard</option>
         </select>
+
+        <button 
+          onClick={startFuzzyScan} 
+          disabled={isScanning}
+          className={`${styles.scanBtn} ${isScanning ? styles.scanning : ''}`}
+        >
+          {isScanning ? `Scanning ${scanProgress}%...` : '🔍 Scan Duplicates'}
+        </button>
+
+        {Object.keys(duplicateMatches).length > 0 && (
+          <label className={styles.dupeToggle}>
+            <input 
+              type="checkbox" 
+              checked={showOnlyDupes} 
+              onChange={e => setShowOnlyDupes(e.target.checked)} 
+            />
+            Duplicates Only
+          </label>
+        )}
       </div>
 
       {/* Selection Status Bar */}
@@ -266,8 +344,10 @@ export default function AdminQuestionsPage() {
 
       {/* Question List */}
       <div className={styles.list}>
-        {filtered.map((q) => (
-          <div key={q.id} className={`${styles.row} glass-card ${selectedIds.includes(q.id) ? styles.rowSelected : ''}`}>
+        {filtered.map((q) => {
+          const match = duplicateMatches[q.id];
+          return (
+          <div key={q.id} className={`${styles.row} glass-card ${selectedIds.includes(q.id) ? styles.rowSelected : ''} ${match ? styles.rowDuplicate : ''}`}>
             <div className={styles.rowSelector}>
               <input 
                 type="checkbox" 
@@ -284,6 +364,11 @@ export default function AdminQuestionsPage() {
                   <span className={`${styles.diffBadge} ${styles[q.difficulty]}`}>
                     {q.difficulty}
                   </span>
+                  {match && (
+                    <span className={styles.dupeBadge}>
+                      Potential Duplicate ({match.score}%)
+                    </span>
+                  )}
                 </div>
                 <div className={styles.rowActions}>
                   <button className={styles.editBtn} onClick={() => openEdit(q)} title="Edit">
@@ -299,6 +384,12 @@ export default function AdminQuestionsPage() {
                 </div>
               </div>
               <p className={styles.questionText}>{q.text}</p>
+              {match && (
+                <div className={styles.matchBox}>
+                   <div className={styles.matchLabel}>SIMILAR TO:</div>
+                   <div className={styles.matchText}>{match.text}</div>
+                </div>
+              )}
               {q.image && <img src={q.image} alt="" className={styles.questionImg} />}
               <div className={styles.optionsList}>
                 {q.options.map((opt, i) => (
@@ -313,7 +404,8 @@ export default function AdminQuestionsPage() {
               </div>
             </div>
           </div>
-        ))}
+          );
+        })}
         {filtered.length === 0 && (
           <p className={styles.empty}>No questions match your filters.</p>
         )}

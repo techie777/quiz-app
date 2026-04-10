@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useUI } from "@/context/UIContext";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import styles from "@/styles/SmartNavigation.module.css";
 
 const navigationItems = [
@@ -45,9 +46,16 @@ const navigationItems = [
     keywords: "mock tests, practice papers, SSC, IBPS, exam prep"
   },
   {
+    name: "Govt Study Material",
+    href: "/govt-study",
+    icon: "📚",
+    description: "FlexBook study materials for Govt Exams",
+    keywords: "study material, govt exams, preparation, notes"
+  },
+  {
     name: "Book My Course",
     href: "/book-my-course",
-    icon: "📚",
+    icon: "🎒",
     description: "Order school courses and books online",
     keywords: "school books, course booking, parent portal, education"
   },
@@ -57,6 +65,13 @@ const navigationItems = [
     icon: "🧭",
     description: "Complete career guidance and roadmaps",
     keywords: "career, jobs, guidance, roadmap, career guide"
+  },
+  {
+    name: "Fun facts",
+    href: "/fun-facts",
+    icon: "✨",
+    description: "Discover amazing and mind-blowing facts",
+    keywords: "fun facts, factify, knowledge, trivia, zero gravity"
   },
   {
     name: "School Study",
@@ -73,6 +88,9 @@ export default function SmartNavigation() {
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const isUser = session?.user && !session.user.isAdmin;
+  
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isSignOutConfirm, setIsSignOutConfirm] = useState(false);
   useEffect(() => {
     const handleScroll = () => {
       const offset = window.scrollY;
@@ -167,37 +185,83 @@ export default function SmartNavigation() {
                     <div className={styles.loading}>Loading...</div>
                   ) : isUser ? (
                     <div className={styles.mobileUserMenu}>
-                      <div className={styles.mobileUserStats}>
-                        <div className={styles.mobileUserAvatar}>
-                          {session.user.name?.[0]?.toUpperCase() || "U"}
+                      <div className={styles.mobileUserLinksWrapper}>
+                        <div 
+                          className={styles.mobileUserHeaderToggle}
+                          onClick={() => setIsProfileOpen(!isProfileOpen)}
+                        >
+                          <div className={styles.mobileUserStats}>
+                            <div className={styles.mobileUserAvatar}>
+                              {session.user.name?.[0]?.toUpperCase() || "U"}
+                            </div>
+                            <div className={styles.mobileUserInfo}>
+                              <div className={styles.mobileUserNameRow}>
+                                <p className={styles.mobileUserName}>{session.user.name}</p>
+                                {isProfileOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                              </div>
+                              <p className={styles.mobileUserEmail}>{session.user.email}</p>
+                            </div>
+                          </div>
                         </div>
-                        <div className={styles.mobileUserInfo}>
-                          <p className={styles.mobileUserName}>{session.user.name}</p>
-                          <p className={styles.mobileUserEmail}>{session.user.email}</p>
-                        </div>
+                        
+                        <AnimatePresence>
+                          {isProfileOpen && (
+                            <motion.div 
+                              className={styles.mobileUserLinks}
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                            >
+                              <div className={styles.mobileUserLinksList}>
+                                <Link href="/profile" className={styles.mobileUserLink} onClick={closeMobileMenu}>
+                                  <span className={styles.userMenuIcon}>👤</span> My Profile
+                                </Link>
+                                <Link href="/my-favourites" className={styles.mobileUserLink} onClick={closeMobileMenu}>
+                                  <span className={styles.userMenuIcon}>❤️</span> My Favourites
+                                </Link>
+                                <Link href="/school-study/dashboard" className={styles.mobileUserLink} onClick={closeMobileMenu}>
+                                  <span className={styles.userMenuIcon}>📊</span> Learning Progress
+                                </Link>
+                                
+                                <div className={styles.mobileSignOutSection}>
+                                  {!isSignOutConfirm ? (
+                                    <button 
+                                      className={styles.mobileSignOutBtn}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setIsSignOutConfirm(true);
+                                      }}
+                                    >
+                                      <span className={styles.userMenuIcon}>🚪</span> Sign Out
+                                    </button>
+                                  ) : (
+                                    <div className={styles.mobileSignOutConfirm}>
+                                      <p className={styles.signOutLabel}>Are you sure you want to sign out?</p>
+                                      <div className={styles.signOutBtnGroup}>
+                                        <button 
+                                          className={styles.confirmBtn}
+                                          onClick={() => {
+                                            signOut({ callbackUrl: '/' });
+                                            closeMobileMenu();
+                                          }}
+                                        >
+                                          Yes, Sign Out
+                                        </button>
+                                        <button 
+                                          className={styles.cancelBtn}
+                                          onClick={() => setIsSignOutConfirm(false)}
+                                        >
+                                          Cancel
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
-                      
-                      <div className={styles.mobileUserLinks}>
-                        <Link href="/profile" className={styles.mobileUserLink} onClick={closeMobileMenu}>
-                          <span className={styles.userMenuIcon}>👤</span> My Profile
-                        </Link>
-                        <Link href="/notes" className={styles.mobileUserLink} onClick={closeMobileMenu}>
-                          <span className={styles.userMenuIcon}>❤️</span> My Favourites
-                        </Link>
-                        <Link href="/school-study/dashboard" className={styles.mobileUserLink} onClick={closeMobileMenu}>
-                          <span className={styles.userMenuIcon}>📊</span> Learning Progress
-                        </Link>
-                      </div>
-
-                      <button 
-                        className={styles.mobileSignOutBtn}
-                        onClick={() => {
-                          signOut({ callbackUrl: '/' });
-                          closeMobileMenu();
-                        }}
-                      >
-                        <span className={styles.userMenuIcon}>🚪</span> Sign Out
-                      </button>
                     </div>
                   ) : (
                     <div className={styles.mobileAuthActions}>

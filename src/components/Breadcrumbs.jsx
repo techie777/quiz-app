@@ -5,15 +5,17 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useData } from '@/context/DataContext';
 import { useQuiz } from '@/context/QuizContext';
+import { useUI } from '@/context/UIContext';
 import styles from '@/styles/Breadcrumbs.module.css';
 
 const Breadcrumbs = () => {
   const pathname = usePathname();
   const { quizzes } = useData();
   const { selectedSetIndex, quizId } = useQuiz();
-  
-  // Don't show breadcrumbs on the home page or admin routes
-  if (pathname === '/' || pathname?.startsWith('/admin') || pathname?.includes('/mock-tests/paper/')) return null;
+  const uiContext = useUI();
+  const isMobileMenuOpen = uiContext?.isMobileMenuOpen || false;  
+  // Don't show breadcrumbs on the home page, admin routes, or when mobile menu is open
+  if (pathname === '/' || pathname?.startsWith('/admin') || pathname?.includes('/mock-tests/paper/') || isMobileMenuOpen) return null;
 
   const pathSegments = pathname.split('/').filter((segment) => segment !== '');
 
@@ -39,13 +41,17 @@ const Breadcrumbs = () => {
         label = 'Practice Session';
       }
     } else if (segment.length === 24) {
+      // Robust lookup for category topic
       const category = quizzes?.find(q => q.id === segment);
       if (category) {
         label = category.topic;
-        // If we're on a quiz page, the category link should go to the category sets page
-        if (pathname.startsWith('/quiz/')) {
+        // If we're on a quiz page or deep in category, ensure the link is correct
+        if (pathname.includes('/quiz/')) {
           finalHref = `/category/${segment}`;
         }
+      } else {
+        // Fallback or while loading
+        label = 'Loading...'; 
       }
     } else if (segment === 'govt-jobs-alerts') {
       label = 'Job Alerts';

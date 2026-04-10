@@ -272,3 +272,95 @@
   margin-bottom: 12px;
 }
 
+.scanBtn {
+  padding: 10px 18px;
+  background: white;
+  border: 2px dashed #94a3b8;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.scanBtn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.scanning {
+  opacity: 0.7;
+  cursor: wait;
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+  border-style: solid !important;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+.dupeToggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #d97706;
+  background: #fffbeb;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #fef3c7;
+  cursor: pointer;
+}
+
+.dupeToggle input {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.rowDuplicate {
+  border-left: 4px solid #f59e0b !important;
+  background: #fffefb;
+}
+
+.dupeBadge {
+  background: #fff7ed;
+  color: #c2410c;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid #ffedd5;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.matchBox {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px dashed #e2e8f0;
+}
+
+.matchLabel {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #94a3b8;
+  margin-bottom: 4px;
+  letter-spacing: 1px;
+}
+
+.matchText {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-style: italic;
+  line-height: 1.4;
+}

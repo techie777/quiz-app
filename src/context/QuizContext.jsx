@@ -61,6 +61,7 @@ const initialState = {
   fontScale: 1,
   selectedSetIndex: null,
   isResuming: false,
+  originalTotal: null,
 };
 
 // Key for storage
@@ -186,7 +187,12 @@ function quizReducer(state, action) {
     case "RESET_QUIZ":
       return { ...initialState, soundEnabled: state.soundEnabled, isFullscreen: state.isFullscreen };
     case "LOAD_STATE":
-      return { ...state, ...action.payload, status: action.payload.status === 'finished' ? 'idle' : action.payload.status };
+      return { 
+        ...state, 
+        ...action.payload, 
+        status: action.payload.status === 'finished' ? 'idle' : action.payload.status,
+        originalTotal: action.payload.originalTotal || action.payload.questions?.length || state.originalTotal
+      };
     case "SET_RESUMING":
       return { ...state, isResuming: action.payload };
     default:
@@ -245,9 +251,9 @@ export function QuizProvider({ children }) {
     if (!state.quizId || (state.status !== 'active' && !forceComplete)) return;
 
     try {
-      const total = state.questions.length;
+      const total = state.originalTotal || state.questions.length;
       let progress = total > 0 ? (activeAnswers.length / total) * 100 : 0;
-      let isComplete = (activeAnswers.length === total && total > 0) || forceComplete;
+      let isComplete = (activeAnswers.length >= total && total > 0) || forceComplete;
       
       if (forceComplete) progress = 100;
 
@@ -393,7 +399,7 @@ export function QuizProvider({ children }) {
         dispatch({ type: "SET_QUESTIONS", payload: translatedQuestions });
         dispatch({ type: "SET_TRANSLATED_STORY", payload: translatedStory });
         toast.success(`Translated to ${to === 'hi' ? 'Hindi' : 'English'}`);
-        return translatedStory;
+        return { questions: translatedQuestions, story: translatedStory };
       } else {
         const errorData = await res.json().catch(() => ({}));
         console.error("Translation API error response:", errorData);
@@ -506,24 +512,35 @@ export function QuizProvider({ children }) {
         translateTarget: state.translateTarget,
         translatedStory: state.translatedStory,
         fontScale: state.fontScale,
-        startQuizResume: async (progressData, questions) => {
+        startQuizResume: async (progressData, questions, mode = 'last') => {
           dispatch({ type: "SET_RESUMING", payload: true });
           try {
             const answers = JSON.parse(progressData.answersJson || "[]");
             const score = answers.reduce((sum, a) => sum + (a.isCorrect ? 1 : 0), 0);
+            
+            let finalQuestions = questions.map(q => {
+              const ans = answers.find(a => a.questionId === q.id);
+              return ans ? { ...q, userAnswer: ans.selected } : q;
+            });
+
+            let startIndex = progressData.lastQuestionIndex || 0;
+
+            if (mode === 'unanswered') {
+              // Mastery Mode: Filter only unanswered questions
+              finalQuestions = finalQuestions.filter(q => q.userAnswer === undefined);
+              startIndex = 0;
+            }
             
             // Re-hydrate state
             dispatch({ 
               type: "LOAD_STATE", 
               payload: {
                 quizId: progressData.categoryId,
-                questions: questions.map(q => {
-                  const ans = answers.find(a => a.questionId === q.id);
-                  return ans ? { ...q, userAnswer: ans.selected } : q;
-                }),
+                questions: finalQuestions,
+                originalTotal: questions.length, // Keep track of full set size for progress calc
                 answers: answers,
                 score: score,
-                currentIndex: progressData.lastQuestionIndex || 0,
+                currentIndex: startIndex,
                 status: "active",
                 selectedSetIndex: progressData.setIndex
               } 
