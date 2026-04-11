@@ -47,7 +47,7 @@ const playAudioAlert = (type) => {
     } catch (e) {}
 };
 
-export default function SessionLobby({ sessionId, isHost }) {
+export default function SessionLobby({ sessionId, isHost, onApproveGuest, onDenyGuest }) {
   const { participants, pendingParticipants, session, sendAction } = useSessionEngine();
   const [mounted, setMounted] = useState(false);
   const [inviteUrl, setInviteUrl] = useState('');
@@ -220,8 +220,8 @@ export default function SessionLobby({ sessionId, isHost }) {
                             <div key={p?.userId || Math.random()} className="flex items-center justify-between p-4 bg-red-50 rounded-2xl border-2 border-red-100">
                                 <span className="text-xs font-black text-slate-900 truncate max-w-[100px]">{p?.userName}</span>
                                 <div className="flex gap-2">
-                                    <button onClick={() => { playAudioAlert('approved'); sendAction('APPROVE_GUEST', { userId: p?.userId }); }} className="w-8 h-8 bg-green-500 text-white rounded-lg font-black transition-all hover:scale-110">✓</button>
-                                    <button onClick={() => sendAction('REJECT_GUEST', { userId: p?.userId })} className="w-8 h-8 bg-red-500 text-white rounded-lg font-black transition-all hover:scale-110">×</button>
+                                    <button onClick={() => { playAudioAlert('approved'); onApproveGuest(p?.userId); }} className="w-8 h-8 bg-green-500 text-white rounded-lg font-black transition-all hover:scale-110">✓</button>
+                                    <button onClick={() => onDenyGuest(p?.userId)} className="w-8 h-8 bg-red-500 text-white rounded-lg font-black transition-all hover:scale-110">×</button>
                                 </div>
                             </div>
                         ))}

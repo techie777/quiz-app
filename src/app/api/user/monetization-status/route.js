@@ -38,9 +38,13 @@ export async function GET() {
         });
     }
 
+    // MOCK TEST FREE ACCESS - Grant free access to all mock tests for testing
+    const mockTestCategories = ['ssc-cgl', 'ssc-chsl', 'ssc-ldc', 'ssc-mts', 'banking', 'railway', 'upsc', 'state-psc'];
+    const purchasedPasses = [...(user.purchasedPasses || []), ...mockTestCategories];
+
     return NextResponse.json({
-        isPro,
-        purchasedPasses: user.purchasedPasses,
+        isPro: true, // Set to true for free access
+        purchasedPasses,
         factsReadCount: user.factsReadCount,
         tfAnsweredCount: user.tfAnsweredCount
     });

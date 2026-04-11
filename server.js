@@ -59,7 +59,10 @@ app.prepare()
                 };
                 await redisStore.setRoom(sessionId, room);
             } else {
-                socket.emit('STATE_UPDATE', { action: 'EXPIRED', payload: { status: 'EXPIRED' } });
+                socket.emit('STATE_UPDATE', { 
+                    action: 'WAITING_FOR_HOST', 
+                    payload: { status: 'WAITING', message: 'Waiting for host to create this session...' } 
+                });
                 return;
             }
         }
@@ -87,10 +90,10 @@ app.prepare()
             socket.emit('SYNC_PENDING', room.pendingParticipants);
             console.log(` Commander ${userName} joined room ${sessionId}. Pending queue sent: ${room.pendingParticipants.length}`);
         } else {
-            // GUEST SECURITY: Put in pending first
+            // GUEST SECURITY: Put in pending first for host approval
             const guestExists = room.pendingParticipants.find(p => p.userId === userId);
             if (!guestExists) {
-                room.pendingParticipants.push({ userId, userName, role, socketId: socket.id });
+                room.pendingParticipants.push({ userId, userName, role, socketId: socket.id, requestedAt: Date.now() });
             } else {
                 // Update socket id if they rejoined
                 const g = room.pendingParticipants.find(p => p.userId === userId);
@@ -99,10 +102,25 @@ app.prepare()
             // Save to Redis
             await redisStore.setRoom(sessionId, room);
             
-            // CRITICAL BROADCAST: Notify all HOSTS in the room about the new guest
-            console.log(` Guest ${userName} requesting clearance for room ${sessionId}. Broadcasting to room...`);
+            // CRITICAL BROADCAST: Notify HOST in the room about the new guest request
+            console.log(` Guest ${userName} requesting clearance for room ${sessionId}. Broadcasting to host...`);
+            
+            // Find host and send approval request
+            const host = room.participants.find(p => p.role === 'HOST');
+            if (host && host.socketId) {
+                io.to(host.socketId).emit('GUEST_JOIN_REQUEST', {
+                    guestId: userId,
+                    guestName: userName,
+                    requestedAt: Date.now()
+                });
+            }
+            
+            // Update all guests about pending list
             io.in(sessionId).emit('SYNC_PENDING', room.pendingParticipants);
-            socket.emit('STATE_UPDATE', { action: 'PENDING_CLEARANCE', payload: { status: 'PENDING' } });
+            socket.emit('STATE_UPDATE', { 
+                action: 'PENDING_APPROVAL', 
+                payload: { status: 'PENDING', message: 'Waiting for host approval...' } 
+            });
         }
       });
 
@@ -115,23 +133,56 @@ app.prepare()
             const guestIdx = room.pendingParticipants.findIndex(p => p.userId === payload.userId);
             if (guestIdx !== -1) {
                 const guest = room.pendingParticipants[guestIdx];
+                // Move guest from pending to participants
                 room.pendingParticipants.splice(guestIdx, 1);
-                room.participants.push({ ...guest, score: 0, progress: 0, isOnline: true });
+                room.participants.push({
+                    userId: guest.userId,
+                    userName: guest.userName,
+                    role: 'GUEST',
+                    socketId: guest.socketId,
+                    score: 0,
+                    progress: 0,
+                    isOnline: true
+                });
                 
-                // Save to Redis
                 await redisStore.setRoom(sessionId, room);
                 
-                io.to(guest.socketId).emit('STATE_UPDATE', { action: 'REHYDRATE', payload: room.state });
-                const guestSocket = io.sockets.sockets.get(guest.socketId);
-                if (guestSocket) guestSocket.join(sessionId);
-
+                // Notify guest of approval
+                if (guest.socketId) {
+                    io.to(guest.socketId).emit('STATE_UPDATE', {
+                        action: 'APPROVED',
+                        payload: { status: 'APPROVED', message: 'You have been approved to join the session!' }
+                    });
+                }
+                
+                // Update all participants
                 io.in(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
                 io.in(sessionId).emit('SYNC_PENDING', room.pendingParticipants);
-                console.log(`???? Approved: ${guest.userName}`);
             }
-            return;
         }
-
+        
+        if (action === 'DENY_GUEST') {
+            const guestIdx = room.pendingParticipants.findIndex(p => p.userId === payload.userId);
+            if (guestIdx !== -1) {
+                const guest = room.pendingParticipants[guestIdx];
+                room.pendingParticipants.splice(guestIdx, 1);
+                
+                await redisStore.setRoom(sessionId, room);
+                
+                // Notify guest of denial
+                if (guest.socketId) {
+                    io.to(guest.socketId).emit('STATE_UPDATE', {
+                        action: 'DENIED',
+                        payload: { status: 'DENIED', message: 'Your request to join was denied by the host.' }
+                    });
+                }
+                
+                // Update all pending participants
+                io.in(sessionId).emit('SYNC_PENDING', room.pendingParticipants);
+            }
+        }
+        
+        
         if (action === 'REJECT_GUEST') {
             const guestIdx = room.pendingParticipants.findIndex(p => p.userId === payload.userId);
             if (guestIdx !== -1) {

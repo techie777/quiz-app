@@ -64,7 +64,7 @@ class RedisStore {
     const key = `room:${sessionId}`;
     try {
       if (this.connected && this.redis) {
-        await this.redis.setex(key, 3600, JSON.stringify(roomData)); // 1 hour expiry
+        await this.redis.setex(key, 86400, JSON.stringify(roomData)); // 24 hours expiry
       } else {
         // Fallback to memory
         this.fallbackStore?.set(key, roomData);

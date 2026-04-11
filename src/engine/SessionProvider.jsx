@@ -74,6 +74,18 @@ export function SessionProvider({ children }) {
          if (data.action === 'DISCONTINUED') {
             toast.error("MISSION TERMINATED: YOU HAVE BEEN DISMISSED. ????");
          }
+         if (data.action === 'WAITING_FOR_HOST') {
+            toast.info("Waiting for host to create this session...");
+         }
+         if (data.action === 'PENDING_APPROVAL') {
+            toast.info("Waiting for host approval...");
+         }
+         if (data.action === 'APPROVED') {
+            toast.success("You have been approved to join the session!");
+         }
+         if (data.action === 'DENIED') {
+            toast.error("Your request to join was denied by the host.");
+         }
 
          return newState;
       });

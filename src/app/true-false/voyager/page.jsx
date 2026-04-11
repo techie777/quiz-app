@@ -181,10 +181,12 @@ export default function TrueFalseVoyager() {
           ref={cardRef}
           className={`${styles.factCard} ${(!question || question?.id?.charCodeAt(0) % 2 === 0) ? styles.greenTheme : styles.tealTheme} ${showResult ? (result?.correct ? styles.correctGlow : styles.incorrectGlow) : ""}`}
         >
-          {/* Top Control Bar */}
+          {/* Top Control Bar - Improved Layout */}
           <div className={styles.topControls}>
-            <div className="flex items-center gap-2">
-                <div className={styles.compactLangToggle}>
+            {/* First Row - Language, Auto-advance, Score */}
+            <div className="flex flex-wrap items-center justify-between w-full mb-3 gap-2">
+              {/* Left: Language Toggle */}
+              <div className={styles.compactLangToggle}>
                     <button 
                         className={`${styles.compactLangBtn} ${language === "en" ? styles.activeLang : ""}`}
                         onClick={() => setLanguage("en")}
@@ -193,10 +195,22 @@ export default function TrueFalseVoyager() {
                         className={`${styles.compactLangBtn} ${language === "hi" ? styles.activeLang : ""}`}
                         onClick={() => setLanguage("hi")}
                     >HI</button>
-                </div>
+              </div>
 
-                {/* Auto Advance Toggle */}
-                <div className={styles.compactLangToggle}>
+              {/* Center: Score Display */}
+              <div className={styles.scoreBar}>
+                <div className={styles.scorePill}>
+                  Score: <span className={styles.scoreValue}>{score.correct}/{score.total}</span>
+                </div>
+                {streak > 1 && (
+                  <div className={styles.scorePill}>
+                    🔥 {streak} Streak
+                  </div>
+                )}
+              </div>
+
+              {/* Right: Auto-advance Controls */}
+              <div className={styles.compactLangToggle}>
                     <button 
                         className={`${styles.compactLangBtn} ${autoAdvance ? styles.activeLang : ""}`}
                         onClick={() => setAutoAdvance(!autoAdvance)}
@@ -214,31 +228,32 @@ export default function TrueFalseVoyager() {
                             <option value={10000} className="text-black">10s</option>
                         </select>
                     )}
-                </div>
+              </div>
             </div>
 
-            {/* Score Pill */}
-            <div className={styles.scoreBar}>
-              <div className={styles.scorePill}>
-                Score: <span className={styles.scoreValue}>{score.correct}/{score.total}</span>
-              </div>
-              {streak > 1 && (
-                <div className={styles.scorePill}>
-                  🔥 {streak} Streak
-                </div>
-              )}
-            </div>
-            
-            <div className="flex items-center gap-2">
+            {/* Second Row - Navigation, Fullscreen, Share */}
+            <div className="flex flex-wrap items-center justify-end gap-3">
+              {/* Navigation Buttons */}
+              <button 
+                disabled={loading || showResult}
+                onClick={handleNext}
+                className={`${styles.iconButton} ${styles.nextFactBtn}`}
+              >
+                <ArrowRight className="w-4 h-4" />
+              </button>
+
+              {/* Fullscreen and Share */}
               <button onClick={toggleFullScreen} className={styles.iconButton}>
                 {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
               </button>
+
               <button onClick={handleShare} className={styles.iconButton} disabled={!question}>
                 <Share2 className="w-4 h-4" />
               </button>
             </div>
           </div>
 
+            
           {/* Main Content Area */}
           <div className="flex-1 flex flex-col justify-center w-full">
             <AnimatePresence mode="wait">

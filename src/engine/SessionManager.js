@@ -109,7 +109,21 @@ export default function SessionManager({ sessionId }) {
       );
   }
 
-  // 2. GUEST NAME ENTRY (Optional) - Only show if we don't have a session yet AND not host
+  // 2. PENDING APPROVAL STATE - Show waiting for host approval
+  if (isPendingApproval) {
+    return (
+        <div className="w-full max-w-lg bg-white rounded-[3rem] shadow-2xl p-10 text-center space-y-8 animate-in zoom-in duration-500 border border-slate-100 mx-auto mt-20">
+            <div className="text-6xl">⏳</div>
+            <div className="space-y-3">
+                <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Waiting for Approval</h2>
+                <p className="text-xs font-bold text-slate-400">Your request to join the session has been sent to the host.</p>
+                <p className="text-xs font-bold text-slate-400">Please wait for the host to approve your request.</p>
+            </div>
+        </div>
+    );
+  }
+
+  // 3. GUEST NAME ENTRY (Optional) - Only show if we don't have a session yet AND not host
   if (!session && !isHost && !authSession?.user && !joining) {
     return (
         <div className="w-full max-w-lg bg-white rounded-[3rem] shadow-2xl p-10 text-center space-y-8 animate-in zoom-in duration-500 border border-slate-100 mx-auto mt-20">
@@ -134,8 +148,20 @@ export default function SessionManager({ sessionId }) {
     );
   }
 
-  // 3. MISSION ACTIVE Check
+  // 3. PENDING APPROVAL Check
+  const isPendingApproval = session?.status === 'PENDING';
+  
+  // 4. MISSION ACTIVE Check
   const isMissionActive = session?.status === 'ACTIVE' && session?.type;
+
+  // 5. HOST CONTROLS for guest approval
+  const handleApproveGuest = (guestId) => {
+    sendAction('APPROVE_GUEST', { userId: guestId });
+  };
+
+  const handleDenyGuest = (guestId) => {
+    sendAction('DENY_GUEST', { userId: guestId });
+  };
 
   if (isMissionActive) {
       const Player = getPlayerComponent(session.type);
@@ -247,8 +273,14 @@ export default function SessionManager({ sessionId }) {
   return (
     <div className="flex justify-center w-full">
       <SessionLobby 
-        sessionId={sessionId} 
-        isHost={session?.role === 'HOST' || isHost} 
+        sessionId={sessionId}
+        isHost={isHost}
+        participants={participants}
+        pendingParticipants={pendingParticipants}
+        reactions={reactions}
+        broadcast={broadcast}
+        onApproveGuest={handleApproveGuest}
+        onDenyGuest={handleDenyGuest}
       />
     </div>
   );

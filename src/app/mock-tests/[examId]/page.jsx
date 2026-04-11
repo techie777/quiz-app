@@ -323,9 +323,21 @@ export default function PaperSelection() {
                         </div>
                         <button 
                             className="w-full bg-white text-indigo-950 py-4 rounded-2xl font-black uppercase tracking-widest text-sm hover:scale-105 active:scale-95 transition shadow-xl mb-4"
-                            onClick={() => router.push(`/donate?action=mockpass&targetId=${exam.id}`)}
+                            onClick={() => {
+                                // Show dummy payment success and grant access
+                                setShowPayWall(false);
+                                // Add to purchased passes for free access
+                                if (session?.user) {
+                                    // Update monetization context for free access
+                                    window.location.reload();
+                                } else {
+                                    // For guests, show success message
+                                    alert('🎉 Payment successful! You now have access to this mock test.');
+                                    setShowPayWall(false);
+                                }
+                            }}
                         >
-                            Get Category Pass
+                            Get Category Pass (Free)
                         </button>
                         <Link href="/pro" className="text-[10px] font-black text-indigo-400 uppercase tracking-widest hover:text-white transition">
                             Or Unlock Everything with Pro

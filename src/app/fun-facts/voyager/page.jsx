@@ -175,10 +175,12 @@ export default function FunFactsVoyager() {
           ref={cardRef}
           className={`${styles.factCard} ${(!fact || fact?.id?.charCodeAt(0) % 2 === 0) ? styles.blueTheme : styles.goldTheme}`}
         >
-          {/* Top Control Bar */}
+          {/* Top Control Bar - All Controls Visible */}
           <div className={styles.topControls}>
-            <div className="flex items-center gap-2">
-                <div className={styles.compactLangToggle}>
+            {/* First Row - Language, Auto-advance, Navigation */}
+            <div className="flex flex-wrap items-center justify-between w-full mb-3 gap-2">
+              {/* Left: Language Toggle */}
+              <div className={styles.compactLangToggle}>
                 <button 
                     className={`${styles.compactLangBtn} ${language === "en" ? styles.activeLang : ""}`}
                     onClick={() => handleTranslate("en")}
@@ -187,52 +189,52 @@ export default function FunFactsVoyager() {
                     className={`${styles.compactLangBtn} ${language === "hi" ? styles.activeLang : ""}`}
                     onClick={() => handleTranslate("hi")}
                 >HI</button>
-                </div>
+              </div>
 
-                {/* Auto Advance Toggle */}
-                <div className={styles.compactLangToggle}>
-                    <button 
-                        className={`${styles.compactLangBtn} ${autoAdvance ? styles.activeLang : ""}`}
-                        onClick={() => setAutoAdvance(!autoAdvance)}
-                        title={autoAdvance ? "Pause Auto-advance" : "Play Auto-advance"}
+              {/* Center: Navigation Buttons */}
+              <div className="flex items-center gap-2">
+                <button 
+                  disabled={loading || history.length === 0}
+                  onClick={handlePrevious}
+                  className={`${styles.iconButton} ${styles.nextFactBtn}`}
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </button>
+
+                <button 
+                  disabled={loading}
+                  onClick={handleNext}
+                  className={`${styles.iconButton} ${styles.nextFactBtn}`}
+                >
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Right: Auto-advance Controls */}
+              <div className={styles.compactLangToggle}>
+                <button 
+                    className={`${styles.compactLangBtn} ${autoAdvance ? styles.activeLang : ""}`}
+                    onClick={() => setAutoAdvance(!autoAdvance)}
+                    title={autoAdvance ? "Pause Auto-advance" : "Play Auto-advance"}
+                >
+                    {autoAdvance ? <Pause size={14} /> : <Play size={14} />}
+                </button>
+                {autoAdvance && (
+                    <select 
+                        value={autoAdvanceDelay}
+                        onChange={(e) => setAutoAdvanceDelay(Number(e.target.value))}
+                        className="bg-transparent text-[10px] text-white font-bold px-2 outline-none border-none cursor-pointer"
                     >
-                        {autoAdvance ? <Pause size={14} /> : <Play size={14} />}
-                    </button>
-                    {autoAdvance && (
-                        <select 
-                            value={autoAdvanceDelay}
-                            onChange={(e) => setAutoAdvanceDelay(Number(e.target.value))}
-                            className="bg-transparent text-[10px] text-white font-bold px-2 outline-none border-none cursor-pointer"
-                        >
-                            <option value={5000} className="text-black">5s</option>
-                            <option value={10000} className="text-black">10s</option>
-                            <option value={15000} className="text-black">15s</option>
-                        </select>
-                    )}
-                </div>
+                        <option value={5000} className="text-black">5s</option>
+                        <option value={10000} className="text-black">10s</option>
+                        <option value={15000} className="text-black">15s</option>
+                    </select>
+                )}
+              </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <button 
-                disabled={loading || history.length === 0}
-                onClick={handlePrevious}
-                className={`${styles.iconButton} ${styles.nextFactBtn} ${styles.withText}`}
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Back</span>
-              </button>
-
-              <button 
-                disabled={loading}
-                onClick={handleNext}
-                className={`${styles.iconButton} ${styles.nextFactBtn} ${styles.withText}`}
-              >
-                <span>Next</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-            
-            <div className="flex items-center gap-2">
+            {/* Second Row - Fullscreen and Share */}
+            <div className="flex flex-wrap items-center justify-end gap-3">
               <button 
                 onClick={toggleFullScreen}
                 className={styles.iconButton}
