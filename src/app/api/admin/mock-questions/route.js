@@ -18,7 +18,7 @@ export async function GET(request) {
 
     const questions = await prisma.mockQuestion.findMany({
       where,
-      orderBy: { createdAt: 'asc' },
+      orderBy: { sortOrder: 'asc' },
       include: {
         section: true
       }
@@ -36,7 +36,7 @@ export async function POST(request) {
     const { 
       id, paperId, sectionId, text, textHi, 
       options, optionsHi, answer, explanation, 
-      explanationHi, image, type, difficulty 
+      explanationHi, image, type, difficulty, sortOrder
     } = data;
 
     if (!paperId || !text || answer === undefined) {
@@ -55,7 +55,8 @@ export async function POST(request) {
       explanationHi: explanationHi || null,
       image: image || null,
       type: type || "MCQ",
-      difficulty: difficulty || "Medium"
+      difficulty: difficulty || "Medium",
+      sortOrder: parseInt(sortOrder) || 0
     };
 
     let question;

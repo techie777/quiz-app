@@ -9,12 +9,26 @@ export async function GET() {
       orderBy: { sortOrder: 'asc' },
       include: {
         category: true,
-        _count: {
-          select: { papers: true, sections: true }
+        papers: {
+          select: { paperType: true }
         }
       }
     });
-    return NextResponse.json(exams);
+
+    // Manually calculate counts for types
+    const examsWithCounts = exams.map(exam => {
+      const mockCount = exam.papers.filter(p => p.paperType === 'MOCK').length;
+      const pypCount = exam.papers.filter(p => p.paperType === 'PYP').length;
+      
+      return {
+        ...exam,
+        mockCount,
+        pypCount,
+        papers: undefined // Reduce payload size if needed, or keep it. I'll remove it to be clean.
+      };
+    });
+
+    return NextResponse.json(examsWithCounts);
   } catch (error) {
     console.error("Admin Fetch MockExams Error:", error);
     return NextResponse.json({ error: "Failed to fetch mock exams" }, { status: 500 });
@@ -24,7 +38,7 @@ export async function GET() {
 export async function POST(request) {
   try {
     const data = await request.json();
-    const { id, name, slug, emoji, description, sortOrder, hidden, categoryId } = data;
+    const { id, name, slug, emoji, description, sortOrder, hidden, categoryId, quizCategoryIds, booksJson, studyMaterialJson } = data;
 
     let exam;
     if (id) {
@@ -33,7 +47,10 @@ export async function POST(request) {
         data: {
           name, slug, emoji, description, hidden,
           sortOrder: Number(sortOrder),
-          categoryId: categoryId || null
+          categoryId: categoryId || null,
+          quizCategoryIds: quizCategoryIds || [],
+          booksJson: booksJson || "[]",
+          studyMaterialJson: studyMaterialJson || "[]"
         }
       });
     } else {
@@ -41,7 +58,9 @@ export async function POST(request) {
         data: {
           name, slug, emoji, description, hidden,
           sortOrder: Number(sortOrder),
-          categoryId: categoryId || null
+          categoryId: categoryId || null,
+          quizCategoryIds: quizCategoryIds || [],
+          booksJson: booksJson || "[]"
         }
       });
     }

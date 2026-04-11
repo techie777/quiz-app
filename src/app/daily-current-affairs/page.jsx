@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useMonetization } from "@/context/MonetizationContext";
+import AdGate from "@/components/monetization/AdGate";
 import styles from "@/styles/CurrentAffairs.module.css";
 
 function formatDate(d) {
@@ -60,11 +62,13 @@ export default function DailyCurrentAffairsPage() {
   const [page, setPage] = useState(1);
   const pageSize = 10;
   const [favIds, setFavIds] = useState(new Set());
+  const { isPro, useCounts, incrementCount } = useMonetization();
+  const [readItems, setReadItems] = useState(new Set()); 
+  const [showAdGate, setShowAdGate] = useState(false);
+  const [pendingItem, setPendingItem] = useState(null);
   const [reading, setReading] = useState(null);
   const [loginPrompt, setLoginPrompt] = useState(false);
-  const [freeReadsUsed, setFreeReadsUsed] = useState(0);
-  const [readItems, setReadItems] = useState(new Set()); // Track read items
-  const maxFreeReads = 2; // Allow 2 free reads
+  const maxFreeReads = 2; 
 
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedMonth, setSelectedMonth] = useState("");
@@ -152,31 +156,23 @@ export default function DailyCurrentAffairsPage() {
   }, [session, status]);
 
   const handleReadMore = (item) => {
-    const isUser = session?.user && !session.user.isAdmin;
+    // Pro users or already read items can be accessed unconditionally
+    if (isPro || readItems.has(item.id)) {
+      setReading(item);
+      return;
+    }
     
-    // Check if user is authenticated
-    if (status === "authenticated" && isUser) {
+    // Check if free reads are available (Limit 2)
+    if (useCounts.ca < maxFreeReads) {
       setReading(item);
       setReadItems(prev => new Set([...prev, item.id]));
+      incrementCount("ca");
       return;
     }
     
-    // Check if item is already read - if so, allow re-reading without consuming free read
-    if (readItems.has(item.id)) {
-      setReading(item);
-      return;
-    }
-    
-    // Check if free reads are available
-    if (freeReadsUsed < maxFreeReads) {
-      setReading(item);
-      setReadItems(prev => new Set([...prev, item.id]));
-      setFreeReadsUsed(prev => prev + 1);
-      return;
-    }
-    
-    // Show login prompt
-    setLoginPrompt(true);
+    // If limit reached, show Ad Gate
+    setPendingItem(item);
+    setShowAdGate(true);
   };
 
   // Navigation functions for modal
@@ -222,20 +218,9 @@ export default function DailyCurrentAffairsPage() {
 
   // Helper function to check if user can read an item
   const canReadItem = (item) => {
-    const isUser = session?.user && !session.user.isAdmin;
-    
-    // Authenticated users can read unlimited
-    if (status === "authenticated" && isUser) {
-      return true;
-    }
-    
-    // Check if item is already read
-    if (readItems.has(item.id)) {
-      return true;
-    }
-    
-    // Check if free reads are available
-    return freeReadsUsed < maxFreeReads;
+    if (isPro) return true;
+    if (readItems.has(item.id)) return true;
+    return useCounts.ca < maxFreeReads;
   };
 
   // Share functionality
@@ -595,11 +580,11 @@ export default function DailyCurrentAffairsPage() {
                       <div className={styles.actionsRow}>
                         <button className={styles.readMoreBtn} onClick={() => handleReadMore(it)}>
                           <span>VIEW BRIEF</span>
-                          {status !== "authenticated" && (
+                          {!isPro && (
                             <span className={styles.freeReadIndicator}>
-                              {freeReadsUsed < maxFreeReads 
-                                ? `(${maxFreeReads - freeReadsUsed} free left)` 
-                                : "(Tactical Lock)"
+                              {useCounts.ca < maxFreeReads 
+                                ? `(${maxFreeReads - useCounts.ca} free left)` 
+                                : "(Watch Ad)"
                               }
                             </span>
                           )}
@@ -693,9 +678,9 @@ export default function DailyCurrentAffairsPage() {
                       <span className={styles.metaSeparator}>•</span>
                     </>
                   )}
-                  {status !== "authenticated" && freeReadsUsed < maxFreeReads && (
+                  {!isPro && useCounts.ca < maxFreeReads && (
                     <span className={styles.freeReadsBadge}>
-                      {maxFreeReads - freeReadsUsed} free left
+                      {maxFreeReads - useCounts.ca} free left
                     </span>
                   )}
                 </div>
@@ -765,10 +750,7 @@ export default function DailyCurrentAffairsPage() {
         <div className={styles.loginPromptOverlay} onClick={() => setLoginPrompt(false)}>
           <div className={`${styles.loginPrompt} glass-card`} onClick={(e) => e.stopPropagation()}>
             <p className={styles.loginPromptText}>
-              {freeReadsUsed >= maxFreeReads 
-                ? `You've used your ${maxFreeReads} free reads! Sign in to read unlimited current affairs and unlock all features.`
-                : "Sign in to save favourites and get unlimited access to current affairs."
-              }
+                Sign in to save favourites and get unlimited access to current affairs.
             </p>
             <div className={styles.loginPromptBtns}>
               <button className="btn-primary" onClick={() => router.push("/signin")}>
@@ -781,6 +763,24 @@ export default function DailyCurrentAffairsPage() {
           </div>
         </div>
       )}
+
+      <AdGate 
+        isOpen={showAdGate}
+        onClose={() => {
+            setShowAdGate(false);
+            setPendingItem(null);
+        }}
+        onComplete={() => {
+            setShowAdGate(false);
+            if (pendingItem) {
+                setReading(pendingItem);
+                setReadItems(prev => new Set([...prev, pendingItem.id]));
+                incrementCount("ca"); // Increment but let them read after ad
+                setPendingItem(null);
+            }
+        }}
+        title="Unlocking Current Affairs"
+      />
     </main>
   );
 }

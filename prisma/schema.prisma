@@ -30,6 +30,14 @@ model User {
   chapterAttempts ChapterAttempt[]
   quizProgress    UserProgress[]
   mockAttempts    MockAttempt[]
+
+  // Monetization & Intelligence Stats
+  isPro           Boolean     @default(false)
+  proExpiresAt    DateTime?
+  purchasedPasses String[]    @default([]) // Array of MockCategory IDs/Slugs
+  factsReadCount  Int         @default(0)
+  tfAnsweredCount Int         @default(0)
+  proBadge        String?     // Custom badge name if any
 }
 
 model VerificationToken {
@@ -114,6 +122,7 @@ model UserProgress {
   setIndex          Int      // 1-indexed (matching CategorySetsPage logic)
   
   progress          Float    @default(0) // 0-100 percentage
+  score             Int      @default(0) // Total quiz points earned for this section
   isComplete        Boolean  @default(false)
   
   // Resumption Data
@@ -189,6 +198,19 @@ model Setting {
   id    String @id @default(auto()) @map("_id") @db.ObjectId
   key   String @unique
   value String
+}
+
+model NavigationLink {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  href        String   @unique
+  icon        String
+  description String?
+  keywords    String?
+  sortOrder   Int      @default(0)
+  isVisible   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model DailyQuiz {
@@ -397,6 +419,7 @@ model CareerGuide {
   careerCategoryId String? @db.ObjectId
   careerCategory   CareerCategory? @relation(fields: [careerCategoryId], references: [id], onDelete: SetNull)
   
+  type        String   @default("JOB") // JOB, EXAM
   hidden      Boolean  @default(false)
   sortOrder   Int      @default(0)
 
@@ -469,6 +492,9 @@ model MockCategory {
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   
+  isPaid    Boolean    @default(false)
+  price     Float      @default(0)
+  
   exams     MockExam[]
 }
 
@@ -487,6 +513,14 @@ model MockExam {
 
   papers      MockPaper[]
   sections    MockExamSection[]
+  
+  // Custom Content & Links
+  quizCategoryIds String[]  // Linked Quiz Categories
+  booksJson       String    @default("[]") // Suggested Books (JSON list)
+  studyMaterialJson String  @default("[]") // Study Materials (JSON list)
+
+  isPaid      Boolean     @default(true) // User said all mocks are paid
+  price       Float       @default(49)   // User said 49rs
 
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
@@ -522,11 +556,16 @@ model MockPaper {
   instructions    String?        @default("")    // Custom test-level instructions
   showSolutions   Boolean        @default(false) // Controlled by admin
   isLive          Boolean        @default(false)
+  sortOrder       Int            @default(0)
   
   sections        MockSection[]
   questions       MockQuestion[]
   attempts        MockAttempt[]
   studyChapters   StudyChapter[]
+
+  // Classification
+  paperType       String         @default("MOCK") // "MOCK" or "PYP"
+  year            Int            @default(2025)
 
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
@@ -571,6 +610,7 @@ model MockQuestion {
   
   type          String       @default("MCQ") // MCQ, SUBJECTIVE
   difficulty    String       @default("Medium")
+  sortOrder     Int          @default(0)
   
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
@@ -675,6 +715,37 @@ model FunFact {
   category      FunFactCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   description   String
   descriptionHi String?
+  image         String?
+  views         Int       @default(0)
+  hidden        Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// --- True/False Module ---
+
+model TrueFalseCategory {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  name      String    @unique
+  nameHi    String?
+  slug      String    @unique
+  image     String?
+  sortOrder Int       @default(0)
+  hidden    Boolean   @default(false)
+  questions TrueFalseQuestion[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model TrueFalseQuestion {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  categoryId    String    @db.ObjectId
+  category      TrueFalseCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  statement     String
+  statementHi   String?
+  correctAnswer Boolean
+  explanation   String?
+  explanationHi String?
   image         String?
   views         Int       @default(0)
   hidden        Boolean   @default(false)

@@ -1,0 +1,150 @@
+.container {
+  min-height: 100vh;
+  background: white;
+  padding-bottom: 8rem;
+}
+
+.hero {
+  padding: 8rem 2rem 4rem;
+  text-align: center;
+  background: linear-gradient(to bottom, #fff7ed 0%, #ffffff 100%);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.25rem;
+  background: #ffedd5;
+  color: #9a3412;
+  border-radius: 99px;
+  font-size: 0.875rem;
+  font-weight: 800;
+  margin-bottom: 2rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.title {
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  font-weight: 900;
+  color: #1e293b;
+  margin-bottom: 1.5rem;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+}
+
+.subtitle {
+  font-size: 1.25rem;
+  color: #64748b;
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.contentRow {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+}
+
+@media (max-width: 1024px) {
+  .contentRow {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+}
+
+.missionCard {
+  background: white;
+  border-radius: 40px;
+  padding: 3rem;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05);
+}
+
+.missionIcon {
+  font-size: 3rem;
+  margin-bottom: 1.5rem;
+  display: block;
+}
+
+.missionTitle {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin-bottom: 1rem;
+}
+
+.missionText {
+  color: #64748b;
+  line-height: 1.7;
+}
+
+.tiersGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+@media (max-width: 640px) {
+  .tiersGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tier {
+  background: white;
+  border: 2px solid #f1f5f9;
+  border-radius: 30px;
+  padding: 2.5rem;
+  transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+  cursor: pointer;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.tier:hover {
+  border-color: #fb923c;
+  transform: translateY(-5px);
+  box-shadow: 0 20px 25px -5px rgba(251, 146, 60, 0.1);
+}
+
+.tierEmoji { font-size: 2.5rem; margin-bottom: 1rem; }
+.tierValue { font-size: 2rem; font-weight: 900; color: #1e293b; margin-bottom: 0.5rem; }
+.tierLabel { font-size: 1rem; font-weight: 700; color: #64748b; margin-bottom: 1.5rem; }
+
+.tierAction {
+  margin-top: auto;
+  padding: 0.75rem 1.5rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 0.875rem;
+  color: #1e293b;
+  transition: all 0.3s ease;
+}
+
+.tier:hover .tierAction {
+  background: #fb923c;
+  color: white;
+}
+
+.customAmount {
+  grid-column: 1 / -1;
+  border: 1px dashed #cbd5e1;
+  background: #f8fafc;
+}
+
+.footerNote {
+  margin-top: 6rem;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.875rem;
+}

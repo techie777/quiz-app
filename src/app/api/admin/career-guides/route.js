@@ -31,6 +31,7 @@ export async function POST(req) {
     const newGuide = await prisma.careerGuide.create({
       data: {
         ...guideData,
+        type: guideData.type || "JOB",
         careerCategoryId: guideData.careerCategoryId || null,
         sections: {
           create: sections || []
@@ -72,6 +73,7 @@ export async function PUT(req) {
       where: { id: id },
       data: {
         ...guideData,
+        type: guideData.type || "JOB",
         careerCategoryId: guideData.careerCategoryId || null,
         sections: {
           create: cleanSections

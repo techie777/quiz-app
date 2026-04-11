@@ -110,10 +110,10 @@ export default function Footer() {
             <h3 className={styles.colHeading}>Organization</h3>
             <ul className={styles.linkList}>
               <li><Link href="/about" className={styles.navLink}>Our Story</Link></li>
+              <li><Link href="/donate" className={styles.navLink} style={{ color: '#f43f5e', fontWeight: 'bold' }}>Support Us 🧡</Link></li>
               <li><Link href="/contact" className={styles.navLink}>Get In Touch</Link></li>
               <li><Link href="/privacy" className={styles.navLink}>Privacy Policy</Link></li>
               <li><Link href="/terms" className={styles.navLink}>Terms of Service</Link></li>
-              <li><Link href="/sitemap.xml" className={styles.navLink}>Portal Sitemap</Link></li>
             </ul>
           </div>
         </div>

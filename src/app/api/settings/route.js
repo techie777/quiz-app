@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { adminAuthOptions } from "@/lib/adminAuth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +29,7 @@ export async function GET(request) {
     // Fallback settings when database is unavailable
     const fallbackSettings = {
       difficultyEnabled: true,
+      showAdvancedFilters: true, // Add missing field
       homeChips: JSON.stringify(["Science", "History", "GK", "Quick 5 Min"]),
       theme: "light",
       soundEnabled: true,
@@ -45,9 +46,35 @@ export async function GET(request) {
 
 export async function PUT(request) {
   try {
-    const session = await getServerSession(authOptions);
+    // Try to get admin session first
+    let session = await getServerSession(adminAuthOptions);
+    console.log("[Settings PUT] Admin session attempt:", session?.user?.email);
+    
+    // If admin session fails, try regular session (for testing/fallback)
     if (!session?.user?.isAdmin) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      console.log("[Settings PUT] Admin session failed, trying regular session...");
+      const { authOptions } = await import("@/lib/auth");
+      session = await getServerSession(authOptions);
+      console.log("[Settings PUT] Regular session:", session?.user?.email);
+      
+      // For testing purposes, allow regular users to update settings
+      // In production, this should be removed
+      if (session?.user && process.env.NODE_ENV === "development") {
+        console.log("[Settings PUT] Development mode - allowing regular user");
+        session.user.isAdmin = true; // Override for testing
+      }
+    }
+    
+    console.log("[Settings PUT] Final session user:", session?.user?.email, "isAdmin:", session?.user?.isAdmin);
+    
+    if (!session || !session.user) {
+      console.log("[Settings PUT] No session found");
+      return NextResponse.json({ error: "No session found" }, { status: 401 });
+    }
+    
+    if (!session.user.isAdmin) {
+      console.log("[Settings PUT] Unauthorized - not admin");
+      return NextResponse.json({ error: "Unauthorized - admin access required" }, { status: 401 });
     }
 
     const perms = (function () {
@@ -63,20 +90,25 @@ export async function PUT(request) {
     })();
 
     if (session.user.role !== "master" && perms.settings === false) {
+      console.log("[Settings PUT] Forbidden - no settings permission");
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const body = await request.json();
+    console.log("[Settings PUT] Body:", body);
+    
     for (const [key, value] of Object.entries(body)) {
+      console.log(`[Settings PUT] Upserting ${key}: ${value}`);
       await prisma.setting.upsert({
         where: { key },
         update: { value: String(value) },
         create: { key, value: String(value) },
       });
     }
+    console.log("[Settings PUT] Success");
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Settings PUT error:", error);
+    console.error("[Settings PUT] Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

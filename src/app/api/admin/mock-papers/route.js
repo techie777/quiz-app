@@ -13,7 +13,7 @@ export async function GET(request) {
 
     const papers = await prisma.mockPaper.findMany({
       where,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { sortOrder: 'asc' },
       include: {
         exam: true,
         _count: {
@@ -34,7 +34,7 @@ export async function POST(request) {
     const { 
       id, examId, title, slug, timeLimit, totalMarks, 
       negativeMarking, positiveMarking, instructionType, 
-      instructions, isLive, showSolutions 
+      instructions, isLive, showSolutions, paperType, year, sortOrder
     } = data;
 
     if (!examId || !title || !slug) {
@@ -52,7 +52,10 @@ export async function POST(request) {
       instructionType: instructionType || "TCS",
       instructions: instructions || "",
       isLive: !!isLive,
-      showSolutions: !!showSolutions
+      showSolutions: !!showSolutions,
+      paperType: paperType || "MOCK",
+      year: parseInt(year) || 2025,
+      sortOrder: parseInt(sortOrder) || 0
     };
 
     let paper;

@@ -106,6 +106,11 @@ export default function UserMenu() {
                       <span className={styles.menuIcon}>📊</span> Learning Progress
                     </Link>
                   </li>
+                  <li>
+                    <Link href="/leaderboard" className={styles.dropdownLink} onClick={() => setIsOpen(false)}>
+                      <span className={styles.menuIcon}>🏆</span> Global Leaderboard
+                    </Link>
+                  </li>
                 </>
               )}
             </ul>

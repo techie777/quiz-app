@@ -179,6 +179,12 @@ function QuizEngineContent() {
   const [searchQuestion, setSearchQuestion] = useState("");
   const [showingAd, setShowingAd] = useState(false);
   const [adCallback, setAdCallback] = useState(null);
+  
+  // Track free usage per session
+  const [freeLifelinesUsed, setFreeLifelinesUsed] = useState({
+    "50/50": false,
+    "poll": false
+  });
 
   const category = useMemo(() => {
     return (quizzes || []).find((q) => q.id === params?.id);
@@ -428,32 +434,42 @@ const QuizEngineTimer = QuizTimerComponent;
   // 50/50 Lifeline
   const use5050 = () => {
     if (used5050) return;
-    triggerAd(() => {
-      const currentQuestion = questions[currentIndex];
-      if (!currentQuestion) return;
-      const correctAnswerText = String(currentQuestion.correctAnswer || "").trim();
-      const correctAnswerIndex = currentQuestion.options.findIndex(option => 
+    
+    const execute5050 = () => {
+      const currentQ = questions[currentIndex];
+      if (!currentQ) return;
+      const correctAnswerText = String(currentQ.correctAnswer || "").trim();
+      const correctAnswerIndex = currentQ.options.findIndex(option => 
         String(option || "").trim() === correctAnswerText
       );
-      const wrongAnswers = currentQuestion.options.map((_, idx) => idx).filter(idx => idx !== correctAnswerIndex);
+      const wrongAnswers = currentQ.options.map((_, idx) => idx).filter(idx => idx !== correctAnswerIndex);
       const toRemove = wrongAnswers.sort(() => Math.random() - 0.5).slice(0, 2);
       setUsed5050(true);
       updateScore(-3);
       setRemovedOptions(toRemove);
-    });
+      setFreeLifelinesUsed(prev => ({ ...prev, "50/50": true }));
+    };
+
+    // Rule: 1 free per session. If used already, triggers Ad.
+    if (!freeLifelinesUsed["50/50"]) {
+       execute5050();
+    } else {
+       triggerAd(execute5050);
+    }
   };
 
   // Ask Audience
   const useAskAudience = () => {
     if (usedAskAudience) return;
-    triggerAd(() => {
-      const currentQuestion = questions[currentIndex];
-      if (!currentQuestion) return;
-      const correctAnswerText = String(currentQuestion.correctAnswer || "").trim();
-      const correctAnswerIndex = currentQuestion.options.findIndex(option => 
+    
+    const executePoll = () => {
+      const currentQ = questions[currentIndex];
+      if (!currentQ) return;
+      const correctAnswerText = String(currentQ.correctAnswer || "").trim();
+      const correctAnswerIndex = currentQ.options.findIndex(option => 
         String(option || "").trim() === correctAnswerText
       );
-      const stats = currentQuestion.options.map((_, idx) => {
+      const stats = currentQ.options.map((_, idx) => {
         if (idx === correctAnswerIndex) return Math.floor(Math.random() * 30) + 40;
         return Math.floor(Math.random() * 20) + 5;
       });
@@ -462,7 +478,15 @@ const QuizEngineTimer = QuizTimerComponent;
       setAudienceStats(normalizedStats);
       setUsedAskAudience(true);
       updateScore(-3);
-    });
+      setFreeLifelinesUsed(prev => ({ ...prev, "poll": true }));
+    };
+
+    // Rule: 1 free per session.
+    if (!freeLifelinesUsed["poll"]) {
+      executePoll();
+    } else {
+      triggerAd(executePoll);
+    }
   };
 
   const triggerCelebration = () => {

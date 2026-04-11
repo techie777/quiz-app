@@ -29,6 +29,7 @@ function CareerGuideEditor({ initialData, onSave, onCancel }) {
     avgSalaryHi: initialData?.avgSalaryHi || "", 
     workType: initialData?.workType || "Field + Office",
     workTypeHi: initialData?.workTypeHi || "",
+    type: initialData?.type || "JOB",
     hidden: initialData?.hidden || false
   });
 
@@ -165,6 +166,18 @@ function CareerGuideEditor({ initialData, onSave, onCancel }) {
           <div style={{ marginBottom: '16px' }}>
             <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, marginBottom: '8px' }}>Category</label>
             <input type="text" className="auth-input" style={{ width: '100%' }} value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}/>
+          </div>
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, marginBottom: '8px' }}>Guide Type</label>
+            <select 
+              className="auth-input" 
+              style={{ width: "100%" }} 
+              value={formData.type} 
+              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+            >
+              <option value="JOB">💼 Job Guide</option>
+              <option value="EXAM">🎓 Exam Guide</option>
+            </select>
           </div>
           <div style={{ marginBottom: '16px' }}>
             <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, marginBottom: '8px' }}>Career Category (Hierarchy)</label>
@@ -376,7 +389,21 @@ export default function CareerGuidesAdminPage() {
             <div className={styles.rowInfo}>
               <span className={styles.emoji}>{g.icon}</span>
               <div>
-                <span className={styles.name}>{g.name} <span style={{fontSize: '11px', color: '#888', marginLeft: '6px'}}>/{g.slug}</span></span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className={styles.name}>{g.name}</span>
+                  <span style={{ 
+                    fontSize: '9px', 
+                    fontWeight: 800, 
+                    padding: '2px 6px', 
+                    borderRadius: '4px', 
+                    background: g.type === 'EXAM' ? '#eef2ff' : '#ecfdf5', 
+                    color: g.type === 'EXAM' ? '#4f46e5' : '#059669',
+                    textTransform: 'uppercase'
+                  }}>
+                    {g.type || 'JOB'}
+                  </span>
+                  <span style={{fontSize: '11px', color: '#888'}}>/{g.slug}</span>
+                </div>
                 <span className={styles.desc}>{g.category} - {g.description.substring(0,80)}...</span>
               </div>
             </div>

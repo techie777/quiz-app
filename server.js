@@ -266,25 +266,24 @@ app.prepare()
           const idx = room.participants.findIndex(p => p.socketId === socket.id);
           if (idx !== -1) {
             const p = room.participants[idx];
-            if (room.state.status === 'ACTIVE') {
-              p.isOnline = false;
-              p.status = 'LEFT';
-              updated = true;
-              io.in(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
-            } else {
-              room.participants.splice(idx, 1);
-              updated = true;
-              io.in(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
-            }
+            // Always mark as offline instead of removing to allow for reconnection grace periods
+            p.isOnline = false;
+            p.status = 'AWAY';
+            updated = true;
+            io.in(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
+            console.log(`📡 Participant ${p.userName} went offline (Room: ${sessionId})`);
           }
           
           const pIdx = room.pendingParticipants.findIndex(p => p.socketId === socket.id);
           if (pIdx !== -1) {
               const p = room.pendingParticipants[pIdx];
-              room.pendingParticipants.splice(pIdx, 1);
+              // For pending guests, we still mark offline so the host knows they dropped
+              // but we don't necessarily need to keep them forever.
+              // For now, let's keep them in the list so they can 're-request' or auto-approve.
+              p.isOnline = false;
               updated = true;
               io.in(sessionId).emit('SYNC_PENDING', room.pendingParticipants);
-              console.log(`???? Pending Guest ${p.userName} disconnected.`);
+              console.log(`📡 Pending Guest ${p.userName} went offline.`);
           }
           
           if (updated) {

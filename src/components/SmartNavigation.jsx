@@ -6,80 +6,24 @@ import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useUI } from "@/context/UIContext";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Heart } from "lucide-react";
 import styles from "@/styles/SmartNavigation.module.css";
 
-const navigationItems = [
-  {
-    name: "Home",
-    href: "/",
-    icon: "🏠",
-    description: "Return to the main quiz homepage",
-    keywords: "quiz, homepage, main, start"
-  },
-  {
-    name: "Daily Quiz",
-    href: "/daily",
-    icon: "🏆",
-    description: "Take our daily quiz to test your knowledge",
-    keywords: "daily quiz, test, knowledge, practice"
-  },
-  {
-    name: "Daily Current Affairs",
-    href: "/daily-current-affairs",
-    icon: "📰",
-    description: "Latest daily current affairs and news updates",
-    keywords: "current affairs, news, daily updates"
-  },
-  {
-    name: "Govt Jobs Alerts",
-    href: "/govt-jobs-alerts",
-    icon: "💼",
-    description: "Government job notifications and alerts",
-    keywords: "government jobs, sarkari naukri, job alerts"
-  },
-  {
-    name: "Mock Tests",
-    href: "/mock-tests",
-    icon: "✍️",
-    description: "TCS/NTA style practice papers for competitive exams",
-    keywords: "mock tests, practice papers, SSC, IBPS, exam prep"
-  },
-  {
-    name: "Govt Study Material",
-    href: "/govt-study",
-    icon: "📚",
-    description: "FlexBook study materials for Govt Exams",
-    keywords: "study material, govt exams, preparation, notes"
-  },
-  {
-    name: "Book My Course",
-    href: "/book-my-course",
-    icon: "🎒",
-    description: "Order school courses and books online",
-    keywords: "school books, course booking, parent portal, education"
-  },
-  {
-    name: "Career Guide",
-    href: "/career-guide",
-    icon: "🧭",
-    description: "Complete career guidance and roadmaps",
-    keywords: "career, jobs, guidance, roadmap, career guide"
-  },
-  {
-    name: "Fun facts",
-    href: "/fun-facts",
-    icon: "✨",
-    description: "Discover amazing and mind-blowing facts",
-    keywords: "fun facts, factify, knowledge, trivia, zero gravity"
-  },
-  {
-    name: "School Study",
-    href: "/school-study",
-    icon: "🎓",
-    description: "Interactive revision and quizzes for Class 6-12",
-    keywords: "school study, revision, practice, CBSE, subjects, chapters"
-  }
+const fallbackNavigationItems = [
+  { name: "Home", href: "/", icon: "🏠", description: "Master Hub" },
+  { name: "Global Leaderboard", href: "/leaderboard", icon: "🏆", description: "World intelligence rankings" },
+  { name: "QuizWeb Pro", href: "/pro", icon: "👑", description: "Unlock premium features" },
+  { name: "Quizzes", href: "/quizzes", icon: "🧠", description: "Play dynamic quizzes" },
+  { name: "Daily Quiz", href: "/daily", icon: "🔥", description: "Take our daily quiz" },
+  { name: "Daily Current Affairs", href: "/daily-current-affairs", icon: "📰", description: "Latest daily updates" },
+  { name: "Govt Jobs Alerts", href: "/govt-jobs-alerts", icon: "💼", description: "Job notifications" },
+  { name: "Mock Tests", href: "/mock-tests", icon: "✍️", description: "Practice papers" },
+  { name: "Govt Study Material", href: "/govt-study", icon: "📚", description: "FlexBook study notes" },
+  { name: "Book My Course", href: "/book-my-course", icon: "🎒", description: "Order courses online" },
+  { name: "Career Guide", href: "/career-guide", icon: "🧭", description: "Career guidance" },
+  { name: "Fun facts", href: "/fun-facts", icon: "✨", description: "Amazing facts" },
+  { name: "True/False", href: "/true-false", icon: "✅", description: "Interactive challenges" },
+  { name: "School Study", href: "/school-study", icon: "🎓", description: "Interactive revision" }
 ];
 
 export default function SmartNavigation() {
@@ -89,8 +33,25 @@ export default function SmartNavigation() {
   const { data: session, status } = useSession();
   const isUser = session?.user && !session.user.isAdmin;
   
+  const [navigationItems, setNavigationItems] = useState(fallbackNavigationItems);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSignOutConfirm, setIsSignOutConfirm] = useState(false);
+
+  useEffect(() => {
+    const fetchNav = async () => {
+      try {
+        const res = await fetch('/api/navigation');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setNavigationItems(data);
+          }
+        }
+      } catch (e) { console.error("Nav fetch error:", e); }
+    };
+    fetchNav();
+  }, []);
+
   useEffect(() => {
     const handleScroll = () => {
       const offset = window.scrollY;
@@ -100,10 +61,6 @@ export default function SmartNavigation() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-
-  useEffect(() => {
-    // Close mobile menu when route changes handled by UIContext
-  }, [pathname]);
 
   if (pathname?.startsWith("/admin") || pathname?.includes("/mock-tests/paper/")) return null;
 
@@ -221,6 +178,9 @@ export default function SmartNavigation() {
                                 </Link>
                                 <Link href="/school-study/dashboard" className={styles.mobileUserLink} onClick={closeMobileMenu}>
                                   <span className={styles.userMenuIcon}>📊</span> Learning Progress
+                                </Link>
+                                <Link href="/leaderboard" className={styles.mobileUserLink} onClick={closeMobileMenu}>
+                                  <span className={styles.userMenuIcon}>🏆</span> Global Leaderboard
                                 </Link>
                                 
                                 <div className={styles.mobileSignOutSection}>

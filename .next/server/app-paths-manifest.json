@@ -1,12 +1,6 @@
 {
-  "/live/[sessionId]/page": "app/live/[sessionId]/page.js",
-  "/api/categories/route": "app/api/categories/route.js",
-  "/_not-found/page": "app/_not-found/page.js",
-  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
-  "/api/settings/route": "app/api/settings/route.js",
-  "/api/user/profile/route": "app/api/user/profile/route.js",
-  "/api/categories/[id]/route": "app/api/categories/[id]/route.js",
   "/page": "app/page.js",
-  "/api/sections/route": "app/api/sections/route.js",
-  "/api/category-favourites/route": "app/api/category-favourites/route.js"
+  "/api/settings/route": "app/api/settings/route.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/categories/route": "app/api/categories/route.js"
 }

@@ -1,8 +1,61 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { Sparkles, ArrowRight, Rocket, X, Download, Upload, Trash2, Edit, Copy, Settings } from "lucide-react";
+import React, { useState, useEffect, useCallback } from 'react';
+import { Sparkles, ArrowRight, Rocket, X, Download, Upload, Trash2, Edit, Copy, Settings, Check, ChevronRight, GripVertical, Image as ImageIcon } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import styles from '@/styles/GovtExamManagement.module.css';
+
+// --- Reusable Draggable Row Component ---
+function DraggableRow({ id, children, className }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 100 : 'auto',
+    position: isDragging ? 'relative' : 'initial',
+    background: isDragging ? '#f8fafc' : 'transparent',
+    boxShadow: isDragging ? '0 10px 15px -3px rgba(0, 0, 0, 0.1)' : 'none',
+  };
+
+  return (
+    <tr ref={setNodeRef} style={style} className={className}>
+      <td className="w-10">
+        <button
+          type="button"
+          className="cursor-grab active:cursor-grabbing p-2 text-slate-300 hover:text-indigo-400 transition-colors"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical size={18} />
+        </button>
+      </td>
+      {children}
+    </tr>
+  );
+}
 
 export default function MockTestsManager() {
   const [exams, setExams] = useState([]);
@@ -18,9 +71,9 @@ export default function MockTestsManager() {
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   
-  const [examForm, setExamForm] = useState({ id: '', name: '', slug: '', emoji: '📝', description: '', categoryId: '', sortOrder: 0, hidden: false });
+  const [examForm, setExamForm] = useState({ id: '', name: '', slug: '', emoji: '📝', description: '', categoryId: '', sortOrder: 0, hidden: false, quizCategoryIds: [], booksJson: '[]', studyMaterialJson: '[]' });
   const [categoryForm, setCategoryForm] = useState({ id: '', name: '', slug: '', icon: '📚', sortOrder: 0 });
-  const [paperForm, setPaperForm] = useState({ id: '', examId: '', title: '', slug: '', timeLimit: 60, totalMarks: 100, negativeMarking: 0.25, positiveMarking: 1.0, instructionType: 'TCS', instructions: '', isLive: false, showSolutions: false });
+  const [paperForm, setPaperForm] = useState({ id: '', examId: '', title: '', slug: '', timeLimit: 60, totalMarks: 100, negativeMarking: 0.25, positiveMarking: 1.0, instructionType: 'TCS', instructions: '', isLive: false, showSolutions: false, paperType: 'MOCK', year: 2025 });
   
   // Selection states for filtering
   const [selectedFilterCategoryId, setSelectedFilterCategoryId] = useState('');
@@ -29,6 +82,63 @@ export default function MockTestsManager() {
   const [sections, setSections] = useState([]);
   const [questions, setQuestions] = useState([]);
   const [selectedSectionTabId, setSelectedSectionTabId] = useState('all');
+  const [examModalActiveTab, setExamModalActiveTab] = useState('general'); // 'general', 'info', 'quizzes', 'books', 'materials'
+  
+  const [quizCategories, setQuizCategories] = useState([]);
+  const [examInfoSections, setExamInfoSections] = useState([]);
+  const [editingInfoSection, setEditingInfoSection] = useState({ id: '', examId: '', title: '', content: '', type: 'TEXT', sortOrder: 0 });
+
+  // DnD Sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleReorder = async (model, items) => {
+    try {
+      const res = await fetch('/api/admin/mock-reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model, items: items.map((item, idx) => ({ id: item.id, sortOrder: idx })) })
+      });
+      if (!res.ok) throw new Error("Failed to sync order");
+    } catch (err) {
+      console.error(err);
+      alert("Order sync failed. Please refresh.");
+    }
+  };
+
+  const onDragEnd = (event, type) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    let setter, list;
+    if (type === 'categories') { setter = setCategories; list = categories; }
+    else if (type === 'exams') { setter = setExams; list = exams; }
+    else if (type === 'papers') { setter = setPapers; list = papers; }
+    else if (type === 'questions') { setter = setQuestions; list = questions; }
+
+    if (!setter) return;
+
+    const oldIdx = list.findIndex(i => i.id === active.id);
+    const newIdx = list.findIndex(i => i.id === over.id);
+
+    const newList = arrayMove(list, oldIdx, newIdx);
+    setter(newList);
+    
+    // Sync with DB
+    const modelMap = {
+      'categories': 'category',
+      'exams': 'exam',
+      'papers': 'paper',
+      'questions': 'question'
+    };
+    handleReorder(modelMap[type], newList);
+  };
 
   // Wizard States
   const [wizardStep, setWizardStep] = useState(1);
@@ -52,6 +162,9 @@ export default function MockTestsManager() {
       ]);
       if (exRes.ok) setExams(await exRes.json());
       if (catRes.ok) setCategories(await catRes.json());
+      
+      const quizCatRes = await fetch('/api/admin/fun-facts/categories');
+      if (quizCatRes.ok) setQuizCategories(await quizCatRes.json());
     } catch (e) {
       console.error(e);
     } finally {
@@ -87,12 +200,28 @@ export default function MockTestsManager() {
     if (activeTab === 'papers') fetchPapers();
   }, [selectedExamId, activeTab]);
 
+  const fetchExamInfoSections = async (examId) => {
+    if (!examId) { setExamInfoSections([]); return; }
+    try {
+      const res = await fetch(`/api/admin/mock-exam-sections?examId=${examId}`);
+      if (res.ok) setExamInfoSections(await res.json());
+    } catch (error) { console.error(error); }
+  };
+
   useEffect(() => {
     if (activeTab === 'questions') {
       fetchSections();
       fetchQuestions();
     }
   }, [selectedPaperId, activeTab]);
+
+  useEffect(() => {
+    if (isExamModalOpen && examForm.id) {
+        fetchExamInfoSections(examForm.id);
+    } else if (isExamModalOpen && !examForm.id) {
+        setExamInfoSections([]);
+    }
+  }, [isExamModalOpen, examForm.id]);
 
   const saveExam = async (e) => {
     e.preventDefault();
@@ -255,6 +384,28 @@ export default function MockTestsManager() {
       console.error(err);
       alert("Upload error");
     }
+  };
+
+  const saveInfoSection = async (e) => {
+    e.preventDefault();
+    if (!examForm.id) return alert("Save the exam basic details first!");
+    try {
+      const res = await fetch('/api/admin/mock-exam-sections', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...editingInfoSection, examId: examForm.id })
+      });
+      if (res.ok) {
+        setEditingInfoSection({ id: '', examId: examForm.id, title: '', content: '', type: 'TEXT', sortOrder: 0 });
+        fetchExamInfoSections(examForm.id);
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  const deleteInfoSection = async (id) => {
+    if (!confirm('Delete this section?')) return;
+    await fetch(`/api/admin/mock-exam-sections?id=${id}`, { method: 'DELETE' });
+    fetchExamInfoSections(examForm.id);
   };
 
   // Bulk Upload logic
@@ -425,97 +576,132 @@ export default function MockTestsManager() {
                  <table className={styles.table}>
                     <thead>
                        <tr>
+                          <th className="w-10"></th>
                           <th>Icon</th>
                           <th>Category Name</th>
                           <th>Slug</th>
                           <th>Actions</th>
                        </tr>
                     </thead>
-                    <tbody>
-                       {categories.map(cat => (
-                          <tr key={cat.id}>
-                             <td className="text-2xl">{cat.icon}</td>
-                             <td><strong>{cat.name}</strong></td>
-                             <td>{cat.slug}</td>
-                             <td>
-                                <div className="flex gap-2">
-                                  <button 
-                                     className="text-blue-600 hover:bg-blue-50 px-3 py-1 rounded transition"
-                                     onClick={() => {
-                                        setCategoryForm(cat);
-                                        setIsCategoryModalOpen(true);
-                                     }}
-                                  >
-                                    Edit
-                                  </button>
-                                  <button className="text-red-600 hover:bg-red-50 px-3 py-1 rounded transition" onClick={() => deleteCategory(cat.id)}>
-                                    Delete
-                                  </button>
-                                </div>
-                             </td>
-                          </tr>
-                       ))}
-                    </tbody>
+                    <DndContext 
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={(e) => onDragEnd(e, 'categories')}
+                    >
+                      <SortableContext 
+                        items={categories.map(c => c.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        <tbody>
+                           {categories.map(cat => (
+                              <DraggableRow key={cat.id} id={cat.id}>
+                                 <td className="text-2xl">{cat.icon}</td>
+                                 <td><strong>{cat.name}</strong></td>
+                                 <td>{cat.slug}</td>
+                                 <td>
+                                    <div className="flex gap-2">
+                                      <button 
+                                         className="text-blue-600 hover:bg-blue-50 px-3 py-1 rounded transition"
+                                         onClick={() => {
+                                            setCategoryForm(cat);
+                                            setIsCategoryModalOpen(true);
+                                         }}
+                                      >
+                                        Edit
+                                      </button>
+                                      <button className="text-red-600 hover:bg-red-50 px-3 py-1 rounded transition" onClick={() => deleteCategory(cat.id)}>
+                                        Delete
+                                      </button>
+                                    </div>
+                                 </td>
+                              </DraggableRow>
+                           ))}
+                        </tbody>
+                      </SortableContext>
+                    </DndContext>
                  </table>
               </div>
            </section>
 
-           {/* SUB-CATEGORIES SECTION */}
-           <section>
-              <div className="flex justify-between items-center mb-4 border-t pt-8">
-                 <h2 className="text-xl font-bold text-slate-800">2. Mock Exams (Sub-categories)</h2>
-                 <button 
-                    className={styles.addBtn}
-                    onClick={() => {
-                      setExamForm({ id: '', name: '', slug: '', emoji: '📝', description: '', categoryId: '', sortOrder: 0, hidden: false });
-                      setIsExamModalOpen(true);
-                    }}
-                 >
-                    + Add New Mock Exam
-                 </button>
-              </div>
+            {/* SUB-CATEGORIES SECTION */}
+            <section>
+               <div className="flex justify-between items-center mb-4 border-t pt-8">
+                  <h2 className="text-xl font-bold text-slate-800">2. Sub categories</h2>
+                  <button 
+                     className={styles.addBtn}
+                     onClick={() => {
+                       setExamForm({ id: '', name: '', slug: '', emoji: '📝', description: '', categoryId: '', sortOrder: 0, hidden: false, quizCategoryIds: [], booksJson: '[]', studyMaterialJson: '[]' });
+                       setIsExamModalOpen(true);
+                     }}
+                  >
+                     + Add New Sub Category
+                  </button>
+               </div>
               
               <div className={styles.tableContainer}>
                  <table className={styles.table}>
-                    <thead>
-                       <tr>
-                          <th>Exam Name</th>
-                          <th>Category</th>
-                          <th>Papers</th>
-                          <th>Status</th>
-                          <th>Actions</th>
-                       </tr>
-                    </thead>
-                    <tbody>
-                       {exams.map(ex => (
-                          <tr key={ex.id}>
-                             <td><strong>{ex.emoji} {ex.name}</strong><br/><small className="text-slate-400">/{ex.slug}</small></td>
-                             <td>{ex.category?.name || 'Uncategorized'}</td>
-                             <td>{ex._count?.papers || 0}</td>
-                             <td>
-                                <span className={ex.hidden ? "text-red-500 bg-red-50 p-1 px-2 rounded font-bold text-sm" : "text-emerald-500 bg-emerald-50 p-1 px-2 rounded font-bold text-sm"}>
-                                   {ex.hidden ? "Draft" : "Active"}
-                                </span>
-                             </td>
-                             <td>
-                                <div className="flex gap-2">
-                                  <button 
-                                     className="text-blue-600 hover:bg-blue-50 px-3 py-1 rounded transition"
-                                     onClick={() => {
-                                        setExamForm({ ...ex, categoryId: ex.categoryId || '' });
-                                        setIsExamModalOpen(true);
-                                     }}
-                                  >
-                                    Edit
-                                  </button>
-                                  <button className="text-red-600 hover:bg-red-50 px-3 py-1 rounded transition" onClick={() => deleteExam(ex.id)}>
-                                    Delete
-                                  </button>
-                                </div>
-                             </td>
-                          </tr>
-                       ))}
-                    </tbody>
+                     <thead>
+                        <tr>
+                           <th className="w-10"></th>
+                           <th>Main Category</th>
+                           <th>Sub category</th>
+                           <th className="text-center">Total mock test</th>
+                           <th className="text-center">Total PYPs</th>
+                           <th>Status</th>
+                           <th>Actions</th>
+                        </tr>
+                     </thead>
+                     <DndContext 
+                       sensors={sensors}
+                       collisionDetection={closestCenter}
+                       onDragEnd={(e) => onDragEnd(e, 'exams')}
+                     >
+                       <SortableContext 
+                         items={exams.map(e => e.id)}
+                         strategy={verticalListSortingStrategy}
+                       >
+                         <tbody>
+                            {exams.map(ex => (
+                               <DraggableRow key={ex.id} id={ex.id}>
+                                  <td className="font-bold text-slate-500">{ex.category?.name || 'Uncategorized'}</td>
+                                  <td>
+                                    <div className="flex items-center gap-3">
+                                      <span className="text-xl">{ex.emoji}</span>
+                                      <div>
+                                        <div className="font-black text-slate-900">{ex.name}</div>
+                                        <div className="text-[10px] text-slate-400 font-mono">/{ex.slug}</div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="text-center font-bold text-indigo-600">{ex.mockCount || 0}</td>
+                                  <td className="text-center font-bold text-emerald-600">{ex.pypCount || 0}</td>
+                                  <td>
+                                     <span className={ex.hidden ? "text-amber-600 bg-amber-50 p-1 px-2 rounded font-bold text-[10px] uppercase tracking-wider" : "text-emerald-500 bg-emerald-50 p-1 px-2 rounded font-bold text-[10px] uppercase tracking-wider"}>
+                                        {ex.hidden ? "Draft" : "Active"}
+                                     </span>
+                                  </td>
+                                  <td>
+                                     <div className="flex gap-2">
+                                       <button 
+                                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                                          onClick={() => {
+                                             setExamForm({ ...ex, categoryId: ex.categoryId || '', quizCategoryIds: ex.quizCategoryIds || [], booksJson: ex.booksJson || '[]', studyMaterialJson: ex.studyMaterialJson || '[]' });
+                                             setIsExamModalOpen(true);
+                                          }}
+                                          title="Edit Sub Category"
+                                       >
+                                         <Edit size={16}/>
+                                       </button>
+                                       <button className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition" onClick={() => deleteExam(ex.id)} title="Delete Sub Category">
+                                         <Trash2 size={16}/>
+                                       </button>
+                                     </div>
+                                  </td>
+                               </DraggableRow>
+                            ))}
+                         </tbody>
+                      </SortableContext>
+                    </DndContext>
                  </table>
               </div>
            </section>
@@ -585,6 +771,7 @@ export default function MockTestsManager() {
               <table className={styles.table}>
                  <thead>
                     <tr>
+                       <th className="w-10"></th>
                        <th>Paper Title</th>
                        <th>Timing & Marks</th>
                        <th>Questions/Sections</th>
@@ -592,39 +779,50 @@ export default function MockTestsManager() {
                        <th>Actions</th>
                     </tr>
                  </thead>
-                 <tbody>
-                    {papers.map(p => (
-                       <tr key={p.id}>
-                          <td><strong>{p.title}</strong><br/><small className="text-slate-400">/{p.slug}</small></td>
-                          <td>{p.timeLimit}m | {p.totalMarks} Marks</td>
-                          <td>{p._count?.questions || 0} Questions<br/><small>{p._count?.sections || 0} Sections</small></td>
-                          <td>
-                             <span className={p.isLive ? "text-emerald-500 font-bold" : "text-slate-400"}>
-                                {p.isLive ? "🔴 Live" : "Draft"}
-                             </span>
-                          </td>
-                          <td>
-                             <div className="flex gap-4 items-center">
-                                <button className="text-blue-600 font-bold hover:text-blue-800 transition" onClick={() => { 
-                                  setSelectedPaperId(p.id); 
-                                  setActiveTab('questions'); 
-                                }}>Questions</button>
-                                <button className="text-amber-600 font-bold hover:text-amber-800 transition flex items-center gap-1" onClick={() => {
-                                  setPaperForm(p);
-                                  setIsPaperModalOpen(true);
-                                }}>
-                                  <Settings size={14}/> Settings
-                                </button>
-                                <button className="text-indigo-600 font-bold hover:text-indigo-800 transition flex items-center gap-1" onClick={() => clonePaper(p.id)}>
-                                  <Copy size={14}/> Clone
-                                </button>
-                                <button className="text-red-600 hover:text-red-800 transition" onClick={() => deletePaper(p.id)}><Trash2 size={14}/></button>
-                             </div>
-                          </td>
-                       </tr>
-                    ))}
-                    {papers.length === 0 && <tr><td colSpan="5" className="text-center p-8 text-slate-400">Select a sub-category to view papers or create a new one.</td></tr>}
-                 </tbody>
+                 <DndContext 
+                   sensors={sensors}
+                   collisionDetection={closestCenter}
+                   onDragEnd={(e) => onDragEnd(e, 'papers')}
+                 >
+                   <SortableContext 
+                     items={papers.map(p => p.id)}
+                     strategy={verticalListSortingStrategy}
+                   >
+                     <tbody>
+                        {papers.map(p => (
+                           <DraggableRow key={p.id} id={p.id}>
+                              <td><strong>{p.title}</strong><br/><small className="text-slate-400">/{p.slug}</small></td>
+                              <td>{p.timeLimit}m | {p.totalMarks} Marks</td>
+                              <td>{p._count?.questions || 0} Questions<br/><small>{p._count?.sections || 0} Sections</small></td>
+                              <td>
+                                 <span className={p.isLive ? "text-emerald-500 font-bold" : "text-slate-400"}>
+                                    {p.isLive ? "🔴 Live" : "Draft"}
+                                 </span>
+                              </td>
+                              <td>
+                                 <div className="flex gap-4 items-center">
+                                    <button className="text-blue-600 font-bold hover:text-blue-800 transition" onClick={() => { 
+                                      setSelectedPaperId(p.id); 
+                                      setActiveTab('questions'); 
+                                    }}>Questions</button>
+                                    <button className="text-amber-600 font-bold hover:text-amber-800 transition flex items-center gap-1" onClick={() => {
+                                      setPaperForm(p);
+                                      setIsPaperModalOpen(true);
+                                    }}>
+                                      <Settings size={14}/> Settings
+                                    </button>
+                                    <button className="text-indigo-600 font-bold hover:text-indigo-800 transition flex items-center gap-1" onClick={() => clonePaper(p.id)}>
+                                      <Copy size={14}/> Clone
+                                    </button>
+                                    <button className="text-red-600 hover:text-red-800 transition" onClick={() => deletePaper(p.id)}><Trash2 size={14}/></button>
+                                 </div>
+                              </td>
+                           </DraggableRow>
+                        ))}
+                        {papers.length === 0 && <tr><td colSpan="6" className="text-center p-8 text-slate-400">Select a sub-category to view papers or create a new one.</td></tr>}
+                     </tbody>
+                   </SortableContext>
+                 </DndContext>
               </table>
            </div>
         </div>
@@ -688,6 +886,7 @@ export default function MockTestsManager() {
               <table className={styles.table}>
                  <thead>
                     <tr>
+                       <th className="w-10"></th>
                        <th style={{ width: '40%' }}>Question (Bilingual)</th>
                        <th style={{ width: '15%' }}>Section</th>
                        <th style={{ width: '15%' }}>Correct Ans</th>
@@ -695,44 +894,55 @@ export default function MockTestsManager() {
                        <th style={{ width: '15%' }}>Actions</th>
                     </tr>
                  </thead>
-                 <tbody>
-                    {questions
-                       .filter(q => selectedSectionTabId === 'all' || q.sectionId === selectedSectionTabId)
-                       .map((q, idx) => (
-                       <tr key={q.id} className="hover:bg-slate-50">
-                          <td className="py-4">
-                             <div className="font-bold text-slate-800">Q{idx+1}. {q.text}</div>
-                             <div className="text-slate-500 text-sm mt-1">H: {q.textHi}</div>
-                          </td>
-                          <td><span className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded-md text-xs font-bold">{q.section?.name || "General"}</span></td>
-                          <td><span className="font-mono text-emerald-600 font-bold">Opt {q.answer + 1}</span></td>
-                          <td>
-                             {q.image && <img src={q.image} alt="Q" className="w-12 h-12 object-cover rounded border" />}
-                             {!q.image && <span className="text-slate-300 text-xs italic">No Image</span>}
-                          </td>
-                          <td>
-                             <div className="flex gap-3">
-                                <button className="text-indigo-600 hover:scale-110 transition" onClick={() => {
-                                  let opt = ["", "", "", ""];
-                                  try { opt = JSON.parse(q.options || "[]"); } catch(e){}
-                                  let optHi = ["", "", "", ""];
-                                  try { optHi = JSON.parse(q.optionsHi || "[]"); } catch(e){}
-                                  
-                                  setQuestionForm({ 
-                                    ...q, 
-                                    options: opt, 
-                                    optionsHi: optHi, 
-                                    optionTypes: opt.map(v => v.startsWith('http') ? 'image' : 'text') 
-                                  });
-                                  setIsQuestionModalOpen(true);
-                                }}>Edit</button>
-                                <button className="text-rose-600 hover:scale-110 transition" onClick={() => deleteQuestion(q.id)}>Delete</button>
-                             </div>
-                          </td>
-                       </tr>
-                    ))}
-                    {questions.length === 0 && <tr><td colSpan="5" className="text-center p-12 text-slate-400 font-medium">✨ No questions found. Start adding manually or via bulk upload!</td></tr>}
-                 </tbody>
+                 <DndContext 
+                   sensors={sensors}
+                   collisionDetection={closestCenter}
+                   onDragEnd={(e) => onDragEnd(e, 'questions')}
+                 >
+                   <SortableContext 
+                     items={questions.filter(q => selectedSectionTabId === 'all' || q.sectionId === selectedSectionTabId).map(q => q.id)}
+                     strategy={verticalListSortingStrategy}
+                   >
+                     <tbody>
+                        {questions
+                           .filter(q => selectedSectionTabId === 'all' || q.sectionId === selectedSectionTabId)
+                           .map((q, idx) => (
+                           <DraggableRow key={q.id} id={q.id} className="hover:bg-slate-50">
+                              <td className="py-4">
+                                 <div className="font-bold text-slate-800">Q{idx+1}. {q.text}</div>
+                                 <div className="text-slate-500 text-sm mt-1">H: {q.textHi}</div>
+                              </td>
+                              <td><span className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded-md text-xs font-bold">{q.section?.name || "General"}</span></td>
+                              <td><span className="font-mono text-emerald-600 font-bold">Opt {q.answer + 1}</span></td>
+                              <td>
+                                 {q.image && <img src={q.image} alt="Q" className="w-12 h-12 object-cover rounded border" />}
+                                 {!q.image && <span className="text-slate-300 text-xs italic">No Image</span>}
+                              </td>
+                              <td>
+                                 <div className="flex gap-3">
+                                    <button className="text-indigo-600 hover:scale-110 transition" onClick={() => {
+                                      let opt = ["", "", "", ""];
+                                      try { opt = JSON.parse(q.options || "[]"); } catch(e){}
+                                      let optHi = ["", "", "", ""];
+                                      try { optHi = JSON.parse(q.optionsHi || "[]"); } catch(e){}
+                                      
+                                      setQuestionForm({ 
+                                        ...q, 
+                                        options: opt, 
+                                        optionsHi: optHi, 
+                                        optionTypes: opt.map(v => v.startsWith('http') ? 'image' : 'text') 
+                                      });
+                                      setIsQuestionModalOpen(true);
+                                    }}>Edit</button>
+                                    <button className="text-rose-600 hover:scale-110 transition" onClick={() => deleteQuestion(q.id)}>Delete</button>
+                                 </div>
+                              </td>
+                           </DraggableRow>
+                        ))}
+                        {questions.length === 0 && <tr><td colSpan="6" className="text-center p-12 text-slate-400 font-medium">✨ No questions found. Start adding manually or via bulk upload!</td></tr>}
+                     </tbody>
+                   </SortableContext>
+                 </DndContext>
               </table>
            </div>
         </div>
@@ -773,15 +983,15 @@ export default function MockTestsManager() {
                          <input type="number" value={paperForm.totalMarks} onChange={e => setPaperForm(prev => ({...prev, totalMarks: parseInt(e.target.value)}))} required className={styles.input} />
                       </div>
                       <div className={styles.formGroup}>
-                         <label>Instruction Style</label>
-                         <select value={paperForm.instructionType} onChange={e => setPaperForm(prev => ({...prev, instructionType: e.target.value}))} className={styles.input}>
-                            <option value="TCS">TCS Style</option>
-                            <option value="Standard">Standard Board</option>
+                         <label>Paper Type</label>
+                         <select value={paperForm.paperType} onChange={e => setPaperForm(prev => ({...prev, paperType: e.target.value}))} className={styles.input}>
+                            <option value="MOCK">Mock Test</option>
+                            <option value="PYP">Previous Year Paper</option>
                          </select>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="grid grid-cols-3 gap-4 mb-4">
                       <div className={styles.formGroup}>
                          <label>Correct Mark (+)</label>
                          <input type="number" step="0.01" value={paperForm.positiveMarking} onChange={e => setPaperForm(prev => ({...prev, positiveMarking: parseFloat(e.target.value)}))} required className={styles.input} />
@@ -789,6 +999,10 @@ export default function MockTestsManager() {
                       <div className={styles.formGroup}>
                          <label>Negative Mark (-)</label>
                          <input type="number" step="0.01" value={paperForm.negativeMarking} onChange={e => setPaperForm(prev => ({...prev, negativeMarking: parseFloat(e.target.value)}))} required className={styles.input} />
+                      </div>
+                      <div className={styles.formGroup}>
+                         <label>Year</label>
+                         <input type="number" value={paperForm.year} onChange={e => setPaperForm(prev => ({...prev, year: parseInt(e.target.value)}))} required className={styles.input} />
                       </div>
                     </div>
 
@@ -828,47 +1042,306 @@ export default function MockTestsManager() {
              </div>
              <div className={styles.drawerContent}>
                 <form onSubmit={saveExam}>
-                   <div className="grid grid-cols-2 gap-4 mb-4">
-                     <div className={styles.formGroup}>
-                        <label>Sub-Category Name</label>
-                        <input type="text" value={examForm.name} onChange={e => {
-                          const val = e.target.value;
-                          const slug = val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-                          setExamForm(prev => ({...prev, name: val, slug}));
-                        }} required className={styles.input} />
-                     </div>
-                     <div className={styles.formGroup}>
-                        <label>Slug (URL Friendly)</label>
-                        <input type="text" value={examForm.slug} onChange={e => setExamForm(prev => ({...prev, slug: e.target.value}))} required className={styles.input} />
-                     </div>
+                   <div className="flex gap-4 mb-6 border-b pb-2 overflow-x-auto">
+                      <button type="button" onClick={() => setExamModalActiveTab('general')} className={`px-4 py-2 font-bold transition-all ${examModalActiveTab === 'general' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-400'}`}>General</button>
+                      <button type="button" onClick={() => setExamModalActiveTab('info')} className={`px-4 py-2 font-bold transition-all ${examModalActiveTab === 'info' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-400'}`}>Info Hub</button>
+                      <button type="button" onClick={() => setExamModalActiveTab('quizzes')} className={`px-4 py-2 font-bold transition-all ${examModalActiveTab === 'quizzes' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-400'}`}>Quizzes</button>
+                      <button type="button" onClick={() => setExamModalActiveTab('books')} className={`px-4 py-2 font-bold transition-all ${examModalActiveTab === 'books' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-400'}`}>Books</button>
+                      <button type="button" onClick={() => setExamModalActiveTab('materials')} className={`px-4 py-2 font-bold transition-all ${examModalActiveTab === 'materials' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-400'}`}>Materials</button>
                    </div>
-                   <div className="grid grid-cols-2 gap-4 mb-4">
-                     <div className={styles.formGroup}>
-                        <label>Emoji Icon</label>
-                        <input type="text" value={examForm.emoji} onChange={e => setExamForm(prev => ({...prev, emoji: e.target.value}))} required className={styles.input} />
+
+                   {examModalActiveTab === 'general' && (
+                    <>
+                       <div className="grid grid-cols-2 gap-4 mb-4">
+                         <div className={styles.formGroup}>
+                            <label>Sub-Category Name</label>
+                            <input type="text" value={examForm.name} onChange={e => {
+                              const val = e.target.value;
+                              const slug = val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+                              setExamForm(prev => ({...prev, name: val, slug}));
+                            }} required className={styles.input} />
+                         </div>
+                         <div className={styles.formGroup}>
+                            <label>Slug (URL Friendly)</label>
+                            <input type="text" value={examForm.slug} onChange={e => setExamForm(prev => ({...prev, slug: e.target.value}))} required className={styles.input} />
+                         </div>
+                       </div>
+                       <div className="grid grid-cols-2 gap-4 mb-4">
+                         <div className={styles.formGroup}>
+                            <label>Emoji Icon</label>
+                            <input type="text" value={examForm.emoji} onChange={e => setExamForm(prev => ({...prev, emoji: e.target.value}))} required className={styles.input} />
+                         </div>
+                         <div className={styles.formGroup}>
+                            <label>Main Category</label>
+                            <select value={examForm.categoryId} onChange={e => setExamForm(prev => ({...prev, categoryId: e.target.value}))} className={styles.input}>
+                               <option value="">-- No Category --</option>
+                               {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            </select>
+                         </div>
+                       </div>
+                       <div className={styles.formGroup}>
+                          <label>Description</label>
+                          <textarea value={examForm.description} onChange={e => setExamForm(prev => ({...prev, description: e.target.value}))} className={styles.textarea} rows="3"></textarea>
+                       </div>
+                       <div className="grid grid-cols-2 gap-4 mb-6">
+                         <div className={styles.formGroup}>
+                            <label>Sort Order</label>
+                            <input type="number" value={examForm.sortOrder} onChange={e => setExamForm(prev => ({...prev, sortOrder: parseInt(e.target.value)}))} className={styles.input} />
+                         </div>
+                         <div className="flex items-center gap-2 mt-8">
+                            <input type="checkbox" id="hiddenFlag" checked={examForm.hidden} onChange={e => setExamForm(prev => ({...prev, hidden: e.target.checked}))} />
+                            <label htmlFor="hiddenFlag" className="font-bold cursor-pointer">Hide from public (Draft)</label>
+                         </div>
+                       </div>
+                    </>
+                   )}
+
+                   {examModalActiveTab === 'info' && (
+                     <div className="space-y-6">
+                        {!examForm.id && <div className="p-4 bg-amber-50 text-amber-700 rounded-xl font-bold text-sm">⚠️ Please save the basic exam details first before adding info tabs.</div>}
+                        
+                        {examForm.id && (
+                          <>
+                            <div className="bg-slate-50 p-6 rounded-3xl border-2 border-slate-100 mb-8">
+                               <h4 className="font-black text-slate-800 mb-4 uppercase tracking-widest text-xs">Add/Edit Data Section</h4>
+                               <div className="space-y-4">
+                                  <div className="grid grid-cols-2 gap-4">
+                                     <input 
+                                       type="text" 
+                                       placeholder="Section Title (e.g. Exam Pattern)" 
+                                       value={editingInfoSection.title} 
+                                       onChange={e => setEditingInfoSection(p => ({...p, title: e.target.value}))} 
+                                       className={styles.input} 
+                                       required 
+                                     />
+                                     <select 
+                                       value={editingInfoSection.type} 
+                                       onChange={e => setEditingInfoSection(p => ({...p, type: e.target.value}))} 
+                                       className={styles.input}
+                                     >
+                                        <option value="HEADING">Title / Heading</option>
+                                        <option value="PARAGRAPH">Paragraph Text</option>
+                                        <option value="LIST">Bullet Point List (JSON)</option>
+                                        <option value="TABLE">Data Table (HTML/JSON)</option>
+                                        <option value="DATES">Important Dates Grid</option>
+                                     </select>
+                                  </div>
+                                  <textarea 
+                                    placeholder="Content (Supports HTML Tags for Tables/Lists)" 
+                                    value={editingInfoSection.content} 
+                                    onChange={e => setEditingInfoSection(p => ({...p, content: e.target.value}))} 
+                                    className={styles.textarea} 
+                                    rows="4" 
+                                  />
+                                  <div className="flex justify-between items-center">
+                                     <input 
+                                       type="number" 
+                                       placeholder="Sort Order" 
+                                       value={editingInfoSection.sortOrder} 
+                                       onChange={e => setEditingInfoSection(p => ({...p, sortOrder: parseInt(e.target.value)}))} 
+                                       className={`${styles.input} w-32`} 
+                                     />
+                                     <div className="flex gap-2">
+                                        <button type="button" onClick={() => setEditingInfoSection({ id: '', examId: examForm.id, title: '', content: '', type: 'TEXT', sortOrder: 0 })} className="px-4 py-2 text-sm font-bold text-slate-400">Clear</button>
+                                        <button type="button" onClick={saveInfoSection} className="bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition">Save Section</button>
+                                     </div>
+                                  </div>
+                               </div>
+                            </div>
+
+                            <div className="space-y-3">
+                               <label className="font-bold text-slate-400 uppercase tracking-widest text-[10px]">Existing Sections ({examInfoSections.length})</label>
+                               {examInfoSections.map(sec => (
+                                 <div key={sec.id} className="flex items-center justify-between p-4 bg-white border-2 border-slate-50 rounded-2xl hover:border-indigo-100 transition group">
+                                    <div className="flex items-center gap-4">
+                                       <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center text-xs font-bold text-slate-500">{sec.sortOrder}</div>
+                                       <div>
+                                          <div className="font-bold text-slate-800">{sec.title}</div>
+                                          <div className="text-[10px] text-slate-400 uppercase font-black">{sec.type}</div>
+                                       </div>
+                                    </div>
+                                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition">
+                                       <button type="button" onClick={() => setEditingInfoSection(sec)} className="text-indigo-600 font-bold text-xs hover:bg-indigo-50 p-2 rounded-lg">Edit</button>
+                                       <button type="button" onClick={() => deleteInfoSection(sec.id)} className="text-rose-500 font-bold text-xs hover:bg-rose-50 p-2 rounded-lg">Delete</button>
+                                    </div>
+                                 </div>
+                               ))}
+                               {examInfoSections.length === 0 && <div className="text-center py-10 text-slate-300 font-bold uppercase tracking-widest text-xs">No info sections created yet</div>}
+                            </div>
+                          </>
+                        )}
                      </div>
-                     <div className={styles.formGroup}>
-                        <label>Main Category</label>
-                        <select value={examForm.categoryId} onChange={e => setExamForm(prev => ({...prev, categoryId: e.target.value}))} className={styles.input}>
-                           <option value="">-- No Category --</option>
-                           {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                        </select>
+                   )}
+
+                   {examModalActiveTab === 'quizzes' && (
+                     <div className="space-y-4">
+                        <label className="font-bold text-slate-700 block mb-2">Tag Existing Quiz Categories</label>
+                        <div className="grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto p-2 border rounded-xl bg-slate-50">
+                            {Array.isArray(quizCategories) && quizCategories.map(qc => (
+                              <label key={qc.id} className="flex items-center gap-3 p-3 bg-white rounded-lg border hover:border-indigo-300 cursor-pointer transition">
+                                <input 
+                                  type="checkbox" 
+                                  checked={examForm.quizCategoryIds?.includes(qc.id)} 
+                                  onChange={e => {
+                                    const checked = e.target.checked;
+                                    setExamForm(prev => ({
+                                      ...prev, 
+                                      quizCategoryIds: checked 
+                                        ? [...(prev.quizCategoryIds || []), qc.id]
+                                        : (prev.quizCategoryIds || []).filter(id => id !== qc.id)
+                                    }));
+                                  }}
+                                  className="w-4 h-4 accent-indigo-600"
+                                />
+                                <div>
+                                  <div className="font-bold text-sm">{qc.icon} {qc.name}</div>
+                                  <div className="text-[10px] text-slate-400 uppercase tracking-tighter">{qc.slug}</div>
+                                </div>
+                              </label>
+                            ))}
+                        </div>
                      </div>
-                   </div>
-                   <div className={styles.formGroup}>
-                      <label>Description</label>
-                      <textarea value={examForm.description} onChange={e => setExamForm(prev => ({...prev, description: e.target.value}))} className={styles.textarea} rows="3"></textarea>
-                   </div>
-                   <div className="grid grid-cols-2 gap-4 mb-6">
-                     <div className={styles.formGroup}>
-                        <label>Sort Order</label>
-                        <input type="number" value={examForm.sortOrder} onChange={e => setExamForm(prev => ({...prev, sortOrder: parseInt(e.target.value)}))} className={styles.input} />
+                   )}
+
+                   {examModalActiveTab === 'books' && (
+                     <div className="space-y-6">
+                        <div className="flex justify-between items-center">
+                          <label className="font-bold text-slate-700">Expert Suggested Books</label>
+                          <button 
+                            type="button" 
+                            onClick={() => {
+                              const current = JSON.parse(examForm.booksJson || '[]');
+                              setExamForm(prev => ({ ...prev, booksJson: JSON.stringify([...current, { title: '', link: '', image: '' }]) }));
+                            }}
+                            className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-lg font-bold text-xs hover:bg-emerald-100 transition"
+                          >+ Add New Book</button>
+                        </div>
+                        
+                        <div className="space-y-4 max-h-[400px] overflow-y-auto p-1 custom-scrollbar">
+                          {JSON.parse(examForm.booksJson || '[]').map((book, idx) => (
+                            <div key={idx} className="p-4 bg-white rounded-2xl border-2 border-slate-50 relative group shadow-sm">
+                                <button 
+                                  type="button" 
+                                  onClick={() => {
+                                    const current = JSON.parse(examForm.booksJson || '[]');
+                                    setExamForm(prev => ({ ...prev, booksJson: JSON.stringify(current.filter((_, i) => i !== idx)) }));
+                                  }}
+                                  className="absolute -top-2 -right-2 bg-rose-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition shadow-lg"
+                                ><X size={12}/></button>
+                                
+                                <input 
+                                  type="text" 
+                                  placeholder="Book Title (e.g. Quantitative Aptitude by RS Aggarwal)" 
+                                  value={book.title} 
+                                  onChange={e => {
+                                    const current = JSON.parse(examForm.booksJson || '[]');
+                                    current[idx].title = e.target.value;
+                                    setExamForm(prev => ({ ...prev, booksJson: JSON.stringify(current) }));
+                                  }}
+                                  className={`${styles.input} mb-2 border-slate-200 focus:border-emerald-400`}
+                                />
+                                <div className="grid grid-cols-2 gap-2">
+                                  <input 
+                                    type="text" 
+                                    placeholder="Image URL" 
+                                    value={book.image} 
+                                    onChange={e => {
+                                      const current = JSON.parse(examForm.booksJson || '[]');
+                                      current[idx].image = e.target.value;
+                                      setExamForm(prev => ({ ...prev, booksJson: JSON.stringify(current) }));
+                                    }}
+                                    className="text-xs p-2 rounded-xl border border-slate-100 bg-slate-50"
+                                  />
+                                  <input 
+                                    type="text" 
+                                    placeholder="Buy Link (Amazon/Flipkart)" 
+                                    value={book.link} 
+                                    onChange={e => {
+                                      const current = JSON.parse(examForm.booksJson || '[]');
+                                      current[idx].link = e.target.value;
+                                      setExamForm(prev => ({ ...prev, booksJson: JSON.stringify(current) }));
+                                    }}
+                                    className="text-xs p-2 rounded-xl border border-slate-100 bg-slate-50"
+                                  />
+                                </div>
+                            </div>
+                          ))}
+                          {JSON.parse(examForm.booksJson || '[]').length === 0 && (
+                            <div className="text-center py-10 text-slate-300 font-bold uppercase tracking-widest text-xs border-2 border-dashed rounded-2xl">No books recommended yet</div>
+                          )}
+                        </div>
                      </div>
-                     <div className="flex items-center gap-2 mt-8">
-                        <input type="checkbox" id="hiddenFlag" checked={examForm.hidden} onChange={e => setExamForm(prev => ({...prev, hidden: e.target.checked}))} />
-                        <label htmlFor="hiddenFlag" className="font-bold cursor-pointer">Hide from public (Draft)</label>
+                   )}
+
+                   {examModalActiveTab === 'materials' && (
+                     <div className="space-y-6">
+                        <div className="flex justify-between items-center">
+                          <label className="font-bold text-slate-700">Study Materials & Useful Links</label>
+                          <button 
+                            type="button" 
+                            onClick={() => {
+                              const current = JSON.parse(examForm.studyMaterialJson || '[]');
+                              setExamForm(prev => ({ ...prev, studyMaterialJson: JSON.stringify([...current, { title: '', link: '', description: '' }]) }));
+                            }}
+                            className="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-lg font-bold text-xs hover:bg-indigo-100 transition"
+                          >+ Add Material</button>
+                        </div>
+                        
+                        <div className="space-y-4 max-h-[400px] overflow-y-auto p-1 custom-scrollbar">
+                          {JSON.parse(examForm.studyMaterialJson || '[]').map((item, idx) => (
+                            <div key={idx} className="p-4 bg-white rounded-2xl border-2 border-slate-50 relative group shadow-sm">
+                                <button 
+                                  type="button" 
+                                  onClick={() => {
+                                    const current = JSON.parse(examForm.studyMaterialJson || '[]');
+                                    setExamForm(prev => ({ ...prev, studyMaterialJson: JSON.stringify(current.filter((_, i) => i !== idx)) }));
+                                  }}
+                                  className="absolute -top-2 -right-2 bg-rose-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition shadow-lg"
+                                ><X size={12}/></button>
+                                
+                                <div className="grid grid-cols-2 gap-2 mb-2">
+                                  <input 
+                                    type="text" 
+                                    placeholder="Title (e.g. Current Affairs 2024 PDF)" 
+                                    value={item.title} 
+                                    onChange={e => {
+                                      const current = JSON.parse(examForm.studyMaterialJson || '[]');
+                                      current[idx].title = e.target.value;
+                                      setExamForm(prev => ({ ...prev, studyMaterialJson: JSON.stringify(current) }));
+                                    }}
+                                    className={`${styles.input} border-slate-200 focus:border-indigo-400`}
+                                  />
+                                  <input 
+                                    type="text" 
+                                    placeholder="Link URL" 
+                                    value={item.link} 
+                                    onChange={e => {
+                                      const current = JSON.parse(examForm.studyMaterialJson || '[]');
+                                      current[idx].link = e.target.value;
+                                      setExamForm(prev => ({ ...prev, studyMaterialJson: JSON.stringify(current) }));
+                                    }}
+                                    className={`${styles.input} border-slate-200 focus:border-indigo-400`}
+                                  />
+                                </div>
+                                <input 
+                                  type="text" 
+                                  placeholder="Brief Description (Optional)" 
+                                  value={item.description} 
+                                  onChange={e => {
+                                    const current = JSON.parse(examForm.studyMaterialJson || '[]');
+                                    current[idx].description = e.target.value;
+                                    setExamForm(prev => ({ ...prev, studyMaterialJson: JSON.stringify(current) }));
+                                  }}
+                                  className="text-xs p-2 rounded-xl border border-slate-100 bg-slate-50 w-full"
+                                />
+                            </div>
+                          ))}
+                          {JSON.parse(examForm.studyMaterialJson || '[]').length === 0 && (
+                            <div className="text-center py-10 text-slate-300 font-bold uppercase tracking-widest text-xs border-2 border-dashed rounded-2xl">No study materials linked yet</div>
+                          )}
+                        </div>
                      </div>
-                   </div>
+                   )}
 
                    <div className={styles.actionButtons}>
                       <button type="button" onClick={() => setIsExamModalOpen(false)} className={styles.cancelBtn}>Cancel</button>
@@ -961,6 +1434,23 @@ export default function MockTestsManager() {
                         <div className={styles.formGroup}>
                            <label>Unique Slug (URL path)</label>
                            <input type="text" value={paperForm.slug} onChange={e => setPaperForm(prev => ({...prev, slug: e.target.value}))} className={styles.input} placeholder="ssc-cgl-mock-1" />
+                        </div>
+                     </div>
+                     <div className="grid grid-cols-2 gap-6">
+                        <div className={styles.formGroup}>
+                           <label>Paper Type (Categorization)</label>
+                           <select 
+                            value={paperForm.paperType} 
+                            onChange={e => setPaperForm(prev => ({ ...prev, paperType: e.target.value }))}
+                            className={styles.input}
+                           >
+                            <option value="MOCK">Mock Test Simulation</option>
+                            <option value="PYP">Official Previous Year Paper</option>
+                           </select>
+                        </div>
+                        <div className={styles.formGroup}>
+                           <label>Exam Year</label>
+                           <input type="number" value={paperForm.year} onChange={e => setPaperForm(prev => ({...prev, year: parseInt(e.target.value)}))} className={styles.input} />
                         </div>
                      </div>
                      <div className="grid grid-cols-3 gap-6">

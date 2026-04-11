@@ -1,0 +1,204 @@
+.container {
+  min-height: 100vh;
+  background: radial-gradient(circle at 50% 0%, #f8fafc, #ffffff);
+  padding-bottom: 5rem;
+}
+
+.heroContent {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 4rem 2rem;
+}
+
+.welcomeSection {
+  text-align: center;
+  margin-bottom: 5rem;
+}
+
+.welcomeTitle {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 900;
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 1.5rem;
+  letter-spacing: -0.04em;
+}
+
+.welcomeSubtitle {
+  font-size: 1.25rem;
+  color: #64748b;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2.5rem;
+}
+
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  position: relative;
+  background: white;
+  border-radius: 40px;
+  padding: 3.5rem;
+  text-decoration: none;
+  transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 500px;
+}
+
+.card:hover {
+  transform: translateY(-8px) scale(1.01);
+  box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.1), 0 18px 36px -18px rgba(0, 0, 0, 0.08);
+}
+
+/* Glassmorphism Accents */
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.8), rgba(255,255,255,0));
+  pointer-events: none;
+  z-index: 1;
+}
+
+.cardIcon {
+  font-size: 4rem;
+  margin-bottom: 2rem;
+  position: relative;
+  z-index: 2;
+  transition: transform 0.5s ease;
+}
+
+.card:hover .cardIcon {
+  transform: scale(1.1) rotate(5deg);
+}
+
+.cardBadge {
+  position: absolute;
+  top: 2rem;
+  right: 2rem;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  z-index: 2;
+}
+
+.cardTitle {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+  position: relative;
+  z-index: 2;
+  letter-spacing: -0.02em;
+}
+
+.cardDescription {
+  color: #64748b;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin-bottom: 2.5rem;
+  position: relative;
+  z-index: 2;
+}
+
+.linksGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  position: relative;
+  z-index: 2;
+}
+
+.linkItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  background: #f8fafc;
+  border-radius: 20px;
+  font-weight: 700;
+  color: #1e293b;
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
+}
+
+.linkItem:hover {
+  background: white;
+  border-color: rgba(0, 0, 0, 0.05);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+  transform: translateX(4px);
+}
+
+.linkIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  font-size: 1.2rem;
+}
+
+/* Color Themes */
+.cardQuiz { background: linear-gradient(135deg, #f5f3ff 0%, #ffffff 100%); }
+.cardQuiz .cardTitle { color: #4f46e5; }
+.cardQuiz .cardBadge { background: #e0e7ff; color: #4338ca; }
+.cardQuiz .linkIcon { background: #eef2ff; }
+
+.cardGovt { background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%); }
+.cardGovt .cardTitle { color: #d97706; }
+.cardGovt .cardBadge { background: #fef3c7; color: #b45309; }
+.cardGovt .linkIcon { background: #fffbeb; }
+
+.cardInfo { background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%); }
+.cardInfo .cardTitle { color: #059669; }
+.cardInfo .cardBadge { background: #dcfce7; color: #047857; }
+.cardInfo .linkIcon { background: #f0fdf4; }
+
+.cardOthers { background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%); }
+.cardOthers .cardTitle { color: #2563eb; }
+.cardOthers .cardBadge { background: #dbeafe; color: #1d4ed8; }
+.cardOthers .linkIcon { background: #eff6ff; }
+
+.mainAction {
+  margin-top: auto;
+  padding-top: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+}
+
+.viewAll {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 800;
+  color: #1e293b;
+  transition: gap 0.3s ease;
+}
+
+.card:hover .viewAll {
+  gap: 1rem;
+}

@@ -2,9 +2,16 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { useQuiz } from "@/context/QuizContext";
 import { useData } from "@/context/DataContext";
 import styles from "@/styles/ResultPage.module.css";
+import { useMonetization } from "@/context/MonetizationContext";
+import { Download, FileText, Lock, Crown } from "lucide-react";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
+import AdGate from "@/components/monetization/AdGate";
 
 function getMotivation(percentage) {
   if (percentage === 100) return { text: "Perfect Score!", emoji: "🌟" };
@@ -18,6 +25,7 @@ const CONFETTI_COLORS = ["#4361ee", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", 
 
 export default function ResultPage() {
   const router = useRouter();
+  const { isPro } = useMonetization();
   const { score, questions, answers, quizId, difficulty, timerSetting, language, selectedSetIndex, resetQuiz, startQuiz } = useQuiz();
   const { quizzes } = useData();
   const [showReview, setShowReview] = useState(false);
@@ -25,6 +33,7 @@ export default function ResultPage() {
   const [showPostQuizPopup, setShowPostQuizPopup] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showAllQuizzes, setShowAllQuizzes] = useState(false);
+  const [showGateAd, setShowGateAd] = useState(true);
 
   const category = useMemo(() => {
     return (quizzes || []).find((q) => q.id === quizId);
@@ -110,6 +119,37 @@ export default function ResultPage() {
   const handleBackToQuizzes = () => {
     resetQuiz();
     router.push(`/category/${quizId}`);
+  };
+
+  const handleExportPDF = () => {
+    if (!isPro) {
+        toast.error("Pro exclusive feature!");
+        return;
+    }
+
+    const doc = new jsPDF();
+    doc.setFontSize(22);
+    doc.text("Quiz Performance Report", 105, 20, { align: "center" });
+    
+    doc.setFontSize(14);
+    doc.text(`Category: ${category?.topic || "General"}`, 20, 40);
+    doc.text(`Score: ${score} / ${total}`, 20, 50);
+    doc.text(`Accuracy: ${percentage}%`, 20, 60);
+
+    const tableData = [];
+    questions.forEach((q, i) => {
+        const answer = answers.find(a => a.questionId === q.id);
+        const selected = answer && answer.selected !== null ? q.options[answer.selected] : "N/A";
+        tableData.push([i + 1, q.text, q.correctAnswer, selected, answer?.isCorrect ? "Correct" : "Incorrect"]);
+    });
+
+    doc.autoTable({
+        startY: 70,
+        head: [['#', 'Question', 'Correct Answer', 'Your Answer', 'Status']],
+        body: tableData,
+    });
+
+    doc.save(`Quiz-Report-${quizId || 'General'}.pdf`);
   };
 
   // Always return JSX - never return null or conditionally skip hooks
@@ -214,7 +254,33 @@ export default function ResultPage() {
               <button className="btn-secondary" onClick={handleBackToQuizzes}>
                 ← Back to Quizzes
               </button>
+              
+              <div className="flex gap-2 w-full mt-4">
+                 <button 
+                   className={`flex-1 ${styles.exportBtn} ${!isPro ? "opacity-60 cursor-not-allowed" : ""}`} 
+                   onClick={handleExportPDF}
+                 >
+                    {isPro ? <Download size={16} /> : <Lock size={16} />}
+                    {isPro ? "Export PDF" : "Unlock PDF Export"}
+                 </button>
+              </div>
             </div>
+
+            {/* Post-Quiz Donation Prompt */}
+            <Link href="/donate" className="block mt-8 mb-4 p-1 rounded-2xl bg-gradient-to-r from-rose-100 to-rose-50 border border-rose-200 hover:scale-[1.01] transition-transform group">
+              <div className="bg-white rounded-xl px-6 py-4 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">☕</div>
+                  <div>
+                    <h4 className="text-sm font-black text-slate-800">Support Free Learning</h4>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Help us keep QuizWeb ad-free for everyone</p>
+                  </div>
+                </div>
+                <div className="hidden sm:flex items-center gap-2 text-rose-500 font-black text-xs uppercase tracking-widest">
+                  Donate <ArrowRight size={14} />
+                </div>
+              </div>
+            </Link>
 
             {/* Answer Review */}
             {showReview && (
@@ -333,6 +399,13 @@ export default function ResultPage() {
           </div>
         </div>
       )}
+
+      <AdGate 
+         isOpen={showGateAd && total > 0 && !isPro}
+         onClose={() => setShowGateAd(false)}
+         onComplete={() => setShowGateAd(false)}
+         title="Unlocking Quiz Results"
+      />
     </main>
   );
 }

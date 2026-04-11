@@ -48,6 +48,9 @@ export async function POST(request) {
     }
 
     const answersJson = JSON.stringify(answers || []);
+    
+    // Each correct answer gives 10 Global Intelligence Points!
+    const pointScore = (answers || []).reduce((sum, a) => sum + (a.isCorrect ? 10 : 0), 0);
 
     const updatedProgress = await prisma.userProgress.upsert({
       where: {
@@ -59,6 +62,7 @@ export async function POST(request) {
       },
       update: {
         progress,
+        score: pointScore,
         isComplete: isComplete === true,
         lastQuestionIndex,
         answersJson,
@@ -68,6 +72,7 @@ export async function POST(request) {
         categoryId,
         setIndex,
         progress,
+        score: pointScore,
         isComplete: isComplete === true,
         lastQuestionIndex,
         answersJson,

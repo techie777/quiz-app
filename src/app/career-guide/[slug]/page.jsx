@@ -151,7 +151,22 @@ export default async function DynamicCareerGuide({ params, searchParams }) {
             </span>
           ))}
         </nav>
-        <span className={styles.categoryTag}>{guide.category}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+          <span className={styles.categoryTag}>{guide.category}</span>
+          <span style={{ 
+            fontSize: '11px', 
+            fontWeight: 800, 
+            padding: '4px 10px', 
+            borderRadius: '20px', 
+            background: guide.type === 'EXAM' ? 'rgba(79, 70, 229, 0.15)' : 'rgba(16, 185, 129, 0.15)', 
+            color: guide.type === 'EXAM' ? '#818cf8' : '#34d399',
+            border: `1px solid ${guide.type === 'EXAM' ? '#4f46e5' : '#059669'}`,
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px'
+          }}>
+            {guide.type === 'EXAM' ? (isHi ? 'परीक्षा' : 'Exam') : (isHi ? 'नौकरी' : 'Job')}
+          </span>
+        </div>
         <h1 className={styles.heroTitle}>
           {guide.icon} {dName}
         </h1>
@@ -166,7 +181,11 @@ export default async function DynamicCareerGuide({ params, searchParams }) {
             <div className={styles.statValue}>{dComp}</div>
           </div>
           <div className={styles.statCard}>
-            <div className={styles.statLabel}>{isHi ? "औसत वेतन" : "Average Salary"}</div>
+            <div className={styles.statLabel}>
+              {guide.type === 'EXAM' 
+                ? (isHi ? "अनुदान/वजीफा" : "Grant/Stipend") 
+                : (isHi ? "औसत वेतन" : "Average Salary")}
+            </div>
             <div className={styles.statValue}>{dSal || "N/A"}</div>
           </div>
           <div className={styles.statCard}>

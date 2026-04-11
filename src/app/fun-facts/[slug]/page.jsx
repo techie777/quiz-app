@@ -8,6 +8,8 @@ import styles from "@/styles/FunFacts.module.css";
 import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRef } from "react";
+import { useMonetization } from "@/context/MonetizationContext";
+import AdGate from "@/components/monetization/AdGate";
 
 const AntiGravity = dynamic(() => import("../../../components/fun-facts/AntiGravity"), { ssr: false });
 
@@ -20,7 +22,10 @@ export default function InfiniteFactEngine() {
   const [language, setLanguage] = useState("hi"); 
   const [translating, setTranslating] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const { isPro, useCounts, incrementCount } = useMonetization();
   const [history, setHistory] = useState([]); // Track previous facts
+  const [showAdGate, setShowAdGate] = useState(false);
+  const [pendingNext, setPendingNext] = useState(false);
 
   useEffect(() => {
     fetchFact();
@@ -54,6 +59,12 @@ export default function InfiniteFactEngine() {
   }, []);
 
   const fetchFact = async (omitFactId) => {
+    // Check limits (Trigger AdGate every 20 facts)
+    if (!isPro && useCounts.facts > 0 && useCounts.facts % 20 === 0 && !pendingNext) {
+      setShowAdGate(true);
+      return;
+    }
+
     // Save current fact to history before fetching next
     if (fact && !omitFactId) {
       setHistory(prev => [...prev, fact]);
@@ -80,8 +91,9 @@ export default function InfiniteFactEngine() {
       if (!res.ok) throw new Error("Fact fetch failed");
       const data = await res.json();
       
-      // If in voyager mode and we have a fact, use its category for the badge
       setFact(data.fact);
+      incrementCount("facts");
+      setPendingNext(false); 
     } catch (err) {
       console.error(err);
       toast.error("Failed to fetch fact");
@@ -289,6 +301,17 @@ export default function InfiniteFactEngine() {
           </div>
         </div>
       </div>
+      
+      <AdGate 
+        isOpen={showAdGate}
+        onClose={() => setShowAdGate(false)}
+        onComplete={() => {
+          setShowAdGate(false);
+          setPendingNext(true); // Flag to bypass limit check for ONE fetch
+          fetchFact(fact?.id);
+        }}
+        title="Unlocking More Fun Facts"
+      />
     </div>
   );
 }

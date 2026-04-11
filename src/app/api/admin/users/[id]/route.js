@@ -13,6 +13,7 @@ export async function PUT(request, { params }) {
   const data = {};
 
   if (body.name !== undefined) data.name = body.name;
+  if (body.isPro !== undefined) data.isPro = body.isPro;
   if (body.pin !== undefined) {
     const pin = body.pin.toString().replace(/\D/g, "").slice(0, 4);
     if (pin.length === 4) data.pin = pin;
@@ -22,12 +23,12 @@ export async function PUT(request, { params }) {
     const updated = await prisma.user.update({
       where: { id },
       data,
-      select: { id: true, email: true, name: true, pin: true },
+      select: { id: true, email: true, name: true, pin: true, isPro: true },
     });
 
     await prisma.adminActivityLog.create({
       data: {
-        adminId: session.user.adminId,
+        adminId: admin.admin.id,
         action: "update_user",
         details: `Updated user ${updated.email}: ${Object.keys(data).join(", ")}`,
       },
@@ -55,7 +56,7 @@ export async function DELETE(request, { params }) {
 
     await prisma.adminActivityLog.create({
       data: {
-        adminId: session.user.adminId,
+        adminId: admin.admin.id,
         action: "delete_user",
         details: `Deleted user: ${user.email}`,
       },

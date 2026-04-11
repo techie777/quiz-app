@@ -183,6 +183,20 @@ export default function AdminAccountsPage() {
     else alert("Failed to delete user");
   };
 
+  const handleTogglePro = async (user) => {
+    const isConfirm = confirm(`Are you sure you want to ${user.isPro ? 'REVOKE' : 'GRANT'} Pro access for ${user.email}?`);
+    if (!isConfirm) return;
+
+    const res = await fetch(`/api/admin/users/${user.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isPro: !user.isPro }),
+    });
+
+    if (res.ok) fetchUsers();
+    else alert("Failed to update Pro status");
+  };
+
   if (adminUser?.role !== "master") {
     return <div className={styles.page}><p>Access denied. Master admin only.</p></div>;
   }
@@ -338,7 +352,10 @@ export default function AdminAccountsPage() {
           {users.map((u) => (
             <div key={u.id} className={`${styles.row} glass-card`}>
               <div className={styles.rowInfo}>
-                <span className={styles.name}>{u.name || "No Name"}</span>
+                <span className={styles.name}>
+                  {u.name || "No Name"}
+                  {u.isPro && <span title="Premium Pro Member" className="ml-2 text-xs bg-indigo-600 text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-widest">👑 Pro</span>}
+                </span>
                 <span className={styles.username}>{u.email}</span>
               </div>
               <div className={styles.rowActions}>
@@ -347,6 +364,9 @@ export default function AdminAccountsPage() {
                   <span className={styles.pinValue}>{u.pin || "Not set"}</span>
                 </div>
                 <div className={styles.actions}>
+                  <button className={styles.actionBtn} onClick={() => handleTogglePro(u)}>
+                    {u.isPro ? "❌ Revoke Pro" : "👑 Grant Pro"}
+                  </button>
                   <button className={styles.actionBtn} onClick={() => handleEditUser(u)}>✏️ Edit</button>
                   <button className={styles.deleteBtn} onClick={() => handleDeleteUser(u.id)}>🗑️ Delete</button>
                 </div>

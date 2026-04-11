@@ -9,23 +9,31 @@ class RedisStore {
 
   async init() {
     try {
-      // Use environment variable for Redis URL or fallback to localhost
       const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
       
       this.redis = new Redis(redisUrl, {
-        retryDelayOnFailover: 100,
-        maxRetriesPerRequest: 0, // Disable retries for development
-        lazyConnect: true,
-        connectTimeout: 5000, // 5 second timeout
+        retryStrategy: (times) => {
+          // Robust exponential backoff for production
+          const delay = Math.min(times * 100, 3000);
+          console.log(`???? Redis connection failed (attempt ${times}). Retrying in ${delay}ms...`);
+          return delay;
+        },
+        reconnectOnError: (err) => {
+          const targetError = 'READONLY';
+          if (err.message.includes(targetError)) return true;
+          return false;
+        },
+        maxRetriesPerRequest: null, // Allow infinite retries for production stability
+        connectTimeout: 10000, 
       });
 
       this.redis.on('connect', () => {
         console.log('???? Redis connected successfully');
         this.connected = true;
+        this.errorLogged = false; // Reset error log on successful reconnect
       });
 
       this.redis.on('error', (err) => {
-        // Only log error once, not continuously
         if (!this.errorLogged) {
           console.error('???? Redis connection error - falling back to memory storage:', err.message);
           this.errorLogged = true;
@@ -34,15 +42,14 @@ class RedisStore {
       });
 
       this.redis.on('close', () => {
-        console.warn('???? Redis connection closed');
+        console.warn('???? Redis connection closed. Engine transitioning to failover memory mode.');
         this.connected = false;
       });
 
-      // Try to connect with timeout
-      await Promise.race([
-        this.redis.connect(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), 5000))
-      ]);
+      // Eagerly connect but don't hard-fail if it misses the first window
+      await this.redis.connect().catch(err => {
+        console.warn('???? Initial Redis connection attempt failed. Background retries started.');
+      });
       
     } catch (error) {
       console.log('???? Redis not available - using in-memory storage');
