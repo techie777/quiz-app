@@ -16,6 +16,8 @@ export function SessionProvider({ children, sessionId: propSessionId }) {
   const [participants, setParticipants] = useState([]);
   const [pendingParticipants, setPendingParticipants] = useState([]);
   const [chatMessages, setChatMessages] = useState([]);
+  const [lastEvent, setLastEvent] = useState('STANDBY');
+  const [pulse, setPulse] = useState(false);
   const [reactions, setReactions] = useState([]); // { id, emoji, userId, userName }
   const [broadcast, setBroadcast] = useState(null); // { text, type }
   const [socket, setSocket] = useState(null);
@@ -112,17 +114,25 @@ export function SessionProvider({ children, sessionId: propSessionId }) {
 
     s.on('STATE_UPDATE', (data) => {
       console.log('📡 [BRIDGE] STATE_UPDATE Recv:', data.action, data.payload);
+      setLastEvent(`STATE:${data.action}`);
       setSessionReady(true);
       
       setSession(prev => {
          const newState = { 
             ...prev, 
             ...data.payload,
+            
+            // CRITICAL IDENTITY LOCK: 
+            // We usually prevent global room broadcasts from overwriting local identity.
+            // HOWEVER, we must allow the server to define identity during REHYDRATE or if local identity is missing.
+            userId: (data.action === 'REHYDRATE' || !prev?.userId) ? (data.payload?.userId || prev?.userId) : prev?.userId,
+            userName: (data.action === 'REHYDRATE' || !prev?.userName) ? (data.payload?.userName || prev?.userName) : prev?.userName,
+            role: (data.action === 'REHYDRATE' || !prev?.role) ? (data.payload?.role || prev?.role) : prev?.role,
+
             // Ensure server-sent status and type ALWAYS take precedence
             status: data.payload?.status || prev?.status,
             type: data.payload?.type || prev?.type,
-            sessionId: data.payload?.sessionId || prev?.sessionId,
-            userId: data.payload?.userId || prev?.userId 
+            sessionId: data.payload?.sessionId || prev?.sessionId
          };
 
          // PERSIST TO STORAGE
@@ -191,10 +201,24 @@ export function SessionProvider({ children, sessionId: propSessionId }) {
     });
 
     s.on('SYNC_CHAT', (msgs) => {
+      console.log('💬 [CLIENT] Chat Sync received:', msgs.length, 'messages');
+      setLastEvent('CHAT_SYNC');
       setChatMessages(msgs);
     });
 
+    s.on('CHAT_SIGNAL', (msg) => {
+      console.log('💬 [CLIENT] Individual Signal received:', msg.text);
+      setLastEvent('SIGNAL_RECV');
+      setPulse(true);
+      setTimeout(() => setPulse(false), 500);
+      setChatMessages(prev => {
+          if (prev.find(m => m.id === msg.id)) return prev;
+          return [...prev, msg];
+      });
+    });
+
     s.on('MISSION_REACTION', (data) => {
+      setLastEvent('REACTION');
       setReactions(prev => [...prev.slice(-10), { ...data, id: Date.now() + Math.random() }]);
     });
 
@@ -272,13 +296,17 @@ export function SessionProvider({ children, sessionId: propSessionId }) {
   const sendChatMessage = useCallback((text) => {
     const current = sessionRef.current;
     if (socket && current?.userId && current?.sessionId) {
+      console.log('📡 [CLIENT] Emitting SEND_CHAT:', text);
       socket.emit('SEND_CHAT', {
-        sessionId: current.sessionId,
+        sessionId: current.sessionId.trim(),
         userId: current.userId,
         userName: current.userName,
         role: current.role,
         text
       });
+    } else {
+      console.warn('📡 [CLIENT] SEND_CHAT blocked - missing socket or identity');
+      toast.error("Comms link unstable. Reconnecting...");
     }
   }, [socket]);
 
@@ -319,6 +347,8 @@ export function SessionProvider({ children, sessionId: propSessionId }) {
       chatMessages, 
       reactions,
       broadcast,
+      lastEvent,
+      pulse,
       connectionStatus,
       connectionError,
       sessionReady,

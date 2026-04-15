@@ -56,9 +56,11 @@ export default function QuizPlayer({ state }) {
   useEffect(() => {
     const socket = socketService.getSocket();
     if (socket && engineSession?.userId) {
+        // HARDWIRE: Enforce Host submission boundary to prevent local state leaking
+        const submitUserId = engineSession.role === 'HOST' ? 'host_base_operator' : engineSession.userId;
         socket.emit('SUBMIT_SCORE', {
             sessionId: engineSession.sessionId,
-            userId: engineSession.userId,
+            userId: submitUserId,
             score,
             progress: currentIndex + (selectedOption ? 1 : 0)
         });
@@ -70,9 +72,10 @@ export default function QuizPlayer({ state }) {
     const handleVisibility = () => {
         const socket = socketService.getSocket();
         if (socket && engineSession?.userId && engineSession?.sessionId) {
+            const submitUserId = engineSession.role === 'HOST' ? 'host_base_operator' : engineSession.userId;
             socket.emit('UPDATE_STATUS', {
                 sessionId: engineSession.sessionId,
-                userId: engineSession.userId,
+                userId: submitUserId,
                 status: document.visibilityState === 'visible' ? 'ACTIVE' : 'BUSY'
             });
         }
@@ -131,13 +134,17 @@ export default function QuizPlayer({ state }) {
   };
 
   const scoreboard = useMemo(() => {
-     const list = (participants || []).map(p => ({
-        ...p,
-        isYou: p?.userId === engineSession?.userId,
-        displayName: (p?.userId === engineSession?.userId) ? `${p?.userName || 'Operator'} (You)` : (p?.userName || 'Operator'),
-        isDone: (p?.progress >= questionLimit) || p?.status === 'DONE',
-        status: p?.status || (p?.isOnline === false ? 'LEFT' : 'ACTIVE')
-     }));
+     const list = (participants || []).map(p => {
+        // HARDWIRE: Prevent UI identity bleeding
+        const isActuallyYou = engineSession?.role === 'HOST' ? p?.role === 'HOST' : p?.userId === engineSession?.userId;
+        return {
+           ...p,
+           isYou: isActuallyYou,
+           displayName: isActuallyYou ? `${p?.userName || 'Operator'} (You)` : (p?.userName || 'Operator'),
+           isDone: (p?.progress >= questionLimit) || p?.status === 'DONE',
+           status: p?.status || (p?.isOnline === false ? 'LEFT' : 'ACTIVE')
+        };
+     });
      
      if (!list.find(p => p.isYou)) {
         list.push({ 

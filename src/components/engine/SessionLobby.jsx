@@ -211,13 +211,25 @@ export default function SessionLobby({ sessionId, isHost, onApproveGuest, onDeny
                          <div className="absolute top-0 right-0 px-2 py-0.5 bg-indigo-600 text-white text-[7px] font-black uppercase tracking-tighter">Commander</div>
                          <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white text-lg font-black">H</div>
                          <div>
-                            <p className="text-sm font-black text-slate-900 uppercase">You</p>
+                            <p className="text-sm font-black text-slate-900 uppercase">{isHost ? 'You' : 'Mission Commander'}</p>
                             <p className="text-[8px] font-bold text-indigo-500 uppercase tracking-widest">Base Operator</p>
                          </div>
                       </div>
 
-                      {/* GUEST CARDS */}
-                      {squadMembers.map(p => (
+                      {/* THE GUEST'S OWN CARD */}
+                      {!isHost && session?.userId && (
+                          <div className="flex items-center gap-4 p-4 bg-slate-50 border border-indigo-200 rounded-2xl shadow-sm relative overflow-hidden group">
+                             <div className="absolute top-0 right-0 px-2 py-0.5 bg-indigo-100 text-indigo-700 text-[7px] font-black uppercase tracking-tighter">You</div>
+                             <div className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-indigo-600 text-lg font-black">{session.userName?.[0]?.toUpperCase()}</div>
+                             <div>
+                                <p className="text-sm font-black text-slate-700 uppercase">{session.userName}</p>
+                                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Squadron Member</p>
+                             </div>
+                          </div>
+                      )}
+
+                      {/* GUEST CARDS (Other squad members, excluding the Host) */}
+                      {squadMembers.filter(p => p.role !== 'HOST').map(p => (
                         <div key={p.userId} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group transition-all hover:border-indigo-400 hover:bg-white">
                            <div className="flex items-center gap-3">
                                <div className="w-9 h-9 bg-white border border-slate-200 rounded-lg flex items-center justify-center text-[10px] font-black uppercase">{p.userName?.[0]}</div>

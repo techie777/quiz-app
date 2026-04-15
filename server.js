@@ -47,7 +47,10 @@ app.prepare()
       console.log('🔗 Client connected:', socket.id);
 
       socket.on('JOIN_SESSION', async (data) => {
-        const { sessionId, role, userId, userName } = data;
+        const dirtySessionId = data.sessionId;
+        const sessionId = typeof dirtySessionId === 'string' ? dirtySessionId.trim() : dirtySessionId;
+        const { role, userId, userName } = data;
+        
         if (!sessionId || !role || !userId) {
             console.error(`❌ [IO] Invalid JOIN_SESSION attempt:`, data);
             return;
@@ -66,7 +69,7 @@ app.prepare()
             room = { 
                 participants: [], 
                 pendingParticipants: [], 
-                chatMessages: [], 
+                messages: [], 
                 state: { status: 'LOBBY', currentQuestion: 0, startTime: null },
                 sessionId 
             };
@@ -140,13 +143,17 @@ app.prepare()
         console.log(`📡 [EMIT] Room ${sessionId} | Syncing ${room.participants.length} members & ${room.pendingParticipants.length} pending...`);
         io.to(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
         io.to(sessionId).emit('SYNC_PENDING', room.pendingParticipants);
+        // Ensure robust fallback for chat property migration
+        const chatHistory = room.messages || room.chatMessages || [];
+        io.to(sessionId).emit('SYNC_CHAT', chatHistory);
         
         // Detailed room debug
         const roomSockets = await io.in(sessionId).fetchSockets();
         console.log(`📡 [DEBUG] Room: ${sessionId} | Active Sockets IN ROOM: ${roomSockets.length} | Host Socket: ${room.participants.find(p => p.role === 'HOST')?.socketId}`);
       });
 
-        socket.on('SQUAD_SYNC_REQUEST', async ({ sessionId }) => {
+        socket.on('SQUAD_SYNC_REQUEST', async ({ sessionId: rawSid }) => {
+            const sessionId = typeof rawSid === 'string' ? rawSid.trim() : rawSid;
             const room = await redisStore.getRoom(sessionId);
             if (room) {
                 socket.emit('SYNC_PARTICIPANTS', room.participants);
@@ -155,7 +162,8 @@ app.prepare()
             }
         });
 
-        socket.on('FORCE_ROOM_SYNC', async ({ sessionId }) => {
+        socket.on('FORCE_ROOM_SYNC', async ({ sessionId: rawSid }) => {
+            const sessionId = typeof rawSid === 'string' ? rawSid.trim() : rawSid;
             const room = await redisStore.getRoom(sessionId);
             if (room) {
                 io.to(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
@@ -166,7 +174,8 @@ app.prepare()
         });
 
         socket.on('HOST_ACTION', async (data) => {
-        const { sessionId, action, payload } = data;
+        const { sessionId: rawSid, action, payload } = data;
+        const sessionId = typeof rawSid === 'string' ? rawSid.trim() : rawSid;
         const room = await redisStore.getRoom(sessionId);
         if (!room) return;
 
@@ -290,20 +299,36 @@ app.prepare()
       });
 
       socket.on('SEND_CHAT', async (data) => {
-        const { sessionId, userId, userName, text, role } = data;
-        const room = await redisStore.getRoom(sessionId);
-        if (room) {
-            const msg = { 
-                id: Date.now() + Math.random().toString(36).substr(2, 5),
-                userId, userName, text, role, 
-                timestamp: new Date().toISOString() 
-            };
-            room.messages.push(msg);
-            if (room.messages.length > 50) room.messages.shift();
-            // Save to Redis
-            await redisStore.setRoom(sessionId, room);
+        try {
+            const { sessionId: rawSid, userId, userName, text, role } = data;
+            const sessionId = typeof rawSid === 'string' ? rawSid.trim() : rawSid;
+            const room = await redisStore.getRoom(sessionId);
             
-            io.in(sessionId).emit('SYNC_CHAT', room.messages);
+            if (room) {
+                const msg = { 
+                    id: Date.now() + Math.random().toString(36).substr(2, 5),
+                    userId, userName, text, role, 
+                    timestamp: new Date().toISOString() 
+                };
+                
+                // Standardize on .messages property
+                if (!room.messages) room.messages = room.chatMessages || [];
+                room.messages.push(msg);
+                if (room.messages.length > 50) room.messages.shift();
+                
+                // Save to Redis
+                await redisStore.setRoom(sessionId, room);
+                
+                console.log(`💬 [CHAT_SIGNAL] ${userName} in ${sessionId}: ${text}`);
+                
+                // DUAL SIGNAL BROADCAST:
+                // 1. Authoritative history sync (Array)
+                io.to(sessionId).emit('SYNC_CHAT', room.messages);
+                // 2. Individual message pulse (Single Object) - More robust for live sync
+                io.to(sessionId).emit('CHAT_SIGNAL', msg);
+            }
+        } catch (err) {
+            console.error('❌ [SERVER] Chat Emission Error:', err);
         }
       });
 
@@ -318,7 +343,8 @@ app.prepare()
       });
 
       socket.on('UPDATE_STATUS', async (data) => {
-        const { sessionId, userId, status } = data;
+        const { sessionId: rawSid, userId, status } = data;
+        const sessionId = typeof rawSid === 'string' ? rawSid.trim() : rawSid;
         const room = await redisStore.getRoom(sessionId);
         if (room && room.participants) {
             const p = room.participants.find(p => p.userId === userId);
@@ -332,7 +358,8 @@ app.prepare()
       });
 
       socket.on('SUBMIT_SCORE', async (data) => {
-        const { sessionId, userId, score, progress } = data;
+        const { sessionId: rawSid, userId, score, progress } = data;
+        const sessionId = typeof rawSid === 'string' ? rawSid.trim() : rawSid;
         const room = await redisStore.getRoom(sessionId);
         if (room && room.participants) {
             const p = room.participants.find(p => p.userId === userId);

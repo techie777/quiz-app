@@ -62,22 +62,32 @@ export default function SessionManager({ sessionId }) {
         console.log(`[MANAGER HOOK] Aborting early setup.`);
         return;
     }
-    
-    // CRITICAL: Do not join again if we already have an active/rehydrated session!
-    if (session) {
-        console.log(`[MANAGER HOOK] Session already active, aborting new join.`);
-        return;
-    }
-
     const urlParams = new URLSearchParams(window.location.search);
     const hostParam = urlParams.get('is_host') === 'true';
 
+    // CRITICAL: Do not join again if we already have an active/rehydrated session!
+    if (session) {
+        if (hostParam && session.role !== 'HOST') {
+             console.log(`[MANAGER HOOK] Role mismatch detected. Clearing stale Guest identity...`);
+             sessionStorage.removeItem('active_quiz_session');
+             // Refresh to start with clean slate as Host
+             window.location.reload();
+             return;
+        } else {
+             console.log(`[MANAGER HOOK] Session already active, aborting new join.`);
+             return;
+        }
+    }
+
     // Wait until credentials are fully loaded before marking as joined
-    // If they have the host URL param, let them join regardless of auth state.
-    const isReadyToJoin = (!hostParam) || authSession?.user || adminUser || hostParam;
-    if (!isReadyToJoin) {
-        console.log(`[MANAGER HOOK] isReadyToJoin resolved to FALSE.`);
-        return;
+    // For Guests, we wait for NextAuth or Guest Form. For Hosts, we proceed immediately.
+    const isReadyToJoin = hostParam || authSession?.user;
+    if (!isReadyToJoin && !hostParam) {
+        // Just checking if we need to show the entry form or wait for NextAuth
+        const savedName = localStorage.getItem(`quiz_callsign_${sessionId}`);
+        if (!savedName && authStatus === 'loading') {
+             return; // Wait for NextAuth
+        }
     }
     
     // Prevent double-joining if the same socket is already registered
@@ -85,25 +95,26 @@ export default function SessionManager({ sessionId }) {
         console.log(`[MANAGER HOOK] Already joined with this socket ID! Aborting.`);
         return;
     }
-    lastJoinedRef.current = socket.id;
 
-    // 1. Check for regular NextAuth user
-    if (authSession?.user) {
-        joinSession(sessionId, hostParam ? 'HOST' : 'GUEST', authSession.user);
-    } 
-    // 2. Check for Admin from internal AdminContext OR fallback if they have the host link
-    else if (adminUser || hostParam) {
-        console.log(`📡 [MANAGER] Admin Host detected: ${adminUser?.username || 'Generic Commander'}`);
+    // 1. If hitting Host URL, unconditionally join as generic Commander
+    if (hostParam) {
+        lastJoinedRef.current = socket.id;
         console.log(`📡 [MANAGER] Host is joining mission area: ${sessionId}`);
-        joinSession(sessionId, hostParam ? 'HOST' : 'GUEST', {
-            id: adminUser?.id || `admin_base_operator`,
-            name: adminUser?.displayName || adminUser?.username || 'Commander'
+        joinSession(sessionId, 'HOST', {
+            id: `host_base_operator`,
+            name: 'Commander'
         });
     }
+    // 2. Otherwise it is a Guest flow. Check for NextAuth.
+    else if (authSession?.user) {
+        lastJoinedRef.current = socket.id;
+        joinSession(sessionId, 'GUEST', authSession.user);
+    } 
     // 3. Auto-join guest if persistent callsign exists
-    else if (!hostParam) {
+    else {
         const savedName = localStorage.getItem(`quiz_callsign_${sessionId}`);
         if (savedName) {
+            lastJoinedRef.current = socket.id;
             console.log(`📡 [MANAGER] Guest re-joining with callsign: ${savedName} into mission ${sessionId}`);
             const savedId = localStorage.getItem(`quiz_uid_${sessionId}`) || `guest_${Math.random().toString(36).substring(7)}`;
             localStorage.setItem(`quiz_uid_${sessionId}`, savedId);
@@ -359,16 +370,16 @@ export default function SessionManager({ sessionId }) {
           </div>
 
           {/* 🛰️ TACTICAL OVERLAYS */}
-          <div className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden">
+          <div className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden flex flex-col items-center">
               <AnimatePresence>
                   {broadcast && (
                       <motion.div 
                           initial={{ y: -200, opacity: 0 }}
                           animate={{ y: 0, opacity: 1 }}
                           exit={{ y: -200, opacity: 0 }}
-                          className="absolute top-16 left-1/2 -translate-x-1/2 w-full max-w-3xl px-8"
+                          className="w-full max-w-3xl px-8 mt-16"
                       >
-                          <div className="bg-slate-900 border-4 border-indigo-500 shadow-[0_0_50px_rgba(79,70,229,0.5)] p-10 rounded-[3rem] text-center">
+                          <div className="bg-slate-900 border-4 border-indigo-500 shadow-[0_0_50px_rgba(79,70,229,0.5)] p-10 rounded-[3rem] text-center pointer-events-auto">
                               <span className="text-sm font-black text-indigo-400 uppercase tracking-[0.6em] mb-4 block animate-pulse">🛰️ Transmission Incoming</span>
                               <h3 className="text-3xl font-black text-white uppercase tracking-tighter leading-tight bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">
                                   {broadcast.text}
