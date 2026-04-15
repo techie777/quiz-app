@@ -75,7 +75,7 @@ const nextConfig = {
       "object-src 'none'",
       "frame-ancestors 'none'",
       "form-action 'self'",
-      "img-src 'self' data: blob: https://lh3.googleusercontent.com",
+      "img-src 'self' data: blob: https://lh3.googleusercontent.com https://image.pollinations.ai",
       "font-src 'self' data: https://fonts.gstatic.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",

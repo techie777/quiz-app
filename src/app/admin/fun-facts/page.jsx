@@ -23,6 +23,8 @@ export default function AdminFunFactsPage() {
   const [factDesc, setFactDesc] = useState("");
   const [factDescHi, setFactDescHi] = useState("");
   const [factImage, setFactImage] = useState("");
+  const [isDaily, setIsDaily] = useState(false);
+  const [genLang, setGenLang] = useState("EN");
   
    // Bulk File
   const [file, setFile] = useState(null);
@@ -143,7 +145,8 @@ export default function AdminFunFactsPage() {
       categoryId: factCatId, 
       description: factDesc, 
       descriptionHi: factDescHi,
-      image: factImage 
+      image: factImage,
+      isDaily
     };
 
     try {
@@ -154,7 +157,7 @@ export default function AdminFunFactsPage() {
       });
       if (res.ok) {
         toast.success(editingId ? "Fact updated!" : "Fact added!");
-        setFactDesc(""); setFactDescHi(""); setFactImage(""); setFactCatId(""); setEditingId(null);
+        setFactDesc(""); setFactDescHi(""); setFactImage(""); setFactCatId(""); setIsDaily(false); setEditingId(null);
         fetchFacts();
         setActiveTab("manage");
       } else throw new Error(await res.text());
@@ -167,6 +170,7 @@ export default function AdminFunFactsPage() {
     setFactDesc(fact.description);
     setFactDescHi(fact.descriptionHi || "");
     setFactImage(fact.image || "");
+    setIsDaily(fact.isDaily || false);
     setActiveTab("single");
   };
 
@@ -193,6 +197,135 @@ export default function AdminFunFactsPage() {
         fetchFacts();
       }
     } catch (err) { toast.error("Operation failed"); }
+  };
+
+  const handleManualUpload = async (e) => {
+    const ufile = e.target.files?.[0];
+    if (!ufile) return;
+    toast.loading("Uploading raw image...", { id: "uploadraw" });
+    const formData = new FormData();
+    formData.append("file", ufile, `raw-fact-${Date.now()}.png`);
+    try {
+      const res = await fetch("/api/upload/image", { method: "POST", body: formData });
+      const data = await res.json();
+      if (data.url) {
+        setFactImage(data.url);
+        toast.success("Image uploaded successfully!", { id: "uploadraw" });
+      } else throw new Error(data.error);
+    } catch(err) { toast.error("Upload failed", { id: "uploadraw" }); }
+  };
+
+  const handleGenerateImage = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const textToUse = genLang === "EN" ? factDesc : factDescHi;
+    if (!textToUse) {
+      toast.error(`Please enter ${genLang} description first!`);
+      return;
+    }
+    
+    // Check if duplicate
+    const isDup = isFactDuplicate(textToUse);
+    if(isDup && !confirm("Warning: This description is already used by another fact! Proceed to generate image?")) return;
+
+    toast.loading("Generating engine image...", { id: "genimg" });
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const img = new Image();
+      img.onload = async () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        
+        canvas.width = 1080;
+        canvas.height = 1080;
+        
+        // Draw centered/cropped image
+        const scale = Math.max(canvas.width / img.width, canvas.height / img.height);
+        const w = img.width * scale;
+        const h = img.height * scale;
+        ctx.drawImage(img, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
+        
+        // Solid Gradient
+        const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        gradient.addColorStop(0, "rgba(0,0,0,0)");
+        gradient.addColorStop(0.5, "rgba(0,0,0,0.5)");
+        gradient.addColorStop(1, "rgba(0,0,0,0.95)");
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Watermark/Brand top
+        ctx.fillStyle = "#fbbf24";
+        ctx.font = "bold 32px sans-serif";
+        ctx.textAlign = "center";
+        
+        // Text settings
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 56px system-ui, -apple-system, sans-serif";
+        ctx.textAlign = "center";
+        
+        const words = textToUse.split(" ");
+        let lines = [];
+        let curLine = "";
+        const maxW = canvas.width - 120;
+        
+        for(let i=0; i<words.length; i++) {
+          let test = curLine + words[i] + " ";
+          let m = ctx.measureText(test);
+          if (m.width > maxW && i > 0) {
+            lines.push(curLine.trim());
+            curLine = words[i] + " ";
+          } else {
+             curLine = test;
+          }
+        }
+        lines.push(curLine.trim());
+
+        const lh = 70;
+        const th = lines.length * lh;
+        const startY = (canvas.height / 2) - (th / 2) + 120; // pushed down a bit
+
+        ctx.shadowColor = "rgba(0, 0, 0, 0.8)";
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 2;
+
+        lines.forEach((l, i) => {
+          ctx.fillText(l, canvas.width / 2, startY + (i * lh));
+        });
+
+        // Add extra text
+        ctx.shadowColor = "transparent";
+        ctx.shadowBlur = 0;
+        ctx.font = "bold 40px sans-serif";
+        ctx.fillStyle = "#fbbf24"; // yellow-400
+        const bottomText = "Factify Hub";
+        ctx.fillText(bottomText, canvas.width / 2, canvas.height - 60);
+
+        canvas.toBlob(async (blob) => {
+          if (!blob) return toast.error("Failed to make blob", { id: "genimg" });
+          const fileData = new FormData();
+          fileData.append("file", blob, `fact-engine-${Date.now()}.jpg`);
+          try {
+            const res = await fetch("/api/upload/image", {
+              method: "POST",
+              body: fileData
+            });
+            const data = await res.json();
+            if (res.ok && data.url) {
+              setFactImage(data.url);
+              toast.success("Image generated & uploaded!", { id: "genimg" });
+            } else {
+              throw new Error(data.error);
+            }
+          } catch(err) {
+            toast.error("Upload failed", { id: "genimg" });
+          }
+        }, "image/jpeg", 0.9);
+      };
+      img.src = evt.target.result;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = ""; // reset
   };
 
   // Smart Upload States
@@ -470,7 +603,54 @@ export default function AdminFunFactsPage() {
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.label}>Image URL (Optional)</label>
-                <input type="url" value={factImage} onChange={(e) => setFactImage(e.target.value)} className={styles.input} />
+                <div className="flex gap-2">
+                  <input type="url" value={factImage} onChange={(e) => setFactImage(e.target.value)} className={styles.input} />
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                        const cat = categories.find(c => c.id === factCatId);
+                        if(!cat) return toast.error("Select a category first!");
+                        setFactImage(`https://image.pollinations.ai/prompt/${encodeURIComponent(cat.name + " realistic minimalist photo")}?width=400&height=400&nologo=true`);
+                        toast.success("Reference URL auto-filled!");
+                    }}
+                    className="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-4 py-2 rounded-xl font-bold text-sm whitespace-nowrap transition-colors"
+                  >
+                    🚀 Auto Fetch
+                  </button>
+                  <label className="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 px-4 py-2 rounded-xl font-bold text-sm whitespace-nowrap transition-colors cursor-pointer flex items-center justify-center">
+                    📁 Native Upload
+                    <input type="file" accept="image/*" className="hidden" onChange={handleManualUpload} />
+                  </label>
+                </div>
+                {factImage && (
+                  <div className="mt-3">
+                    <p className="text-xs text-gray-500 mb-1">Image Preview:</p>
+                    <img src={factImage} alt="Thumbnail preview" className="h-32 object-cover border rounded-xl shadow-sm" />
+                  </div>
+                )}
+              </div>
+              <div className="p-4 border border-indigo-100 bg-white rounded-xl mb-6">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" checked={isDaily} onChange={(e) => setIsDaily(e.target.checked)} className="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300" />
+                  <div>
+                    <span className="block text-sm font-bold text-gray-900">Mark as Daily Pick 🌟</span>
+                    <span className="block text-xs text-gray-500">Enable this to feature this fact prominently today. Previous daily picks will be unset automatically.</span>
+                  </div>
+                </label>
+              </div>
+              <div className="p-4 border border-indigo-100 bg-indigo-50/50 rounded-xl mb-6">
+                 <h3 className="text-sm font-bold text-indigo-900 mb-2">Fact Engine: Generate Image Overlay</h3>
+                 <p className="text-xs text-indigo-600 mb-4">Upload a background image, and the system will automatically format and overlay the fact text on it.</p>
+                 <div className="flex items-center gap-4 flex-wrap">
+                    <label className="flex items-center gap-2 text-sm font-medium">
+                       Text Language: 
+                       <select value={genLang} onChange={e=>setGenLang(e.target.value)} className="p-1 border rounded bg-white text-sm outline-none">
+                          <option value="EN">English</option>
+                          <option value="HI">Hindi</option>
+                       </select>
+                    </label>
+                    <input type="file" accept="image/*" onChange={handleGenerateImage} className="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
+                 </div>
               </div>
               <button type="submit" className={styles.submitBtn}>{editingId ? "Update Fact" : "Add Fact"}</button>
               {editingId && <button type="button" onClick={() => setEditingId(null)} className={styles.hideBtn} style={{ marginTop: "0.5rem", width: "100%" }}>Cancel Edit</button>}

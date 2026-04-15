@@ -39,7 +39,7 @@ const playAudioAlert = (type) => {
 };
 
 export default function SessionLobby({ sessionId, isHost, onApproveGuest, onDenyGuest }) {
-  const { participants, pendingParticipants, session, sendAction, syncSquad } = useSessionEngine();
+  const { participants, pendingParticipants, session, sendAction, syncSquad, sessionReady } = useSessionEngine();
   const [mounted, setMounted] = useState(false);
   const [inviteUrl, setInviteUrl] = useState('');
   // Polling heartbeat for mission commander
@@ -179,7 +179,7 @@ export default function SessionLobby({ sessionId, isHost, onApproveGuest, onDeny
                       Terminate Room 🛑
                     </button>
                 </div>
-                { (isHost || useSessionEngine().sessionReady) ? (
+                { (isHost || sessionReady) ? (
                     <div className="flex bg-slate-100 p-2 rounded-2xl border border-slate-200 animate-in slide-in-from-right-4 duration-500">
                         <input readOnly value={inviteUrl} className="flex-1 bg-transparent px-6 text-sm font-bold text-slate-600 outline-none" />
                         <button onClick={() => { navigator.clipboard.writeText(inviteUrl); toast.success('Link Secured.'); }} className="bg-white text-indigo-600 font-extrabold text-sm px-6 py-3 rounded-xl shadow-md hover:scale-105 transition-all">COPY LINK</button>

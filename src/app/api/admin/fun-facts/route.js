@@ -21,14 +21,22 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { categoryId, description, descriptionHi, image, hidden } = body;
+    const { categoryId, description, descriptionHi, image, hidden, isDaily } = body;
 
     if (!categoryId || !description) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
+    if (isDaily) {
+      await prisma.funFact.updateMany({ data: { isDaily: false } });
+    }
+
     const fact = await prisma.funFact.create({
-      data: { categoryId, description, descriptionHi, image, hidden: hidden || false },
+      data: { 
+        categoryId, description, descriptionHi, image, 
+        hidden: hidden || false, isDaily: isDaily || false,
+        dailyDate: isDaily ? new Date() : null
+      },
       include: { category: true }
     });
     
@@ -42,13 +50,21 @@ export async function POST(request) {
 export async function PATCH(request) {
   try {
     const body = await request.json();
-    const { id, categoryId, description, descriptionHi, image, hidden } = body;
+    const { id, categoryId, description, descriptionHi, image, hidden, isDaily } = body;
 
     if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
+    if (isDaily) {
+      await prisma.funFact.updateMany({ where: { id: { not: id } }, data: { isDaily: false } });
+    }
+
     const fact = await prisma.funFact.update({
       where: { id },
-      data: { categoryId, description, descriptionHi, image, hidden }
+      data: { 
+        categoryId, description, descriptionHi, image, hidden,
+        isDaily: isDaily !== undefined ? isDaily : undefined,
+        dailyDate: isDaily ? new Date() : undefined
+      }
     });
 
     return NextResponse.json({ fact });

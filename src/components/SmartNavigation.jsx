@@ -33,6 +33,13 @@ export default function SmartNavigation() {
   const [navigationItems, setNavigationItems] = useState(fallbackNavigationItems);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSignOutConfirm, setIsSignOutConfirm] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreen = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", handleFullscreen);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreen);
+  }, []);
 
   useEffect(() => {
     const fetchNav = async () => {
@@ -87,7 +94,7 @@ export default function SmartNavigation() {
         role="navigation"
         aria-label="Main navigation"
       >
-        <div className={styles.container}>
+        <div className={`${styles.container} ${isFullscreen ? 'hidden' : ''}`}>
           {/* Desktop Navigation */}
           <ul className={styles.navList} role="menubar">
             {navigationItems.map((item, index) => {

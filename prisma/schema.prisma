@@ -38,6 +38,11 @@ model User {
   factsReadCount  Int         @default(0)
   tfAnsweredCount Int         @default(0)
   proBadge        String?     // Custom badge name if any
+  
+  // Fun Fact Social Models
+  funFactLikes      FunFactLike[]
+  funFactFavorites  FunFactFavorite[]
+  funFactComments   FunFactComment[]
 }
 
 model VerificationToken {
@@ -718,9 +723,47 @@ model FunFact {
   image         String?
   views         Int       @default(0)
   hidden        Boolean   @default(false)
+  isDaily       Boolean   @default(false)
+  dailyDate     DateTime?
+  likes         FunFactLike[]
+  favorites     FunFactFavorite[]
+  comments      FunFactComment[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
+
+model FunFactLike {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  factId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fact      FunFact  @relation(fields: [factId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, factId])
+}
+
+model FunFactFavorite {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  factId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fact      FunFact  @relation(fields: [factId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, factId])
+}
+
+model FunFactComment {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  factId    String   @db.ObjectId
+  content   String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fact      FunFact  @relation(fields: [factId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
 
 // --- True/False Module ---
 

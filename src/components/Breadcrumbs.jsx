@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useData } from '@/context/DataContext';
@@ -14,8 +15,16 @@ const Breadcrumbs = () => {
   const { selectedSetIndex, quizId } = useQuiz();
   const uiContext = useUI();
   const isMobileMenuOpen = uiContext?.isMobileMenuOpen || false;  
-  // Don't show breadcrumbs on the home page, admin routes, or when mobile menu is open
-  if (pathname === '/' || pathname?.startsWith('/admin') || pathname?.includes('/mock-tests/paper/') || isMobileMenuOpen) return null;
+  
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  useEffect(() => {
+    const handleFullscreen = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", handleFullscreen);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreen);
+  }, []);
+
+  // Don't show breadcrumbs on the home page, admin routes, or when fullscreen/mobile menu is open
+  if (pathname === '/' || pathname?.startsWith('/admin') || pathname?.includes('/mock-tests/paper/') || isMobileMenuOpen || isFullscreen) return null;
 
   const pathSegments = pathname.split('/').filter((segment) => segment !== '');
 
