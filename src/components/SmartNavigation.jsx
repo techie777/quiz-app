@@ -14,17 +14,14 @@ const fallbackNavigationItems = [
   { name: "Global Leaderboard", href: "/leaderboard", icon: "🏆", description: "World intelligence rankings" },
   { name: "QuizWeb Pro", href: "/pro", icon: "👑", description: "Unlock premium features" },
   { name: "Quizzes", href: "/quizzes", icon: "🧠", description: "Play dynamic quizzes" },
-  { name: "Daily Quiz", href: "/daily", icon: "🔥", description: "Take our daily quiz" },
   { name: "Daily Current Affairs", href: "/daily-current-affairs", icon: "📰", description: "Latest daily updates" },
-  { name: "Govt Jobs Alerts", href: "/govt-jobs-alerts", icon: "💼", description: "Job notifications" },
   { name: "Mock Tests", href: "/mock-tests", icon: "✍️", description: "Practice papers" },
-  { name: "Govt Study Material", href: "/govt-study", icon: "📚", description: "FlexBook study notes" },
-  { name: "Book My Course", href: "/book-my-course", icon: "🎒", description: "Order courses online" },
   { name: "Career Guide", href: "/career-guide", icon: "🧭", description: "Career guidance" },
   { name: "Fun facts", href: "/fun-facts", icon: "✨", description: "Amazing facts" },
-  { name: "True/False", href: "/true-false", icon: "✅", description: "Interactive challenges" },
-  { name: "School Study", href: "/school-study", icon: "🎓", description: "Interactive revision" }
+  { name: "True/False", href: "/true-false", icon: "✅", description: "Interactive challenges" }
 ];
+
+const HIDDEN_PATHS = ["/daily", "/govt-jobs-alerts", "/govt-study", "/book-my-course", "/school-study"];
 
 export default function SmartNavigation() {
   const { isMobileMenuOpen, closeMobileMenu } = useUI();
@@ -44,7 +41,8 @@ export default function SmartNavigation() {
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data) && data.length > 0) {
-            setNavigationItems(data);
+            const visibleItems = data.filter(item => !HIDDEN_PATHS.includes(item.href));
+            setNavigationItems(visibleItems);
           }
         }
       } catch (e) { console.error("Nav fetch error:", e); }

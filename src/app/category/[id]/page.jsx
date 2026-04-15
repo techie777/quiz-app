@@ -135,9 +135,8 @@ export default function CategorySetsPage() {
   }, [questions, searchQuestion]);
 
   const subCategories = useMemo(() => {
-    if (!category || !quizzes) return [];
-    return (quizzes || []).filter((c) => c.parentId === category.id && !c.hidden);
-  }, [quizzes, category]);
+    return category?.subCategories || [];
+  }, [category]);
 
   // JSON-LD Schema for SEO
   const jsonLd = useMemo(() => {
@@ -268,6 +267,30 @@ export default function CategorySetsPage() {
       </div>
 
       <div className={styles.contentWrap}>
+        {/* Sub-Categories Navigation (Hierarchy Flow) */}
+        {subCategories.length > 0 && (
+          <section className={styles.setsNavigation} style={{ marginBottom: '40px' }}>
+              <div className={styles.sectionHeader}>
+                  <h2 className={styles.sectionTitle}>📁 Specialized Sub-Topics</h2>
+                  <p className={styles.sectionLead}>Explore specific sub-categories inside {category.topic}.</p>
+              </div>
+              <div className={styles.setsGrid}>
+                  {subCategories.map(subCat => (
+                    <Link href={`/category/${subCat.id}`} key={subCat.id} className={styles.setCard} style={{ textDecoration: 'none', flexDirection: 'row', alignItems: 'center', gap: '16px', padding: '24px', cursor: 'pointer' }}>
+                        <div style={{ fontSize: '2.5rem', flexShrink: 0 }}>
+                            {subCat.image ? <img src={subCat.image} style={{ width: '50px', height: '50px', borderRadius: '12px', objectFit: 'cover' }} alt={subCat.topic}/> : (subCat.emoji || '📝')}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <h3 className={styles.setCardTitle} style={{ marginBottom: '4px' }}>{subCat.topic}</h3>
+                            <p className={styles.setCardInfo} style={{ marginBottom: '0' }}>{subCat.description || 'Explore this specialized topic'}</p>
+                        </div>
+                        <div style={{ color: 'var(--accent)', fontSize: '1.5rem', fontWeight: 'bold', transition: 'transform 0.2s' }}>→</div>
+                    </Link>
+                  ))}
+              </div>
+          </section>
+        )}
+        
         {/* Sets Navigation */}
         <section className={styles.setsNavigation}>
             <div className={styles.sectionHeader}>

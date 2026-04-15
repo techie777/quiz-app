@@ -12,6 +12,7 @@ import { useMonetization } from "@/context/MonetizationContext";
 import AdGate from "@/components/monetization/AdGate";
 
 const AntiGravity = dynamic(() => import("../../../components/fun-facts/AntiGravity"), { ssr: false });
+const StarSprinkler = dynamic(() => import("../../../components/fun-facts/StarSprinkler"), { ssr: false });
 
 export default function InfiniteFactEngine() {
   const { slug } = useParams();
@@ -19,6 +20,7 @@ export default function InfiniteFactEngine() {
   const [fact, setFact] = useState(null);
   const [loading, setLoading] = useState(true);
   const [antiGravityEn, setAntiGravityEn] = useState(false);
+  const [sprinkleTrigger, setSprinkleTrigger] = useState(0);
   const [language, setLanguage] = useState("hi"); 
   const [translating, setTranslating] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -179,7 +181,10 @@ export default function InfiniteFactEngine() {
       ))}
       
       <button 
-        onClick={() => setAntiGravityEn(true)} 
+        onClick={() => {
+            setAntiGravityEn(true);
+            setSprinkleTrigger(prev => prev + 1);
+        }} 
         title="Zero-G Mode"
         className={styles.antiGravityTrigger}
       >
@@ -187,6 +192,7 @@ export default function InfiniteFactEngine() {
       </button>
 
       {antiGravityEn && <AntiGravity onReset={() => window.location.reload()} />}
+      <StarSprinkler trigger={sprinkleTrigger} />
 
       <div className={`${styles.container} matter-element`}>
         <div 
@@ -206,6 +212,10 @@ export default function InfiniteFactEngine() {
             </div>
 
             <div className="flex items-center gap-3">
+              <Link href="/fun-facts" className={`${styles.iconButton} ${styles.withText} border-yellow-500/50`}>
+                <span className="text-yellow-400">Topics</span>
+              </Link>
+              
               <button 
                 disabled={loading || history.length === 0}
                 onClick={goBack}

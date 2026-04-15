@@ -1,242 +1,81 @@
-const Redis = require('ioredis');
+/**
+ * STABLE MEMORY ENGINE V3.0
+ * Replaces Redis with a thread-safe in-memory store.
+ * Optimized for development stability and horizontal scaling on single instances.
+ */
 
-class RedisStore {
+class MemoryStore {
   constructor() {
-    this.redis = null;
-    this.connected = false;
-    this.init();
-  }
-
-  async init() {
-    try {
-      const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-      
-      this.redis = new Redis(redisUrl, {
-        retryStrategy: (times) => {
-          // Robust exponential backoff for production
-          const delay = Math.min(times * 100, 3000);
-          console.log(`???? Redis connection failed (attempt ${times}). Retrying in ${delay}ms...`);
-          return delay;
-        },
-        reconnectOnError: (err) => {
-          const targetError = 'READONLY';
-          if (err.message.includes(targetError)) return true;
-          return false;
-        },
-        maxRetriesPerRequest: null, // Allow infinite retries for production stability
-        connectTimeout: 10000, 
-      });
-
-      this.redis.on('connect', () => {
-        console.log('???? Redis connected successfully');
-        this.connected = true;
-        this.errorLogged = false; // Reset error log on successful reconnect
-      });
-
-      this.redis.on('error', (err) => {
-        if (!this.errorLogged) {
-          console.error('???? Redis connection error - falling back to memory storage:', err.message);
-          this.errorLogged = true;
-        }
-        this.connected = false;
-      });
-
-      this.redis.on('close', () => {
-        console.warn('???? Redis connection closed. Engine transitioning to failover memory mode.');
-        this.connected = false;
-      });
-
-      // Eagerly connect but don't hard-fail if it misses the first window
-      await this.redis.connect().catch(err => {
-        console.warn('???? Initial Redis connection attempt failed. Background retries started.');
-      });
-      
-    } catch (error) {
-      console.log('???? Redis not available - using in-memory storage');
-      this.connected = false;
-      // Fallback to in-memory storage if Redis fails
-      this.fallbackStore = new Map();
-    }
+    this.rooms = new Map();
+    console.log('✅ Stable Memory Engine Initialized');
   }
 
   // Room management
   async setRoom(sessionId, roomData) {
-    const key = `room:${sessionId}`;
-    try {
-      if (this.connected && this.redis) {
-        await this.redis.setex(key, 86400, JSON.stringify(roomData)); // 24 hours expiry
-      } else {
-        // Fallback to memory
-        this.fallbackStore?.set(key, roomData);
-      }
-    } catch (error) {
-      console.error('???? Failed to set room:', error);
-      // Fallback to memory
-      this.fallbackStore?.set(key, roomData);
-    }
+    // Add sessionId to the data object for easier discovery during cleanup
+    const data = { ...roomData, sessionId };
+    this.rooms.set(sessionId, data);
   }
 
   async getRoom(sessionId) {
-    const key = `room:${sessionId}`;
-    try {
-      if (this.connected && this.redis) {
-        const data = await this.redis.get(key);
-        return data ? JSON.parse(data) : null;
-      } else {
-        // Fallback to memory
-        return this.fallbackStore?.get(key) || null;
-      }
-    } catch (error) {
-      console.error('???? Failed to get room:', error);
-      // Fallback to memory
-      return this.fallbackStore?.get(key) || null;
-    }
+    return this.rooms.get(sessionId) || null;
   }
 
   async deleteRoom(sessionId) {
-    const key = `room:${sessionId}`;
-    try {
-      if (this.connected && this.redis) {
-        await this.redis.del(key);
-      } else {
-        // Fallback to memory
-        this.fallbackStore?.delete(key);
-      }
-    } catch (error) {
-      console.error('???? Failed to delete room:', error);
-      // Fallback to memory
-      this.fallbackStore?.delete(key);
-    }
+    this.rooms.delete(sessionId);
   }
 
   async getAllRooms() {
-    try {
-      if (this.connected && this.redis) {
-        const keys = await this.redis.keys('room:*');
-        const rooms = await Promise.all(
-          keys.map(async (key) => {
-            const data = await this.redis.get(key);
-            return data ? JSON.parse(data) : null;
-          })
-        );
-        return rooms.filter(room => room !== null);
-      } else {
-        // Fallback to memory
-        const rooms = [];
-        if (this.fallbackStore) {
-          for (const [key, value] of this.fallbackStore.entries()) {
-            if (key.startsWith('room:')) {
-              rooms.push(value);
-            }
-          }
-        }
-        return rooms;
-      }
-    } catch (error) {
-      console.error('???? Failed to get all rooms:', error);
-      return [];
-    }
+    return Array.from(this.rooms.values());
   }
 
-  // Session participant tracking
+  // Session participant tracking (Legacy helpers)
   async addParticipant(sessionId, participant) {
-    const key = `participants:${sessionId}`;
-    try {
-      if (this.connected && this.redis) {
-        await this.redis.sadd(key, JSON.stringify(participant));
-        await this.redis.expire(key, 3600); // 1 hour expiry
-      } else {
-        // Fallback to memory
-        const participants = this.fallbackStore?.get(key) || new Set();
-        participants.add(JSON.stringify(participant));
-        this.fallbackStore?.set(key, participants);
+    const room = await this.getRoom(sessionId);
+    if (room) {
+      if (!room.participants) room.participants = [];
+      const exists = room.participants.find(p => p.userId === participant.userId);
+      if (!exists) {
+        room.participants.push(participant);
+        await this.setRoom(sessionId, room);
       }
-    } catch (error) {
-      console.error('???? Failed to add participant:', error);
     }
   }
 
   async removeParticipant(sessionId, participantId) {
-    const key = `participants:${sessionId}`;
-    try {
-      if (this.connected && this.redis) {
-        const participants = await this.redis.smembers(key);
-        const filtered = participants.filter(p => {
-          const parsed = JSON.parse(p);
-          return parsed.userId !== participantId;
-        });
-        await this.redis.del(key);
-        if (filtered.length > 0) {
-          await this.redis.sadd(key, ...filtered);
-          await this.redis.expire(key, 3600);
-        }
-      } else {
-        // Fallback to memory
-        const participants = this.fallbackStore?.get(key) || new Set();
-        const toRemove = Array.from(participants).find(p => {
-          const parsed = JSON.parse(p);
-          return parsed.userId === participantId;
-        });
-        if (toRemove) {
-          participants.delete(toRemove);
-          this.fallbackStore?.set(key, participants);
-        }
-      }
-    } catch (error) {
-      console.error('???? Failed to remove participant:', error);
+    const room = await this.getRoom(sessionId);
+    if (room) {
+      room.participants = (room.participants || []).filter(p => p.userId !== participantId);
+      await this.setRoom(sessionId, room);
     }
   }
 
   async getParticipants(sessionId) {
-    const key = `participants:${sessionId}`;
-    try {
-      if (this.connected && this.redis) {
-        const participants = await this.redis.smembers(key);
-        return participants.map(p => JSON.parse(p));
-      } else {
-        // Fallback to memory
-        const participants = this.fallbackStore?.get(key) || new Set();
-        return Array.from(participants).map(p => JSON.parse(p));
-      }
-    } catch (error) {
-      console.error('???? Failed to get participants:', error);
-      return [];
-    }
+    const room = await this.getRoom(sessionId);
+    return room ? (room.participants || []) : [];
   }
 
   async cleanup() {
-    try {
-      if (this.connected && this.redis) {
-        // Clean up expired sessions
-        const keys = await this.redis.keys('room:*');
-        const now = Date.now();
-        
-        for (const key of keys) {
-          const room = await this.redis.get(key);
-          if (room) {
-            const roomData = JSON.parse(room);
-            // Clean up rooms terminated more than 5 minutes ago
-            if (roomData.state?.status === 'TERMINATED' && 
-                roomData.terminatedAt && 
-                (now - roomData.terminatedAt) > 5 * 60 * 1000) {
-              await this.redis.del(key);
-              await this.redis.del(`participants:${key.replace('room:', '')}`);
-            }
-          }
-        }
+    const now = Date.now();
+    for (const [sessionId, roomData] of this.rooms.entries()) {
+      // Clean up rooms terminated more than 5 minutes ago
+      if (roomData.state?.status === 'TERMINATED' && 
+          roomData.terminatedAt && 
+          (now - roomData.terminatedAt) > 5 * 60 * 1000) {
+        this.rooms.delete(sessionId);
+        console.log(`🧹 Memory Purge: Room ${sessionId} cleaned.`);
       }
-    } catch (error) {
-      console.error('???? Failed to cleanup Redis:', error);
     }
   }
 
   async disconnect() {
-    if (this.redis) {
-      await this.redis.disconnect();
-    }
+    // No-op for memory store
   }
 }
 
-const redisStore = new RedisStore();
-module.exports = redisStore;
-module.exports.default = redisStore;
+const memoryStore = new MemoryStore();
+
+// Export as both default and named for compatibility with server.js require
+module.exports = memoryStore;
+module.exports.default = memoryStore;
+module.exports.redisStore = memoryStore;

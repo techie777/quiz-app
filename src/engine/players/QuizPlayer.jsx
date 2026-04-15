@@ -208,7 +208,7 @@ export default function QuizPlayer({ state }) {
                       </div>
                       <div className="min-w-[60px]">
                          <p className={`text-[9px] font-black uppercase tracking-widest truncate max-w-[60px] ${p.isYou ? 'text-indigo-400' : 'text-white'}`}>
-                            {p.userName.split('_')[0]}
+                            {(p.userName || 'Operator').split('_')[0]}
                          </p>
                          <StatusBadge status={p.status} />
                       </div>
@@ -219,23 +219,23 @@ export default function QuizPlayer({ state }) {
       )}
 
       {finished ? (
-          <div className="flex flex-col items-center justify-center py-6 space-y-8 animate-in zoom-in duration-500">
-              <div className="text-center space-y-2">
-                 <div className="inline-block px-3 py-1 bg-green-500 text-white rounded-full text-[8px] font-black uppercase tracking-widest">Mission Complete</div>
-                 <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase">Squadron Results</h2>
+          <div className="flex flex-col items-center justify-center py-4 space-y-6 animate-in zoom-in duration-500">
+              <div className="text-center space-y-1">
+                 <div className="inline-block px-2 py-0.5 bg-green-500 text-white rounded-full text-[8px] font-black uppercase tracking-widest">Mission Complete</div>
+                 <h2 className="text-2xl font-black text-slate-900 tracking-tighter uppercase">Squadron Results</h2>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl px-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl px-4">
                  <div className="space-y-4">
-                     <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-center md:text-left">Your Performance</h3>
-                     <div className="bg-indigo-600 p-8 rounded-[3rem] border-2 border-indigo-400 text-center shadow-lg text-white flex flex-col items-center justify-center space-y-2">
-                         <p className="text-[9px] font-black uppercase tracking-widest opacity-60">Success Rate</p>
-                         <p className="text-6xl font-black">{Math.round((score / questionLimit) * 100)}%</p>
-                         <p className="text-sm font-black">{score} / {questionLimit} OBJECTIVES</p>
+                     <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] text-center md:text-left">Your Performance</h3>
+                     <div className="bg-indigo-600 p-6 rounded-3xl border-2 border-indigo-400 text-center shadow-xl text-white flex flex-col items-center justify-center space-y-2">
+                         <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Success Rate</p>
+                         <p className="text-4xl font-black tabular-nums">{Math.round((score / questionLimit) * 100)}%</p>
+                         <p className="text-sm font-black uppercase tracking-widest">{score} / {questionLimit} OBJECTIVES</p>
                      </div>
                  </div>
                  <div className="space-y-4">
                      <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-center md:text-left">Squadron Standings</h3>
-                     <div className="bg-slate-50 rounded-[2rem] border border-slate-100 p-4 space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar">
+                     <div className="bg-slate-50 rounded-2xl border border-slate-100 p-3 space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar">
                          {scoreboard.map((p, i) => (
                              <div key={i} className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all ${
                                  p.isYou ? 'bg-white border-indigo-600 shadow-md' : 'bg-white border-slate-100'
@@ -290,24 +290,35 @@ export default function QuizPlayer({ state }) {
                   <p className="text-2xl font-black text-indigo-700 tabular-nums">{currentIndex + 1} <span className="text-slate-200 text-lg">/ {questionLimit}</span></p>
                </div>
             </div>
-            <div className="bg-slate-50 rounded-[2.5rem] border border-slate-200 p-6 md:p-10 text-center space-y-8">
-               <h3 className="text-xl md:text-2xl font-black text-slate-900 leading-tight tracking-tight max-w-3xl mx-auto">
+            <div className="bg-slate-50 rounded-[2.5rem] border border-slate-200 p-8 md:p-14 text-center space-y-10">
+               <h3 className="text-xl md:text-3xl font-black text-slate-900 leading-[1.4] tracking-tight max-w-4xl mx-auto">
                   {questions[currentIndex]?.text}
                </h3>
-               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-4xl mx-auto">
-                  {(questions[currentIndex]?.options || []).map((opt, i) => {
-                     const isSelected = selectedOption === opt;
-                     let btnClass = isSelected 
-                        ? (isCorrect ? "bg-green-600 border-green-600 text-white shadow-lg" : "bg-red-600 border-red-600 text-white shadow-lg")
-                        : "bg-white border border-slate-200 text-slate-900 hover:border-indigo-400 hover:-translate-y-1";
-                     return (
-                        <button key={i} onClick={() => handleAnswer(opt)} disabled={!!selectedOption} className={`group min-h-[70px] p-5 rounded-2xl text-left transition-all active:scale-95 flex items-center gap-4 ${btnClass}`}>
-                           <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg ${isSelected ? 'bg-white/20' : 'bg-slate-100/50'}`}>{String.fromCharCode(65 + i)}</div>
-                           <span className="text-sm md:text-base font-black tracking-tight flex-1">{opt}</span>
-                        </button>
-                     );
-                  })}
-                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-5xl mx-auto">
+                   {(questions[currentIndex]?.options || []).map((opt, i) => {
+                      const isSelected = selectedOption === opt;
+                      const isCorrectAnswer = opt === questions[currentIndex]?.correctAnswer;
+                      
+                      let btnClass = "bg-white border border-slate-200 text-slate-900 hover:border-indigo-400 hover:-translate-y-1 hover:shadow-lg";
+                      
+                      if (selectedOption) {
+                         if (isCorrectAnswer) {
+                            btnClass = "bg-green-600 border-green-600 text-white shadow-xl scale-105";
+                         } else if (isSelected && !isCorrect) {
+                            btnClass = "bg-red-600 border-red-600 text-white shadow-xl scale-105";
+                         } else {
+                            btnClass = "bg-white border border-slate-100 text-slate-300 opacity-50";
+                         }
+                      }
+
+                      return (
+                         <button key={i} onClick={() => handleAnswer(opt)} disabled={!!selectedOption} className={`group min-h-[72px] p-4 rounded-2xl text-left transition-all active:scale-95 flex items-center gap-4 ${btnClass}`}>
+                            <div className={`w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center font-black text-lg ${isSelected ? 'bg-white/20' : 'bg-slate-100'}`}>{String.fromCharCode(65 + i)}</div>
+                            <span className="text-sm md:text-base font-black tracking-tight flex-1 leading-snug">{opt}</span>
+                         </button>
+                      );
+                   })}
+                 </div>
               </div>
            </div>
         )}

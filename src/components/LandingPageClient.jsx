@@ -992,6 +992,74 @@ export default function LandingPage({ initialCategories = [] }) {
       {/* Main Category Sections */}
       {!search && !activeFilters.length && (
         <div className={styles.allSubSections}>
+          {/* Daily Spotlight Section */}
+          <div className={styles.mainCategorySection}>
+            <h2 className={styles.sectionTitle}>Daily Spotlight</h2>
+            <div className={styles.subSectionGrid}>
+              {/* Quiz of the Day Card */}
+              <motion.div
+                className={styles.subSectionCard}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Link href="/category/65f1a2b3c4d5e6f7a8b9c0d9" className={styles.subSectionCardLink}>
+                  <div className={styles.subSectionCardImage}>
+                    <span className={styles.subSectionCardEmoji}>🌟</span>
+                  </div>
+                  <div className={styles.subSectionCardContent}>
+                    <h4 className={styles.subSectionCardTitle}>Quiz of the day</h4>
+                    <button
+                      className={styles.playQuizButton}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        window.location.href = "/category/65f1a2b3c4d5e6f7a8b9c0d9";
+                      }}
+                    >
+                      Play Quiz
+                    </button>
+                    <div className={styles.subSectionCardFooter}>
+                      <span className={styles.subSectionCardCount}>Daily Curated</span>
+                      <span className={styles.subSectionCardTime}>~5 mins</span>
+                    </div>
+                  </div>
+                </Link>
+              </motion.div>
+
+              {/* Daily Current Affairs Card */}
+              <motion.div
+                className={styles.subSectionCard}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+              >
+                <Link href="/current-affairs" className={styles.subSectionCardLink}>
+                  <div className={styles.subSectionCardImage}>
+                    <span className={styles.subSectionCardEmoji}>🗞️</span>
+                  </div>
+                  <div className={styles.subSectionCardContent}>
+                    <h4 className={styles.subSectionCardTitle}>Daily Current Affairs</h4>
+                    <button
+                      className={styles.playQuizButton}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        window.location.href = "/current-affairs";
+                      }}
+                    >
+                      View Updates
+                    </button>
+                    <div className={styles.subSectionCardFooter}>
+                      <span className={styles.subSectionCardCount}>Daily News</span>
+                      <span className={styles.subSectionCardTime}>New Today</span>
+                    </div>
+                  </div>
+                </Link>
+              </motion.div>
+            </div>
+          </div>
+
           {Object.keys(categorizedQuizzes).map((categoryName) => (
             <MainCategorySection 
               key={categoryName}
@@ -1020,68 +1088,6 @@ export default function LandingPage({ initialCategories = [] }) {
             initial="hidden"
             animate="show"
           >
-            {/* Daily Quiz Card */}
-            <motion.div
-              key="daily-quiz"
-              className={styles.subSectionCard}
-              variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
-              layout
-            >
-              <Link href="/daily" className={styles.subSectionCardLink}>
-                <div className={styles.subSectionCardImage}>
-                  <span className={styles.subSectionCardEmoji}>📅</span>
-                </div>
-                <div className={styles.subSectionCardContent}>
-                  <h4 className={styles.subSectionCardTitle}>Daily Quiz</h4>
-                  <button
-                    className={styles.playQuizButton}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      window.location.href = "/daily";
-                    }}
-                  >
-                    Play Quiz
-                  </button>
-                  <div className={styles.subSectionCardFooter}>
-                    <span className={styles.subSectionCardCount}>Daily</span>
-                    <span className={styles.subSectionCardTime}>Export PDF</span>
-                  </div>
-                </div>
-              </Link>
-            </motion.div>
-
-            {/* Current Affairs Card */}
-            <motion.div
-              key="current-affairs"
-              className={styles.subSectionCard}
-              variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
-              layout
-            >
-              <Link href="/current-affairs" className={styles.subSectionCardLink}>
-                <div className={styles.subSectionCardImage}>
-                  <span className={styles.subSectionCardEmoji}>🗞️</span>
-                </div>
-                <div className={styles.subSectionCardContent}>
-                  <h4 className={styles.subSectionCardTitle}>Current Affairs</h4>
-                  <button
-                    className={styles.playQuizButton}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      window.location.href = "/current-affairs";
-                    }}
-                  >
-                    Play Quiz
-                  </button>
-                  <div className={styles.subSectionCardFooter}>
-                    <span className={styles.subSectionCardCount}>Date-wise</span>
-                    <span className={styles.subSectionCardTime}>Export PDF</span>
-                  </div>
-                </div>
-              </Link>
-            </motion.div>
-
             {/* Regular Quiz Cards */}
             {loading && visibleCategories.length === 0
               ? Array.from({ length: 9 }).map((_, idx) => (

@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { safeJsonParse } from "@/lib/utils";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireAdmin } from "@/lib/adminSessionServer";
 
 export const dynamic = "force-dynamic";
 
@@ -21,12 +20,21 @@ export async function GET(request, { params }) {
     
     if (!category) return NextResponse.json({ error: "Not found" }, { status: 404 });
     
+    const subCategories = await prisma.category.findMany({
+      where: { parentId: id, hidden: false },
+      orderBy: { sortOrder: "asc" }
+    });
+    
     const responseData = {
       ...category,
       questionCount: category.questions.length,
       questions: metaOnly 
         ? [] // Return empty if metaOnly, we already have the count
         : category.questions.map((q) => ({ ...q, options: safeJsonParse(q.options) })),
+      subCategories: subCategories.map(sc => ({
+        ...sc,
+        chips: safeJsonParse(sc.chips) || []
+      })),
     };
 
     return NextResponse.json(responseData);
@@ -219,9 +227,9 @@ export async function GET(request, { params }) {
 }
 
 export async function PUT(request, { params }) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.isAdmin || session.user.role !== "master") {
-    return NextResponse.json({ error: "Master admin only" }, { status: 403 });
+  const adminCheck = await requireAdmin({ masterOnly: true });
+  if (!adminCheck.ok) {
+    return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
   }
 
   const { id } = params;
@@ -255,9 +263,9 @@ export async function PUT(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.isAdmin || session.user.role !== "master") {
-    return NextResponse.json({ error: "Master admin only" }, { status: 403 });
+  const adminCheck = await requireAdmin({ masterOnly: true });
+  if (!adminCheck.ok) {
+    return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
   }
 
   const { id } = params;

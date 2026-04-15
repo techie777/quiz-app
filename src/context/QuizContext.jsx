@@ -62,6 +62,9 @@ const initialState = {
   selectedSetIndex: null,
   isResuming: false,
   originalTotal: null,
+  originalQuestions: [],
+  originalLanguage: "en",
+  originalStory: null,
 };
 
 // Key for storage
@@ -93,7 +96,10 @@ function quizReducer(state, action) {
         status: "active",
         soundEnabled: state.soundEnabled,
         isFullscreen: state.isFullscreen,
-        language: language || "en",
+        language: language || detectQuizLanguage(shuffledQuestions),
+        originalLanguage: language || detectQuizLanguage(shuffledQuestions),
+        originalQuestions: shuffledQuestions,
+        originalStory: quiz.storyText || null,
         translatedStory: null,
         selectedSetIndex: null,
       };
@@ -115,7 +121,10 @@ function quizReducer(state, action) {
         status: "active",
         soundEnabled: state.soundEnabled,
         isFullscreen: state.isFullscreen,
-        language: language || "en",
+        language: language || detectQuizLanguage(shuffledQuestions),
+        originalLanguage: language || detectQuizLanguage(shuffledQuestions),
+        originalQuestions: shuffledQuestions,
+        originalStory: null,
         translatedStory: null,
         selectedSetIndex: setIndex,
       };
@@ -419,21 +428,35 @@ export function QuizProvider({ children }) {
       if (state.status !== "active") return;
       if (state.isTranslating) return;
       
-      // Detect current language of the content
-      const currentContentLang = detectQuizLanguage(state.questions);
-      const target = currentContentLang === "en" ? "hi" : "en";
+      const target = state.language === "en" ? "hi" : "en";
       
-      console.log(`[Quiz/Toggle] Current content language: ${currentContentLang}, Target: ${target}`);
+      console.log(`[Quiz/Toggle] Switching to: ${target}, Original: ${state.originalLanguage}`);
       
       dispatch({ type: "SET_TRANSLATE_TARGET", payload: target });
+      
       try {
-        await translateQuiz(state.questions, currentContentLang, target, storyText);
-        dispatch({ type: "SET_LANGUAGE", payload: target });
+        if (target === state.originalLanguage && state.originalQuestions?.length > 0) {
+           console.log("[Quiz/Toggle] Restoring original language from cache instantly!");
+           // Re-apply user answers to original questions
+           const newQ = state.originalQuestions.map(q => {
+              const ans = state.answers.find(a => a.questionId === q.id);
+              return ans ? { ...q, userAnswer: ans.selected } : q;
+           });
+           dispatch({ type: "SET_QUESTIONS", payload: newQ });
+           if (state.originalStory !== undefined) {
+              dispatch({ type: "SET_TRANSLATED_STORY", payload: state.originalStory });
+           }
+           dispatch({ type: "SET_LANGUAGE", payload: target });
+           toast.success(`Switched to ${target === 'hi' ? 'Hindi' : 'English'}`);
+        } else {
+           await translateQuiz(state.questions, state.language, target, storyText);
+           dispatch({ type: "SET_LANGUAGE", payload: target });
+        }
       } finally {
         dispatch({ type: "SET_TRANSLATE_TARGET", payload: null });
       }
     },
-    [state.isTranslating, state.questions, state.status, translateQuiz]
+    [state.isTranslating, state.questions, state.language, state.originalLanguage, state.originalQuestions, state.originalStory, state.answers, state.status, translateQuiz]
   );
 
   const toggleFontSize = useCallback(() => {

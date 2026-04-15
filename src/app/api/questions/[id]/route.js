@@ -1,15 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { safeJsonParse } from "@/lib/utils";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireAdmin } from "@/lib/adminSessionServer";
 
 export const dynamic = "force-dynamic";
 
 export async function PUT(request, { params }) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.isAdmin || session.user.role !== "master") {
-    return NextResponse.json({ error: "Master admin only" }, { status: 403 });
+  const adminCheck = await requireAdmin({ masterOnly: true });
+  if (!adminCheck.ok) {
+    return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
   }
 
   const { id } = params;
@@ -26,9 +25,9 @@ export async function PUT(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.isAdmin || session.user.role !== "master") {
-    return NextResponse.json({ error: "Master admin only" }, { status: 403 });
+  const adminCheck = await requireAdmin({ masterOnly: true });
+  if (!adminCheck.ok) {
+    return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
   }
 
   const { id } = params;

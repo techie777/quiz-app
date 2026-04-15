@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { adminAuthOptions } from "@/lib/adminAuth";
+import { requireAdmin } from "@/lib/adminSessionServer";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -46,52 +45,18 @@ export async function GET(request) {
 
 export async function PUT(request) {
   try {
-    // Try to get admin session first
-    let session = await getServerSession(adminAuthOptions);
-    console.log("[Settings PUT] Admin session attempt:", session?.user?.email);
-    
-    // If admin session fails, try regular session (for testing/fallback)
-    if (!session?.user?.isAdmin) {
-      console.log("[Settings PUT] Admin session failed, trying regular session...");
-      const { authOptions } = await import("@/lib/auth");
-      session = await getServerSession(authOptions);
-      console.log("[Settings PUT] Regular session:", session?.user?.email);
-      
-      // For testing purposes, allow regular users to update settings
-      // In production, this should be removed
-      if (session?.user && process.env.NODE_ENV === "development") {
-        console.log("[Settings PUT] Development mode - allowing regular user");
-        session.user.isAdmin = true; // Override for testing
-      }
+    const adminCheck = await requireAdmin({ masterOnly: false });
+    if (!adminCheck.ok) {
+      return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
     }
-    
-    console.log("[Settings PUT] Final session user:", session?.user?.email, "isAdmin:", session?.user?.isAdmin);
-    
-    if (!session || !session.user) {
-      console.log("[Settings PUT] No session found");
-      return NextResponse.json({ error: "No session found" }, { status: 401 });
-    }
-    
-    if (!session.user.isAdmin) {
-      console.log("[Settings PUT] Unauthorized - not admin");
-      return NextResponse.json({ error: "Unauthorized - admin access required" }, { status: 401 });
-    }
+    const admin = adminCheck.admin;
 
-    const perms = (function () {
-      const raw = session.user.permissions;
-      if (raw && typeof raw === "object") return raw;
-      if (typeof raw !== "string" || !raw.trim()) return {};
-      try {
-        const parsed = JSON.parse(raw);
-        return parsed && typeof parsed === "object" ? parsed : {};
-      } catch {
-        return {};
+    // Check permissions if not master
+    if (admin.role !== "master") {
+      const perms = typeof admin.permissions === 'string' ? JSON.parse(admin.permissions) : (admin.permissions || {});
+      if (perms.settings === false) {
+        return NextResponse.json({ error: "Forbidden - no settings permission" }, { status: 403 });
       }
-    })();
-
-    if (session.user.role !== "master" && perms.settings === false) {
-      console.log("[Settings PUT] Forbidden - no settings permission");
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const body = await request.json();

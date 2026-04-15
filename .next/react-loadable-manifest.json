@@ -59,6 +59,12 @@
       "static/chunks/3624.82ba7249e075139d.js"
     ]
   },
+  "app\\fun-facts\\[slug]\\page.jsx -> ../../../components/fun-facts/StarSprinkler": {
+    "id": 31870,
+    "files": [
+      "static/chunks/1870.6bbe4ba155a2e2c4.js"
+    ]
+  },
   "app\\fun-facts\\voyager\\page.jsx -> ../../../components/fun-facts/AntiGravity": {
     "id": 33624,
     "files": [
@@ -81,7 +87,7 @@
   "app\\true-false\\[slug]\\page.jsx -> ../../../components/fun-facts/AntiGravity": {
     "id": 33624,
     "files": [
-      "static/css/9301b39a4868ec9c.css",
+      "static/css/e5ba1c5daeab2b01.css",
       "static/chunks/vendors-20c7fd320ec9bcc7.js",
       "static/chunks/1474.072173875e86a687.js"
     ]
@@ -89,7 +95,7 @@
   "app\\true-false\\voyager\\page.jsx -> ../../../components/fun-facts/AntiGravity": {
     "id": 33624,
     "files": [
-      "static/css/9301b39a4868ec9c.css",
+      "static/css/e5ba1c5daeab2b01.css",
       "static/chunks/vendors-20c7fd320ec9bcc7.js",
       "static/chunks/1474.072173875e86a687.js"
     ]

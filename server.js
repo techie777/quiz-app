@@ -21,7 +21,7 @@ const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
 // Initialize Redis store
-let rooms = new Map(); // Fallback in-memory storage
+// redisStore is already initialized from its module
 
 app.prepare()
   .then(() => {
@@ -38,6 +38,9 @@ app.prepare()
 
     const io = new Server(httpServer, {
       cors: { origin: '*', methods: ['GET', 'POST'] },
+      pingTimeout: 60000,
+      pingInterval: 25000,
+      connectTimeout: 45000
     });
 
     io.on('connection', (socket) => {
@@ -45,86 +48,124 @@ app.prepare()
 
       socket.on('JOIN_SESSION', async (data) => {
         const { sessionId, role, userId, userName } = data;
-        
+        if (!sessionId || !role || !userId) {
+            console.error(`❌ [IO] Invalid JOIN_SESSION attempt:`, data);
+            return;
+        }
+
+        console.log(`📡 [HANDSHAKE] ${userName} (${role}) | Socket: ${socket.id} | Mission: ${sessionId}`);
+
+        // 1. IMMERSE socket in the tactical room immediately
+        await socket.join(sessionId);
+
+        // Allow socket.io internal buffers to clear (Crucial for HMR/Fast Refresh reliability)
+        await new Promise(r => setTimeout(r, 100));
+
         let room = await redisStore.getRoom(sessionId);
-        
         if (!room) {
-            if (role === 'HOST') {
-                room = { 
-                    participants: [], 
-                    pendingParticipants: [],
-                    messages: [],
-                    state: { status: 'LOBBY', type: 'QUIZ', timeLimit: 0 },
-                    createdAt: Date.now()
-                };
-                await redisStore.setRoom(sessionId, room);
-            } else {
-                socket.emit('STATE_UPDATE', { 
-                    action: 'WAITING_FOR_HOST', 
-                    payload: { status: 'WAITING', message: 'Waiting for host to create this session...' } 
-                });
-                return;
-            }
+            room = { 
+                participants: [], 
+                pendingParticipants: [], 
+                chatMessages: [], 
+                state: { status: 'LOBBY', currentQuestion: 0, startTime: null },
+                sessionId 
+            };
+            await redisStore.setRoom(sessionId, room);
+            console.log(`📡 [INIT] New mission container created for ${sessionId}`);
         }
 
         if (role === 'HOST') {
-            socket.join(sessionId);
-            const existsIdx = room.participants.findIndex(p => p.userId === userId);
-            if (existsIdx !== -1) {
-                room.participants[existsIdx].socketId = socket.id;
-                room.participants[existsIdx].isOnline = true;
+            const existingIdx = room.participants.findIndex(p => p.userId === userId);
+            const hostData = { 
+                userId, 
+                userName: userName || 'Commander', 
+                role: 'HOST', 
+                socketId: socket.id, 
+                isOnline: true, 
+                status: 'ACTIVE' 
+            };
+
+            if (existingIdx !== -1) {
+                room.participants[existingIdx] = hostData;
             } else {
-                room.participants.push({ 
-                    userId, userName, role, socketId: socket.id,
-                    score: 0, progress: 0, isOnline: true
-                });
+                room.participants.unshift(hostData);
             }
-            // Save to Redis
-            await redisStore.setRoom(sessionId, room);
+            console.log(`📡 [HOST] Commander ${userName} uplifted at ${socket.id}`);
             
-            // Broadcast active list to everyone in the room
-            io.in(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
-            socket.emit('STATE_UPDATE', { action: 'REHYDRATE', payload: room.state });
-            
-            // SECURITY SYNC: Force-push current pending list to the host immediately
-            socket.emit('SYNC_PENDING', room.pendingParticipants);
-            console.log(` Commander ${userName} joined room ${sessionId}. Pending queue sent: ${room.pendingParticipants.length}`);
-        } else {
-            // GUEST SECURITY: Put in pending first for host approval
-            const guestExists = room.pendingParticipants.find(p => p.userId === userId);
-            if (!guestExists) {
-                room.pendingParticipants.push({ userId, userName, role, socketId: socket.id, requestedAt: Date.now() });
-            } else {
-                // Update socket id if they rejoined
-                const g = room.pendingParticipants.find(p => p.userId === userId);
-                g.socketId = socket.id;
-            }
-            // Save to Redis
-            await redisStore.setRoom(sessionId, room);
-            
-            // CRITICAL BROADCAST: Notify HOST in the room about the new guest request
-            console.log(` Guest ${userName} requesting clearance for room ${sessionId}. Broadcasting to host...`);
-            
-            // Find host and send approval request
-            const host = room.participants.find(p => p.role === 'HOST');
-            if (host && host.socketId) {
-                io.to(host.socketId).emit('GUEST_JOIN_REQUEST', {
-                    guestId: userId,
-                    guestName: userName,
-                    requestedAt: Date.now()
-                });
-            }
-            
-            // Update all guests about pending list
-            io.in(sessionId).emit('SYNC_PENDING', room.pendingParticipants);
+            // Critical rehydration
             socket.emit('STATE_UPDATE', { 
-                action: 'PENDING_APPROVAL', 
-                payload: { status: 'PENDING', message: 'Waiting for host approval...' } 
+                action: 'REHYDRATE', 
+                payload: { ...room.state, sessionId, role, userId, userName } 
             });
+        } else {
+            // GUEST LOGIC
+            const existingInSquad = room.participants.find(p => p.userId === userId);
+            if (existingInSquad) {
+                existingInSquad.socketId = socket.id;
+                existingInSquad.isOnline = true;
+                existingInSquad.status = 'ACTIVE';
+                socket.emit('STATE_UPDATE', { action: 'APPROVED', payload: { ...room.state, status: 'APPROVED' } });
+                console.log(`📡 [GUEST] Member ${userName} reconnected at ${socket.id}`);
+            } else {
+                // Refresh pending
+                room.pendingParticipants = room.pendingParticipants.filter(p => p.userId !== userId);
+                room.pendingParticipants.push({ 
+                    userId, 
+                    userName: userName || 'Refugee', 
+                    socketId: socket.id, 
+                    requestedAt: Date.now(), 
+                    isOnline: true,
+                    role: 'GUEST'
+                });
+                console.log(`📡 [GUEST] Request received from ${userName} (${socket.id}). Waiting for clearance.`);
+                
+                // Authoritative Targeted Alerts
+                const host = room.participants.find(p => p.role === 'HOST');
+                if (host && host.socketId) {
+                    console.log(`📡 [SIGNAL] Sending direct pulse to host: ${host.socketId}`);
+                    io.to(host.socketId).emit('GUEST_JOIN_REQUEST', { guestId: userId, guestName: userName });
+                    io.to(host.socketId).emit('SYNC_PENDING', room.pendingParticipants);
+                }
+                
+                socket.emit('STATE_UPDATE', { 
+                    action: 'REHYDRATE', 
+                    payload: { status: 'PENDING', message: 'Waiting for commander clearance...', sessionId, role, userId, userName } 
+                });
+            }
         }
+
+        await redisStore.setRoom(sessionId, room);
+        
+        // 2. Authoritative Sync Blast
+        console.log(`📡 [EMIT] Room ${sessionId} | Syncing ${room.participants.length} members & ${room.pendingParticipants.length} pending...`);
+        io.to(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
+        io.to(sessionId).emit('SYNC_PENDING', room.pendingParticipants);
+        
+        // Detailed room debug
+        const roomSockets = await io.in(sessionId).fetchSockets();
+        console.log(`📡 [DEBUG] Room: ${sessionId} | Active Sockets IN ROOM: ${roomSockets.length} | Host Socket: ${room.participants.find(p => p.role === 'HOST')?.socketId}`);
       });
 
-      socket.on('HOST_ACTION', async (data) => {
+        socket.on('SQUAD_SYNC_REQUEST', async ({ sessionId }) => {
+            const room = await redisStore.getRoom(sessionId);
+            if (room) {
+                socket.emit('SYNC_PARTICIPANTS', room.participants);
+                socket.emit('SYNC_PENDING', room.pendingParticipants);
+                console.log(`📡 [SYNC] Manual sync completed for ${sessionId}`);
+            }
+        });
+
+        socket.on('FORCE_ROOM_SYNC', async ({ sessionId }) => {
+            const room = await redisStore.getRoom(sessionId);
+            if (room) {
+                io.to(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
+                io.to(sessionId).emit('SYNC_PENDING', room.pendingParticipants);
+                io.to(sessionId).emit('STATE_UPDATE', { action: 'REHYDRATE', payload: room.state });
+                console.log(`📡 [FORCE_SYNC] Authoritative broadcast for room ${sessionId}`);
+            }
+        });
+
+        socket.on('HOST_ACTION', async (data) => {
         const { sessionId, action, payload } = data;
         const room = await redisStore.getRoom(sessionId);
         if (!room) return;
@@ -219,31 +260,33 @@ app.prepare()
         if (action === 'TERMINATE') {
             room.state.status = 'TERMINATED';
             room.terminatedAt = Date.now();
-            // Save to Redis
             await redisStore.setRoom(sessionId, room);
             
             io.in(sessionId).emit('STATE_UPDATE', { action: 'TERMINATED', payload: room.state });
+            
+            // Immediate purge for reuse/safety
             setTimeout(async () => {
-                const checkRoom = await redisStore.getRoom(sessionId);
-                if (checkRoom && checkRoom.state.status === 'TERMINATED') {
-                    await redisStore.deleteRoom(sessionId);
-                    console.log(`???? Room ${sessionId} purged.`);
-                }
-            }, 30000);
+                await redisStore.deleteRoom(sessionId);
+                console.log(`📡 Room ${sessionId} purged after termination.`);
+            }, 5000); // 5s grace period for client redirect animations
             return;
         }
 
         room.state = { ...room.state, ...payload };
         if (action === 'START_SESSION') {
-            room.participants.forEach(p => { p.score = 0; p.progress = 0; });
+            room.participants.forEach(p => { 
+                p.score = 0; 
+                p.progress = 0;
+                p.status = 'ACTIVE';
+            });
+            // Update the room state in storage
+            await redisStore.setRoom(sessionId, room);
+            // Broadcast initial sync
+            io.to(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
         }
-        // Save to Redis
-        await redisStore.setRoom(sessionId, room);
-        
-        if (action === 'START_SESSION') {
-            io.in(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
-        }
-        io.in(sessionId).emit('STATE_UPDATE', { action, payload });
+        // Broadcast updated state to all participants
+        console.log(`📡 [SERVER] Broadcasting ${action} to room ${sessionId}. Type: ${room.state.type}`);
+        io.in(sessionId).emit('STATE_UPDATE', { action, payload: room.state });
       });
 
       socket.on('SEND_CHAT', async (data) => {
@@ -308,37 +351,31 @@ app.prepare()
       socket.on('disconnect', async () => {
         const allRooms = await redisStore.getAllRooms();
         for (const room of allRooms) {
-          // Find sessionId from room data or skip
-          const sessionId = room.sessionId || 'unknown';
-          if (sessionId === 'unknown') continue;
+          const sessionId = room.sessionId;
+          if (!sessionId) continue;
           
           let updated = false;
           
           const idx = room.participants.findIndex(p => p.socketId === socket.id);
           if (idx !== -1) {
-            const p = room.participants[idx];
-            // Always mark as offline instead of removing to allow for reconnection grace periods
-            p.isOnline = false;
-            p.status = 'AWAY';
+            room.participants[idx].isOnline = false;
+            room.participants[idx].status = 'AWAY';
             updated = true;
             io.in(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
-            console.log(`📡 Participant ${p.userName} went offline (Room: ${sessionId})`);
+            console.log(`📡 Participant ${room.participants[idx].userName} went offline (Room: ${sessionId})`);
           }
           
           const pIdx = room.pendingParticipants.findIndex(p => p.socketId === socket.id);
           if (pIdx !== -1) {
-              const p = room.pendingParticipants[pIdx];
-              // For pending guests, we still mark offline so the host knows they dropped
-              // but we don't necessarily need to keep them forever.
-              // For now, let's keep them in the list so they can 're-request' or auto-approve.
-              p.isOnline = false;
+              room.pendingParticipants[pIdx].isOnline = false;
               updated = true;
               io.in(sessionId).emit('SYNC_PENDING', room.pendingParticipants);
-              console.log(`📡 Pending Guest ${p.userName} went offline.`);
+              console.log(`📡 Pending Guest ${room.pendingParticipants[pIdx].userName} went offline.`);
           }
           
           if (updated) {
             await redisStore.setRoom(sessionId, room);
+            break; // Socket associated with one room at a time usually
           }
         }
       });

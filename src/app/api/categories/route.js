@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { safeJsonParse } from "@/lib/utils";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireAdmin, getAdminFromRequest } from "@/lib/adminSessionServer";
 import { enforceRateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
@@ -21,8 +20,8 @@ export async function GET(request) {
     const qCount = searchParams.get("questionCount") || "all";
     const chipsParam = searchParams.get("chips") || "";
 
-    const session = await getServerSession(authOptions);
-    const isAdmin = session?.user?.isAdmin;
+    const admin = await getAdminFromRequest();
+    const isAdmin = !!admin;
 
     // Build the "where" clause for Prisma
     let where = {};
@@ -88,11 +87,16 @@ export async function GET(request) {
     const needsInMemoryFilteringOrSorting = qCount !== "all" || sortBy === "popular";
     const limit = limitRaw > 0 ? Math.min(limitRaw, 60) : 0;
 
+    const includeQuestions = searchParams.get("full") === "true";
+
     // Fetch categories
     const categories = await prisma.category.findMany({
       where,
       include: {
-        questions: true,
+        _count: {
+          select: { questions: true }
+        },
+        ...(includeQuestions ? { questions: true } : {})
       },
       orderBy,
       ...(needsInMemoryFilteringOrSorting || limit === 0 ? {} : (limit > 0 ? { take: limit } : {})),
@@ -104,7 +108,7 @@ export async function GET(request) {
     // Question count filter (in-memory; Prisma Mongo relation count filters are limited)
     if (qCount !== "all") {
       filteredCategories = filteredCategories.filter((cat) => {
-        const count = cat.questions?.length || 0;
+        const count = cat._count?.questions || 0;
         if (qCount === "small") return count >= 1 && count <= 10;
         if (qCount === "medium") return count >= 11 && count <= 25;
         if (qCount === "large") return count >= 26;
@@ -115,8 +119,8 @@ export async function GET(request) {
     // "Popular" sort (proxy: more questions => more content)
     if (sortBy === "popular") {
       filteredCategories = [...filteredCategories].sort((a, b) => {
-        const ac = a.questions?.length || 0;
-        const bc = b.questions?.length || 0;
+        const ac = a._count?.questions || 0;
+        const bc = b._count?.questions || 0;
         if (bc !== ac) return bc - ac;
         return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
       });
@@ -153,11 +157,11 @@ export async function GET(request) {
       showSubCategoriesOnHome: cat.showSubCategoriesOnHome,
       createdAt: cat.createdAt,
       updatedAt: cat.updatedAt,
-      questionCount: cat.questions?.length || 0,
-      questions: cat.questions.map(q => ({
+      questionCount: cat._count?.questions || 0,
+      questions: includeQuestions ? (cat.questions || []).map(q => ({
         ...q,
         options: safeJsonParse(q.options) || []
-      })),
+      })) : [],
     }));
     
     return NextResponse.json({ categories: result, total });
@@ -169,9 +173,9 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.isAdmin || session.user.role !== "master") {
-    return NextResponse.json({ error: "Master admin only" }, { status: 403 });
+  const adminCheck = await requireAdmin({ masterOnly: true });
+  if (!adminCheck.ok) {
+    return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
   }
 
   console.log("[API/categories] POST request received");

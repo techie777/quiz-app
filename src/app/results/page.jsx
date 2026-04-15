@@ -8,10 +8,11 @@ import { useQuiz } from "@/context/QuizContext";
 import { useData } from "@/context/DataContext";
 import styles from "@/styles/ResultPage.module.css";
 import { useMonetization } from "@/context/MonetizationContext";
-import { Download, FileText, Lock, Crown } from "lucide-react";
+import { Download, FileText, Lock, Crown, Share2 } from "lucide-react";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import AdGate from "@/components/monetization/AdGate";
+import toast from "react-hot-toast";
 
 function getMotivation(percentage) {
   if (percentage === 100) return { text: "Perfect Score!", emoji: "🌟" };
@@ -26,7 +27,7 @@ const CONFETTI_COLORS = ["#4361ee", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", 
 export default function ResultPage() {
   const router = useRouter();
   const { isPro } = useMonetization();
-  const { score, questions, answers, quizId, difficulty, timerSetting, language, selectedSetIndex, resetQuiz, startQuiz } = useQuiz();
+  const { score, questions, answers, quizId, difficulty, timerSetting, language, selectedSetIndex, resetQuiz, startQuiz, startQuizSet } = useQuiz();
   const { quizzes } = useData();
   const [showReview, setShowReview] = useState(false);
   const [confetti, setConfetti] = useState([]);
@@ -202,9 +203,21 @@ export default function ResultPage() {
             {/* Score Card */}
             <div className={`${styles.scoreCard} glass-card`}>
               {quizId && (
-                <div className={styles.nextSetTeaser}>
+                <div className={styles.nextSetTeaser} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '16px' }}>
                   <button className={styles.nextSetLink} onClick={handleContinueNextSet}>
                     🚀 Continue to {category?.topic || "Next Set"} ({selectedSetIndex ? `Set ${selectedSetIndex + 1}` : "Next"})
+                  </button>
+                  <button onClick={() => {
+                      const shareText = `I just scored ${score}/${total} (${percentage}%) in ${category?.topic || 'QuizWeb'}! Think you can beat me?`;
+                      const shareUrl = window.location.origin + `/category/${quizId}`;
+                      if (navigator.share) {
+                          navigator.share({ title: '🎯 My Quiz Score!', text: shareText, url: shareUrl }).catch(()=>{});
+                      } else { 
+                          navigator.clipboard.writeText(`${shareText} ${shareUrl}`); 
+                          toast.success("Score copied to clipboard!"); 
+                      }
+                  }} className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-widest hover:bg-indigo-100 transition-all ml-auto">
+                      <Share2 size={14} /> Share
                   </button>
                 </div>
               )}

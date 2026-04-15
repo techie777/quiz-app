@@ -2,15 +2,15 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSessionEngine } from '@/engine/SessionProvider';
+import socketService from '@/engine/lib/socket';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 
 /**
- * MISSION CONTROL V2.5 - Security Guard Update
- * Filtered self from active squadron list and fixed kick logic synchronization.
+ * MISSION CONTROL V3.0 - Desktop Evolution
+ * Expanded layout for high-resolution screens and improved readability.
  */
 
-// Web Audio API Synthesizer for Tactical UI Sounds
 const playAudioAlert = (type) => {
     try {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -18,120 +18,93 @@ const playAudioAlert = (type) => {
         const ctx = new AudioContext();
         const osc = ctx.createOscillator();
         const gainNode = ctx.createGain();
-        
         osc.connect(gainNode);
         gainNode.connect(ctx.destination);
-        
         if (type === 'new_request') {
-            osc.type = 'sine';
             osc.frequency.setValueAtTime(880, ctx.currentTime);
             osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.1); 
-            gainNode.gain.setValueAtTime(0, ctx.currentTime);
             gainNode.gain.linearRampToValueAtTime(0.1, ctx.currentTime + 0.05);
             gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.3);
-            osc.start(ctx.currentTime);
+            osc.start();
             osc.stop(ctx.currentTime + 0.3);
         } else if (type === 'approved') {
-            osc.type = 'sine';
             osc.frequency.setValueAtTime(523.25, ctx.currentTime);
             osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1);
-            gainNode.gain.setValueAtTime(0, ctx.currentTime);
             gainNode.gain.linearRampToValueAtTime(0.1, ctx.currentTime + 0.05);
-            // sustain slightly
-            gainNode.gain.setValueAtTime(0.1, ctx.currentTime + 0.1);
-            gainNode.gain.linearRampToValueAtTime(0.1, ctx.currentTime + 0.15);
             gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.3);
-            osc.start(ctx.currentTime);
+            osc.start();
             osc.stop(ctx.currentTime + 0.4);
         }
     } catch (e) {}
 };
 
 export default function SessionLobby({ sessionId, isHost, onApproveGuest, onDenyGuest }) {
-  const { participants, pendingParticipants, session, sendAction } = useSessionEngine();
+  const { participants, pendingParticipants, session, sendAction, syncSquad } = useSessionEngine();
   const [mounted, setMounted] = useState(false);
   const [inviteUrl, setInviteUrl] = useState('');
-  
-  // Mission Params
+  // Polling heartbeat for mission commander
+  useEffect(() => {
+    if (isHost && sessionId) {
+       console.log('📡 [HEARTBEAT] Initiating Squad Pulse...');
+       const interval = setInterval(() => {
+          syncSquad();
+       }, 10000); // 10s heartbeat
+       return () => clearInterval(interval);
+    }
+  }, [isHost, sessionId, syncSquad]);
   const [maxQuestions, setMaxQuestions] = useState(10);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [prevPendingCount, setPrevPendingCount] = useState(0);
+  const [timeLimit, setTimeLimit] = useState(0);
 
-  // Tactical Audio Alert for New Guests
   useEffect(() => {
+     console.log('📡 [LOBBY] Pending Count:', pendingParticipants.length, 'Prev:', prevPendingCount);
      if (isHost && pendingParticipants.length > prevPendingCount) {
-         playAudioAlert('new_request');
-         // Visual Notification
-         const newGuest = pendingParticipants[pendingParticipants.length - 1];
-         if (newGuest?.userName) {
-             toast(`💂 ${newGuest.userName} requesting clearance!`, {
-                 duration: 4000,
-                 icon: '📑',
-                 style: {
-                     borderRadius: '12px',
-                     background: '#1e293b',
-                     color: '#fff',
-                     fontSize: '12px',
-                     fontWeight: 'bold'
-                 }
-             });
-         }
+         // Toast for EACH new request
+         const newRequests = pendingParticipants.slice(prevPendingCount);
+         newRequests.forEach(guest => {
+             if (guest?.userName) {
+                 playAudioAlert('new_request');
+                 toast(`💂 ${guest.userName} requesting clearance!`, { icon: '📑' });
+             }
+         });
      }
      setPrevPendingCount(pendingParticipants.length);
-  }, [pendingParticipants.length, isHost, prevPendingCount]);
+  }, [pendingParticipants, isHost, prevPendingCount]);
 
   useEffect(() => {
     setMounted(true);
     if (typeof window !== 'undefined') {
       setInviteUrl(`${window.location.origin}/live/${sessionId}`);
     }
-
     const fetchCategories = async () => {
         try {
             const res = await axios.get('/api/categories?limit=100');
             setCategories(res.data.categories || []);
         } catch (err) {
-            console.error('Failed to load mission data:', err);
             toast.error('Mission Library desynced.');
         } finally {
             setLoading(false);
         }
     };
-    if (isHost && session?.status !== 'REJECTED') fetchCategories();
-  }, [sessionId, isHost, session?.status]);
-
-  useEffect(() => {
-      if (selectedCategory) {
-          const total = selectedCategory.questionCount || 10;
-          if (maxQuestions > total) setMaxQuestions(total);
-      }
-  }, [selectedCategory]);
+    if (isHost) fetchCategories();
+  }, [sessionId, isHost]);
 
   const filteredCategories = useMemo(() => {
     const list = categories.length > 0 ? categories : [];
-    if (!search) return list.slice(0, 12);
-    return list.filter(c => {
-        const title = (c?.topic || c?.name || '').toLowerCase();
-        const q = search.toLowerCase();
-        return title.includes(q);
-    }).slice(0, 12);
+    if (!search) return list.slice(0, 16);
+    return list.filter(c => (c?.topic || c?.name || '').toLowerCase().includes(search.toLowerCase())).slice(0, 16);
   }, [categories, search]);
 
-  // SQUADRON RECON: Filter out current user from the list to avoid self-kicking
   const squadMembers = useMemo(() => {
      return (participants || []).filter(p => p?.userId !== session?.userId);
   }, [participants, session?.userId]);
 
-  const [timeLimit, setTimeLimit] = useState(0); // 0 = unlimited
-
   const handleStart = () => {
-    if (!selectedCategory) {
-      toast.error('Commander, select a Mission Profile first!');
-      return;
-    }
+    if (!selectedCategory) return toast.error('Commander, select a Mission Profile!');
     sendAction('START_SESSION', { 
       status: 'ACTIVE', 
       type: 'QUIZ', 
@@ -144,187 +117,223 @@ export default function SessionLobby({ sessionId, isHost, onApproveGuest, onDeny
 
   if (!mounted) return null;
 
-  // GUEST STATUS VIEWS
+  // Pending Approval View
   if (!isHost && session?.status === 'PENDING') {
       return (
-          <div className="w-full max-w-4xl bg-white rounded-[3rem] shadow-2xl p-16 text-center space-y-10">
+          <div className="w-full max-w-6xl bg-white rounded-3xl shadow-2xl p-12 text-center space-y-8">
                <div className="relative inline-block">
-                  <div className="w-32 h-32 border-8 border-indigo-50 border-t-indigo-600 rounded-full animate-spin"></div>
-                  <div className="absolute inset-0 flex items-center justify-center text-5xl">💂</div>
+                  <div className="w-24 h-24 border-8 border-indigo-50 border-t-indigo-600 rounded-full animate-spin"></div>
+                  <div className="absolute inset-0 flex items-center justify-center text-4xl">💂</div>
                </div>
-               <div className="space-y-4">
-                  <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">Clearance Pending</h2>
-                  <p className="text-sm font-bold text-slate-500 max-w-sm mx-auto">
-                     Uplink secure. Standing by for **Commander {sessionId}** to authorize entry.
+               <div className="space-y-6">
+                  <h2 className="text-5xl font-black text-slate-900 uppercase tracking-tighter">Clearance Pending</h2>
+                  <p className="text-lg font-bold text-slate-500 max-w-lg mx-auto leading-relaxed">
+                     Uplink secure. Standing by for **Commander {sessionId}** to authorize your entry into the Squadron.
                   </p>
                </div>
           </div>
       );
   }
 
-  if (!isHost && (session?.status === 'REJECTED' || session?.status === 'KICKED')) {
-      return (
-          <div className="w-full max-w-4xl bg-white rounded-[3rem] shadow-2xl p-16 text-center space-y-8">
-               <div className="text-8xl">🚫</div>
-               <div className="space-y-4">
-                  <h2 className="text-3xl font-black text-red-600 uppercase tracking-tighter">Mission Terminated</h2>
-                  <p className="text-sm font-bold text-slate-500">You have been dismissed from the squadron or denied clearance.</p>
-               </div>
-               <button onClick={() => window.location.href = '/'} className="bg-slate-900 text-white px-8 py-3 rounded-xl font-bold">Return to Base</button>
-          </div>
-      );
-  }
-
   return (
-    <div className="w-full max-w-5xl bg-white rounded-3xl sm:rounded-[3.5rem] shadow-2xl overflow-hidden border border-slate-100 flex flex-col p-4 sm:p-14 space-y-8 sm:space-y-12">
+    <div className="w-full max-w-6xl bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 flex flex-col p-6 sm:p-8 space-y-6 sm:space-y-10 animate-in fade-in duration-500">
       
-      {/* HEADER */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-6 sm:gap-8 border-b-2 border-slate-50 pb-6 sm:pb-12">
+      {/* HEADER SECTION */}
+      <div className="flex flex-col md:flex-row items-center justify-between gap-6 border-b border-slate-50 pb-6">
         <div className="text-center md:text-left">
-           <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tighter">Mission Control</h2>
-           <p className="text-[11px] font-black text-slate-400 mt-2 tracking-widest uppercase">Room Protocol: <span className="text-indigo-600 font-black">{sessionId}</span></p>
-        </div>
-        {isHost && (
-            <div className="w-full max-w-sm space-y-2">
-                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Join Link</label>
-                <div className="flex bg-slate-100 p-2 rounded-2xl">
-                    <input readOnly value={inviteUrl} className="flex-1 bg-transparent px-4 text-[10px] font-bold text-slate-500" />
-                    <button onClick={() => { navigator.clipboard.writeText(inviteUrl); toast.success('Link Secured.'); }} className="bg-white text-indigo-600 font-black text-[10px] px-4 py-2 rounded-xl shadow-sm">Copy</button>
+           {isHost && (
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 px-3 py-1 bg-green-50 border border-green-100 rounded-full animate-pulse">
+                  <span className="w-2 h-2 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+                  <span className="text-[10px] font-black text-green-600 uppercase tracking-widest">Live Uplink Active</span>
                 </div>
+                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                   <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
+                   Uplink Synchronized
+                </div>
+              </div>
+            )}
+            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tighter flex items-center gap-4">
+               Mission Control
+               <button 
+                 onClick={() => { 
+                   socketService.getSocket()?.emit('FORCE_ROOM_SYNC', { sessionId });
+                   toast.success('Authoritative squadron re-sync initiated.'); 
+                 }} 
+                 className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 hover:rotate-180 transition-all duration-500"
+                 title="Authoritative Room Sync"
+               >
+                 <span className="text-xs">🔄</span>
+               </button>
+            </h2>
+            <p className="text-[10px] font-black text-slate-400 tracking-[0.3em] uppercase">Protocol Alpha: <span className="text-indigo-600 font-mono font-bold">{sessionId}</span></p>
+         </div>
+        {isHost && (
+            <div className="w-full max-w-lg space-y-4">
+                <div className="flex items-center justify-between pl-1">
+                    <label className="text-sm font-black uppercase text-slate-400 tracking-widest">Live quiz link</label>
+                    <button 
+                      onClick={() => { if(window.confirm('ABORT MISSION? This will terminate the live room for everyone.')) sendAction('TERMINATE', { status: 'LOBBY' }); }}
+                      className="text-[10px] font-black text-red-500 hover:text-red-700 transition-all uppercase tracking-widest border-b border-red-200"
+                    >
+                      Terminate Room 🛑
+                    </button>
+                </div>
+                { (isHost || useSessionEngine().sessionReady) ? (
+                    <div className="flex bg-slate-100 p-2 rounded-2xl border border-slate-200 animate-in slide-in-from-right-4 duration-500">
+                        <input readOnly value={inviteUrl} className="flex-1 bg-transparent px-6 text-sm font-bold text-slate-600 outline-none" />
+                        <button onClick={() => { navigator.clipboard.writeText(inviteUrl); toast.success('Link Secured.'); }} className="bg-white text-indigo-600 font-extrabold text-sm px-6 py-3 rounded-xl shadow-md hover:scale-105 transition-all">COPY LINK</button>
+                    </div>
+                ) : (
+                    <div className="flex items-center justify-center bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl py-4 animate-pulse">
+                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Generating live quiz link...</span>
+                    </div>
+                )}
             </div>
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-12">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
           
-          {/* SIDEBAR */}
-          <div className="lg:col-span-4 space-y-8 sm:space-y-10">
-              
-              {/* 1. SECURITY STATUS (Always visible for host) */}
-              {isHost && (
-                  <div className="p-4 sm:p-5 bg-indigo-50 border-2 border-indigo-100 rounded-2xl sm:rounded-3xl flex items-center justify-between">
-                     <div className="flex items-center gap-3">
-                        <span className="w-2 h-2 bg-green-500 rounded-full animate-ping"></span>
-                        <span className="text-[10px] font-black text-indigo-700 uppercase tracking-widest">Command Link Active</span>
-                     </div>
-                     <span className="text-[10px] font-black text-slate-400">{(pendingParticipants || []).length} Waiting</span>
+          {/* SQUADRON SIDEBAR */}
+          <div className="lg:col-span-4 space-y-8">
+              <div className="space-y-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-900">Active Squadron</label>
+                    <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-lg text-[8px] font-black">
+                        {(participants.length === 0 && isHost) ? 1 : participants.length} OPS
+                    </span>
                   </div>
-              )}
+                  
+                  <div className="space-y-4">
+                      {/* HOST CARD */}
+                      <div className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-indigo-600 shadow-md relative overflow-hidden group">
+                         <div className="absolute top-0 right-0 px-2 py-0.5 bg-indigo-600 text-white text-[7px] font-black uppercase tracking-tighter">Commander</div>
+                         <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white text-lg font-black">H</div>
+                         <div>
+                            <p className="text-sm font-black text-slate-900 uppercase">You</p>
+                            <p className="text-[8px] font-bold text-indigo-500 uppercase tracking-widest">Base Operator</p>
+                         </div>
+                      </div>
 
-              {/* 2. PENDING CLEARANCES (Host Only) */}
-              {isHost && (pendingParticipants || []).length > 0 && (
-                  <div className="space-y-6">
-                    <label className="text-[11px] font-black uppercase tracking-[0.3em] text-red-500">Pending Admission ({(pendingParticipants || []).length})</label>
-                    <div className="space-y-3">
-                        {(pendingParticipants || []).map(p => (
-                            <div key={p?.userId || Math.random()} className="flex items-center justify-between p-4 bg-red-50 rounded-2xl border-2 border-red-100">
-                                <span className="text-xs font-black text-slate-900 truncate max-w-[100px]">{p?.userName}</span>
-                                <div className="flex gap-2">
-                                    <button onClick={() => { playAudioAlert('approved'); onApproveGuest(p?.userId); }} className="w-8 h-8 bg-green-500 text-white rounded-lg font-black transition-all hover:scale-110">✓</button>
-                                    <button onClick={() => onDenyGuest(p?.userId)} className="w-8 h-8 bg-red-500 text-white rounded-lg font-black transition-all hover:scale-110">×</button>
+                      {/* GUEST CARDS */}
+                      {squadMembers.map(p => (
+                        <div key={p.userId} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group transition-all hover:border-indigo-400 hover:bg-white">
+                           <div className="flex items-center gap-3">
+                               <div className="w-9 h-9 bg-white border border-slate-200 rounded-lg flex items-center justify-center text-[10px] font-black uppercase">{p.userName?.[0]}</div>
+                               <span className="text-sm font-extrabold text-slate-700 truncate max-w-[150px]">{p.userName}</span>
+                           </div>
+                           {isHost && (
+                               <button onClick={() => sendAction('KICK_PARTICIPANT', { userId: p.userId })} className="text-red-400 hover:text-red-600 transition-all font-black text-[10px] px-2 opacity-0 group-hover:opacity-100 uppercase italic">Dismiss</button>
+                           )}
+                        </div>
+                      ))}
+
+                      {squadMembers.length === 0 && (
+                          <div className="py-20 text-center border-4 border-dashed border-slate-50 rounded-[3rem] opacity-40">
+                              <p className="text-sm font-black uppercase tracking-[0.5em] text-slate-300">Waiting for Squad...</p>
+                          </div>
+                      )}
+                  </div>
+              </div>
+
+              {/* PENDING APPROVALS (Host Only) */}
+              {isHost && pendingParticipants.length > 0 && (
+                <div className="bg-white rounded-3xl border border-indigo-200 shadow-lg p-8 space-y-4 animate-in slide-in-from-bottom-8 duration-700">
+                    <div className="flex items-center justify-between border-b pb-4">
+                        <div className="space-y-1">
+                            <h3 className="text-xl font-black text-slate-900 tracking-tighter">Mission Clearance Required</h3>
+                            <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Awaiting Authorization</p>
+                        </div>
+                        <span className="bg-indigo-600 text-white px-3 py-1 rounded-full text-[10px] font-black animate-pulse">
+                            {pendingParticipants.length} NEW
+                        </span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3">
+                        {pendingParticipants.map((guest) => (
+                            <div key={guest.userId} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group transition-all hover:border-indigo-200">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 bg-white rounded-xl shadow-sm border border-slate-200 flex items-center justify-center font-black text-slate-400 group-hover:text-indigo-600 group-hover:scale-110 transition-all uppercase">
+                                       {guest.userName.substring(0, 1)}
+                                    </div>
+                                    <div className="space-y-0.5">
+                                        <div className="text-sm font-black text-slate-900 uppercase tracking-tight">{guest.userName}</div>
+                                        <div className="text-[10px] font-bold text-slate-400">UNAUTHORIZED GUEST</div>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button onClick={() => onDenyGuest(guest.userId)} className="p-3 text-red-400 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all">
+                                        ×
+                                    </button>
+                                    <button onClick={() => { playAudioAlert('approved'); onApproveGuest(guest.userId); }} className="p-3 bg-white text-green-500 hover:text-green-700 hover:bg-green-50 border border-green-100 rounded-xl shadow-sm transition-all group-hover:scale-110">
+                                        ✓
+                                    </button>
                                 </div>
                             </div>
                         ))}
                     </div>
                   </div>
               )}
-
-              {/* ACTIVE */}
-              <div className="space-y-4 sm:space-y-6">
-                  <label className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-900">Active Squadron</label>
-                  <div className="space-y-3">
-                      <div className="flex items-center gap-4 p-4 sm:p-5 bg-white rounded-2xl sm:rounded-3xl border-2 border-indigo-600 shadow-xl shadow-indigo-50">
-                         <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black shadow-sm">H</div>
-                         <div><p className="text-xs font-black text-slate-900 uppercase">Commander (You)</p></div>
-                      </div>
-
-                      {squadMembers.map(p => (
-                        <div key={p.userId} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group transition-all hover:border-indigo-400">
-                           <div className="flex items-center gap-3">
-                               <div className="w-8 h-8 bg-white border border-slate-200 rounded-lg flex items-center justify-center text-[10px] font-black uppercase">{p.userName?.[0]}</div>
-                               <span className="text-xs font-bold text-slate-600 truncate max-w-[120px]">{p.userName}</span>
-                           </div>
-                           {isHost && (
-                               <button 
-                                 onClick={() => sendAction('KICK_PARTICIPANT', { userId: p.userId })}
-                                 className="text-red-400 hover:text-red-600 transition-all font-black text-[10px] px-2 opacity-0 group-hover:opacity-100 uppercase"
-                               >Dismiss</button>
-                           )}
-                        </div>
-                      ))}
-
-                      {squadMembers.length === 0 && (
-                          <div className="py-10 text-center border-2 border-dashed border-slate-100 rounded-3xl opacity-30 grayscale">
-                              <p className="text-[10px] font-black uppercase tracking-widest">Waiting for squad...</p>
-                          </div>
-                      )}
-                  </div>
-              </div>
           </div>
 
-          {/* MAIN */}
-          <div className="lg:col-span-8 flex flex-col h-full bg-slate-50/30 rounded-3xl sm:rounded-[3rem] border border-slate-100 p-5 sm:p-8 md:p-12">
+          {/* MISSION SELECTION MAIN HUB */}
+          <div className="lg:col-span-8 flex flex-col h-full bg-slate-50/50 rounded-3xl border border-slate-100 p-6 sm:p-8 relative overflow-hidden">
             {isHost ? (
-               <div className="flex flex-col h-full space-y-6 sm:space-y-10">
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6 px-1">
-                      <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tighter">Tactical Library</h3>
-                      <input 
-                        placeholder="SEARCH..." 
-                        value={search} onChange={(e) => setSearch(e.target.value)}
-                        className="w-full sm:max-w-[240px] bg-white border-2 border-slate-100 rounded-2xl px-5 py-3 text-[10px] font-black uppercase tracking-widest focus:border-indigo-600 outline-none" 
-                      />
+               <div className="flex flex-col h-full space-y-8">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+                      <h3 className="text-2xl font-black text-slate-900 tracking-tighter">Quiz topics</h3>
+                      <div className="relative w-full sm:max-w-xs">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 opacity-30 text-xs">🔍</span>
+                        <input 
+                            placeholder="Search quiz topic" 
+                            value={search} onChange={(e) => setSearch(e.target.value)}
+                            className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2 text-[10px] font-black uppercase tracking-widest focus:border-indigo-600 outline-none shadow-sm transition-all" 
+                        />
+                      </div>
                   </div>
 
-                  <div className="flex-1 min-h-[250px] max-h-[300px] overflow-y-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pr-2 custom-scrollbar">
-                        {loading ? <div className="p-10 text-center col-span-full text-slate-400 font-bold uppercase animate-pulse">Scanning Protocols...</div> : 
+                  <div className="flex-1 min-h-[500px] max-h-[700px] overflow-y-auto grid grid-cols-1 lg:grid-cols-2 gap-6 pr-4 custom-scrollbar">
+                        {loading ? <div className="p-20 text-center col-span-full text-slate-400 font-extrabold uppercase animate-pulse tracking-widest">Loading Quiz Data...</div> : 
                           filteredCategories.map(c => (
-                            <button key={c.id} onClick={() => setSelectedCategory(c)} className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${selectedCategory?.id === c.id ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg scale-[0.98]' : 'bg-white border-slate-100 text-slate-900 hover:border-indigo-400'}`}>
-                                <div className={`w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center text-xl ${selectedCategory?.id === c.id ? 'bg-indigo-500' : 'bg-slate-50'}`}>{c.emoji || '🎒'}</div>
-                                <div className="text-left truncate">
-                                    <p className="text-[10px] font-black uppercase tracking-tight truncate">{c.topic || c.name}</p>
-                                    <p className={`text-[8px] font-bold mt-0.5 opacity-70`}>{c.questionCount} Qs</p>
+                            <button key={c.id} onClick={() => setSelectedCategory(c)} className={`flex items-center gap-6 p-4 rounded-3xl border-4 transition-all group ${selectedCategory?.id === c.id ? 'bg-indigo-600 border-indigo-700 text-white shadow-2xl scale-105' : 'bg-white border-white text-slate-900 hover:border-indigo-200'}`}>
+                                <div className={`w-24 h-24 rounded-2xl flex-shrink-0 flex items-center justify-center text-5xl shadow-md group-hover:rotate-6 transition-transform ${selectedCategory?.id === c.id ? 'bg-indigo-500' : 'bg-slate-50'}`}>{c.emoji || '🎒'}</div>
+                                <div className="text-left space-y-1">
+                                    <p className="text-sm font-black uppercase tracking-tight">{c.topic || c.name}</p>
+                                    <p className="text-[11px] font-bold opacity-60 tracking-widest">{c.questionCount} ASSESSMENTS</p>
                                 </div>
                             </button>
                         ))}
                   </div>
 
-                  <div className="space-y-4">
+                  {/* ACTION BAR */}
+                  <div className="space-y-8 mt-auto">
                       {selectedCategory && (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-in fade-in slide-in-from-bottom-2">
-                              <div className="flex items-center justify-between p-3 bg-indigo-50 rounded-2xl border border-indigo-100">
-                                  <div className="flex flex-col text-left">
-                                      <span className="text-[9px] font-black uppercase tracking-widest text-indigo-900">Objectives</span>
-                                      <span className="text-[8px] font-bold text-indigo-500 uppercase">Max: {selectedCategory.questionCount || 0}</span>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-4">
+                              <div className="flex items-center justify-between p-4 bg-indigo-50 rounded-2xl border-2 border-indigo-100">
+                                  <div className="space-y-1">
+                                      <span className="text-[11px] font-black uppercase tracking-widest text-indigo-900 block">Assessment Density</span>
+                                      <span className="text-xs font-bold text-indigo-400 uppercase">Available Units: {selectedCategory.questionCount}</span>
                                   </div>
-                                  <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl shadow-sm border border-indigo-50">
-                                      <button onClick={() => setMaxQuestions(Math.max(1, maxQuestions - 1))} className="w-6 h-6 rounded-lg bg-slate-50 text-slate-600 hover:bg-slate-200 font-black">-</button>
-                                      <input 
-                                         value={maxQuestions} 
-                                         onChange={(e) => {
-                                             let val = parseInt(e.target.value);
-                                             if (isNaN(val)) val = 1;
-                                             setMaxQuestions(Math.min(selectedCategory.questionCount || 10, Math.max(1, val)));
-                                         }}
-                                         className="text-xs font-black w-6 text-center text-slate-800 bg-transparent outline-none"
-                                      />
-                                      <button onClick={() => setMaxQuestions(Math.min(selectedCategory.questionCount || 10, maxQuestions + 1))} className="w-6 h-6 rounded-lg bg-slate-50 text-slate-600 hover:bg-slate-200 font-black">+</button>
+                                  <div className="flex items-center gap-4 bg-white p-2 rounded-xl shadow-inner border border-indigo-100">
+                                      <button onClick={() => setMaxQuestions(prev => Math.max(1, prev - 1))} className="w-8 h-8 rounded-lg bg-slate-50 text-slate-700 hover:bg-slate-200 font-black text-lg">-</button>
+                                      <span className="text-lg font-black w-8 text-center text-slate-900">{maxQuestions}</span>
+                                      <button onClick={() => setMaxQuestions(prev => Math.min(selectedCategory.questionCount || 100, prev + 1))} className="w-8 h-8 rounded-lg bg-slate-50 text-slate-700 hover:bg-slate-200 font-black text-lg">+</button>
                                   </div>
                               </div>
-
-                              <div className="flex items-center justify-between p-3 bg-slate-900 rounded-2xl border border-slate-700">
-                                  <div className="flex flex-col text-left">
-                                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-300">Tactical Timer</span>
-                                      <span className="text-[8px] font-bold text-slate-500 uppercase">{timeLimit === 0 ? 'Off' : `${timeLimit}s/Q`}</span>
+                                <div className="flex items-center justify-between p-4 bg-slate-900 rounded-2xl border-2 border-slate-800">
+                                  <div className="space-y-1">
+                                      <span className="text-[11px] font-black uppercase tracking-widest text-slate-400 block">Tactical Timer</span>
+                                      <span className="text-xs font-bold text-slate-600 uppercase">Per Interaction</span>
                                   </div>
                                   <select 
                                     value={timeLimit} 
                                     onChange={(e) => setTimeLimit(parseInt(e.target.value))}
-                                    className="bg-slate-800 text-white text-[9px] font-black px-2 py-1.5 rounded-xl outline-none border border-slate-700 cursor-pointer appearance-none text-center min-w-[70px]"
+                                    className="bg-slate-800 text-white text-xs font-black px-4 py-3 rounded-xl outline-none border border-slate-700 cursor-pointer appearance-none text-center min-w-[100px] hover:bg-slate-750"
                                   >
                                       <option value={0}>OFF</option>
-                                      <option value={15}>15s</option>
-                                      <option value={30}>30s</option>
-                                      <option value={60}>60s</option>
+                                      <option value={15}>15 SEC</option>
+                                      <option value={30}>30 SEC</option>
+                                      <option value={60}>60 SEC</option>
                                   </select>
                               </div>
                           </div>
@@ -332,23 +341,29 @@ export default function SessionLobby({ sessionId, isHost, onApproveGuest, onDeny
 
                       <button 
                         onClick={handleStart} disabled={!selectedCategory}
-                        className={`w-full py-4 rounded-2xl text-base font-black tracking-widest transition-all ${selectedCategory ? 'bg-slate-900 text-white hover:bg-black shadow-lg' : 'bg-slate-100 text-slate-300'}`}
-                      >READY FOR LAUNCH 🚀</button>
+                        className={`w-full py-5 rounded-2xl text-lg font-black tracking-[0.4em] transition-all transform active:scale-95 ${selectedCategory ? 'bg-slate-900 text-white hover:bg-black shadow-[0_20px_40px_rgba(0,0,0,0.3)]' : 'bg-slate-100 text-slate-300'}`}
+                      >INITIATE MISSION 🚀</button>
                   </div>
                </div>
             ) : (
-                <div className="flex flex-col items-center justify-center h-full text-center space-y-8 animate-pulse">
-                    <span className="text-6xl">📡</span>
-                    <div>
-                        <h3 className="text-2xl font-black text-slate-900 uppercase">Uplink Confirmed</h3>
-                        <p className="text-[11px] font-bold text-slate-500 mt-3 tracking-[0.2em] uppercase leading-relaxed">Standing by for mission selection...</p>
+                <div className="flex flex-col items-center justify-center h-full text-center space-y-12 py-20">
+                    <div className="relative">
+                        <div className="w-48 h-48 bg-indigo-50 rounded-full animate-pulse absolute -inset-4 blur-2xl opacity-50"></div>
+                        <span className="text-9xl relative">📡</span>
+                    </div>
+                    <div className="space-y-6">
+                        <h3 className="text-5xl font-black text-slate-900 uppercase tracking-tighter">Uplink Confirmed</h3>
+                        <p className="text-base font-bold text-slate-500 max-w-md mx-auto leading-relaxed tracking-widest uppercase">
+                            Secure command link established. Standing by for **Commander {sessionId}** to select mission parameters...
+                        </p>
+                    </div>
+                    <div className="flex gap-4">
+                        {[1, 2, 3].map(i => <div key={i} className={`w-3 h-3 rounded-full bg-indigo-600 animate-bounce delay-${i*150}`}></div>)}
                     </div>
                 </div>
             )}
           </div>
-
       </div>
-
     </div>
   );
 }
