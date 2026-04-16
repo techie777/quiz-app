@@ -138,6 +138,25 @@ export async function GET(request) {
 
     console.log(`[API] Fetching ${paginatedCategories.length} categories (total: ${total})...`);
     
+    // Fetch difficulty breakdowns for the paginated set
+    const categoryIds = paginatedCategories.map(c => c.id);
+    const difficultyGroups = await prisma.question.groupBy({
+      by: ['categoryId', 'difficulty'],
+      where: { categoryId: { in: categoryIds } },
+      _count: true
+    });
+
+    const difficultyMap = {};
+    difficultyGroups.forEach(group => {
+      if (!difficultyMap[group.categoryId]) {
+        difficultyMap[group.categoryId] = { easy: 0, medium: 0, hard: 0 };
+      }
+      const diff = group.difficulty?.toLowerCase() || 'easy';
+      if (difficultyMap[group.categoryId].hasOwnProperty(diff)) {
+        difficultyMap[group.categoryId][diff] = group._count;
+      }
+    });
+
     // Explicitly map all fields to ensure they are returned correctly
     const result = paginatedCategories.map((cat) => ({
       id: cat.id,
@@ -158,6 +177,7 @@ export async function GET(request) {
       createdAt: cat.createdAt,
       updatedAt: cat.updatedAt,
       questionCount: cat._count?.questions || 0,
+      difficultyStats: difficultyMap[cat.id] || { easy: 0, medium: 0, hard: 0 },
       questions: includeQuestions ? (cat.questions || []).map(q => ({
         ...q,
         options: safeJsonParse(q.options) || []

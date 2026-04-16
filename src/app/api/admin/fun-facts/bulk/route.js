@@ -84,8 +84,21 @@ export async function POST(request) {
     if (factsToCreate.length > 0) {
       for (const factData of factsToCreate) {
         try {
-          await prisma.funFact.create({ data: factData });
-          importedCount++;
+          // Check for existing fact with the same description in this category
+          const existing = await prisma.funFact.findFirst({
+            where: {
+              categoryId: factData.categoryId,
+              OR: [
+                { description: factData.description },
+                { descriptionHi: factData.descriptionHi }
+              ]
+            }
+          });
+
+          if (!existing) {
+            await prisma.funFact.create({ data: factData });
+            importedCount++;
+          }
         } catch (err) {
           console.error("Error creating individual fact:", err);
           // Continue with next fact

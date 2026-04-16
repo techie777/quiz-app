@@ -12,7 +12,7 @@ export default function FunFactsHub() {
   
   // Navigation & Preferences
   const [activeTab, setActiveTab] = useState("all"); // all, trending, daily, favorites
-  const [globalLang, setGlobalLang] = useState("EN");
+  const [globalLang, setGlobalLang] = useState("HI");
   const [readMode, setReadMode] = useState("image"); // image, text
   const [searchQuery, setSearchQuery] = useState("");
   const [searchInput, setSearchInput] = useState("");
@@ -23,10 +23,16 @@ export default function FunFactsHub() {
   const [loadingFacts, setLoadingFacts] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [selectedCats, setSelectedCats] = useState([]);
+  const [requestSeed, setRequestSeed] = useState(Date.now().toString());
+
+  const refreshSeed = () => {
+    setRequestSeed(Date.now().toString());
+    setPage(1); setFacts([]); setHasMore(true);
+  };
 
   // Initialization
   useEffect(() => {
-    const savedLang = localStorage.getItem("factLang") || "EN";
+    const savedLang = localStorage.getItem("factLang") || "HI";
     const savedMode = localStorage.getItem("factReadMode") || "image";
     setGlobalLang(savedLang);
     setReadMode(savedMode);
@@ -54,9 +60,8 @@ export default function FunFactsHub() {
   };
 
   const handleTabSwitch = (tab) => {
-    if (activeTab === tab && tab === 'random') {
-       setPage(1); setFacts([]); setHasMore(true);
-       fetchFacts(1, true);
+    if (activeTab === tab) {
+       refreshSeed();
     } else {
        setActiveTab(tab);
        setPage(1); setFacts([]); setHasMore(true);
@@ -74,7 +79,7 @@ export default function FunFactsHub() {
     setLoadingFacts(true);
     
     try {
-      let url = `/api/fun-facts/list?page=${pageNum}&limit=12&tab=${activeTab}`;
+      let url = `/api/fun-facts/list?page=${pageNum}&limit=12&tab=${activeTab}&seed=${requestSeed}`;
       if (selectedCats.length > 0) url += `&categories=${selectedCats.join(",")}`;
       if (searchQuery) url += `&q=${encodeURIComponent(searchQuery)}`;
       
@@ -93,7 +98,7 @@ export default function FunFactsHub() {
   // Trigger fetch on dependencies change
   useEffect(() => {
     fetchFacts(page, page === 1);
-  }, [activeTab, selectedCats, searchQuery, page]);
+  }, [activeTab, selectedCats, searchQuery, page, requestSeed]);
 
   const observer = useRef();
   const lastFactElementRef = useCallback(node => {
@@ -109,14 +114,7 @@ export default function FunFactsHub() {
   return (
     <div className={styles.page}>
       <div className={styles.container}>
-        <div className={styles.header}>
-          <h1 className={styles.title}>
-            <Sparkles className={styles.sparkleIcon} /> Factify
-          </h1>
-          <p className={styles.description}>
-            Expand your mind with bite-sized, mind-blowing facts across diverse categories.
-          </p>
-        </div>
+        {/* Hero section removed as per request */}
 
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8 bg-white p-4 rounded-2xl shadow-sm border border-indigo-50">
           <div className="flex gap-2 p-1 bg-indigo-50/50 border border-indigo-100 rounded-xl overflow-x-auto w-full md:w-auto">
@@ -172,61 +170,18 @@ export default function FunFactsHub() {
           </div>
 
           <div className={styles.wallGrid}>
-            {facts.map((fact, index) => {
-              const isLast = facts.length === index + 1;
-              const displayText = globalLang === "HI" && fact.descriptionHi ? fact.descriptionHi : fact.description;
-              const hasImg = fact.image && readMode === "image";
-              return (
-                <Link href={`/fun-facts/read/${fact.id}`} key={fact.id + index}>
-                  <div 
-                    ref={isLast ? lastFactElementRef : null} 
-                    className={`${styles.wallFactCard} hover:-translate-y-1 transition-transform cursor-pointer relative`}
-                  >
-                    {hasImg && fact.image.startsWith('/uploads') ? (
-                        <div className="relative w-full h-full min-h-[300px]">
-                           <img src={fact.image} alt="Fun Fact" className="absolute inset-0 w-full h-full object-cover" />
-                           <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-4">
-                              <span className="text-sm font-bold uppercase text-amber-400">• {fact.category?.name}</span>
-                           </div>
-                        </div>
-                    ) : (
-                        <div 
-                          className={styles.wallFactText}
-                          style={hasImg ? { 
-                            backgroundImage: `linear-gradient(to top, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.6) 100%), url('${fact.image}')`, 
-                            backgroundSize: 'cover', 
-                            backgroundPosition: 'center', 
-                            color: 'white', 
-                            minHeight: '350px', 
-                            display: 'flex', 
-                            flexDirection: 'column', 
-                            justifyContent: 'flex-end', 
-                            textShadow: '0 2px 4px rgba(0,0,0,0.8)' 
-                          } : {
-                            background: '#f8fafc',
-                            minHeight: '200px',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            justifyContent: 'space-between',
-                            color: '#1e293b'
-                          }}
-                        >
-                          <div className={`font-bold ${hasImg ? 'text-lg md:text-xl' : 'text-lg'}`}>
-                            {highlightFactText(displayText, hasImg ? true : false)}
-                          </div>
-                          <div className={`mt-6 text-xs font-bold uppercase flex items-center justify-between gap-2 ${hasImg ? 'text-amber-400' : 'text-indigo-500'}`}>
-                             <div className="flex items-center gap-1"><span>•</span> {fact.category?.name}</div>
-                             <div className="flex gap-3 mt-2 text-gray-400 text-[10px]">
-                               <span>{(fact._count?.likes || 0) + (fact.hasLiked ? 1 : 0)} ❤️</span>
-                               <span>{fact._count?.comments || 0} 💬</span>
-                             </div>
-                          </div>
-                        </div>
-                    )}
-                  </div>
-                </Link>
-              );
-            })}
+            {facts.map((fact, index) => (
+              <WallFactCard 
+                key={fact.id + index}
+                fact={fact}
+                index={index}
+                isLast={facts.length === index + 1}
+                lastFactElementRef={lastFactElementRef}
+                globalLang={globalLang}
+                readMode={readMode}
+                highlightFactText={highlightFactText}
+              />
+            ))}
           </div>
 
              {loadingFacts && (
@@ -240,9 +195,113 @@ export default function FunFactsHub() {
                  No facts found for the selected categories.
                </div>
              )}
-          </div>
-           {/* Hub view removed to enforce unified social wall approach as requested. */}
+        </div>
       </div>
+    </div>
+  );
+}
+
+function WallFactCard({ fact, index, isLast, lastFactElementRef, globalLang, readMode, highlightFactText }) {
+  const [isHidden, setIsHidden] = useState(false);
+  const [localLang, setLocalLang] = useState(globalLang);
+  
+  // Sync with global choice but allow local override
+  useEffect(() => {
+    setLocalLang(globalLang);
+  }, [globalLang]);
+
+  const displayText = localLang === "HI" && fact.descriptionHi ? fact.descriptionHi : fact.description;
+  const effectiveImg = fact.image || fact.category?.image;
+  const hasImg = effectiveImg && readMode === "image";
+
+  return (
+    <div className="relative group">
+       <Link href={`/fun-facts/read/${fact.id}`}>
+          <div 
+            ref={isLast ? lastFactElementRef : null} 
+            className={`${styles.wallFactCard} hover:-translate-y-1 transition-all cursor-pointer relative border border-white/10 overflow-hidden ring-1 ring-white/5`}
+            style={{ borderRadius: '1.5rem' }}
+          >
+            <div 
+              className={styles.wallFactText}
+              style={hasImg ? { 
+                backgroundImage: isHidden ? `url('${effectiveImg}')` : `linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.5) 50%, rgba(0, 0, 0, 0.2) 100%), url('${effectiveImg}')`, 
+                backgroundSize: 'cover', 
+                backgroundPosition: 'center', 
+                color: 'white', 
+                minHeight: '350px', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                justifyContent: 'flex-end', 
+                textShadow: isHidden ? 'none' : '0 1px 1px #000, 0 4px 12px rgba(0,0,0,0.8)'
+              } : {
+                background: 'linear-gradient(135deg, #1e293b 0%, #020617 100%)',
+                minHeight: '200px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                color: '#f8fafc'
+              }}
+            >
+              <div className={`${styles.quoteWrapper} ${hasImg && !isHidden ? styles.glassShield : ''} transition-all duration-500 ${isHidden ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
+                <span className={styles.quoteMark}>“</span>
+                <div className={`${styles.bigFactText} ${hasImg ? 'text-lg md:text-xl' : ''}`}>
+                  {highlightFactText(displayText, hasImg ? true : false)}
+                </div>
+                <span className={styles.quoteMarkEnd}>”</span>
+              </div>
+              
+              <div className={`mt-6 text-xs font-bold uppercase flex items-center justify-between gap-2 transition-opacity duration-500 ${hasImg ? 'text-amber-400' : 'text-indigo-500'} ${isHidden ? 'opacity-0' : 'opacity-100'}`}>
+                 <div className="flex items-center gap-1"><span>•</span> {fact.category?.name}</div>
+                 <div className={styles.factStats + (hasImg ? ' text-white' : '')}>
+                   <span className={styles.statItem}>
+                     <span className={styles.statEmoji}>❤️</span>
+                     {(fact._count?.likes || 0) + (fact.hasLiked ? 1 : 0)}
+                   </span>
+                   <span className={styles.statItem}>
+                     <span className={styles.statEmoji}>💬</span>
+                     {fact._count?.comments || 0}
+                   </span>
+                 </div>
+              </div>
+            </div>
+          </div>
+       </Link>
+
+       {/* Top Right Action Group */}
+       {hasImg && (
+         <div className="absolute top-4 right-4 z-20 flex gap-2">
+           {/* Language Toggle */}
+           <button 
+             onClick={(e) => {
+               e.preventDefault();
+               e.stopPropagation();
+               setLocalLang(localLang === "HI" ? "EN" : "HI");
+             }}
+             className="bg-black/40 hover:bg-black/60 backdrop-blur-md text-[10px] font-black text-white px-2.5 py-1.5 rounded-lg transition-all border border-white/10 shadow-lg tracking-widest"
+             title="Toggle Local Language"
+           >
+             {localLang === "HI" ? "HI" : "EN"}
+           </button>
+
+           {/* Eye Toggle */}
+           <button 
+             onClick={(e) => {
+               e.preventDefault();
+               e.stopPropagation();
+               setIsHidden(!isHidden);
+             }}
+             className="bg-black/40 hover:bg-black/60 backdrop-blur-md text-white/80 hover:text-white p-2 rounded-full transition-all border border-white/10 shadow-lg"
+             title={isHidden ? "Show Text" : "Hide Text"}
+           >
+             {isHidden ? (
+               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+             ) : (
+               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9.88 9.88 1.39 1.39"/><path d="M2 12s3-7 10-7a6.38 6.38 0 0 1 5.35 2.81"/><path d="M10.46 10.46a2.19 2.19 0 0 0 3.08 3.08"/><path d="M22 12s-3 7-10 7a6.83 6.83 0 0 1-5.65-3.04"/><path d="m22.61 22.61-8.72-8.72"/></svg>
+             )}
+           </button>
+         </div>
+       )}
     </div>
   );
 }

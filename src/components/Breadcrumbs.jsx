@@ -60,7 +60,7 @@ const Breadcrumbs = () => {
         }
       } else {
         // Fallback or while loading
-        label = 'Loading...'; 
+        label = ''; // Leave empty to trigger skeleton in render
       }
     } else if (segment === 'govt-jobs-alerts') {
       label = 'Job Alerts';
@@ -106,7 +106,7 @@ const Breadcrumbs = () => {
               <span className={styles.separator}>&gt;</span>
               {isLast ? (
                 <span className={styles.breadcrumbCurrent} aria-current="page">
-                  {breadcrumb.label}
+                  {breadcrumb.label || <div className="w-20 h-4 bg-white/10 animate-pulse rounded" />}
                 </span>
               ) : (
                 <Link href={breadcrumb.href} className={styles.breadcrumbLink}>

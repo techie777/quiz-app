@@ -28,6 +28,7 @@ export default function AdminFunFactsPage() {
   
    // Bulk File
   const [file, setFile] = useState(null);
+  const [autoFetchDepth, setAutoFetchDepth] = useState(0);
 
   // Selection & Duplicate States
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -157,9 +158,20 @@ export default function AdminFunFactsPage() {
       });
       if (res.ok) {
         toast.success(editingId ? "Fact updated!" : "Fact added!");
-        setFactDesc(""); setFactDescHi(""); setFactImage(""); setFactCatId(""); setIsDaily(false); setEditingId(null);
+        // Reset content fields but RETAIN category for rapid adding
+        setFactDesc(""); 
+        setFactDescHi(""); 
+        setFactImage(""); 
+        setIsDaily(false); 
+        
+        // If we were editing, we exit edit mode. If adding, we stay on 'single' tab.
+        if (editingId) {
+          setEditingId(null);
+          setFactCatId(""); // Clear category only after editing specific fact
+          setActiveTab("manage");
+        }
+        
         fetchFacts();
-        setActiveTab("manage");
       } else throw new Error(await res.text());
     } catch (err) { toast.error(err.message || "Failed to save fact"); }
   };
@@ -202,17 +214,27 @@ export default function AdminFunFactsPage() {
   const handleManualUpload = async (e) => {
     const ufile = e.target.files?.[0];
     if (!ufile) return;
-    toast.loading("Uploading raw image...", { id: "uploadraw" });
+
+    if (ufile.size > 5 * 1024 * 1024) {
+      return toast.error("File is too large (Max 5MB)");
+    }
+
+    toast.loading("Uploading image...", { id: "uploadraw" });
     const formData = new FormData();
-    formData.append("file", ufile, `raw-fact-${Date.now()}.png`);
+    formData.append("file", ufile);
     try {
       const res = await fetch("/api/upload/image", { method: "POST", body: formData });
       const data = await res.json();
-      if (data.url) {
+      if (res.ok && data.url) {
         setFactImage(data.url);
         toast.success("Image uploaded successfully!", { id: "uploadraw" });
-      } else throw new Error(data.error);
-    } catch(err) { toast.error("Upload failed", { id: "uploadraw" }); }
+      } else {
+        throw new Error(data.error || "Upload failed");
+      }
+    } catch(err) { 
+        console.error(err);
+        toast.error(err.message || "Upload failed", { id: "uploadraw" }); 
+    }
   };
 
   const handleGenerateImage = (e) => {
@@ -245,61 +267,19 @@ export default function AdminFunFactsPage() {
         const h = img.height * scale;
         ctx.drawImage(img, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
         
-        // Solid Gradient
+        // Light Gradient for better brightness
         const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
         gradient.addColorStop(0, "rgba(0,0,0,0)");
-        gradient.addColorStop(0.5, "rgba(0,0,0,0.5)");
-        gradient.addColorStop(1, "rgba(0,0,0,0.95)");
+        gradient.addColorStop(0.7, "rgba(0,0,0,0.3)");
+        gradient.addColorStop(1, "rgba(0,0,0,0.6)");
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Watermark/Brand top
-        ctx.fillStyle = "#fbbf24";
-        ctx.font = "bold 32px sans-serif";
-        ctx.textAlign = "center";
-        
-        // Text settings
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 56px system-ui, -apple-system, sans-serif";
-        ctx.textAlign = "center";
-        
-        const words = textToUse.split(" ");
-        let lines = [];
-        let curLine = "";
-        const maxW = canvas.width - 120;
-        
-        for(let i=0; i<words.length; i++) {
-          let test = curLine + words[i] + " ";
-          let m = ctx.measureText(test);
-          if (m.width > maxW && i > 0) {
-            lines.push(curLine.trim());
-            curLine = words[i] + " ";
-          } else {
-             curLine = test;
-          }
-        }
-        lines.push(curLine.trim());
-
-        const lh = 70;
-        const th = lines.length * lh;
-        const startY = (canvas.height / 2) - (th / 2) + 120; // pushed down a bit
-
+        /* 
+        // Text overlay disabled to allow dynamic language toggling on the frontend
         ctx.shadowColor = "rgba(0, 0, 0, 0.8)";
-        ctx.shadowBlur = 10;
-        ctx.shadowOffsetX = 2;
-        ctx.shadowOffsetY = 2;
-
-        lines.forEach((l, i) => {
-          ctx.fillText(l, canvas.width / 2, startY + (i * lh));
-        });
-
-        // Add extra text
-        ctx.shadowColor = "transparent";
-        ctx.shadowBlur = 0;
-        ctx.font = "bold 40px sans-serif";
-        ctx.fillStyle = "#fbbf24"; // yellow-400
-        const bottomText = "Factify Hub";
-        ctx.fillText(bottomText, canvas.width / 2, canvas.height - 60);
+        ...
+        */
 
         canvas.toBlob(async (blob) => {
           if (!blob) return toast.error("Failed to make blob", { id: "genimg" });
@@ -333,6 +313,8 @@ export default function AdminFunFactsPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [totalFacts, setTotalFacts] = useState(0);
   const [completedFacts, setCompletedFacts] = useState(0);
+
+  const [editingCatId, setEditingCatId] = useState(null);
 
   const handleSmartBulkUpload = async (e) => {
     e.preventDefault();
@@ -408,6 +390,74 @@ export default function AdminFunFactsPage() {
       toast.error("Failed to read file");
       setIsUploading(false);
     }
+  };
+
+  const handleSaveCategory = async (e) => {
+    e.preventDefault();
+    try {
+      const slug = catName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      const url = "/api/admin/fun-facts/categories";
+      const method = editingCatId ? "PATCH" : "POST";
+      const body = { id: editingCatId, name: catName, nameHi: catNameHi, slug, image: catImage, sortOrder: 0 };
+      
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      if (res.ok) {
+        toast.success(editingCatId ? "Category updated!" : "Category created!");
+        setCatName(""); setCatNameHi(""); setCatImage(""); setEditingCatId(null);
+        fetchCategories();
+      } else throw new Error(await res.text());
+    } catch (err) { toast.error("Failed to save category"); }
+  };
+
+  const handleEditCategory = (c) => {
+    setEditingCatId(c.id);
+    setCatName(c.name);
+    setCatNameHi(c.nameHi || "");
+    setCatImage(c.image || "");
+  };
+
+  const handleCatImageUpload = async (e) => {
+    const ufile = e.target.files?.[0];
+    if (!ufile) return;
+    
+    // Validate locally first
+    if (ufile.size > 5 * 1024 * 1024) {
+      return toast.error("File is too large (Max 5MB)");
+    }
+
+    toast.loading("Uploading category image...", { id: "catimg" });
+    const formData = new FormData();
+    formData.append("file", ufile); // Let the browser handle the filename/blob correctly
+
+    try {
+      const res = await fetch("/api/upload/image", { method: "POST", body: formData });
+      const data = await res.json();
+      
+      if (res.ok && data.url) {
+        setCatImage(data.url);
+        toast.success("Category image uploaded!", { id: "catimg" });
+      } else {
+        throw new Error(data.error || "Upload failed");
+      }
+    } catch(err) { 
+      console.error(err);
+      toast.error(err.message || "Upload failed", { id: "catimg" }); 
+    }
+  };
+
+  const handleDeleteCategory = async (id, name) => {
+    if (!confirm(`Are you sure you want to delete "${name}"? This action cannot be undone.`)) return;
+    try {
+      const res = await fetch(`/api/admin/fun-facts/categories?id=${id}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Category deleted!");
+        fetchCategories();
+      } else throw new Error();
+    } catch (err) { toast.error("Failed to delete category"); }
   };
 
 
@@ -489,6 +539,7 @@ export default function AdminFunFactsPage() {
                     <th>Category</th>
                     <th>Views</th>
                     <th>Status</th>
+                    <th>Visual</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -518,6 +569,51 @@ export default function AdminFunFactsPage() {
                       <td>{f.category?.name}</td>
                       <td>{f.views}</td>
                       <td>{f.hidden ? "Hidden" : "Visible"}</td>
+                      <td>
+                        <div className="flex items-center gap-2">
+                          {f.image ? (
+                            <div className="relative group">
+                              <img 
+                                src={f.image} 
+                                alt="preview" 
+                                className="w-10 h-10 object-cover rounded-md border border-slate-200 shadow-sm transition-transform group-hover:scale-150 group-hover:z-50 group-hover:shadow-lg" 
+                              />
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1.5">
+                              <span className="bg-slate-100 text-slate-500 text-[10px] px-2 py-1 rounded-full font-bold uppercase">No Image</span>
+                              <label className="cursor-pointer text-indigo-500 hover:text-indigo-700 transition-colors p-1 rounded-md hover:bg-indigo-50" title="Quick Upload">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+                                <input 
+                                  type="file" 
+                                  accept="image/*" 
+                                  className="hidden" 
+                                  onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
+                                    toast.loading("Uploading...", { id: `quick-${f.id}` });
+                                    try {
+                                      const formData = new FormData();
+                                      formData.append("file", file);
+                                      const res = await fetch("/api/upload/image", { method: "POST", body: formData });
+                                      const data = await res.json();
+                                      if (data.url) {
+                                        await fetch("/api/admin/fun-facts", {
+                                          method: "PATCH",
+                                          headers: { "Content-Type": "application/json" },
+                                          body: JSON.stringify({ id: f.id, image: data.url })
+                                        });
+                                        toast.success("Image added!", { id: `quick-${f.id}` });
+                                        fetchFacts();
+                                      }
+                                    } catch (err) { toast.error("Upload failed", { id: `quick-${f.id}` }); }
+                                  }}
+                                />
+                              </label>
+                            </div>
+                          )}
+                        </div>
+                      </td>
                       <td className={styles.actionCell}>
                         <button onClick={() => handleEdit(f)} className={styles.editBtn}>Edit</button>
                         <button onClick={() => toggleHide(f)} className={styles.hideBtn}>{f.hidden ? "Show" : "Hide"}</button>
@@ -601,34 +697,7 @@ export default function AdminFunFactsPage() {
                   <textarea required rows={3} value={factDescHi} onChange={(e) => setFactDescHi(e.target.value)} className={styles.textarea} />
                 </div>
               </div>
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Image URL (Optional)</label>
-                <div className="flex gap-2">
-                  <input type="url" value={factImage} onChange={(e) => setFactImage(e.target.value)} className={styles.input} />
-                  <button 
-                    type="button" 
-                    onClick={() => {
-                        const cat = categories.find(c => c.id === factCatId);
-                        if(!cat) return toast.error("Select a category first!");
-                        setFactImage(`https://image.pollinations.ai/prompt/${encodeURIComponent(cat.name + " realistic minimalist photo")}?width=400&height=400&nologo=true`);
-                        toast.success("Reference URL auto-filled!");
-                    }}
-                    className="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-4 py-2 rounded-xl font-bold text-sm whitespace-nowrap transition-colors"
-                  >
-                    🚀 Auto Fetch
-                  </button>
-                  <label className="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 px-4 py-2 rounded-xl font-bold text-sm whitespace-nowrap transition-colors cursor-pointer flex items-center justify-center">
-                    📁 Native Upload
-                    <input type="file" accept="image/*" className="hidden" onChange={handleManualUpload} />
-                  </label>
-                </div>
-                {factImage && (
-                  <div className="mt-3">
-                    <p className="text-xs text-gray-500 mb-1">Image Preview:</p>
-                    <img src={factImage} alt="Thumbnail preview" className="h-32 object-cover border rounded-xl shadow-sm" />
-                  </div>
-                )}
-              </div>
+              {/* Note: Standard Image URL fields removed as per feedback. Please use 'Fact Engine' below or Bulk Upload. */}
               <div className="p-4 border border-indigo-100 bg-white rounded-xl mb-6">
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input type="checkbox" checked={isDaily} onChange={(e) => setIsDaily(e.target.checked)} className="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300" />
@@ -638,9 +707,43 @@ export default function AdminFunFactsPage() {
                   </div>
                 </label>
               </div>
+
+              {/* Current Image Preview & Management */}
+              {factImage ? (
+                <div className="p-4 border border-green-200 bg-green-50/30 rounded-xl mb-6">
+                  <h3 className="text-sm font-bold text-green-800 mb-3 flex items-center gap-2">
+                    🖼️ Current Background Image ✅
+                  </h3>
+                  <div className="relative group w-full max-w-sm">
+                    <img 
+                      src={factImage} 
+                      alt="Current Fact" 
+                      className="w-full h-40 object-cover rounded-lg border border-green-300 shadow-md"
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => setFactImage("")}
+                      className="absolute top-2 right-2 bg-rose-500 text-white p-1.5 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-600"
+                      title="Remove Image"
+                    >
+                      ✕
+                    </button>
+                    <div className="mt-2 text-[10px] text-slate-500 truncate font-mono">
+                      {factImage}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-6 border-2 border-dashed border-slate-200 bg-slate-50/50 rounded-xl mb-6 text-center">
+                   <div className="text-3xl mb-2 opacity-30">🖼️</div>
+                   <p className="text-sm font-bold text-slate-400">No background image linked yet</p>
+                   <p className="text-[10px] text-slate-400 mt-1">Use the Fact Engine below to add a visual card</p>
+                </div>
+              )}
+
               <div className="p-4 border border-indigo-100 bg-indigo-50/50 rounded-xl mb-6">
-                 <h3 className="text-sm font-bold text-indigo-900 mb-2">Fact Engine: Generate Image Overlay</h3>
-                 <p className="text-xs text-indigo-600 mb-4">Upload a background image, and the system will automatically format and overlay the fact text on it.</p>
+                 <h3 className="text-sm font-bold text-indigo-900 mb-2">🚀 Fact Engine: {factImage ? "Update" : "Generate"} Visual Card</h3>
+                 <p className="text-xs text-indigo-600 mb-4">Upload a new background, and the system will automatically format and overlay the fact text on it.</p>
                  <div className="flex items-center gap-4 flex-wrap">
                     <label className="flex items-center gap-2 text-sm font-medium">
                        Text Language: 
@@ -661,12 +764,26 @@ export default function AdminFunFactsPage() {
         {activeTab === "categories" && (
           <div className={styles.adminGrid}>
             <div className={styles.adminCard}>
-              <h2 className={styles.sectionTitle}>New Category</h2>
-              <form onSubmit={handleCreateCategory} className={styles.adminForm}>
+              <h2 className={styles.sectionTitle}>{editingCatId ? "Edit Category" : "New Category"}</h2>
+              <form onSubmit={handleSaveCategory} className={styles.adminForm}>
                 <div className={styles.formGroup}><label className={styles.label}>Name (EN)</label><input required type="text" value={catName} onChange={(e) => setCatName(e.target.value)} className={styles.input} /></div>
                 <div className={styles.formGroup}><label className={styles.label}>Name (HI)</label><input required type="text" value={catNameHi} onChange={(e) => setCatNameHi(e.target.value)} className={styles.input} /></div>
-                <div className={styles.formGroup}><label className={styles.label}>Image URL</label><input type="url" value={catImage} onChange={(e) => setCatImage(e.target.value)} className={styles.input} /></div>
-                <button type="submit" className={styles.submitBtn}>Create</button>
+                
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Category Common Image</label>
+                  <div className="flex flex-col gap-3">
+                    <input type="text" value={catImage} onChange={(e) => setCatImage(e.target.value)} className={styles.input} placeholder="URL or upload below" />
+                    <div className="flex items-center gap-3">
+                      <input type="file" accept="image/*" onChange={handleCatImageUpload} className="text-xs file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100" />
+                      {catImage && <img src={catImage} className="w-10 h-10 rounded object-cover border" alt="Preview" />}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button type="submit" className={styles.submitBtn}>{editingCatId ? "Update" : "Create"}</button>
+                  {editingCatId && <button type="button" onClick={() => { setEditingCatId(null); setCatName(""); setCatNameHi(""); setCatImage(""); }} className={styles.hideBtn}>Cancel</button>}
+                </div>
               </form>
             </div>
             
@@ -675,7 +792,17 @@ export default function AdminFunFactsPage() {
               <ul className={styles.list}>
                 {categories.map((c) => (
                   <li key={c.id} className={styles.listItem}>
-                    <div><p className={styles.itemTitle}>{c.name} / {c.nameHi}</p><p className={styles.itemSubtitle}>{c._count?.facts || 0} facts</p></div>
+                    <div className="flex items-center gap-3">
+                      {c.image && <img src={c.image} className="w-8 h-8 rounded shrink-0 object-cover" alt="" />}
+                      <div>
+                        <p className={styles.itemTitle}>{c.name} / {c.nameHi}</p>
+                        <p className={styles.itemSubtitle}>{c._count?.facts || 0} facts</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                       <button onClick={() => handleEditCategory(c)} className={styles.editBtn}>Edit</button>
+                       <button onClick={() => handleDeleteCategory(c.id, c.name)} className={styles.hideBtn} style={{ color: "#ef4444", borderColor: "#fecaca" }}>Delete</button>
+                    </div>
                   </li>
                 ))}
               </ul>

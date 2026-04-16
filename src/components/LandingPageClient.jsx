@@ -195,7 +195,7 @@ const SubSection = React.memo(({ title, quizzes, onViewAll }) => {
 
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     const url = `${origin}/category/${quiz.id}`;
-    const text = `${quiz.topic} • ${quiz.questions?.length || quiz.questionCount || 0} questions`;
+    const text = `${quiz.topic} • ${quiz.questionCount || 0} questions`;
 
     async function shareLinkOnly() {
       if (navigator.share) {
@@ -405,10 +405,10 @@ const SubSection = React.memo(({ title, quizzes, onViewAll }) => {
 
                 <div className={styles.subSectionCardFooter}>
                   <span className={styles.subSectionCardCount}>
-                    {quiz.questions.length} questions
+                    {quiz.questionCount || 0} questions
                   </span>
                   <span className={styles.subSectionCardTime}>
-                    {Math.max(1, Math.round(quiz.questions.length / 10))} min per set
+                    {Math.max(1, Math.round((quiz.questionCount || 0) / 10))} min per set
                   </span>
                 </div>
               </div>

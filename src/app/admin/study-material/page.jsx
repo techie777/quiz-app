@@ -146,7 +146,7 @@ export default function StudyMaterialManager() {
                 </div>
                 <div className={styles.formGroup}>
                    <label>Cover Image URL (Optional)</label>
-                   <input type="url" value={form.image} onChange={e => setForm(prev => ({...prev, image: e.target.value}))} className={styles.input} placeholder="https://..." />
+                   <input type="text" value={form.image} onChange={e => setForm(prev => ({...prev, image: e.target.value}))} className={styles.input} placeholder="https://..." />
                 </div>
                 <div className={styles.formGroup}>
                    <label>Description</label>

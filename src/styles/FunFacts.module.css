@@ -2,7 +2,7 @@
 .page {
   min-height: 100vh;
   background-color: var(--bg-primary);
-  padding: 3rem 1rem;
+  padding: 1rem;
 }
 
 .darkPage {
@@ -354,6 +354,34 @@
   border-radius: 1rem;
   overflow: hidden;
   border: 1px solid #e5e7eb;
+}
+
+.wallFactCard {
+  border-radius: 1.5rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  transition: all 0.4s ease;
+  background: #111827;
+  outline: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.wallFactCard:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+}
+
+.bigFactText {
+  font-weight: 800;
+  line-height: 1.5;
+  color: white;
+  /* Premium readability shadow */
+  text-shadow: 
+    -1px -1px 0 rgba(0,0,0,0.8),
+     1px -1px 0 rgba(0,0,0,0.8),
+    -1px  1px 0 rgba(0,0,0,0.8),
+     1px  1px 0 rgba(0,0,0,0.8),
+     0 4px 15px rgba(0,0,0,0.5);
 }
 
 .adminTable {
@@ -1062,8 +1090,122 @@
 @media (min-width: 1536px) { .wallGrid { grid-template-columns: repeat(4, 1fr); } }
 .wallFactCard { background: var(--bg-secondary); border-radius: 1.5rem; overflow: hidden; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); border: 1px solid var(--border-primary); display: flex; flex-direction: column; }
 .wallFactImage { width: 100%; height: auto; display: block; }
-.wallFactText { padding: 1.5rem; font-size: 1.1rem; font-weight: 600; line-height: 1.5; color: var(--text-primary); }
-.categoryFilterScroll { display: flex; overflow-x: auto; gap: 0.75rem; padding-bottom: 1rem; margin-bottom: 2rem; scrollbar-width: none; }
+.wallFactText { 
+  padding: 2.5rem 2rem; 
+  font-size: 1.5rem; 
+  font-weight: 700; 
+  line-height: 1.4; 
+  color: var(--text-primary);
+  /* Two-tone smooth background */
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  position: relative;
+  border: 1px solid rgba(139, 92, 246, 0.1);
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.05), inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+}
+
+.quoteWrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem;
+  border-radius: 1.25rem;
+  transition: all 0.4s ease;
+}
+
+.glassShield {
+  background: rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 24px 0 rgba(0, 0, 0, 0.15);
+}
+
+.quoteMark {
+  font-family: serif;
+  font-size: 4rem;
+  line-height: 1;
+  color: #8b5cf6;
+  opacity: 0.25;
+  position: absolute;
+  top: -1.5rem;
+  left: -0.5rem;
+  pointer-events: none;
+}
+
+.quoteMarkEnd {
+  font-family: serif;
+  font-size: 4rem;
+  line-height: 1;
+  color: #8b5cf6;
+  opacity: 0.25;
+  position: absolute;
+  bottom: -2.5rem;
+  right: -0.5rem;
+  pointer-events: none;
+}
+
+.factStats {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.9rem;
+  align-items: center;
+}
+
+.statItem {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.statEmoji {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.bigFactText {
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  letter-spacing: -0.01em;
+  z-index: 1;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.3);
+}
+.categoryFilterScroll { 
+  display: flex; 
+  overflow-x: auto; 
+  overflow-y: hidden;
+  gap: 0.75rem; 
+  padding: 0.5rem 0.25rem 1rem; 
+  margin-bottom: 1.5rem; 
+  scrollbar-width: none; 
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
 .categoryFilterScroll::-webkit-scrollbar { display: none; }
-.filterChip { white-space: nowrap; padding: 0.5rem 1rem; border-radius: 9999px; background: var(--bg-secondary); border: 1px solid var(--border-primary); cursor: pointer; font-weight: 600; font-size: 0.875rem; transition: all 0.2s ease; }
-.filterChipActive { background: var(--text-primary); color: var(--bg-primary); border-color: var(--text-primary); }
+.filterChip { 
+  white-space: nowrap; 
+  flex-shrink: 0;
+  padding: 0.6rem 1.25rem; 
+  border-radius: 9999px; 
+  background: white; 
+  border: 1px solid #e2e8f0; 
+  cursor: pointer; 
+  font-weight: 700; 
+  font-size: 0.85rem; 
+  color: #475569;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+.filterChip:hover {
+  border-color: #8b5cf6;
+  color: #8b5cf6;
+  background: #f5f3ff;
+  transform: translateY(-1px);
+}
+.filterChipActive { 
+  background: #0f172a; 
+  color: white !important; 
+  border-color: #0f172a; 
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+}

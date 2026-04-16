@@ -95,7 +95,7 @@ export default function AdminDashboard() {
             <div className={styles.catCardBody}>
               <span className={styles.catCardName}>{cat.topic}</span>
               <span className={styles.catCardCount}>
-                {cat.questions.length} questions
+                {cat.questionCount || 0} questions
               </span>
             </div>
           </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Heart, MessageCircle, Share2, Star, Download, Maximize2, Pause, Play, ChevronLeft, Sparkles } from "lucide-react";
 import Link from "next/link";
@@ -13,7 +13,7 @@ export default function FunFactVoyager({ params }) {
   const router = useRouter();
   const [fact, setFact] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [lang, setLang] = useState("EN");
+  const [lang, setLang] = useState("HI");
   const [isPlaying, setIsPlaying] = useState(false);
   
   // Social states
@@ -43,10 +43,13 @@ export default function FunFactVoyager({ params }) {
   // Neighbors
   const [nextId, setNextId] = useState(null);
   const [prevId, setPrevId] = useState(null);
+  
+  // Observer ref for infinite scroll
+  const observerRef = useRef();
 
   useEffect(() => {
     setIsMounted(true);
-    const savedLang = localStorage.getItem("factLang") || "EN";
+    const savedLang = localStorage.getItem("factLang") || "HI";
     setLang(savedLang);
     
     // Load gamification state
@@ -141,17 +144,37 @@ export default function FunFactVoyager({ params }) {
     if (loadingRec) return;
     setLoadingRec(true);
     try {
-      const res = await fetch(`/api/fun-facts/list?page=${pageNum}&limit=6&tab=random`);
+      const res = await fetch(`/api/fun-facts/list?page=${pageNum}&limit=6&tab=random&excludeId=${params.id}`);
       const data = await res.json();
       if (res.ok) {
         setRecommended(prev => pageNum === 1 ? data.facts : [...prev, ...data.facts]);
         setHasMoreRec(data.pagination.page < data.pagination.totalPages);
+        setRecPage(pageNum);
       }
     } catch (err) {
       console.error(err);
     }
     setLoadingRec(false);
   };
+
+  // Intersection Observer for Infinite Scroll
+  useEffect(() => {
+    if (loading || !hasMoreRec) return;
+
+    const observer = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && !loadingRec) {
+        fetchRecommended(recPage + 1);
+      }
+    }, { threshold: 0.1 });
+
+    if (observerRef.current) {
+      observer.observe(observerRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) observer.unobserve(observerRef.current);
+    };
+  }, [recPage, hasMoreRec, loadingRec, loading]);
 
   const toggleInteraction = async (action) => {
     const res = await fetch("/api/fun-facts/interaction", {
@@ -210,22 +233,99 @@ export default function FunFactVoyager({ params }) {
     }
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!fact?.image) return toast.error("No image available to download.");
-    fetch(fact.image)
-      .then(response => response.blob())
-      .then(blob => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = `factify-${fact.id}.jpg`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        toast.success("Download started!");
-      })
-      .catch(() => toast.error("Failed to download image"));
+    
+    toast.loading("Generating high-quality card...", { id: "download" });
+    
+    try {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = fact.image;
+      
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+      });
+
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      
+      // Fixed 1080x1080 for social media optimization
+      canvas.width = 1080;
+      canvas.height = 1080;
+      
+      // 1. Draw Background (Aspect Fill)
+      const scale = Math.max(canvas.width / img.width, canvas.height / img.height);
+      const x = (canvas.width - img.width * scale) / 2;
+      const y = (canvas.height - img.height * scale) / 2;
+      ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+      
+      // 2. Add Immersive Overlay (Gradient from bottom)
+      const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      grad.addColorStop(0, "rgba(0,0,0,0.1)");
+      grad.addColorStop(0.5, "rgba(0,0,0,0.4)");
+      grad.addColorStop(1, "rgba(0,0,0,0.85)");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // 3. Draw Fact Text
+      ctx.fillStyle = "white";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.shadowColor = "rgba(0,0,0,0.5)";
+      ctx.shadowBlur = 15;
+      
+      const fontSize = lang === "HI" ? 54 : 48;
+      ctx.font = `900 ${fontSize}px "Inter", "system-ui", sans-serif`;
+      
+      const maxWidth = 900;
+      const words = displayText.split(" ");
+      let line = "";
+      const lines = [];
+      
+      for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + " ";
+        const metrics = ctx.measureText(testLine);
+        if (metrics.width > maxWidth && n > 0) {
+          lines.push(line);
+          line = words[n] + " ";
+        } else {
+          line = testLine;
+        }
+      }
+      lines.push(line);
+      
+      const lineHeight = fontSize * (lang === "HI" ? 1.6 : 1.4);
+      let startY = 540 - (lines.length * lineHeight) / 2;
+      
+      lines.forEach((l, i) => {
+        ctx.fillText(l.trim(), 540, startY + i * lineHeight);
+      });
+      
+      // 4. Branding & Category Watermark
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = "rgba(34, 211, 238, 0.9)"; // Cyan-400
+      ctx.font = "bold 20px 'Inter', sans-serif";
+      // Letter spacing not supported in older canvas, we'll just use bold
+      ctx.fillText(fact.category?.name?.toUpperCase() || "FUN FACT", 540, 950);
+      
+      ctx.fillStyle = "white";
+      ctx.font = "bold 24px 'Inter', sans-serif";
+      ctx.fillText("QUIZWEB • FACTIFY", 540, 1000);
+
+      // Trigger Download
+      const dataUrl = canvas.toDataURL("image/png", 1.0);
+      const link = document.createElement("a");
+      link.download = `Factify_${fact.id}.png`;
+      link.href = dataUrl;
+      link.click();
+      
+      toast.success("Ready for sharing!", { id: "download" });
+    } catch (err) {
+      console.error(err);
+      toast.error("Generation failed. Check connection.", { id: "download" });
+    }
   };
 
   const handleWhatsApp = () => {
@@ -263,7 +363,7 @@ export default function FunFactVoyager({ params }) {
   const displayText = lang === "HI" && fact.descriptionHi ? fact.descriptionHi : fact.description;
 
   return (
-    <div className="bg-slate-950 text-white font-sans min-h-screen h-[100svh] md:h-auto overflow-y-auto md:overflow-visible scroll-snap-y-mandatory md:scroll-snap-none">
+    <div className="bg-slate-950 text-white font-sans min-h-screen">
       
       {/* Top Progress Bar (Persistent Gamification) */}
       {isMounted && (
@@ -275,166 +375,150 @@ export default function FunFactVoyager({ params }) {
             />
           </div>
 
-          {/* Milestone Floating Badge - Adjusted for better visibility */}
-          <div className="fixed top-20 right-6 z-[2000] pointer-events-auto">
-            <div className="bg-slate-900/90 backdrop-blur-xl border border-white/20 px-4 py-2 rounded-2xl flex items-center gap-3 shadow-[0_10px_40px_rgba(0,0,0,0.5)] animate-in fade-in slide-in-from-top-4 duration-500">
-              <Sparkles size={16} className="text-amber-400 animate-pulse" />
-              <div className="flex flex-col">
-                <span className="text-[10px] font-black tracking-widest text-white/50 uppercase leading-none mb-1">
-                   RANK: EXPLORER
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-black text-white">LEVEL {Math.floor(streak / 10) + 1}</span>
-                  <div className="w-1 h-1 rounded-full bg-slate-700" />
-                  <span className="text-xs font-black text-cyan-400">
-                    {streak % milestone}/{milestone}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
         </>
       )}
       
       {/* Voyager Hero Section (100vh viewport) */}
-      <div className="relative h-[100svh] md:min-h-[100svh] flex flex-col overflow-hidden shrink-0 scroll-snap-align-start">
+      <div className="relative h-[100svh] md:min-h-[100svh] flex flex-col shrink-0">
         {/* Background Layer */}
         <div className="absolute inset-0 z-0">
-         {fact.image ? (
+         {(fact.image || fact.category?.image) ? (
             <>
               {/* Blurred background filling edges */}
-              <img src={fact.image} alt="Background Fill" className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-110" />
+              <img src={fact.image || fact.category?.image} alt="Background Fill" className="absolute inset-0 w-full h-full object-cover blur-xl opacity-30" />
               {/* Centered contained original image */}
               <div className="absolute inset-0 flex items-center justify-center">
-                 <img src={fact.image} alt="Fact Visual" className="w-full h-full object-contain opacity-50" />
+                 <img src={fact.image || fact.category?.image} alt="Fact Visual" className="w-full h-full object-contain opacity-80" />
               </div>
             </>
          ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 to-slate-900 opacity-40" />
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 to-slate-900 opacity-30" />
          )}
-         {/* Dark overlay for text legibility */}
-         <div className="absolute inset-0 bg-slate-950/70" />
+         {/* Very subtle dark overlay for text legibility without killing brightness */}
+         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/20 via-transparent to-slate-950/60" />
         </div>
 
-      {/* Top Navigation */}
-      <div className={`relative z-10 p-6 flex justify-between items-center max-w-6xl mx-auto w-full transition-opacity duration-300 ${isFullScreen ? 'opacity-20 hover:opacity-100' : 'opacity-100'}`}>
-        <Link href="/fun-facts" className="flex items-center text-slate-300 hover:text-white transition">
-           <ChevronLeft className="mr-1" /> Back to Hub
-        </Link>
-        <div className="flex items-center gap-4">
-           {isFullScreen && (
-              <button 
-                 onClick={handleFullscreenToggle} 
-                 className="bg-slate-800/80 text-xs px-4 py-1.5 rounded-full text-slate-300 hover:text-white border border-slate-600 hidden md:block"
-              >
-                 Exit Fullscreen
-              </button>
-           )}
-           <div className="flex gap-2 bg-slate-900/80 p-1 rounded-full border border-slate-700">
-              <button onClick={() => toggleLang("EN")} className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${lang === "EN" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white"}`}>EN</button>
-              <button onClick={() => toggleLang("HI")} className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${lang === "HI" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white"}`}>HI</button>
-           </div>
+      {/* Immersive Top Bar - Glass Header */}
+      <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-30 w-[95%] max-w-7xl h-auto transition-opacity duration-300 ${isFullScreen ? 'opacity-20 hover:opacity-100' : 'opacity-100'}`}>
+        <div className="bg-black/20 backdrop-blur-xl border border-white/10 rounded-full px-4 py-2 flex justify-between items-center shadow-lg">
+          <Link href="/fun-facts" className="group flex items-center bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/5 px-4 py-2 rounded-full text-slate-300 transition-all">
+             <ChevronLeft className="mr-1 group-hover:-translate-x-1 transition-transform" size={18} /> 
+             <span className="text-xs font-bold tracking-wider uppercase">Hub</span>
+          </Link>
+          
+          <div className="flex items-center gap-4">
+             <div className="flex gap-1 bg-white/5 p-1 rounded-full border border-white/10">
+                <button onClick={() => toggleLang("EN")} className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest transition-all ${lang === "EN" ? "bg-indigo-600 text-white shadow-[0_0_15px_rgba(79,70,229,0.5)]" : "text-slate-400 hover:text-white"}`}>EN</button>
+                <button onClick={() => toggleLang("HI")} className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest transition-all ${lang === "HI" ? "bg-indigo-600 text-white shadow-[0_0_15px_rgba(79,70,229,0.5)]" : "text-slate-400 hover:text-white"}`}>HI</button>
+             </div>
+          </div>
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="relative z-10 flex-grow flex flex-col items-center justify-center px-4 md:px-12 max-w-5xl mx-auto w-full">
-        
-        {/* Voyager Category Badge */}
-        <div className="bg-slate-800/80 border border-slate-600 px-6 py-2 rounded-full mb-10 flex items-center gap-3 backdrop-blur-md">
-           <span className="text-amber-400 text-sm">⚡ VOYAGER STREAM:</span>
-           <span className="text-white font-bold">{fact.category?.name}</span>
+      <div className="relative z-10 flex-grow flex flex-col items-center justify-center px-4 md:px-12 max-w-5xl mx-auto w-full py-32">
+        {/* Fact Text - Glass Shield Frame */}
+        <div className="relative max-w-4xl w-full">
+           <div className="relative z-10 bg-black/15 backdrop-blur-[10px] border border-white/5 rounded-[2.5rem] px-8 md:px-16 py-12 md:py-20 text-center shadow-[0_10px_40px_rgba(0,0,0,0.3)]">
+              <span className="absolute -top-4 -left-2 md:-top-8 md:-left-8 text-7xl md:text-9xl text-indigo-400/20 font-serif leading-none select-none">&ldquo;</span>
+              <h1 
+                className={`text-xl md:text-3xl lg:text-5xl font-extrabold leading-[1.6] md:leading-[1.4] tracking-tight ${lang === 'HI' ? 'font-serif' : ''} text-white`}
+                style={{ 
+                  textShadow: '0 2px 4px rgba(0,0,0,0.8), 0 10px 30px rgba(0,0,0,0.5)',
+                }}
+              >
+                {highlightFactText(displayText, true)}
+              </h1>
+              <span className="absolute -bottom-8 -right-2 md:-bottom-16 md:-right-8 text-7xl md:text-9xl text-indigo-400/20 font-serif leading-none select-none">&rdquo;</span>
+           </div>
         </div>
 
-        {/* Fact Text */}
-        <div className="text-center relative max-w-4xl px-4 md:px-0">
-           <span className="absolute -top-10 -left-6 md:-left-12 text-7xl md:text-9xl text-slate-400/30 font-serif leading-none">&ldquo;</span>
-           <h1 className={`text-2xl md:text-4xl lg:text-5xl font-extrabold leading-relaxed tracking-wide drop-shadow-2xl ${lang === 'HI' ? 'font-serif' : ''}`}>
-             {highlightFactText(displayText, true)}
-           </h1>
-           <span className="absolute -bottom-10 -right-6 md:-right-12 text-7xl md:text-9xl text-slate-400/30 font-serif leading-none">&rdquo;</span>
+        {/* Explorers Count & Mobile Nav - Glass Footer */}
+        <div className="mt-12 w-fit px-8 py-4 bg-black/40 backdrop-blur-xl border border-white/10 rounded-full flex flex-col items-center gap-4 shadow-xl">
+           <div className="flex items-center gap-3 text-white/60 text-[10px] font-black tracking-[0.2em] uppercase">
+               <div className="w-4 h-[1px] bg-white/20" />
+               <span>{fact.views + 1} Explorers connected</span>
+               <div className="w-4 h-[1px] bg-white/20" />
+           </div>
+
+           {/* Mobile-only Optimized Navigation */}
+           <div className="flex md:hidden items-center gap-8 pointer-events-auto">
+               {prevId && (
+                 <button onClick={() => router.push(`/fun-facts/read/${prevId}`)} className="bg-white/5 text-white/60 p-3 rounded-full border border-white/10 active:scale-95 transition-all">
+                   <ArrowLeft strokeWidth={2} size={20} />
+                 </button>
+               )}
+               {nextId && (
+                 <button onClick={() => router.push(`/fun-facts/read/${nextId}`)} className="bg-white/5 text-white/60 p-3 rounded-full border border-white/10 active:scale-95 transition-all">
+                   <ArrowRight strokeWidth={2} size={20} />
+                 </button>
+               )}
+           </div>
         </div>
-
-            👁️ {fact.views + 1} explorers have read this
-         </div>
-
-         {/* Swipe Up Hint (Mobile Only) */}
-         <div className="md:hidden absolute bottom-24 flex flex-col items-center animate-bounce opacity-40">
-            <span className="text-[10px] font-black tracking-widest uppercase mb-1">Swipe Up</span>
-            <ChevronLeft className="-rotate-90" size={16} />
-         </div>
-
       </div>
 
-      {/* Center Navigation Controls (Desktop Only) - Now centered relative to card */}
-      <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-full max-w-7xl hidden md:flex justify-between px-6 pointer-events-none z-20">
+      {/* Center Navigation Controls (Desktop Only) */}
+      <div className="hidden md:flex absolute top-1/2 -translate-y-1/2 left-0 w-full justify-between px-8 pointer-events-none z-20">
          {prevId ? (
-           <button onClick={() => router.push(`/fun-facts/read/${prevId}`)} className="pointer-events-auto bg-amber-500 hover:bg-amber-400 text-black p-4 rounded-full shadow-[0_0_20px_rgba(245,158,11,0.4)] transition hover:scale-110">
-             <ArrowLeft strokeWidth={3} />
+           <button onClick={() => router.push(`/fun-facts/read/${prevId}`)} className="pointer-events-auto bg-white/10 hover:bg-white/20 backdrop-blur-md text-white p-3 md:p-5 rounded-full border border-white/20 transition-all hover:scale-110">
+             <ArrowLeft strokeWidth={2.5} size={24} />
            </button>
          ) : <div /> }
          
          {nextId ? (
-            <button onClick={() => router.push(`/fun-facts/read/${nextId}`)} className="pointer-events-auto bg-amber-500 hover:bg-amber-400 text-black p-4 rounded-full shadow-[0_0_20px_rgba(245,158,11,0.4)] transition hover:scale-110">
-              <ArrowRight strokeWidth={3} />
+            <button onClick={() => router.push(`/fun-facts/read/${nextId}`)} className="pointer-events-auto bg-white/10 hover:bg-white/20 backdrop-blur-md text-white p-3 md:p-5 rounded-full border border-white/20 transition-all hover:scale-110">
+              <ArrowRight strokeWidth={2.5} size={24} />
             </button>
          ) : <div /> }
       </div>
 
-      {/* Floating Action Menu (Right Side - Desktop Only for most items) */}
-      <div className="absolute bottom-24 md:bottom-32 right-4 md:right-6 lg:right-8 flex flex-col gap-4 z-20">
-        <button onClick={() => setIsPlaying(!isPlaying)} className={`p-3 rounded-full backdrop-blur-md border ${isPlaying ? 'bg-amber-500/20 border-amber-500 text-amber-500' : 'bg-slate-800/60 border-slate-600 text-white'} hover:bg-slate-700 transition shadow-lg hidden md:flex items-center justify-center`} title="Autoplay 10s">
-           {isPlaying ? <Pause size={20} /> : <Play size={20} />} 
-        </button>
-        {isPlaying && <div className="hidden md:block text-[10px] font-bold text-amber-500 text-center -mt-3 drop-shadow-md">10s</div>}
-        
-        <button onClick={handleShare} className="p-3 rounded-full backdrop-blur-md bg-slate-800/60 border border-slate-600 text-white hover:bg-slate-700 transition shadow-lg hidden md:block" title="Share via Link or Native">
-           <Share2 size={20} />
-        </button>
-        <button onClick={handleWhatsApp} className="p-3 rounded-full backdrop-blur-md bg-[#25D366]/20 border border-[#25D366] text-[#25D366] hover:bg-[#25D366]/40 transition shadow-lg hidden md:block" title="Share on WhatsApp">
-           <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" className="css-i6dzq1"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
-        </button>
-        <button onClick={handleFullscreenToggle} className={`p-3 rounded-full backdrop-blur-md border ${isFullScreen ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400' : 'bg-slate-800/60 border-slate-600 text-white'} hover:bg-slate-700 transition shadow-lg hidden md:block`} title="Fullscreen Mode">
-           <Maximize2 size={20} />
-        </button>
-      </div>
-
-      {/* Bottom Action Bar */}
+      {/* Bottom Action Bar Hub (Consolidated) */}
       <div className="relative z-20 bg-slate-900/80 border-t border-slate-800 backdrop-blur-xl p-4 mt-auto">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-           <div className="flex gap-2 md:gap-6">
-              <button onClick={() => toggleInteraction('like')} className="flex items-center gap-2 px-4 py-2 rounded-xl transition hover:bg-slate-800">
-                <Heart className={hasLiked ? "fill-rose-500 text-rose-500" : "text-slate-400"} />
-                <span className={hasLiked ? "text-rose-500 font-bold" : "text-slate-300"}>{likes}</span>
-              </button>
-              
-              <button onClick={() => setShowComments(!showComments)} className="flex items-center gap-2 px-4 py-2 rounded-xl transition hover:bg-slate-800 text-slate-300">
-                <MessageCircle /> <span>{comments.length}</span>
-              </button>
-              
-              <button onClick={() => toggleInteraction('favorite')} className="flex items-center gap-2 px-3 md:px-4 py-2 rounded-xl transition hover:bg-slate-800">
-                <Star className={hasFavorited ? "fill-amber-400 text-amber-400" : "text-slate-400"} />
-                <span className={hasFavorited ? "text-amber-400 font-bold" : "text-slate-300 hidden md:inline"}>Save</span>
-              </button>
+        <div className="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4 overflow-x-auto no-scrollbar py-1">
+              {/* Progress & Rank Indicator (New Location) */}
+              <div className="flex flex-col bg-white/5 border border-white/10 rounded-2xl px-3 py-1.5 shrink-0">
+                  <span className="text-[7px] font-black text-cyan-400 uppercase tracking-widest leading-tight">LVL. {Math.floor(streak / 10) + 1}</span>
+                  <span className="text-[8px] font-black text-white/90 uppercase tracking-tighter">EXPLORER</span>
+              </div>
 
-              {/* Mobile-Only Actions Area */}
-              <div className="flex md:hidden items-center gap-1 border-l border-slate-700/50 pl-1 ml-1">
-                <button onClick={() => setIsPlaying(!isPlaying)} className={`p-2 rounded-xl transition ${isPlaying ? 'text-amber-500' : 'text-slate-400'}`}>
-                   {isPlaying ? <Pause size={20} /> : <Play size={20} />} 
+              {/* Interaction Block */}
+              <div className="flex items-center bg-white/5 rounded-2xl px-2">
+                <button onClick={() => toggleInteraction('like')} className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition hover:bg-white/10">
+                  <Heart size={18} className={hasLiked ? "fill-rose-500 text-rose-500" : "text-slate-400"} />
+                  <span className={hasLiked ? "text-rose-500 font-bold" : "text-slate-300"}>{likes}</span>
                 </button>
-                <button onClick={handleWhatsApp} className="p-2 rounded-xl text-[#25D366] transition">
-                   <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                
+                <button onClick={() => setShowComments(!showComments)} className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition hover:bg-white/10 text-slate-300">
+                  <MessageCircle size={18} /> <span>{comments.length}</span>
                 </button>
-                <button onClick={handleShare} className="p-2 rounded-xl text-slate-400 transition">
-                   <Share2 size={20} />
+                
+                <button onClick={() => toggleInteraction('favorite')} className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition hover:bg-white/10" title="Save Fact">
+                  <Star size={18} className={hasFavorited ? "fill-amber-400 text-amber-400" : "text-slate-400"} />
+                  <span className={hasFavorited ? "text-amber-400 font-bold" : "text-slate-300 hidden md:inline"}>Save</span>
                 </button>
               </div>
 
+              {/* Utility Block (Consolidated) */}
+              <div className="flex items-center bg-white/5 rounded-2xl px-2 gap-1">
+                <button onClick={() => setIsPlaying(!isPlaying)} className={`p-2.5 rounded-xl transition ${isPlaying ? 'text-amber-500 bg-amber-500/10' : 'text-slate-400 hover:bg-white/10'}`} title="Autoplay">
+                   {isPlaying ? <Pause size={20} /> : <Play size={20} />} 
+                </button>
+                <button onClick={handleWhatsApp} className="p-2.5 rounded-xl text-[#25D366] hover:bg-[#25D366]/10 transition" title="WhatsApp">
+                   <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                </button>
+                <button onClick={handleShare} className="p-2.5 rounded-xl text-slate-400 hover:bg-white/10 transition" title="Share Link">
+                   <Share2 size={20} />
+                </button>
+                <button onClick={handleFullscreenToggle} className={`p-2.5 rounded-xl transition ${isFullScreen ? 'text-indigo-400 bg-indigo-500/10' : 'text-slate-400 hover:bg-white/10'}`} title="Fullscreen">
+                   <Maximize2 size={20} />
+                </button>
+              </div>
            </div>
            
            <div>
              {fact.image && (
-               <button onClick={handleDownload} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 px-5 py-2.5 rounded-xl font-bold transition">
+               <button onClick={handleDownload} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 px-5 py-2.5 rounded-xl font-bold transition shadow-lg shadow-indigo-500/20 active:scale-95">
                  <Download size={18} /> <span className="hidden md:inline">Download Card</span>
                </button>
              )}
@@ -489,6 +573,7 @@ export default function FunFactVoyager({ params }) {
 
 
 
+      </div>
       {/* Recommended Scrolling Feed Section */}
       <div className="max-w-6xl mx-auto p-6 md:p-12 w-full pt-20">
          <h2 className="text-2xl font-bold mb-8 text-slate-100 flex items-center gap-2">
@@ -498,37 +583,35 @@ export default function FunFactVoyager({ params }) {
          <div className={`${styles.wallGrid} h-auto md:h-initial`}>
             {recommended.map((recFact, index) => {
               const recText = lang === "HI" && recFact.descriptionHi ? recFact.descriptionHi : recFact.description;
-              const hasImg = recFact.image;
+              const effectiveImg = recFact.image || recFact.category?.image;
+              const hasImg = !!effectiveImg;
               return (
-                <Link href={`/fun-facts/read/${recFact.id}`} key={recFact.id + index} className="block h-[100svh] md:h-auto shrink-0 scroll-snap-align-start">
+                <Link href={`/fun-facts/read/${recFact.id}`} key={recFact.id + index} className="block shrink-0">
                   <div className={`${hasImg ? '' : styles.wallFactCard} h-full md:h-auto hover:-translate-y-1 transition-transform cursor-pointer relative`}>
-                    {hasImg && recFact.image.startsWith('/uploads') ? (
-                        <div className="relative w-full h-full min-h-[300px]">
-                           <img src={recFact.image} alt="Fun Fact" className="absolute inset-0 w-full h-full object-cover" />
-                           <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-4">
-                              <span className="text-sm font-bold uppercase text-amber-400">• {recFact.category?.name}</span>
-                           </div>
-                        </div>
-                    ) : (
                         <div 
                           className={styles.wallFactText}
                           style={hasImg ? { 
-                            backgroundImage: `linear-gradient(to top, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.6) 100%), url('${recFact.image}')`, 
+                            backgroundImage: `linear-gradient(to top, rgba(15, 23, 42, 0.8) 0%, rgba(15, 23, 42, 0.3) 100%), url('${effectiveImg}')`, 
                             backgroundSize: 'cover', 
                             backgroundPosition: 'center', 
                             color: 'white', 
-                            minHeight: '350px', 
+                            minHeight: '280px', 
                             display: 'flex', 
                             flexDirection: 'column', 
                             justifyContent: 'flex-end', 
-                            textShadow: '0 2px 4px rgba(0,0,0,0.8)' 
+                            textShadow: '0 0.5px 0 #000, 0 -0.5px 0 #000, 0.5px 0 0 #000, -0.5px 0 0 #000, 0 2px 8px rgba(0,0,0,0.8)',
+                            borderRadius: '1.5rem',
+                            border: '1px solid rgba(255,255,255,0.15)',
+                            ring: '1px solid rgba(255,255,255,0.05)'
                           } : {
-                            background: '#1e293b',
-                            minHeight: '200px',
+                            background: 'linear-gradient(135deg, #1e293b 0%, #020617 100%)',
+                            minHeight: '180px',
                             display: 'flex',
                             flexDirection: 'column',
                             justifyContent: 'space-between',
-                            color: '#f8fafc'
+                            color: '#f8fafc',
+                            borderRadius: '1.5rem',
+                            border: '1px solid rgba(255,255,255,0.15)'
                           }}
                         >
                           <div className="font-bold text-lg leading-tight">{recText}</div>
@@ -536,22 +619,18 @@ export default function FunFactVoyager({ params }) {
                              <div className="flex items-center gap-1"><span>•</span> {recFact.category?.name}</div>
                           </div>
                         </div>
-                    )}
                   </div>
                 </Link>
               );
             })}
          </div>
 
-         {hasMoreRec && (
-           <div className="flex justify-center mt-12">
-              <button onClick={() => fetchRecommended(recPage + 1)} disabled={loadingRec} className="bg-slate-800 hover:bg-slate-700 text-white px-8 py-3 rounded-full font-bold transition flex items-center gap-2">
-                 {loadingRec ? "Loading..." : "Load More"}
-              </button>
-           </div>
-         )}
+          {/* Infinite Scroll Loader Trigger */}
+          <div ref={observerRef} className="h-20 flex items-center justify-center mt-8">
+             {loadingRec && <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>}
+             {!hasMoreRec && recommended.length > 0 && <span className="text-slate-500 text-xs font-bold uppercase tracking-widest">End of the stream</span>}
+          </div>
       </div>
-
     </div>
   );
 }

@@ -211,14 +211,19 @@ export function DataProvider({ children }) {
   }, [refreshQuizzes]);
 
   const getStats = useCallback(() => {
-    const totalQuestions = quizzes.reduce((sum, c) => sum + c.questions.length, 0);
+    let totalQuestions = 0;
     const totalCategories = quizzes.length;
     const byDifficulty = { easy: 0, medium: 0, hard: 0 };
-    quizzes.forEach((cat) =>
-      cat.questions.forEach((q) => {
-        if (byDifficulty[q.difficulty] !== undefined) byDifficulty[q.difficulty]++;
-      })
-    );
+    
+    quizzes.forEach((cat) => {
+      totalQuestions += (cat.questionCount || 0);
+      if (cat.difficultyStats) {
+        byDifficulty.easy += (cat.difficultyStats.easy || 0);
+        byDifficulty.medium += (cat.difficultyStats.medium || 0);
+        byDifficulty.hard += (cat.difficultyStats.hard || 0);
+      }
+    });
+
     return { totalQuestions, totalCategories, byDifficulty };
   }, [quizzes]);
 

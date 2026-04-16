@@ -58,7 +58,7 @@
 .navList {
   display: flex;
   align-items: center;
-  gap: 6px; /* Tighter gap */
+  gap: 32px; /* Increased gap as requested (gap-x-8 equivalent) */
   list-style: none;
   margin: 0;
   padding: 0;
@@ -84,7 +84,8 @@
 
 .navLink:hover {
   color: var(--text-primary);
-  background: rgba(var(--accent-rgb), 0.05);
+  background: rgba(255, 255, 255, 0.05); /* Subtle white hover overlay */
+  transform: translateY(-1px);
 }
 
 .navLink.active {

@@ -753,7 +753,7 @@ export default function GovtExamManagement() {
                 <div className={styles.formGroup}>
                   <label className={styles.label}>Official Website</label>
                   <input
-                    type="url"
+                    type="text"
                     name="officialWebsite"
                     value={formData.officialWebsite}
                     onChange={handleInputChange}

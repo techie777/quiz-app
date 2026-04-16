@@ -542,7 +542,7 @@ export default function AdminTrueFalsePage() {
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium mb-1">Image URL</label>
                   <input
-                    type="url"
+                    type="text"
                     value={catImage}
                     onChange={(e) => setCatImage(e.target.value)}
                     className="w-full p-2 border rounded"
@@ -737,7 +737,7 @@ export default function AdminTrueFalsePage() {
                 <div>
                   <label className="block text-sm font-medium mb-1">Image URL</label>
                   <input
-                    type="url"
+                    type="text"
                     value={questionImage}
                     onChange={(e) => setQuestionImage(e.target.value)}
                     className="w-full p-2 border rounded"

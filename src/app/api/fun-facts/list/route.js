@@ -13,13 +13,17 @@ export async function GET(request) {
     const limit = parseInt(searchParams.get("limit") || "20");
     const tab = searchParams.get("tab") || "all"; // all, trending, daily, favorites
     const q = searchParams.get("q") || "";
-    
+
     const skip = (page - 1) * limit;
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id;
 
+    const excludeId = searchParams.get("excludeId");
+    const excludeImg = searchParams.get("excludeImg") === "true";
+
     // Build Where Clause
     let whereClause = { hidden: false };
+    if (excludeId) whereClause.id = { not: excludeId };
 
     // Search query
     if (q) {
@@ -35,53 +39,79 @@ export async function GET(request) {
       whereClause.categoryId = { in: catArray };
     }
 
-    // Tabs filter
+    // Determine sort for text-based fallback
     let orderBy = { createdAt: "desc" };
-    if (tab === "daily") {
-      whereClause.isDaily = true;
-    } else if (tab === "favorites") {
-      if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      whereClause.favorites = { some: { userId } };
-    } else if (tab === "trending") {
-      orderBy = { views: "desc" };
-    } else if (tab === "random" || tab === "all") {
-      // Both the explicit 'Random' tab AND the default 'All' feed should be thoroughly mixed
-      const allIds = await prisma.funFact.findMany({ select: { id: true }, where: whereClause });
-      if (allIds.length > 0) {
-         const shuffled = allIds.sort(() => 0.5 - Math.random());
-         const selectedIds = shuffled.slice(0, limit).map(x => x.id);
-         whereClause.id = { in: selectedIds };
-      }
-    }
+    if (tab === "trending") orderBy = { views: "desc" };
 
-    // Backup the pristine unconstrained whereClause to count total accurately
-    const countWhereClause = { ...whereClause };
-    if (tab === "random" || tab === "all") delete countWhereClause.id;
+    // STABLE RANDOM SHUFFLE: Use a seed for shuffling. 
+    const { searchParams: sParams } = new URL(request.url);
+    const customSeed = sParams.get("seed");
+    const activeSeed = customSeed || new Date().toISOString().slice(0, 13);
+    
+    // Fetch all non-hidden IDs
+    const allIdsRaw = await prisma.funFact.findMany({
+      where: whereClause,
+      select: { id: true, categoryId: true }
+    });
 
-    const querySkip = (tab === "random" || tab === "all") ? 0 : skip;
+    // Helper to generate seeded random number
+    const seededRandom = (seedStr) => {
+        let hash = 0;
+        for (let i = 0; i < seedStr.length; i++) {
+            hash = ((hash << 5) - hash) + seedStr.charCodeAt(i);
+            hash |= 0;
+        }
+        // Pseudo-random generator based on hash
+        const x = Math.sin(hash++) * 10000;
+        return x - Math.floor(x);
+    };
 
-    const [rawFacts, totalCount] = await Promise.all([
-      prisma.funFact.findMany({
-        where: whereClause,
-        include: { 
-          category: true,
-          _count: {
-            select: { likes: true, comments: true }
-          },
-          ...(userId && {
-            likes: { where: { userId }, select: { id: true } },
-            favorites: { where: { userId }, select: { id: true } }
-          })
+    // Global Seeded Fisher-Yates Shuffle
+    let combinedIds = allIdsRaw.map(f => f.id);
+    const seedVal = activeSeed.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+    
+    const shuffle = (array, seed) => {
+        let m = array.length, t, i;
+        let s = seed;
+        while (m) {
+            // LCG based shuffle
+            s = (s * 9301 + 49297) % 233280;
+            i = Math.floor((s / 233280) * m--);
+            t = array[m];
+            array[m] = array[i];
+            array[i] = t;
+        }
+        return array;
+    };
+
+    combinedIds = shuffle(combinedIds, seedVal);
+
+    // Apply pagination
+    const selectedIds = combinedIds.slice(skip, skip + limit);
+    const totalCount = combinedIds.length;
+    
+    // Restore the final filter for the paginated fetch
+    const finalWhere = { id: { in: selectedIds } };
+
+    const rawFacts = await prisma.funFact.findMany({
+      where: finalWhere,
+      include: {
+        category: true,
+        _count: {
+          select: { likes: true, comments: true }
         },
-        orderBy,
-        skip: querySkip,
-        take: limit,
-      }),
-      prisma.funFact.count({ where: countWhereClause })
-    ]);
+        ...(userId && {
+          likes: { where: { userId }, select: { id: true } },
+          favorites: { where: { userId }, select: { id: true } }
+        })
+      },
+    });
+
+    // CRITICAL: Prisma does not maintain order of 'in' clause, so we sort manually here
+    const sortedFacts = selectedIds.map(id => rawFacts.find(f => f.id === id)).filter(Boolean);
 
     // Map the results to flatten user interaction flags
-    const facts = rawFacts.map(fact => {
+    const facts = sortedFacts.map(fact => {
       const hasLiked = userId ? fact.likes.length > 0 : false;
       const hasFavorited = userId ? fact.favorites.length > 0 : false;
       const { likes, favorites, ...rest } = fact;
@@ -92,15 +122,23 @@ export async function GET(request) {
       };
     });
 
-    return NextResponse.json({ 
-      facts, 
+    return new Response(JSON.stringify({
+      facts,
       pagination: {
         page,
         limit,
         totalCount,
         totalPages: Math.ceil(totalCount / limit)
       }
-    }, { status: 200 });
+    }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
+    });
 
   } catch (error) {
     console.error("Error fetching fun facts list:", error);

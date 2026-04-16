@@ -18,8 +18,8 @@ export default async function Page() {
         ]
       },
       include: {
-        questions: {
-            take: 1 // Just to get a count or existence if needed
+        _count: {
+          select: { questions: true }
         },
       },
       orderBy: { sortOrder: "asc" },
@@ -57,7 +57,7 @@ export default async function Page() {
       showSubCategoriesOnHome: cat.showSubCategoriesOnHome,
       createdAt: cat.createdAt.toISOString(),
       updatedAt: cat.updatedAt.toISOString(),
-      questionCount: cat.questions?.length || 0,
+      questionCount: cat._count?.questions || 0,
        // Provide minimal questions if necessary, though Home usually just needs basic info
       questions: [],
     }));

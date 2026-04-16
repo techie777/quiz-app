@@ -143,7 +143,9 @@ export default function RootLayout({ children }) {
         <Providers>
           <Header />
           <SmartNavigation />
-          <Breadcrumbs />
+          <div className="hidden md:block">
+            <Breadcrumbs />
+          </div>
           <main style={{ flex: 1 }}>
             <ErrorBoundary>
               {children}

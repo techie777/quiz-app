@@ -47,3 +47,21 @@ export async function DELETE(request) {
     return NextResponse.json({ error: "Failed to delete category" }, { status: 500 });
   }
 }
+
+export async function PATCH(request) {
+  try {
+    const body = await request.json();
+    const { id, name, nameHi, slug, image, sortOrder } = body;
+
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+
+    const category = await prisma.funFactCategory.update({
+      where: { id },
+      data: { name, nameHi, slug, image, sortOrder },
+    });
+    return NextResponse.json({ category }, { status: 200 });
+  } catch (error) {
+    console.error("Error updating category:", error);
+    return NextResponse.json({ error: "Failed to update category" }, { status: 500 });
+  }
+}
