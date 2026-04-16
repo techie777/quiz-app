@@ -12,6 +12,8 @@ import toast from "react-hot-toast";
 import styles from "@/styles/LandingPage.module.css";
 import WelcomePromoPopup from "@/components/WelcomePromoPopup";
 import LiveStudyButton from "@/components/engine/LiveStudyButton";
+import MixPlayCard from "@/components/MixPlayCard";
+import MixQuizModal from "@/components/MixQuizModal";
 
 // Import safe JSON parsing utility
 function safeJsonParse(json, fallback = []) {
@@ -184,7 +186,7 @@ const calculateProgress = (categoryId, totalQuestions) => {
 };
 
 // Sub-section component for categorized quizzes
-const SubSection = React.memo(({ title, quizzes, onViewAll }) => {
+const SubSection = React.memo(({ title, quizzes, onViewAll, showMixCard, sectionName, onOpenMixModal }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [favorites, setFavorites] = useState(new Set());
   const { data: session } = useSession();
@@ -195,7 +197,7 @@ const SubSection = React.memo(({ title, quizzes, onViewAll }) => {
 
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     const url = `${origin}/category/${quiz.id}`;
-    const text = `${quiz.topic} • ${quiz.questionCount || 0} questions`;
+    const text = `${quiz.topic} - ${quiz.questionCount || 0} questions`;
 
     async function shareLinkOnly() {
       if (navigator.share) {
@@ -316,6 +318,15 @@ const SubSection = React.memo(({ title, quizzes, onViewAll }) => {
     setIsExpanded(prev => !prev);
   }, []);
 
+  const router = useRouter();
+  const handleLivePlay = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const sessionId = Math.random().toString(36).substring(2, 10).toUpperCase();
+    toast.success("Creating live room...");
+    router.push(`/live/${sessionId}?is_host=true`);
+  }, [router]);
+
   if (!quizzes || quizzes.length === 0) return null;
 
   return (
@@ -347,6 +358,7 @@ const SubSection = React.memo(({ title, quizzes, onViewAll }) => {
         </button>
       </div>
       <div className={`${styles.subSectionGrid} ${!isExpanded ? styles.collapsed : ''}`}>
+        {showMixCard && <MixPlayCard sectionName={sectionName} onOpenModal={onOpenMixModal} />}
         {(quizzes || []).map((quiz) => (
           <motion.div
             key={quiz.id}
@@ -390,18 +402,26 @@ const SubSection = React.memo(({ title, quizzes, onViewAll }) => {
                 <h4 className={styles.subSectionCardTitle}>{quiz.topic}</h4>
                 
                 {/* Play Quiz Button */}
-                <button
-                  className={styles.playQuizButton}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    // Navigate to the quiz category page
-                    window.location.href = `/category/${quiz.id}`;
-                  }}
-                  aria-label={`Play ${quiz.topic} quiz`}
-                >
-                  Play Quiz
-                </button>
+                <div className={styles.setCardActions}>
+                  <button
+                    className={styles.playQuizButton}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      window.location.href = `/category/${quiz.id}`;
+                    }}
+                    aria-label={`Play ${quiz.topic} quiz`}
+                  >
+                    Play Quiz
+                  </button>
+                  <button
+                    className={styles.liveButtonStyle}
+                    onClick={handleLivePlay}
+                  >
+                    <span className={styles.liveDot}></span>
+                    Play Live
+                  </button>
+                </div>
 
                 <div className={styles.subSectionCardFooter}>
                   <span className={styles.subSectionCardCount}>
@@ -450,7 +470,7 @@ function categorizeQuizzes(quizzes, sections) {
 }
 
 // Main Category Section component
-const MainCategorySection = React.memo(({ category, categorizedData, sectionIds }) => {
+const MainCategorySection = React.memo(({ category, categorizedData, sectionIds, onOpenMixModal, isFirstSection }) => {
   const subSections = categorizedData[category] || [];
   
   if (subSections.length === 0) return null;
@@ -458,11 +478,15 @@ const MainCategorySection = React.memo(({ category, categorizedData, sectionIds 
   return (
     <div className={styles.mainCategorySection} id={sectionIds?.[category] || undefined}>
       <h2 className={styles.sectionTitle}>{category}</h2>
-      {subSections.map((subSection) => (
+      
+      {subSections.map((subSection, index) => (
         <SubSection
           key={subSection.title}
           title={subSection.title}
           quizzes={subSection.quizzes}
+          showMixCard={isFirstSection && index === 0}
+          sectionName={category}
+          onOpenMixModal={onOpenMixModal}
         />
       ))}
     </div>
@@ -533,6 +557,15 @@ export default function LandingPage({ initialCategories = [] }) {
   const [userProgress, setUserProgress] = useState({});
   const [previewCategory, setPreviewCategory] = useState(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  
+  // Mixed Mode State
+  const [showMixModal, setShowMixModal] = useState(false);
+  const [activeMixSection, setActiveMixSection] = useState(null);
+
+  const handleOpenMixModal = useCallback((sectionName) => {
+    setActiveMixSection(sectionName);
+    setShowMixModal(true);
+  }, []);
 
   // Fetch paginated categories
   const fetchCategories = useCallback(async (reset = false) => {
@@ -1060,22 +1093,30 @@ export default function LandingPage({ initialCategories = [] }) {
             </div>
           </div>
 
-          {Object.keys(categorizedQuizzes).map((categoryName) => (
+          {Object.keys(categorizedQuizzes).map((categoryName, index) => (
             <MainCategorySection 
               key={categoryName}
               category={categoryName} 
               categorizedData={categorizedQuizzes} 
               sectionIds={sectionIds}
+              onOpenMixModal={handleOpenMixModal}
+              isFirstSection={index === 0}
             />
           ))}
         </div>
       )}
 
+      <MixQuizModal 
+        isOpen={showMixModal} 
+        onClose={() => setShowMixModal(false)} 
+        sectionName={activeMixSection} 
+      />
+
       {/* All Categories Section (shown when searching or filtering) */}
       {(search || activeFilters.length > 0) && (
         <>
           <h2 className={styles.sectionTitle}>All Categories</h2>
-          {loading && visibleCategories.length === 0 && <div className={styles.loadingHint}>Loading categories…</div>}
+            {loading && visibleCategories.length === 0 && <div className={styles.loadingHint}>Loading categories...</div>}
           <motion.div 
             className={styles.subSectionGrid}
             variants={{ 
@@ -1273,7 +1314,7 @@ export default function LandingPage({ initialCategories = [] }) {
                 className={styles.modalPrimaryButton}
                 onClick={closePreviewModal}
               >
-                🚀 Start Quiz
+                Start Quiz
               </Link>
               <button 
                 className={styles.modalSecondaryButton}

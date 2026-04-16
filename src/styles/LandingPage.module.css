@@ -541,3 +541,365 @@
   .advancedFiltersPanel { left: 0; transform: none; width: 100%; flex-direction: column; gap: 16px; }
   .grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
 }
+
+/* ===== Mega Mix Challenge ===== */
+.mixPlayCard {
+  background: var(--bg-secondary) !important;
+  border: 2px solid rgba(168, 85, 247, 0.1) !important;
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+  min-height: 220px;
+  display: flex !important;
+  flex-direction: column;
+}
+
+.mixCardGradient {
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 5px;
+  background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899);
+  z-index: 2;
+}
+
+.mixIconWrapper {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(99, 102, 241, 0.1));
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  color: #a855f7;
+}
+
+.mixCardTitle {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  text-align: center;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.mixCardDescription {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin-bottom: 20px;
+  line-height: 1.4;
+}
+
+.mixCardFooter {
+  margin-top: auto;
+}
+
+.mixPlayBtn {
+  width: 100%;
+  padding: 12px;
+  background: var(--text-primary);
+  color: white;
+  border-radius: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.mixPlayCard:hover .mixPlayBtn {
+  background: var(--accent);
+  transform: translateY(-2px);
+}
+
+.mixCardBubble {
+  position: absolute;
+  bottom: -40px;
+  left: -40px;
+  width: 120px;
+  height: 120px;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* ===== Mix Modal ===== */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.mixModal {
+  width: 100%;
+  max-width: 420px;
+  background: white;
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+  position: relative;
+}
+
+[data-theme="dark"] .mixModal {
+  background: var(--bg-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modalHeader {
+  padding: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.modalTitleArea {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.modalIcon {
+  color: var(--accent);
+}
+
+.modalHeader h3 {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.modalBody {
+  padding: 24px;
+}
+
+.modalSubtitle {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin-bottom: 32px;
+}
+
+.settingGroup {
+  margin-bottom: 28px;
+}
+
+.settingLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  font-size: 0.95rem;
+}
+
+.presetGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.presetBtn {
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-weight: 700;
+  border: 1px solid var(--card-border);
+  transition: all 0.2s;
+}
+
+.presetBtn.active {
+  background: var(--text-primary);
+  color: white;
+}
+
+.sliderContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rangeSlider {
+  width: 100%;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: #e2e8f0; /* More visible color for the track */
+  border-radius: 10px;
+  outline: none;
+}
+
+.rangeSlider::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: var(--accent);
+  border: 3px solid white;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.sliderValue {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.difficultyTabs {
+  display: flex;
+  background: var(--bg-primary);
+  padding: 4px;
+  border-radius: 14px;
+  border: 1px solid var(--card-border);
+}
+
+.diffTab {
+  flex: 1;
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  background: transparent;
+  color: var(--text-muted);
+  transition: all 0.2s;
+}
+
+.diffTab.active {
+  background: white;
+  color: var(--accent);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+[data-theme="dark"] .diffTab.active {
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+
+.modalFooter {
+  padding: 24px;
+  background: var(--bg-primary);
+  border-top: 1px solid var(--card-border);
+}
+
+.playBtn {
+  width: 100%;
+  padding: 16px;
+  background: var(--brand-gradient);
+  color: white;
+  border-radius: 16px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  box-shadow: 0 10px 20px rgba(99, 102, 241, 0.2);
+}
+
+.playBtn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+  box-shadow: 0 15px 30px rgba(99, 102, 241, 0.3);
+}
+
+.playBtn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.closeBtn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: var(--bg-primary);
+  color: var(--text-muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: all 0.2s;
+}
+
+.closeBtn:hover {
+  background: #fee2e2;
+  color: #ef4444;
+  transform: rotate(90deg);
+}
+
+.setCardActions {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+  width: 100%;
+}
+
+.playQuizButton {
+  flex: 2;
+  background: var(--brand-gradient);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.playQuizButton:hover {
+  filter: brightness(1.1);
+  transform: translateY(-2px);
+}
+
+.liveButtonStyle {
+  flex: 1;
+  background: white;
+  color: #ef4444;
+  border: 1px solid #fee2e2;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.liveButtonStyle:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+  transform: translateY(-2px);
+}
+
+.liveDot {
+  width: 8px;
+  height: 8px;
+  background: #ef4444;
+  border-radius: 50%;
+  animation: livePulse 1.5s infinite;
+}
+
+@keyframes livePulse {
+  0% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  70% { transform: scale(1.1); opacity: 0.7; box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+  100% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}

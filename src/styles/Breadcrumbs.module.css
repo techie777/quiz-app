@@ -3,7 +3,7 @@
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--card-border);
   position: sticky;
-  top: 128px; /* Below Header (64px) + SmartNav (64px) */
+  top: 104px; /* Below Header (56px) + SmartNav (48px) */
   z-index: 1002;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -59,7 +59,7 @@
 @media (max-width: 768px) {
   .breadcrumbsContainer {
     padding: 0.4rem 1rem;
-    top: 64px; /* Directly below Header (SmartNav is hidden) */
+    top: 56px; /* Directly below Header (SmartNav is hidden) */
     font-size: 0.75rem;
   }
   

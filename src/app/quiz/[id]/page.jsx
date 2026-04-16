@@ -155,6 +155,8 @@ function QuizEngineContent() {
     goToQuestion,
     resetQuiz,
     answers,
+    isMixedMode,
+    mixedSectionName,
   } = useQuiz();
 
   const [favouriteIds, setFavouriteIds] = useState(null);
@@ -187,8 +189,9 @@ function QuizEngineContent() {
   });
 
   const category = useMemo(() => {
+    if (isMixedMode) return null;
     return (quizzes || []).find((q) => q.id === params?.id);
-  }, [quizzes, params?.id]);
+  }, [quizzes, params?.id, isMixedMode]);
 
   const storyTextToDisplay = useMemo(() => {
     return translatedStory || category?.storyText;
@@ -205,9 +208,13 @@ function QuizEngineContent() {
   }, [storyTextToDisplay, category?.storyImage]);
 
   const storyHeading = useMemo(() => {
+    if (isMixedMode) {
+      if (language === "hi") return `मेगा मिक्स: ${mixedSectionName} - चुनौती`;
+      return `Mega Mix: ${mixedSectionName} - Challenge`;
+    }
     if (language === "hi") return `${category?.topic} - संक्षिप्त कहानी`;
     return `${category?.topic} - Short Story`;
-  }, [category?.topic, language]);
+  }, [category?.topic, language, isMixedMode, mixedSectionName]);
 
   const sidebarTitle = useMemo(() => {
     if (language === "hi") return "प्रश्नोत्तरी कहानी पढ़ें";

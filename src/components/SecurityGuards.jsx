@@ -38,19 +38,21 @@ function SecurityGuardsImpl() {
       const key = String(e.key || "").toLowerCase();
       const ctrlOrCmd = e.ctrlKey || e.metaKey;
 
-      // Block common extraction / save / view-source combos
+      // Block common extraction / save / view-source combos (Ctrl+C, S, U, etc.)
       if (ctrlOrCmd && ["c", "x", "v", "a", "s", "p", "u"].includes(key)) {
         e.preventDefault();
         return;
       }
 
-      // DevTools shortcuts (best-effort deterrent)
-      if (key === "f12") {
+      // DevTools shortcuts (Ctrl+Shift+I/J/C, F12)
+      const isDevToolsKey = 
+        key === "f12" || 
+        (ctrlOrCmd && e.shiftKey && ["i", "j", "c"].includes(key)) ||
+        (ctrlOrCmd && key === "u"); // Second check for Ctrl+U
+      
+      if (isDevToolsKey) {
         e.preventDefault();
-        return;
-      }
-      if (ctrlOrCmd && e.shiftKey && ["i", "j", "c"].includes(key)) {
-        e.preventDefault();
+        console.warn("Security: Inspection tools are disabled on this page.");
         return;
       }
     };

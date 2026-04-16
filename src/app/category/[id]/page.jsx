@@ -138,6 +138,12 @@ export default function CategorySetsPage() {
     return category?.subCategories || [];
   }, [category]);
 
+  const handleLivePlay = () => {
+    const sessionId = Math.random().toString(36).substring(2, 10).toUpperCase();
+    toast.success("Creating live room for this set...");
+    router.push(`/live/${sessionId}?is_host=true`);
+  };
+
   // JSON-LD Schema for SEO
   const jsonLd = useMemo(() => {
     if (!category || !questionsLoaded) return null;
@@ -307,12 +313,11 @@ export default function CategorySetsPage() {
                         transition={{ type: "spring", stiffness: 300 }}
                     >
                         <div className={styles.setCardHeader}>
-                            <h3 className={styles.setCardTitle}>Study Set {set.index}</h3>
+                            <h3 className={styles.setCardTitle}>{category.topic} Set {set.index}</h3>
                             {set.progress?.isComplete && (
                                <span className={styles.masteryTick} title="100% Completed">✓</span>
                             )}
                             <div className={styles.setMeta}>
-                              <span className={styles.setRange}>Q {set.start + 1} – {set.end}</span>
                               {set.progress?.progress > 0 && !set.progress.isComplete && (
                                 <span className={styles.progressPercent}>{Math.round(set.progress.progress)}% Done</span>
                               )}
@@ -335,17 +340,23 @@ export default function CategorySetsPage() {
                             </div>
                           )}
                         </div>
-                        <button className={styles.playIconButton} onClick={() => handlePlay(set)}>
-                            <span>{set.progress?.progress > 0 && !set.progress.isComplete ? "Continue Learning" : "Start Exploring"}</span>
-                            <span className={styles.playArrow}>→</span>
-                        </button>
+                        <div className={styles.setCardActions}>
+                            <button className={styles.playIconButton} onClick={() => handlePlay(set)}>
+                                <span>{set.progress?.progress > 0 && !set.progress.isComplete ? "Continue Learning" : "Play Quiz"}</span>
+                                <span className={styles.playArrow}>&gt;</span>
+                            </button>
+                            <button className={styles.liveButtonStyle} onClick={handleLivePlay}>
+                                <span className={styles.liveDot}></span>
+                                Play Live
+                            </button>
+                        </div>
                     </motion.div>
                 ))}
             </div>
 
             {totalPages > 1 && (
                 <div className={styles.paginationArea}>
-                    <button className={styles.pageArrow} disabled={page === 1} onClick={() => setPage(page-1)}>←</button>
+                    <button className={styles.pageArrow} disabled={page === 1} onClick={() => setPage(page-1)}>&lt;</button>
                     <div className={styles.pageDots}>
                         {Array.from({ length: totalPages }).map((_, i) => (
                             <button key={i} className={`${styles.pageDot} ${page === i+1 ? styles.dotActive : ""}`} onClick={() => setPage(i+1)}>{i+1}</button>
@@ -388,48 +399,78 @@ export default function CategorySetsPage() {
 
              <div className={styles.questionsList}>
                  {!questionsLoaded ? <div className={styles.loadingIndex}>Optimizing question index...</div> : (
-                     filteredQuestions.map((q, idx) => (
-                         <div key={idx} className={styles.indexItem}>
-                             {/* Monetization Slot Placeholder */}
-                             {idx > 0 && idx % 10 === 0 && <div className={styles.adPlaceholder}><span>ADVERTISEMENT SLOT</span></div>}
+                     sets.map((set) => {
+                         const setQuestions = set.questions.filter(q => 
+                             !searchQuestion.trim() || 
+                             q.text.toLowerCase().includes(searchQuestion.toLowerCase()) ||
+                             (q.options && q.options.some(opt => opt.toLowerCase().includes(searchQuestion.toLowerCase())))
+                         );
 
-                             <div className={styles.indexQuestion}>
-                                 <span className={styles.qNum}>#{idx + 1}</span>
-                                 <h3 className={styles.qText}>{q.text}</h3>
-                             </div>
-                             
-                             <div className={styles.indexActions}>
-                                 <button className={styles.revealBtn} onClick={() => toggleAnswer(idx)}>
-                                     {revealedAnswers.has(idx) ? "Hide Details" : "Reveal Answer & Options"}
-                                 </button>
-                             </div>
+                         if (setQuestions.length === 0) return null;
 
-                             <AnimatePresence>
-                                {revealedAnswers.has(idx) && (
-                                    <motion.div 
-                                        className={styles.expandedDetails}
-                                        initial={{ height: 0, opacity: 0 }}
-                                        animate={{ height: "auto", opacity: 1 }}
-                                        exit={{ height: 0, opacity: 0 }}
-                                    >
-                                        <ul className={styles.optionsList}>
-                                            {q.options.map((opt, oIdx) => {
-                                                const isCorrect = String(opt).trim() === String(q.correctAnswer).trim();
-                                                return (
-                                                    <li key={oIdx} className={isCorrect ? styles.correctOpt : ""}>
-                                                        {opt} {isCorrect && <span className={styles.check}>✓</span>}
-                                                    </li>
-                                                );
-                                            })}
-                                        </ul>
-                                        {q.explanation && <p className={styles.explanation}><strong>Explanation:</strong> {q.explanation}</p>}
-                                    </motion.div>
-                                )}
-                             </AnimatePresence>
-                         </div>
-                     ))
+                         return (
+                             <div key={set.index} className={styles.indexSetGroup}>
+                                 <div className={styles.indexSetHeader}>
+                                     <div className={styles.indexSetInfo}>
+                                         <h3 className={styles.indexSetTitle}>{category.topic} Set {set.index}</h3>
+                                         <p className={styles.indexSetSub}>Questions #{set.start + 1} to #{set.end}</p>
+                                     </div>
+                                     <button className={styles.indexPlayBtn} onClick={() => handlePlay(set)}>
+                                         Play {category.topic} Quiz (Set {set.index}) →
+                                     </button>
+                                 </div>
+                                 <div className={styles.indexSetQuestions}>
+                                     {setQuestions.map((q, qOffset) => {
+                                         const globalIdx = set.start + set.questions.indexOf(q);
+                                         return (
+                                             <div key={globalIdx} className={styles.indexItem}>
+                                                 {/* Monetization Slot Placeholder */}
+                                                 {globalIdx > 0 && globalIdx % 10 === 0 && <div className={styles.adPlaceholder}><span>ADVERTISEMENT SLOT</span></div>}
+
+                                                 <div className={styles.indexQuestion}>
+                                                     <span className={styles.qNum}>#{globalIdx + 1}</span>
+                                                     <h3 className={styles.qText}>{q.text}</h3>
+                                                 </div>
+                                                 
+                                                 <div className={styles.indexActions}>
+                                                     <button className={styles.revealBtn} onClick={() => toggleAnswer(globalIdx)}>
+                                                         {revealedAnswers.has(globalIdx) ? "Hide Details" : "Reveal Answer & Options"}
+                                                     </button>
+                                                 </div>
+
+                                                 <AnimatePresence>
+                                                    {revealedAnswers.has(globalIdx) && (
+                                                        <motion.div 
+                                                            className={styles.expandedDetails}
+                                                            initial={{ height: 0, opacity: 0 }}
+                                                            animate={{ height: "auto", opacity: 1 }}
+                                                            exit={{ height: 0, opacity: 0 }}
+                                                        >
+                                                            <ul className={styles.optionsList}>
+                                                                {q.options.map((opt, oIdx) => {
+                                                                    const isCorrect = String(opt).trim() === String(q.correctAnswer).trim();
+                                                                    return (
+                                                                        <li key={oIdx} className={isCorrect ? styles.correctOpt : ""}>
+                                                                            {opt} {isCorrect && <span className={styles.check}>✓</span>}
+                                                                        </li>
+                                                                    );
+                                                                })}
+                                                            </ul>
+                                                            {q.explanation && <p className={styles.explanation}><strong>Explanation:</strong> {q.explanation}</p>}
+                                                        </motion.div>
+                                                    )}
+                                                 </AnimatePresence>
+                                             </div>
+                                         );
+                                     })}
+                                 </div>
+                             </div>
+                         );
+                     })
                  )}
-                 {questionsLoaded && filteredQuestions.length === 0 && <p className={styles.noResults}>No questions found matching your search.</p>}
+                 {questionsLoaded && sets.every(s => s.questions.filter(q => !searchQuestion.trim() || q.text.toLowerCase().includes(searchQuestion.toLowerCase()) || (q.options && q.options.some(opt => opt.toLowerCase().includes(searchQuestion.toLowerCase())))).length === 0) && (
+                     <p className={styles.noResults}>No questions found matching your search.</p>
+                 )}
              </div>
         </section>
       </div>

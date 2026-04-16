@@ -65,6 +65,8 @@ const initialState = {
   originalQuestions: [],
   originalLanguage: "en",
   originalStory: null,
+  isMixedMode: false,
+  mixedSectionName: null,
 };
 
 // Key for storage
@@ -127,6 +129,29 @@ function quizReducer(state, action) {
         originalStory: null,
         translatedStory: null,
         selectedSetIndex: setIndex,
+      };
+    }
+    case "START_MIXED_QUIZ": {
+      const { questions, sectionName, timer, difficulty, language } = action.payload;
+      
+      const shuffledQuestions = shuffleArray(questions).map(q => ({
+        ...q,
+        options: Array.isArray(q.options) ? shuffleArray(q.options) : []
+      }));
+
+      return {
+        ...initialState,
+        isMixedMode: true,
+        mixedSectionName: sectionName,
+        difficulty: difficulty,
+        timerSetting: timer,
+        questions: shuffledQuestions,
+        status: "active",
+        soundEnabled: state.soundEnabled,
+        isFullscreen: state.isFullscreen,
+        language: language || detectQuizLanguage(shuffledQuestions),
+        originalLanguage: language || detectQuizLanguage(shuffledQuestions),
+        originalQuestions: shuffledQuestions,
       };
     }
     case "SET_QUESTIONS":
@@ -519,6 +544,12 @@ export function QuizProvider({ children }) {
         ...state,
         startQuiz,
         startQuizSet,
+        startMixedQuiz: (questions, sectionName, timer, difficulty, language = "en") => {
+          dispatch({ 
+            type: "START_MIXED_QUIZ", 
+            payload: { questions, sectionName, timer, difficulty, language } 
+          });
+        },
         submitAnswer,
         finishQuiz,
         updateScore,

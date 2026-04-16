@@ -27,7 +27,22 @@ const CONFETTI_COLORS = ["#4361ee", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", 
 export default function ResultPage() {
   const router = useRouter();
   const { isPro } = useMonetization();
-  const { score, questions, answers, quizId, difficulty, timerSetting, language, selectedSetIndex, resetQuiz, startQuiz, startQuizSet } = useQuiz();
+  const { 
+    score, 
+    questions, 
+    answers, 
+    quizId, 
+    difficulty, 
+    timerSetting, 
+    language, 
+    selectedSetIndex, 
+    resetQuiz, 
+    startQuiz, 
+    startQuizSet,
+    startMixedQuiz,
+    isMixedMode,
+    mixedSectionName
+  } = useQuiz();
   const { quizzes } = useData();
   const [showReview, setShowReview] = useState(false);
   const [confetti, setConfetti] = useState([]);
@@ -37,8 +52,9 @@ export default function ResultPage() {
   const [showGateAd, setShowGateAd] = useState(true);
 
   const category = useMemo(() => {
+    if (isMixedMode) return null;
     return (quizzes || []).find((q) => q.id === quizId);
-  }, [quizzes, quizId]);
+  }, [quizzes, quizId, isMixedMode]);
 
   const filteredQuizzes = useMemo(() => {
     if (!quizzes || !Array.isArray(quizzes)) return [];
@@ -68,6 +84,10 @@ export default function ResultPage() {
   }, [questions]);
 
   const handleContinueNextSet = () => {
+     if (isMixedMode) {
+       router.push("/");
+       return;
+     }
      router.push(`/category/${quizId}`);
    };
 
@@ -113,12 +133,21 @@ export default function ResultPage() {
   }, [total]);
 
   const handlePlayAgain = () => {
+    if (isMixedMode) {
+      startMixedQuiz(questions, mixedSectionName, timerSetting, difficulty, language);
+      router.push("/quiz/mix");
+      return;
+    }
     startQuizSet(quizId, questions, timerSetting, language);
     router.push(`/quiz/${quizId}`);
   };
 
   const handleBackToQuizzes = () => {
     resetQuiz();
+    if (isMixedMode) {
+      router.push("/");
+      return;
+    }
     router.push(`/category/${quizId}`);
   };
 
@@ -205,13 +234,16 @@ export default function ResultPage() {
               {quizId && (
                 <div className={styles.nextSetTeaser} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '16px' }}>
                   <button className={styles.nextSetLink} onClick={handleContinueNextSet}>
-                    🚀 Continue to {category?.topic || "Next Set"} ({selectedSetIndex ? `Set ${selectedSetIndex + 1}` : "Next"})
+                    {isMixedMode 
+                      ? `Back to ${mixedSectionName} Categories`
+                      : `Continue to ${category?.topic || "Next Set"} (${selectedSetIndex ? `Set ${selectedSetIndex + 1}` : "Next"})`
+                    }
                   </button>
                   <button onClick={() => {
                       const shareText = `I just scored ${score}/${total} (${percentage}%) in ${category?.topic || 'QuizWeb'}! Think you can beat me?`;
                       const shareUrl = window.location.origin + `/category/${quizId}`;
                       if (navigator.share) {
-                          navigator.share({ title: '🎯 My Quiz Score!', text: shareText, url: shareUrl }).catch(()=>{});
+                          navigator.share({ title: 'My Quiz Score!', text: shareText, url: shareUrl }).catch(()=>{});
                       } else { 
                           navigator.clipboard.writeText(`${shareText} ${shareUrl}`); 
                           toast.success("Score copied to clipboard!"); 
