@@ -5,14 +5,38 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useSessionEngine } from '@/engine/SessionProvider';
 import socketService from '@/engine/lib/socket';
+import confetti from 'canvas-confetti';
 
 /**
  * TACTICAL PLAYER V3.0 - Timing & Grid Edition
  * Supporting mission timers and optimized for Desktop Sidebar layout.
  */
 
-export default function QuizPlayer({ state }) {
-  const { participants, session: engineSession, sendAction } = useSessionEngine();
+const playTuckSound = () => {
+    try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+        osc.type = 'sine';
+        osc.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        
+        // Solid 'Tuck' or 'Thud' sound: 150Hz -> 40Hz
+        osc.frequency.setValueAtTime(150, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.3);
+        
+        gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+        
+        osc.start();
+        osc.stop(ctx.currentTime + 0.3);
+    } catch (e) {}
+};
+
+export default function QuizPlayer({ state, onLeave }) {
+  const { participants, session: engineSession, sendAction, playSessionSound } = useSessionEngine();
   const [countdown, setCountdown] = useState(3);
   const [showQuestions, setShowQuestions] = useState(false);
   const [questions, setQuestions] = useState([]);
@@ -24,13 +48,15 @@ export default function QuizPlayer({ state }) {
   const [isCorrect, setIsCorrect] = useState(null);
 
   const questionLimit = state.questionLimit || 10;
+  const setIndex = state.setIndex || 1;
 
   useEffect(() => {
     const fetchContent = async () => {
       try {
         const res = await axios.get(`/api/categories/${state.activeContentId}`);
         const allQuestions = res.data.questions || [];
-        setQuestions(allQuestions.slice(0, questionLimit));
+        const startIndex = (setIndex - 1) * 20;
+        setQuestions(allQuestions.slice(startIndex, startIndex + questionLimit));
       } catch (err) {
         console.error('Failed to load mission questions:', err);
         toast.error('Mission Data Corrupted.');
@@ -39,7 +65,7 @@ export default function QuizPlayer({ state }) {
       }
     };
     if (state.activeContentId) fetchContent();
-  }, [state.activeContentId, questionLimit]);
+  }, [state.activeContentId, questionLimit, setIndex]);
 
   useEffect(() => {
      if (!loading && questions.length > 0 && countdown > 0) {
@@ -47,8 +73,12 @@ export default function QuizPlayer({ state }) {
         return () => clearTimeout(timer);
      } else if (!loading && questions.length > 0 && countdown === 0) {
         setShowQuestions(true);
+        // RULE #2: If joining late, notify the guest
+        if (engineSession?.role !== 'HOST' && participants.some(p => p.role === 'HOST' && p.progress > 0)) {
+            toast('Joining Mid-Mission: Commencing from Step 0.', { icon: '📡' });
+        }
      }
-  }, [countdown, loading, questions]);
+  }, [countdown, loading, questions, engineSession?.role]);
 
   const [timeLeft, setTimeLeft] = useState(state.timeLimit || 0);
 
@@ -67,31 +97,19 @@ export default function QuizPlayer({ state }) {
     }
   }, [score, currentIndex, engineSession, selectedOption]);
 
-  // STATUS TRACKER: Busy/Active state detection
-  useEffect(() => {
-    const handleVisibility = () => {
-        const socket = socketService.getSocket();
-        if (socket && engineSession?.userId && engineSession?.sessionId) {
-            const submitUserId = engineSession.role === 'HOST' ? 'host_base_operator' : engineSession.userId;
-            socket.emit('UPDATE_STATUS', {
-                sessionId: engineSession.sessionId,
-                userId: submitUserId,
-                status: document.visibilityState === 'visible' ? 'ACTIVE' : 'BUSY'
-            });
-        }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibility);
-    return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, [engineSession]);
 
   // MISSION PULSE: Timer enforcement
   useEffect(() => {
-    if (!showQuestions || finished || state.timeLimit === 0 || !!selectedOption) return;
+    if (!showQuestions || finished || state.timeLimit === 0 || !!selectedOption || engineSession?.isPaused) return;
 
     if (timeLeft <= 0) {
         handleAnswer('TIME_EXPIRED');
         return;
+    }
+
+    // ⌚ TIC-TIC WARNING ENGINE
+    if (timeLeft <= 10 && timeLeft > 0) {
+        playSessionSound('tick');
     }
 
     const timer = setInterval(() => {
@@ -99,7 +117,7 @@ export default function QuizPlayer({ state }) {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [showQuestions, finished, timeLeft, state.timeLimit, selectedOption]);
+  }, [showQuestions, finished, timeLeft, state.timeLimit, selectedOption, engineSession?.isPaused]);
 
   // Reset timer on question change
   useEffect(() => {
@@ -107,12 +125,15 @@ export default function QuizPlayer({ state }) {
   }, [currentIndex, state.timeLimit]);
 
   const handleAnswer = (option) => {
-    if (selectedOption) return;
+    if (selectedOption || engineSession?.isPaused) return;
     const currentQuestion = questions[currentIndex];
     setSelectedOption(option);
     const correct = option === currentQuestion?.correctAnswer;
     setIsCorrect(correct);
-    if (correct) setScore(s => s + 1);
+    if (correct) {
+        setScore(s => s + 1);
+        playSessionSound('success');
+    }
 
     setTimeout(() => {
         if (currentIndex < questions.length - 1) {
@@ -133,16 +154,50 @@ export default function QuizPlayer({ state }) {
     }, 1500);
   };
 
+  // 🎉 CELEBRATION PROTOCOL
+  useEffect(() => {
+    if (finished) {
+        // playTuckSound(); // Replaced by session success sound
+        playSessionSound('success');
+        const duration = 3 * 1000;
+        const end = Date.now() + duration;
+
+        const frame = () => {
+            confetti({
+                particleCount: 5,
+                angle: 60,
+                spread: 55,
+                origin: { x: 0 },
+                colors: ['#4f46e5', '#818cf8', '#ffffff']
+            });
+            confetti({
+                particleCount: 5,
+                angle: 120,
+                spread: 55,
+                origin: { x: 1 },
+                colors: ['#4f46e5', '#818cf8', '#ffffff']
+            });
+
+            if (Date.now() < end) {
+                requestAnimationFrame(frame);
+            }
+        };
+        frame();
+    }
+  }, [finished]);
+
   const scoreboard = useMemo(() => {
      const list = (participants || []).map(p => {
         // HARDWIRE: Prevent UI identity bleeding
         const isActuallyYou = engineSession?.role === 'HOST' ? p?.role === 'HOST' : p?.userId === engineSession?.userId;
+        const isOffline = p?.isOnline === false || p?.status === 'offline';
+        
         return {
            ...p,
            isYou: isActuallyYou,
            displayName: isActuallyYou ? `${p?.userName || 'Operator'} (You)` : (p?.userName || 'Operator'),
            isDone: (p?.progress >= questionLimit) || p?.status === 'DONE',
-           status: p?.status || (p?.isOnline === false ? 'LEFT' : 'ACTIVE')
+           status: isOffline ? 'LEFT' : (p?.status || 'ACTIVE')
         };
      });
      
@@ -191,6 +246,18 @@ export default function QuizPlayer({ state }) {
     );
   };
 
+  const handleNextSet = () => {
+    sendAction('START_SESSION', { 
+        ...state,
+        setIndex: (state.setIndex || 1) + 1,
+        status: 'ACTIVE'
+    });
+  };
+
+  const handleBackToLobby = () => {
+    sendAction('TERMINATE', { status: 'LOBBY' });
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
       
@@ -204,6 +271,15 @@ export default function QuizPlayer({ state }) {
                    <span className="text-[8px] text-indigo-300 font-bold uppercase">Ops</span>
                 </div>
              </div>
+             {engineSession?.role !== 'HOST' && (
+                 <button 
+                    onClick={onLeave}
+                    className="flex-shrink-0 bg-red-600/10 text-red-500 border border-red-500/20 px-4 py-3 rounded-xl flex flex-col items-center justify-center min-w-[70px] hover:bg-red-600 hover:text-white transition-all group"
+                 >
+                    <span className="text-sm group-hover:scale-110 transition-transform">🛫</span>
+                    <span className="text-[7px] font-black uppercase mt-1">Leave</span>
+                 </button>
+             )}
              <div className="flex items-center gap-3 pr-4">
                 {scoreboard.map(p => (
                    <div key={p.userId || p.userName} className={`flex-shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/5 ${p.isYou ? 'bg-indigo-500/10 border-indigo-500/20' : ''}`}>
@@ -211,7 +287,7 @@ export default function QuizPlayer({ state }) {
                          p.role === 'HOST' ? 'bg-indigo-600 text-white' : 'bg-slate-700 text-slate-300'
                       }`}>
                          {p.userName?.[0] || '?'}
-                         {p.isOnline === false && <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 border-2 border-slate-900 rounded-full" />}
+                         {p.status === 'LEFT' && <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 border-2 border-slate-900 rounded-full" />}
                       </div>
                       <div className="min-w-[60px]">
                          <p className={`text-[9px] font-black uppercase tracking-widest truncate max-w-[60px] ${p.isYou ? 'text-indigo-400' : 'text-white'}`}>
@@ -268,9 +344,14 @@ export default function QuizPlayer({ state }) {
                  </div>
               </div>
               {engineSession?.role === 'HOST' && (
-                 <button onClick={() => sendAction('TERMINATE', { status: 'LOBBY' })} className="bg-slate-900 border-2 border-slate-700 hover:bg-black text-white px-8 py-3.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-xl">
-                    Finalize Mission 🛫
-                 </button>
+                 <div className="flex flex-col sm:flex-row items-center gap-4 mt-8">
+                     <button onClick={handleNextSet} className="bg-indigo-600 text-white px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 shadow-xl shadow-indigo-200">
+                        Next Mission Set 🚀
+                     </button>
+                     <button onClick={handleBackToLobby} className="bg-slate-900 border-2 border-slate-700 hover:bg-black text-white px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 shadow-xl">
+                        Back to Library 🛫
+                     </button>
+                 </div>
               )}
           </div>
       ) : (

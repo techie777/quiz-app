@@ -28,6 +28,8 @@ export default function SessionManager({ sessionId }) {
   const [joining, setJoining] = useState(false);
   const [exitCountdown, setExitCountdown] = useState(5);
   const [sessionDuration, setSessionDuration] = useState(0);
+  const { playSessionSound } = useSessionEngine();
+  const notifiedGuestIds = useRef(new Set());
 
   // Diagnostic Pulse
   useEffect(() => {
@@ -129,17 +131,89 @@ export default function SessionManager({ sessionId }) {
     }
   }, [mounted, authSession, authStatus, adminUser, session, sessionId, joinSession, connectionStatus, socket?.id]);
 
+  // 👁️ GLOBAL VISIBILITY TRACKER: Active vs Busy
+  useEffect(() => {
+    const handleVisibility = () => {
+        if (socket && session?.userId && session?.sessionId) {
+            const status = document.visibilityState === 'visible' ? 'ACTIVE' : 'BUSY';
+            console.log(`📡 [VISIBILITY] Operative is now: ${status}`);
+            socket.emit('UPDATE_STATUS', {
+                sessionId: session.sessionId,
+                userId: session.userId,
+                status: status
+            });
+        }
+    };
+
+    const handleBeforeUnload = () => {
+        if (socket && session?.userId && session?.sessionId && session?.role !== 'HOST') {
+            socket.emit('LEAVE_SESSION', { 
+                sessionId: session.sessionId, 
+                userId: session.userId 
+            });
+        }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+        document.removeEventListener('visibilitychange', handleVisibility);
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [session?.userId, session?.sessionId, session?.role, socket]);
+
+  // 🔔 COMMANDER ALERTS: Standby for Squadron Movements
+  const prevParticipantsRef = useRef(participants);
+  useEffect(() => {
+     if (isHost) {
+          const prev = prevParticipantsRef.current;
+          participants.forEach(p => {
+              const prevP = prev.find(item => item.userId === p.userId);
+              if (prevP && prevP.status !== p.status && p.status === 'LEFT') {
+                  toast(`${p.userName} has left the mission area.`, { icon: '🏃' });
+                  playSessionSound('leave');
+              }
+          });
+          prevParticipantsRef.current = participants;
+     }
+  }, [participants, isHost, playSessionSound]);
+
+  useEffect(() => {
+     if (isHost && pendingParticipants.length > 0) {
+          const newGuests = pendingParticipants.filter(g => g?.userId && !notifiedGuestIds.current.has(g.userId));
+          if (newGuests.length > 0) {
+              newGuests.forEach(guest => {
+                  notifiedGuestIds.current.add(guest.userId);
+                  playSessionSound('ting');
+              });
+          }
+     }
+  }, [pendingParticipants, isHost, playSessionSound]);
+
+  const handleLeaveSession = () => {
+    if (window.confirm("Are you sure you want to exit the quiz room? Your progress will be lost.")) {
+        if (socket && session?.userId) {
+            socket.emit('LEAVE_SESSION', { 
+                sessionId: session.sessionId, 
+                userId: session.userId 
+            });
+            // Force eviction UI
+            sendAction('DISCONTINUED', { status: 'DISCONTINUED' }); // Local pivot to terminated state
+            setTimeout(() => { window.location.href = '/'; }, 2000);
+        }
+    }
+  };
+
   useEffect(() => {
     let timer;
-    if (session?.status === 'ACTIVE') {
+    if (session) { // Start timer as soon as session exists
       timer = setInterval(() => {
         setSessionDuration(prev => prev + 1);
       }, 1000);
-    } else {
-      setSessionDuration(0);
     }
     return () => clearInterval(timer);
-  }, [session?.status]);
+  }, [session?.sessionId]); // Depend on ID to handle re-joins
 
   const leadingPlayer = useMemo(() => {
     if (!participants || participants.length === 0) return null;
@@ -154,7 +228,7 @@ export default function SessionManager({ sessionId }) {
 
   // 2. Navigation & Redirect Logic
   useEffect(() => {
-    if (session?.status === 'TERMINATED' || session?.status === 'EXPIRED') {
+    if (session?.status === 'TERMINATED' || session?.status === 'EXPIRED' || session?.status === 'DISCONTINUED') {
        if (exitCountdown > 0) {
            const timer = setTimeout(() => setExitCountdown(exitCountdown - 1), 1000);
            return () => clearTimeout(timer);
@@ -194,25 +268,58 @@ export default function SessionManager({ sessionId }) {
   }
 
   // 5. Termination UI with Countdown
-  if (session?.status === 'TERMINATED' || session?.status === 'EXPIRED') {
+  if (session?.status === 'TERMINATED' || session?.status === 'EXPIRED' || session?.status === 'DISCONTINUED') {
       const isExpired = session?.status === 'EXPIRED';
+      const isDismissed = session?.status === 'DISCONTINUED';
+
       return (
           <div className="flex flex-col items-center justify-center p-8 bg-white/80 backdrop-blur-xl rounded-[3rem] shadow-2xl border border-white text-center space-y-8 animate-in zoom-in duration-500 max-w-xl mx-auto mt-24">
-              <div className="w-20 h-20 bg-red-500 rounded-full flex items-center justify-center text-3xl text-white shadow-[0_0_30px_rgba(239,68,68,0.4)] animate-pulse">
-                {isExpired ? '📡' : '🛑'}
+              <div className={`w-20 h-20 rounded-full flex items-center justify-center text-3xl text-white shadow-xl animate-pulse ${isDismissed ? 'bg-orange-500 shadow-orange-200' : 'bg-red-500 shadow-red-200'}`}>
+                {isExpired ? '📡' : isDismissed ? '🫡' : '🛑'}
               </div>
               <div className="space-y-3">
                   <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">
-                    {isExpired ? 'Mission Expired' : 'Session Terminated'}
+                    {isExpired ? 'Mission Expired' : isDismissed ? 'Mission Terminated' : 'Session Terminated'}
                   </h2>
-                  <p className="text-sm text-slate-500 font-bold uppercase tracking-widest">
-                    {isExpired ? 'Uplink lost. This mission is no longer active.' : 'Commander has aborted the squad session.'}
+                  <p className="text-sm text-slate-500 font-bold uppercase tracking-widest leading-relaxed">
+                    {isExpired ? 'Uplink lost. This mission is no longer active.' : 
+                     isDismissed ? 'You have been professionally dismissed from this session by the Host.' : 
+                     'The Host has terminated this live quiz room.'}
                   </p>
               </div>
               <div className="bg-slate-900 text-white px-10 py-4 rounded-2xl font-black text-xl tracking-[0.3em] uppercase shadow-xl">
-                  Redirecting in {exitCountdown}...
+                  Evicting in {exitCountdown}...
               </div>
-              <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.5em]">PROTOCOL ALPHA: TERMINATED</p>
+              <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.5em]">PROTOCOL: {isDismissed ? 'EVICTION' : 'TERMINATED'}</p>
+          </div>
+      );
+  }
+
+  if (session?.status === 'DENIED') {
+      return (
+          <div className="w-full max-w-xl bg-white/90 backdrop-blur-2xl rounded-[3rem] shadow-2xl p-12 text-center space-y-10 animate-in zoom-in duration-500 border border-white mx-auto mt-24">
+              <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center text-5xl mx-auto shadow-inner">🚫</div>
+              <div className="space-y-4">
+                  <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter">Access Declined</h2>
+                  <p className="text-lg font-bold text-slate-500 leading-relaxed">
+                      Your request to join this session was not approved by the mission commander.
+                  </p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                  <button 
+                      onClick={() => { localStorage.removeItem(`quiz_callsign_${sessionId}`); window.location.reload(); }}
+                      className="bg-slate-900 text-white py-5 rounded-2xl font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl"
+                  >
+                      Retry 🔄
+                  </button>
+                  <button 
+                      onClick={() => window.location.href = '/'}
+                      className="bg-slate-100 text-slate-500 py-5 rounded-2xl font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
+                  >
+                      Exit 🚪
+                  </button>
+              </div>
+              <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.5em]">Clearance Rejected</p>
           </div>
       );
   }
@@ -220,12 +327,19 @@ export default function SessionManager({ sessionId }) {
   const isPendingApproval = session?.status === 'PENDING';
 
   if (isPendingApproval) {
+    const isActive = session?.status === 'ACTIVE';
     return (
         <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl p-12 text-center space-y-8 animate-in zoom-in duration-500 border border-slate-100 mx-auto mt-20">
             <div className="text-6xl animate-bounce">💂</div>
             <div className="space-y-4">
-                <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">Waiting for Approval</h2>
-                <p className="text-lg font-bold text-slate-400">Entry request broadcasted. Stand by for host authorization.</p>
+                <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">
+                    {isActive ? 'Mission in Progress' : 'Waiting for Approval'}
+                </h2>
+                <p className="text-lg font-bold text-slate-400 leading-relaxed uppercase">
+                    {isActive 
+                        ? 'The session has already started. You are in the recruitment queue. Stand by for Commander approval.' 
+                        : 'Entry request broadcasted. Stand by for host authorization.'}
+                </p>
             </div>
             <button 
                 onClick={() => { localStorage.removeItem(`quiz_callsign_${sessionId}`); window.location.reload(); }}
@@ -247,7 +361,6 @@ export default function SessionManager({ sessionId }) {
             </div>
             <form onSubmit={handleGuestJoin} className="space-y-6">
                 <input 
-                    autoFocus
                     placeholder="CALLSIGN (e.g. Maverick)"
                     value={guestName}
                     onChange={(e) => setGuestName(e.target.value)}
@@ -293,8 +406,8 @@ export default function SessionManager({ sessionId }) {
 
       return (
         <>
-          {/* 🕒 SESSION STATS BAR (Timer & Leader) */}
-          <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 animate-in slide-in-from-top-4 duration-700">
+          {/* 🕒 SESSION STATS BAR (Timer & Leader) - SCROLLABLE VERSION */}
+          <div className="flex items-center justify-center w-full mb-8 animate-in slide-in-from-top-4 duration-700">
               <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700 px-6 py-2.5 rounded-2xl shadow-2xl flex items-center gap-6">
                   <div className="flex items-center gap-3 border-r border-slate-700 pr-6">
                       <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Active Time</span>
@@ -313,6 +426,32 @@ export default function SessionManager({ sessionId }) {
                   )}
               </div>
           </div>
+
+          {/* ⏸️ PAUSE MODAL OVERLAY */}
+          {session?.isPaused && (
+             <div className="fixed inset-0 z-[99999] flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-xl animate-in fade-in duration-300 pointer-events-auto">
+                  <div className="bg-white p-6 md:p-12 rounded-[2rem] md:rounded-[3.5rem] shadow-[0_0_100px_rgba(0,0,0,0.5)] max-w-xl w-full text-center space-y-6 md:space-y-8 border border-slate-200 max-h-[95vh] overflow-y-auto">
+                    <div className="w-16 h-16 md:w-24 md:h-24 bg-indigo-600 rounded-full flex items-center justify-center text-white text-3xl md:text-5xl mx-auto shadow-2xl animate-pulse">⏸️</div>
+                    <div className="space-y-3 md:space-y-4">
+                        <h2 className="text-2xl md:text-4xl font-black text-slate-900 uppercase tracking-tighter">Mission Paused</h2>
+                        <p className="text-sm md:text-lg font-bold text-slate-500 leading-relaxed uppercase">
+                            The session has been paused by the commander. This is temporary—stand by for resumption.
+                        </p>
+                    </div>
+                    <div className="py-3 px-5 md:py-4 md:px-6 bg-slate-50 rounded-2xl border border-slate-100 italic text-slate-400 font-bold text-[10px] md:text-sm">
+                        Comms Uplink remains active. You can still chat with the squadron.
+                    </div>
+                    {(session?.role === 'HOST' || isHost) && (
+                        <button 
+                            onClick={() => sendAction('RESUME_SESSION', { isPaused: false })}
+                            className="w-full bg-indigo-600 text-white py-4 md:py-6 rounded-2xl md:rounded-[2rem] font-black text-sm md:text-xl uppercase tracking-[0.3em] hover:scale-105 transition-all shadow-2xl"
+                        >
+                            Resume Mission ▶️
+                        </button>
+                    )}
+                 </div>
+             </div>
+          )}
 
           <div className="w-full max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 lg:gap-10 animate-in fade-in duration-500 px-4 md:px-8 py-6 md:py-12 pb-32">
             
@@ -337,20 +476,32 @@ export default function SessionManager({ sessionId }) {
                       </div>
                     </div>
 
-                    {showAbortModal ? (
-                        <div className="flex items-center gap-4 animate-in slide-in-from-right-2">
-                            <span className="text-[10px] font-black text-red-600 uppercase">Abort?</span>
-                            <button onClick={() => sendAction('TERMINATE', { status: 'LOBBY' })} className="bg-red-600 text-white text-[10px] px-5 py-2.5 rounded-xl font-black uppercase shadow-lg shadow-red-100 transition-all hover:scale-105">Confirm</button>
-                            <button onClick={() => setShowAbortModal(false)} className="bg-slate-100 text-slate-500 text-[10px] px-5 py-2.5 rounded-xl font-black uppercase">Cancel</button>
+                        <div className="flex items-center gap-3">
+                            <button 
+                                onClick={() => sendAction(session?.isPaused ? 'RESUME_SESSION' : 'PAUSE_SESSION', { isPaused: !session?.isPaused })}
+                                className={`w-12 h-12 flex items-center justify-center rounded-2xl transition-all shadow-md group ${
+                                    session?.isPaused ? 'bg-green-600 text-white' : 'bg-indigo-600 text-white'
+                                }`}
+                                title={session?.isPaused ? 'Resume Mission' : 'Pause Mission'}
+                            >
+                                <span className="text-xl group-active:scale-90 transition-transform">{session?.isPaused ? '▶️' : '⏸️'}</span>
+                            </button>
+
+                            {showAbortModal ? (
+                                <div className="flex items-center gap-2 animate-in slide-in-from-right-2">
+                                    <span className="text-[10px] font-black text-red-600 uppercase">Confirm Abort?</span>
+                                    <button onClick={() => sendAction('TERMINATE', { status: 'LOBBY' })} className="bg-red-600 text-white text-[10px] px-4 py-2 rounded-xl font-black uppercase shadow-lg shadow-red-100 transition-all hover:scale-105">Yes</button>
+                                    <button onClick={() => setShowAbortModal(false)} className="bg-slate-100 text-slate-500 text-[10px] px-4 py-2 rounded-xl font-black uppercase">No</button>
+                                </div>
+                            ) : (
+                                <button 
+                                    onClick={() => setShowAbortModal(true)}
+                                    className="bg-red-50 text-red-600 hover:bg-red-600 hover:text-white text-[10px] px-6 py-2.5 h-12 rounded-2xl font-black transition-all border border-red-100 shadow-sm"
+                                >
+                                    ABORT 🛑
+                                </button>
+                            )}
                         </div>
-                    ) : (
-                      <button 
-                          onClick={() => setShowAbortModal(true)}
-                          className="bg-red-50 text-red-600 hover:bg-red-600 hover:text-white text-[10px] px-6 py-2.5 rounded-xl font-black transition-all border border-red-100 shadow-sm"
-                      >
-                          ABORT 🛑
-                      </button>
-                    )}
                   </div>
                 )}
 
@@ -358,6 +509,7 @@ export default function SessionManager({ sessionId }) {
                   <Player 
                     key={`${session.activeContentId}-${session.status === 'ACTIVE'}`} 
                     state={session} 
+                    onLeave={handleLeaveSession}
                   />
                 </div>
             </div>
@@ -368,6 +520,36 @@ export default function SessionManager({ sessionId }) {
                  </div>
             </div>
           </div>
+
+          {/* 🚀 GLOBAL GLASSMORPHIC GUEST PORTAL (Host View - Mid Mission) */}
+          {isHost && pendingParticipants.length > 0 && (
+             <div className="fixed inset-0 z-[99999] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-in fade-in zoom-in duration-300 pointer-events-auto">
+                 <div className="bg-white/90 backdrop-blur-2xl p-6 sm:p-10 rounded-[2rem] sm:rounded-[2.5rem] border border-white/50 shadow-[0_30px_100px_rgba(0,0,0,0.3)] max-w-md w-full text-center space-y-8 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
+                    <div className="space-y-4">
+                        <div className="w-16 h-16 bg-indigo-600 rounded-3xl mx-auto flex items-center justify-center text-white text-3xl shadow-xl animate-bounce">💂</div>
+                        <h3 className="text-2xl font-black text-slate-900 tracking-tighter uppercase">Access Request</h3>
+                        <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Mid-Mission Clearance Required</p>
+                    </div>
+                    
+                    <div className="space-y-4 max-h-[250px] overflow-y-auto px-2 custom-scrollbar">
+                        {pendingParticipants.map((guest) => (
+                            <div key={guest.userId} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm animate-in slide-in-from-bottom-4 duration-500">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center font-black text-slate-400">{guest.userName[0]}</div>
+                                    <div className="text-left font-black text-slate-900 uppercase tracking-tight text-sm">{guest.userName}</div>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button onClick={() => handleDenyGuest(guest.userId)} className="w-9 h-9 flex items-center justify-center bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all">×</button>
+                                    <button onClick={() => { playSessionSound('success'); handleApproveGuest(guest.userId); }} className="w-11 h-11 flex items-center justify-center bg-indigo-600 text-white rounded-xl shadow-lg hover:bg-indigo-700 transition-all">✓</button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest opacity-60">Operative recruitment ongoing. Approve to deploy.</p>
+                 </div>
+             </div>
+          )}
 
           {/* 🛰️ TACTICAL OVERLAYS */}
           <div className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden flex flex-col items-center">
@@ -410,6 +592,36 @@ export default function SessionManager({ sessionId }) {
 
   return (
     <div className="flex justify-center w-full">
+      {/* 🚀 GLOBAL GLASSMORPHIC GUEST PORTAL (Host View) */}
+      {isHost && pendingParticipants.length > 0 && (
+         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-in fade-in zoom-in duration-300 pointer-events-auto">
+             <div className="bg-white/90 backdrop-blur-2xl p-6 sm:p-10 rounded-[2rem] sm:rounded-[2.5rem] border border-white/50 shadow-[0_30px_100px_rgba(0,0,0,0.3)] max-w-md w-full text-center space-y-8 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
+                <div className="space-y-4">
+                    <div className="w-16 h-16 bg-indigo-600 rounded-3xl mx-auto flex items-center justify-center text-white text-3xl shadow-xl animate-bounce">💂</div>
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tighter uppercase">Access Request</h3>
+                    <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Entry Authorization Required</p>
+                </div>
+                
+                <div className="space-y-4 max-h-[250px] overflow-y-auto px-2 custom-scrollbar">
+                    {pendingParticipants.map((guest) => (
+                        <div key={guest.userId} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm animate-in slide-in-from-bottom-4 duration-500">
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center font-black text-slate-400">{guest.userName[0]}</div>
+                                <div className="text-left font-black text-slate-900 uppercase tracking-tight text-sm">{guest.userName}</div>
+                            </div>
+                            <div className="flex gap-2">
+                                <button onClick={() => handleDenyGuest(guest.userId)} className="w-9 h-9 flex items-center justify-center bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all">×</button>
+                                <button onClick={() => { playSessionSound('success'); handleApproveGuest(guest.userId); }} className="w-11 h-11 flex items-center justify-center bg-indigo-600 text-white rounded-xl shadow-lg hover:bg-indigo-700 transition-all">✓</button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest opacity-60">Standard clearance protocol for mid-mission enrollment.</p>
+             </div>
+         </div>
+      )}
+
       <SessionLobby 
         sessionId={sessionId}
         isHost={isHost}
@@ -419,6 +631,8 @@ export default function SessionManager({ sessionId }) {
         broadcast={broadcast}
         onApproveGuest={handleApproveGuest}
         onDenyGuest={handleDenyGuest}
+        sessionDuration={sessionDuration}
+        onLeave={handleLeaveSession}
       />
     </div>
   );

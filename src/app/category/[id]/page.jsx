@@ -138,10 +138,11 @@ export default function CategorySetsPage() {
     return category?.subCategories || [];
   }, [category]);
 
-  const handleLivePlay = () => {
+  const handleLivePlay = (set) => {
     const sessionId = Math.random().toString(36).substring(2, 10).toUpperCase();
     toast.success("Creating live room for this set...");
-    router.push(`/live/${sessionId}?is_host=true`);
+    const setQuery = set ? `&setIndex=${set.index}` : '';
+    router.push(`/live/${sessionId}?is_host=true&categoryId=${params.id}${setQuery}`);
   };
 
   // JSON-LD Schema for SEO
@@ -231,7 +232,7 @@ export default function CategorySetsPage() {
        startQuizResume(selectedSet.progress, selectedSet.questions, mode);
     } else {
        // Start new
-       startQuizSet(category.id, selectedSet.questions, timer, language, selectedSet.index);
+       startQuizSet(category.id, selectedSet.questions, timer, language, selectedSet.index, category.topic);
     }
     router.push(`/quiz/${category.id}`);
   };
@@ -345,7 +346,7 @@ export default function CategorySetsPage() {
                                 <span>{set.progress?.progress > 0 && !set.progress.isComplete ? "Continue Learning" : "Play Quiz"}</span>
                                 <span className={styles.playArrow}>&gt;</span>
                             </button>
-                            <button className={styles.liveButtonStyle} onClick={handleLivePlay}>
+                            <button className={styles.liveButtonStyle} onClick={() => handleLivePlay(set)}>
                                 <span className={styles.liveDot}></span>
                                 Play Live
                             </button>

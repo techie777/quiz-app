@@ -29,15 +29,22 @@ export async function GET(request) {
 
     if (!isAdmin) {
       where.hidden = false;
-      // Only top-level categories for home page display if they are requesting paginated lists
-      // Handle Prisma MongoDB limitation where missing fields need isSet: false
-      if (limitRaw > 0) {
-         andConditions.push({
-           OR: [
-             { parentId: null },
-             { parentId: { isSet: false } }
-           ]
-         });
+      
+      const parentIdParam = searchParams.get("parentId");
+      const idParam = searchParams.get("id");
+
+      if (idParam) {
+        andConditions.push({ id: idParam });
+      } else if (parentIdParam) {
+        andConditions.push({ parentId: parentIdParam });
+      } else if (limitRaw > 0) {
+        // Only top-level categories if no specific parent or ID is requested
+        andConditions.push({
+          OR: [
+            { parentId: null },
+            { parentId: { isSet: false } }
+          ]
+        });
       }
     }
 

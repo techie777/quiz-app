@@ -67,6 +67,7 @@ const initialState = {
   originalStory: null,
   isMixedMode: false,
   mixedSectionName: null,
+  categoryName: null,
 };
 
 // Key for storage
@@ -104,10 +105,11 @@ function quizReducer(state, action) {
         originalStory: quiz.storyText || null,
         translatedStory: null,
         selectedSetIndex: null,
+        categoryName: quiz.topic || quiz.name,
       };
     }
     case "START_QUIZ_SET": {
-      const { quizId, questions, timer, language, setIndex } = action.payload;
+      const { quizId, questions, timer, language, setIndex, categoryName } = action.payload;
       
       // Deep shuffle: shuffle questions AND their options
       const shuffledQuestions = shuffleArray(questions).map(q => ({
@@ -129,6 +131,7 @@ function quizReducer(state, action) {
         originalStory: null,
         translatedStory: null,
         selectedSetIndex: setIndex,
+        categoryName: categoryName,
       };
     }
     case "START_MIXED_QUIZ": {
@@ -152,6 +155,7 @@ function quizReducer(state, action) {
         language: language || detectQuizLanguage(shuffledQuestions),
         originalLanguage: language || detectQuizLanguage(shuffledQuestions),
         originalQuestions: shuffledQuestions,
+        categoryName: sectionName,
       };
     }
     case "SET_QUESTIONS":
@@ -518,8 +522,8 @@ export function QuizProvider({ children }) {
     }
   }, [quizzes, translateQuiz]);
 
-  const startQuizSet = useCallback(async (quizId, questions, timer, language = "en", setIndex = null) => {
-    dispatch({ type: "START_QUIZ_SET", payload: { quizId, questions, timer, language, setIndex } });
+  const startQuizSet = useCallback(async (quizId, questions, timer, language = "en", setIndex = null, categoryName = null) => {
+    dispatch({ type: "START_QUIZ_SET", payload: { quizId, questions, timer, language, setIndex, categoryName } });
     
     const quiz = quizzes.find(q => q.id === quizId);
     

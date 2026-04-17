@@ -352,15 +352,17 @@
 .favoriteBtn {
   position: absolute;
   top: 8px; right: 8px; width: 32px; height: 32px;
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--bg-secondary);
   backdrop-filter: blur(8px);
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 1.1rem; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  font-size: 1.1rem; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   transition: all 0.2s ease;
+  color: var(--text-primary);
+  border: 1px solid var(--card-border);
 }
 
-.favoriteBtn:hover { transform: scale(1.1); }
+.favoriteBtn:hover { transform: scale(1.1); color: #ef4444; }
 .favoriteBtn.isFavorite { color: #ef4444; }
 
 .shareBtn {
@@ -369,18 +371,20 @@
   right: 8px;
   width: 32px;
   height: 32px;
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--bg-secondary);
   backdrop-filter: blur(8px);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.05rem;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   transition: all 0.2s ease;
+  color: var(--text-primary);
+  border: 1px solid var(--card-border);
 }
 
-.shareBtn:hover { transform: scale(1.1); }
+.shareBtn:hover { transform: scale(1.1); color: var(--accent); }
 
 /* ===== All Categories (Search/Filter) Grid ===== */
 .grid {
@@ -647,6 +651,9 @@
   overflow: hidden;
   box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
   position: relative;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh; /* Prevent overflow on short screens */
 }
 
 [data-theme="dark"] .mixModal {
@@ -681,6 +688,8 @@
 
 .modalBody {
   padding: 24px;
+  overflow-y: auto; /* Enable scroll if content is too long */
+  flex: 1;
 }
 
 .modalSubtitle {
@@ -721,8 +730,9 @@
 }
 
 .presetBtn.active {
-  background: var(--text-primary);
-  color: white;
+  background: var(--accent);
+  color: var(--text-on-accent);
+  border-color: var(--accent);
 }
 
 .sliderContainer {
@@ -788,6 +798,11 @@
   color: var(--text-on-accent);
 }
 
+[data-theme="dark"] .presetBtn.active {
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+
 .modalFooter {
   padding: 24px;
   background: var(--bg-primary);
@@ -844,13 +859,13 @@
 
 .setCardActions {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   margin-top: 14px;
   width: 100%;
 }
 
 .playQuizButton {
-  flex: 2;
+  flex: 1;
   background: var(--brand-gradient);
   color: white;
   border: none;
@@ -860,6 +875,7 @@
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .playQuizButton:hover {
@@ -869,9 +885,9 @@
 
 .liveButtonStyle {
   flex: 1;
-  background: white;
-  color: #ef4444;
-  border: 1px solid #fee2e2;
+  background: var(--brand-gradient);
+  color: white;
+  border: none;
   border-radius: 12px;
   padding: 10px 16px;
   font-size: 0.85rem;
@@ -882,24 +898,74 @@
   gap: 6px;
   transition: all 0.2s;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .liveButtonStyle:hover {
-  background: #fef2f2;
-  border-color: #fecaca;
+  filter: brightness(1.1);
   transform: translateY(-2px);
 }
 
 .liveDot {
   width: 8px;
   height: 8px;
-  background: #ef4444;
+  background: #ffffff;
   border-radius: 50%;
   animation: livePulse 1.5s infinite;
 }
 
 @keyframes livePulse {
-  0% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-  70% { transform: scale(1.1); opacity: 0.7; box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
-  100% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+  0% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); }
+  70% { transform: scale(1.1); opacity: 0.7; box-shadow: 0 0 0 6px rgba(255, 255, 255, 0); }
+  100% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+}
+
+@media (max-width: 480px) {
+  .mixModal {
+    max-width: 100%;
+    border-radius: 24px;
+    margin: 10px;
+  }
+
+  .modalHeader {
+    padding: 20px 16px;
+  }
+
+  .modalHeader h3 {
+    font-size: 1.15rem;
+  }
+
+  .modalBody {
+    padding: 16px;
+  }
+
+  .modalSubtitle {
+    font-size: 0.85rem;
+    margin-bottom: 24px;
+  }
+
+  .presetGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .diffTab {
+    padding: 8px 4px;
+    font-size: 0.7rem;
+  }
+
+  .rangeSlider::-webkit-slider-thumb {
+    width: 24px;
+    height: 24px;
+  }
+
+  .modalFooter {
+    padding: 16px;
+  }
+
+  .playBtn {
+    padding: 14px;
+    font-size: 1rem;
+    border-radius: 14px;
+  }
 }

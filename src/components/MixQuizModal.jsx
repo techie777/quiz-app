@@ -130,14 +130,16 @@ const MixQuizModal = ({ isOpen, onClose, sectionName }) => {
                 <div className={styles.sliderContainer}>
                    <input 
                       type="range" 
-                      min="10" 
+                      min="0" 
                       max="60" 
                       step="5"
                       value={timer}
                       onChange={(e) => setTimer(parseInt(e.target.value))}
                       className={styles.rangeSlider}
                    />
-                   <span className={styles.sliderValue}>{timer} Seconds</span>
+                   <span className={styles.sliderValue}>
+                      {timer === 0 ? "Unlimited Time (No Timer)" : `${timer} Seconds`}
+                   </span>
                 </div>
              </div>
           </div>

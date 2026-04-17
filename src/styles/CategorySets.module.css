@@ -286,17 +286,15 @@
 
 .setCardInfo { color: var(--text-secondary); font-size: 0.95rem; margin: 0; }
 
-.playIconButton {
-  margin-top: 12px;
-  padding: 14px 24px;
-  background: var(--bg-primary);
-  border: 2px solid var(--card-border);
-  border-radius: 16px;
-  color: var(--text-primary);
-  font-weight: 800;
+.setCardActions {
   display: flex;
-  justify-content: space-between;
-  flex: 2; /* Bigger than live button */
+  gap: 12px;
+  margin-top: 14px;
+  width: 100%;
+  align-items: center;
+}
+
+.playIconButton {
   padding: 12px 20px;
   background: var(--bg-primary);
   border: 1px solid var(--card-border);
@@ -306,8 +304,10 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex: 1; /* Balanced with live button */
   cursor: pointer;
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .playIconButton:hover { 
@@ -331,6 +331,7 @@
   gap: 8px;
   transition: all 0.2s;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .liveButtonStyle:hover {

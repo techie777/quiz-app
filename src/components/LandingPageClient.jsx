@@ -319,12 +319,14 @@ const SubSection = React.memo(({ title, quizzes, onViewAll, showMixCard, section
   }, []);
 
   const router = useRouter();
-  const handleLivePlay = useCallback((e) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleLivePlay = useCallback((e, quizId) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     const sessionId = Math.random().toString(36).substring(2, 10).toUpperCase();
     toast.success("Creating live room...");
-    router.push(`/live/${sessionId}?is_host=true`);
+    router.push(`/live/${sessionId}?is_host=true${quizId ? `&categoryId=${quizId}` : ''}`);
   }, [router]);
 
   if (!quizzes || quizzes.length === 0) return null;
@@ -416,7 +418,7 @@ const SubSection = React.memo(({ title, quizzes, onViewAll, showMixCard, section
                   </button>
                   <button
                     className={styles.liveButtonStyle}
-                    onClick={handleLivePlay}
+                    onClick={(e) => handleLivePlay(e, quiz.id)}
                   >
                     <span className={styles.liveDot}></span>
                     Play Live
@@ -1093,14 +1095,14 @@ export default function LandingPage({ initialCategories = [] }) {
             </div>
           </div>
 
-          {Object.keys(categorizedQuizzes).map((categoryName, index) => (
+          {Object.keys(categorizedQuizzes).map((categoryName) => (
             <MainCategorySection 
               key={categoryName}
               category={categoryName} 
               categorizedData={categorizedQuizzes} 
               sectionIds={sectionIds}
               onOpenMixModal={handleOpenMixModal}
-              isFirstSection={index === 0}
+              isFirstSection={true}
             />
           ))}
         </div>

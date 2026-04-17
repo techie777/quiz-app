@@ -26,8 +26,20 @@ export default function SquadronIntelligence() {
   const [broadcastText, setBroadcastText] = useState('');
   const chatEndRef = useRef(null);
 
+  const containerRef = useRef(null);
+
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (chatMessages.length > 0) {
+        // Only scroll if the container itself is likely visible or near view
+        const container = containerRef.current;
+        if (container) {
+            const rect = container.getBoundingClientRect();
+            // If the chat is in the viewport, then scroll to bottom
+            if (rect.top < window.innerHeight && rect.bottom > 0) {
+                chatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+    }
   }, [chatMessages]);
 
   const sortedSquad = useMemo(() => {
@@ -91,12 +103,17 @@ export default function SquadronIntelligence() {
                                    </div>
                                </td>
                                <td className="px-4 py-2">
-                                   <div className="flex items-center gap-4 min-w-0">
-                                       <StatusDot status={p.status || (p.isOnline ? 'ACTIVE' : 'LEFT')} />
+                                   <div className="flex flex-col">
                                        <span className={`text-base font-extrabold truncate ${p.userId === session?.userId ? 'text-indigo-600' : 'text-slate-700'}`}>
                                            {p.userName}
                                            {p.userId === session?.userId && " (YOU)"}
                                        </span>
+                                       <div className="flex items-center gap-1">
+                                           <StatusDot status={p.status || (p.isOnline === false ? 'LEFT' : 'ACTIVE')} />
+                                           <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">
+                                               {p.status || (p.isOnline === false ? 'LEFT 💀' : 'ACTIVE')}
+                                           </span>
+                                       </div>
                                    </div>
                                </td>
                                 <td className="px-3 py-2 text-right">
@@ -179,17 +196,11 @@ export default function SquadronIntelligence() {
       )}
 
       {/* 💬 COMBAT COMMS CHAT */}
-      <div className={`flex-1 min-h-[400px] md:min-h-[550px] flex flex-col bg-[#050816] rounded-[2rem] md:rounded-[3.5rem] shadow-2xl border-4 ${pulse ? 'border-indigo-500 shadow-[0_0_30px_rgba(99,102,241,0.4)]' : 'border-slate-900'} transition-all duration-300 overflow-hidden relative`}>
+      <div ref={containerRef} className={`flex-1 min-h-[400px] md:min-h-[550px] flex flex-col bg-[#050816] rounded-[2rem] md:rounded-[3.5rem] shadow-2xl border-4 ${pulse ? 'border-indigo-500 shadow-[0_0_30px_rgba(99,102,241,0.4)]' : 'border-slate-900'} transition-all duration-300 overflow-hidden relative`}>
           <div className="px-6 md:px-8 py-5 md:py-7 border-b border-white/5 flex items-center justify-between bg-black/40 backdrop-blur-md">
               <div className="flex items-center gap-4">
                   <div className={`w-2.5 h-2.5 rounded-full ${pulse ? 'bg-indigo-400 scale-150' : 'bg-green-500'} shadow-[0_0_15px_rgba(34,197,94,0.8)] animate-pulse transition-all`}></div>
                   <h3 className="text-xs md:text-sm font-black text-slate-400 uppercase tracking-[0.4em]">Squadron Comms</h3>
-              </div>
-              {/* DIAGNOSTIC UPLINK */}
-              <div className="flex flex-col items-end text-[8px] font-black text-slate-500 gap-0.5 uppercase tracking-widest leading-none">
-                  <span>ID: {session?.userId?.substring(0, 12)}...</span>
-                  <span className={pulse ? 'text-indigo-400' : ''}>SYNC: {chatMessages.length} MSGS</span>
-                  <span className="text-indigo-500/50">LAST PULSE: {lastEvent}</span>
               </div>
           </div>
 
@@ -204,7 +215,7 @@ export default function SquadronIntelligence() {
                   <div key={m.id} className={`flex flex-col space-y-2.5 ${m.userId === session?.userId ? 'items-end' : 'items-start'}`}>
                       <div className="flex items-center gap-2 px-1">
                           <span className={`text-[10px] font-black uppercase tracking-widest ${m.role === 'HOST' ? 'text-indigo-400' : 'text-slate-500'}`}>
-                              {m.role === 'HOST' ? '👑 COMMANDER' : '💂 OPERATOR'} {m.userName}
+                              {m.role === 'HOST' ? '👑 COMMANDER' : `💂 ${m.userName}`}
                           </span>
                       </div>
                       <div className={`max-w-[85%] px-7 py-4.5 rounded-[1.5rem] text-base font-bold leading-relaxed shadow-xl ${

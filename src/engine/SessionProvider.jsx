@@ -114,74 +114,52 @@ export function SessionProvider({ children, sessionId: propSessionId }) {
 
     s.on('STATE_UPDATE', (data) => {
       console.log('📡 [BRIDGE] STATE_UPDATE Recv:', data.action, data.payload);
-      setLastEvent(`STATE:${data.action}`);
       setSessionReady(true);
       
+      // RULE #1: Reset scores if a new session is starting
+      if (data.action === 'START_SESSION') {
+          console.log('📡 [RESET] Mission Restart detected. Zeroing squadron scores.');
+          setParticipants(prev => prev.map(p => ({ ...p, score: 0, progress: 0, status: 'ACTIVE' })));
+      }
+
       setSession(prev => {
          const newState = { 
             ...prev, 
             ...data.payload,
-            
-            // CRITICAL IDENTITY LOCK: 
-            // We usually prevent global room broadcasts from overwriting local identity.
-            // HOWEVER, we must allow the server to define identity during REHYDRATE or if local identity is missing.
             userId: (data.action === 'REHYDRATE' || !prev?.userId) ? (data.payload?.userId || prev?.userId) : prev?.userId,
             userName: (data.action === 'REHYDRATE' || !prev?.userName) ? (data.payload?.userName || prev?.userName) : prev?.userName,
             role: (data.action === 'REHYDRATE' || !prev?.role) ? (data.payload?.role || prev?.role) : prev?.role,
-
-            // Ensure server-sent status and type ALWAYS take precedence
-            status: data.payload?.status || prev?.status,
+            status: (data.action === 'DENIED' || prev?.status === 'DENIED') ? 'DENIED' : (data.payload?.status || prev?.status),
             type: data.payload?.type || prev?.type,
-            sessionId: data.payload?.sessionId || prev?.sessionId
+            sessionId: data.payload?.sessionId || prev?.sessionId,
+            isPaused: data.payload?.hasOwnProperty('isPaused') ? data.payload.isPaused : prev?.isPaused
          };
 
-         // PERSIST TO STORAGE
          if (typeof window !== 'undefined' && newState.sessionId) {
             sessionStorage.setItem('active_quiz_session', JSON.stringify(newState));
          }
-
-         // If mission terminated
-         if (data.action === 'TERMINATED') {
-            toast.error("MISSION TERMINATED BY COMMANDER.");
-         }
-         
-         // Ensure status PENDING is handled but kept ready for UI
-         if (data.payload?.status === 'PENDING') {
-            setSessionReady(true);
-         }
-
-         // Security Triggers
-         if (data.action === 'CLEARANCE_DENIED') {
-            toast("Waiting for host to create this session...");
-         }
-         if (data.action === 'DISCONTINUED') {
-            toast.error("MISSION TERMINATED: YOU HAVE BEEN DISMISSED. ????");
-         }
-         if (data.action === 'WAITING_FOR_HOST') {
-            toast("Waiting for host to create this session...");
-         }
-         if (data.action === 'PENDING_APPROVAL') {
-            toast("Waiting for host approval...");
-         }
-         if (data.action === 'APPROVED') {
-            toast.success("You have been approved to join the session!");
-         }
-         if (data.action === 'DENIED') {
-            toast.error("Your request to join was denied by the host.");
-         }
-
          return newState;
       });
 
-      if (data.action === 'START_SESSION') {
-        toast.success("MISSION LAUNCHED! ???");
-      }
+      // Track action for status watcher (side effects handled by useEffect)
+      setLastEvent(`STATE:${data.action}`);
     });
 
     s.on('SYNC_PARTICIPANTS', (list) => {
-      console.log('???? [SYNC] Active Squadron:', list.length);
+      console.log('📡 [SYNC] Active Squadron:', list.length);
       setSessionReady(true);
       setParticipants(list);
+
+      // FAIL-SAFE: If I am a Guest and I am no longer in the authorized list, I have been dismissed.
+      const current = sessionRef.current;
+      if (current?.role === 'GUEST' && current?.status !== 'PENDING' && current?.status !== 'DISCONTINUED') {
+          const amIAuthorized = list.find(p => p.userId === current.userId);
+          if (!amIAuthorized) {
+              console.warn('📡 [SECURITY] Identity missing from mission authorization. Evicting...');
+              setSession(prev => ({ ...prev, status: 'DISCONTINUED' }));
+              setLastEvent('STATE:DISCONTINUED');
+          }
+      }
     });
 
     s.on('SYNC_PENDING', (list) => {
@@ -191,7 +169,6 @@ export function SessionProvider({ children, sessionId: propSessionId }) {
 
     s.on('GUEST_JOIN_REQUEST', (data) => {
       console.log('💂 [ALERT] Targeted Join Request:', data.guestName);
-      toast(`💂 ${data.guestName} requesting clearance!`, { icon: '📑', duration: 5000 });
       // Self-correction pulse
       s.emit('SQUAD_SYNC_REQUEST', { sessionId: sessionRef.current?.sessionId });
     });
@@ -234,6 +211,32 @@ export function SessionProvider({ children, sessionId: propSessionId }) {
       socketService.disconnect();
     };
   }, [propSessionId]);
+
+  // STATUS WATCHER - Prevents dual toasts by tracking status/action transitions
+  const lastEffectRef = useRef(null);
+  useEffect(() => {
+    if (!session?.sessionId || !lastEvent) return;
+    
+    const effectKey = `${session.sessionId}-${lastEvent}`;
+    if (lastEffectRef.current === effectKey) return;
+    lastEffectRef.current = effectKey;
+
+    if (lastEvent === 'STATE:TERMINATED') {
+       toast.error("MISSION TERMINATED BY COMMANDER.");
+    } else if (lastEvent === 'STATE:START_SESSION') {
+       toast.success("MISSION LAUNCHED! 🚀");
+    } else if (lastEvent === 'STATE:CLEARANCE_DENIED' || lastEvent === 'STATE:WAITING_FOR_HOST') {
+       toast("Waiting for host to create this session...");
+    } else if (lastEvent === 'STATE:DISCONTINUED') {
+       toast.error("MISSION TERMINATED: YOU HAVE BEEN DISMISSED. 🫡");
+    } else if (lastEvent === 'STATE:PENDING_APPROVAL') {
+       toast("Waiting for host approval...");
+    } else if (lastEvent === 'STATE:APPROVED') {
+       toast.success("You have been approved to join the session!");
+    } else if (lastEvent === 'STATE:DENIED') {
+       toast.error("Your request to join was denied by the host.");
+    }
+  }, [session?.sessionId, lastEvent]);
 
   const joinSession = useCallback((sessionId, role, user) => {
     if (socket) {
@@ -285,6 +288,12 @@ export function SessionProvider({ children, sessionId: propSessionId }) {
         action,
         payload
       });
+      
+      // OPTIMISTIC UPDATES: Instantly remove the participant from the Host's view
+      if (action === 'KICK_PARTICIPANT') {
+          setParticipants(prev => prev.filter(p => p.userId !== payload.userId));
+      }
+
       // Optimistic update for mission state only (NOT administrative actions)
       const administrativeActions = ['APPROVE_GUEST', 'REJECT_GUEST', 'KICK_PARTICIPANT'];
       if (!administrativeActions.includes(action)) {
@@ -339,6 +348,98 @@ export function SessionProvider({ children, sessionId: propSessionId }) {
     }
   }, [socket]);
 
+  // 🔊 AUDIO ENGINE V2.0
+  const playSessionSound = (type) => {
+    try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        
+        const osc = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+        osc.connect(gainNode);
+        gainNode.connect(ctx.destination);
+
+        switch (type) {
+            case 'ting': // Chat / Notification
+            case 'chat':
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1318.51, ctx.currentTime);
+                gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.4);
+                break;
+            case 'join': // New Player
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1046.50, ctx.currentTime + 0.2);
+                gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.3);
+                break;
+            case 'leave': // Player Disconnection
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(440, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(220, ctx.currentTime + 0.3);
+                gainNode.gain.setValueAtTime(0.05, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.3);
+                break;
+            case 'tick': // 10s Timer Warning
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(150, ctx.currentTime);
+                gainNode.gain.setValueAtTime(0.05, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.05);
+                break;
+            case 'success':
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.1);
+                gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.5);
+                break;
+        }
+    } catch (e) {
+        console.warn('Audio Engine Failure:', e);
+    }
+  };
+
+  useEffect(() => {
+    if (!socket) return;
+    const s = socket;
+
+    s.on('GUEST_JOINED', (data) => {
+        console.log('💂 [SYNC] Guest Joined:', data.userName);
+        playSessionSound('join');
+        s.emit('SQUAD_SYNC_REQUEST', { sessionId: sessionRef.current?.sessionId });
+    });
+
+    s.on('PARTICIPANT_LEFT', (data) => {
+        console.log('🏃 [SYNC] Participant Left:', data.userId);
+        playSessionSound('leave');
+        s.emit('SQUAD_SYNC_REQUEST', { sessionId: sessionRef.current?.sessionId });
+    });
+
+    s.on('NEW_MESSAGE', (data) => {
+        if (data.userId !== sessionRef.current?.userId) {
+            playSessionSound('chat');
+        }
+    });
+
+    return () => {
+        s.off('GUEST_JOINED');
+        s.off('PARTICIPANT_LEFT');
+        s.off('NEW_MESSAGE');
+    };
+  }, [socket]);
+
   return (
     <SessionContext.Provider value={{ 
       session, 
@@ -358,7 +459,8 @@ export function SessionProvider({ children, sessionId: propSessionId }) {
       sendChatMessage,
       sendReaction,
       sendBroadcast,
-      syncSquad
+      syncSquad,
+      playSessionSound
     }}>
       {children}
     </SessionContext.Provider>

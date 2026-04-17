@@ -243,7 +243,7 @@ function WallFactCard({ fact, index, isLast, lastFactElementRef, globalLang, rea
                 color: '#f8fafc'
               }}
             >
-              <div className={`${styles.quoteWrapper} ${hasImg && !isHidden ? styles.glassShield : ''} transition-all duration-500 ${isHidden ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
+              <div className={`${styles.quoteWrapper} transition-all duration-500 ${isHidden ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
                 <span className={styles.quoteMark}>“</span>
                 <div className={`${styles.bigFactText} ${hasImg ? 'text-lg md:text-xl' : ''}`}>
                   {highlightFactText(displayText, hasImg ? true : false)}

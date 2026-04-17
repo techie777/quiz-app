@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { ArrowRight, Sparkles, Rocket, Zap, Globe } from "lucide-react";
 import styles from "@/styles/HubPage.module.css";
+import dynamic from "next/dynamic";
+
+const MiniQuizPreview = dynamic(() => import("@/components/MiniQuizPreview"), {
+  ssr: false,
+});
+
 
 export const revalidate = 3600;
 
@@ -8,24 +14,18 @@ export default function MasterHubPage() {
   return (
     <div className={styles.container}>
       <main className={styles.heroContent}>
-        <div className={styles.welcomeSection}>
-          <h1 className={styles.welcomeTitle}>
-            Level Up Your <br />
-            Knowledge Today
-          </h1>
-          <p className={styles.welcomeSubtitle}>
-            Your all-in-one destination for competitive exam preparation, 
-            daily learning, and interactive entertainment.
-          </p>
-        </div>
 
         <div className={styles.grid}>
           {/* Section 1: Quizzes */}
           <div className={`${styles.card} ${styles.cardQuiz}`}>
             <Link href="/quizzes" className={styles.cardBadge}>LIVE NOW</Link>
-            <div>
+            <div className={styles.cardBody}>
               <div className={styles.cardIcon}>🧠</div>
+              <div className={styles.previewWrapper}>
+                <MiniQuizPreview type="quiz" />
+              </div>
               <h2 className={styles.cardTitle}>Quiz Hub</h2>
+
               <p className={styles.cardDescription}>
                 Play dynamic quizzes, compete with friends, and master 
                 hundreds of topics including Science, History, and GK.
@@ -47,9 +47,13 @@ export default function MasterHubPage() {
           {/* Section 2: Govt Exams */}
           <div className={`${styles.card} ${styles.cardGovt}`}>
             <Link href="/mock-tests" className={styles.cardBadge}>NEW EXAMS</Link>
-            <div>
+            <div className={styles.cardBody}>
               <div className={styles.cardIcon}>🏛️</div>
+              <div className={styles.previewWrapper}>
+                <MiniQuizPreview type="govt" />
+              </div>
               <h2 className={styles.cardTitle}>Govt Exams</h2>
+
               <p className={styles.cardDescription}>
                 Targeted preparation for SSC, IBPS, Railways and more. 
                 Full simulations with TCS/NTA style interfaces.
@@ -77,9 +81,13 @@ export default function MasterHubPage() {
           {/* Section 3: Modern Info */}
           <div className={`${styles.card} ${styles.cardInfo}`}>
             <Link href="/fun-facts" className={styles.cardBadge}>FACTS REVEALED</Link>
-            <div>
+            <div className={styles.cardBody}>
               <div className={styles.cardIcon}>✨</div>
+              <div className={styles.previewWrapper}>
+                <MiniQuizPreview type="facts" />
+              </div>
               <h2 className={styles.cardTitle}>Daily Insights</h2>
+
               <p className={styles.cardDescription}>
                 Fascinating fun facts, quick True/False challenges, and 
                 daily current affairs to keep you updated.
@@ -107,9 +115,13 @@ export default function MasterHubPage() {
           {/* Section 4: Others */}
           <div className={`${styles.card} ${styles.cardOthers}`}>
             <Link href="/book-my-course" className={styles.cardBadge}>UTILITIES</Link>
-            <div>
+            <div className={styles.cardBody}>
               <div className={styles.cardIcon}>🎓</div>
+              <div className={styles.previewWrapper}>
+                <MiniQuizPreview type="resources" />
+              </div>
               <h2 className={styles.cardTitle}>Resources</h2>
+
               <p className={styles.cardDescription}>
                 Access school curriculum revisions, order official books, 
                 and get the latest government job notifications.

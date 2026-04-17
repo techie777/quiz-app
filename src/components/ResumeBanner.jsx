@@ -59,7 +59,7 @@ export default function ResumeBanner() {
           <div className={styles.info}>
             <span className={styles.badge}>ACTIVE SESSION</span>
             <p className={styles.text}>
-              You have a quiz in progress! Would you like to continue?
+              You have {activeQuiz.categoryName ? <span className={styles.categoryHighlight}>{activeQuiz.categoryName}</span> : "a quiz"} in progress! Would you like to continue?
             </p>
           </div>
           <div className={styles.actions}>

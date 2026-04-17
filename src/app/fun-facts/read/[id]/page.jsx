@@ -419,7 +419,7 @@ export default function FunFactVoyager({ params }) {
       <div className="relative z-10 flex-grow flex flex-col items-center justify-center px-4 md:px-12 max-w-5xl mx-auto w-full py-32">
         {/* Fact Text - Glass Shield Frame */}
         <div className="relative max-w-4xl w-full">
-           <div className="relative z-10 bg-black/15 backdrop-blur-[10px] border border-white/5 rounded-[2.5rem] px-8 md:px-16 py-12 md:py-20 text-center shadow-[0_10px_40px_rgba(0,0,0,0.3)]">
+           <div className="relative z-10 border border-white/5 rounded-[2.5rem] px-8 md:px-16 py-12 md:py-20 text-center shadow-[0_10px_40px_rgba(0,0,0,0.3)]">
               <span className="absolute -top-4 -left-2 md:-top-8 md:-left-8 text-7xl md:text-9xl text-indigo-400/20 font-serif leading-none select-none">&ldquo;</span>
               <h1 
                 className={`text-xl md:text-3xl lg:text-5xl font-extrabold leading-[1.6] md:leading-[1.4] tracking-tight ${lang === 'HI' ? 'font-serif' : ''} text-white`}
