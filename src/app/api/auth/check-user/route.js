@@ -18,11 +18,15 @@ export async function POST(request) {
       },
       select: { 
         id: true, 
-        email: true 
+        email: true,
+        pin: true
       },
     });
 
-    return NextResponse.json({ exists: !!user });
+    return NextResponse.json({ 
+        exists: !!user,
+        hasPin: !!(user && user.pin)
+    });
   } catch (error) {
     console.error("Check user error:", error);
     // Log the actual error message to Vercel logs for better debugging

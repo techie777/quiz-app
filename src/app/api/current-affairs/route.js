@@ -40,49 +40,94 @@ async function ensureMigrated() {
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
-  const date = normalizeString(searchParams.get("date"));
+  const dateStr = normalizeString(searchParams.get("date"));
   const month = normalizeString(searchParams.get("month"));
   const category = normalizeString(searchParams.get("category"));
   const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
   const pageSize = Math.min(500, Math.max(6, parseInt(searchParams.get("pageSize") || "10", 10) || 10));
+  const fallback = searchParams.get("fallback") === "true";
 
   try {
-    // Run migration check once per request or similar (low overhead if setting is gone)
     await ensureMigrated();
 
-    const where = { hidden: false };
-    if (date) {
-      where.date = date;
-    } else if (month) {
-      where.date = { startsWith: `${month}-` };
-    }
+    let where = { hidden: false };
     if (category && category !== "all") {
       where.category = { equals: category, mode: "insensitive" };
     }
 
-    const [items, total] = await Promise.all([
-      prisma.currentAffair.findMany({
+    let items = [];
+    let total = 0;
+    let targetDate = dateStr;
+
+    // Logic: If a specific date is requested and fallback is enabled, 
+    // and no items are found for that date, find the latest available date.
+    if (dateStr) {
+      where.date = { lte: dateStr }; // Use "less than or equal" for infinite scroll back in time
+      
+      // Check if we need to fallback to the latest date if searching for today and no data found
+      const countForTarget = await prisma.currentAffair.count({ where: { ...where, date: dateStr } });
+      
+      if (countForTarget === 0 && page === 1 && fallback) {
+        const latestItem = await prisma.currentAffair.findFirst({
+          where: { hidden: false },
+          orderBy: { date: "desc" },
+          select: { date: true }
+        });
+        
+        if (latestItem) {
+          targetDate = latestItem.date;
+          where.date = { lte: targetDate };
+        }
+      }
+
+      items = await prisma.currentAffair.findMany({
         where,
-        orderBy: [
-          { date: "desc" },
-          { createdAt: "desc" }
-        ],
+        orderBy: [{ date: "desc" }, { createdAt: "desc" }],
         skip: (page - 1) * pageSize,
         take: pageSize,
-      }),
-      prisma.currentAffair.count({ where }),
-    ]);
+      });
+      total = await prisma.currentAffair.count({ where });
+    } else if (month) {
+      where.date = { startsWith: `${month}-` };
+      items = await prisma.currentAffair.findMany({
+        where,
+        orderBy: [{ date: "desc" }, { createdAt: "desc" }],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      });
+      total = await prisma.currentAffair.count({ where });
+    } else {
+      // General list (Infinite Scroll case or overview)
+      items = await prisma.currentAffair.findMany({
+        where,
+        orderBy: [{ date: "desc" }, { createdAt: "desc" }],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      });
+      total = await prisma.currentAffair.count({ where });
+    }
 
-    // Get unique categories and months for filters from public items only
-    const allPublicItems = await prisma.currentAffair.findMany({
+    // Faster metadata fetch
+    const categories = Array.from(new Set((await prisma.currentAffair.findMany({
       where: { hidden: false },
-      select: { category: true, date: true }
-    });
-    
-    const categories = Array.from(new Set(allPublicItems.map(x => x.category).filter(Boolean))).sort();
-    const months = Array.from(new Set(allPublicItems.map(x => x.date.slice(0, 7)).filter(m => /^\d{4}-\d{2}$/.test(m)))).sort((a, b) => b.localeCompare(a));
+      select: { category: true },
+      distinct: ['category']
+    })).map(x => x.category).filter(Boolean))).sort();
 
-    return NextResponse.json({ items, total, page, pageSize, categories, months });
+    const months = Array.from(new Set((await prisma.currentAffair.findMany({
+      where: { hidden: false },
+      select: { date: true },
+    })).map(x => x.date.slice(0, 7)).filter(m => /^\d{4}-\d{2}$/.test(m)))).sort((a, b) => b.localeCompare(a));
+
+    return NextResponse.json({ 
+      items, 
+      total, 
+      page, 
+      pageSize, 
+      categories, 
+      months,
+      date: targetDate 
+    });
   } catch (error) {
     console.error("Current affairs API error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

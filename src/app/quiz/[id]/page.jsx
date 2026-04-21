@@ -630,8 +630,10 @@ const QuizEngineTimer = QuizTimerComponent;
           <div className={styles.topBar}>
             <div className={styles.topLeft}>
               <div className={styles.scoreInfo}>
-                <span className={styles.scoreLabel}>{language === "hi" ? "स्कोर" : "Score"}</span>
-                <span className={styles.scoreValue}>{score}</span>
+                <span className={styles.streakCount}>
+                  {(answers.length >= 3 && answers.slice(-3).every(a => a.isCorrect)) ? "🔥 " : ""}
+                  {score} {language === "hi" ? "सही" : "Correct"}
+                </span>
               </div>
             </div>
             <div className={styles.topCenter}>
@@ -647,7 +649,7 @@ const QuizEngineTimer = QuizTimerComponent;
             <div className={styles.topRight}>
               <div className={styles.topRightContent}>
                 <span className={styles.questionCounter}>
-                  {language === "hi" ? "प्रश्न" : "Question"} {currentIndex + 1} / {questions.length}
+                  Q{currentIndex + 1} / {questions.length}
                 </span>
                 <button
                   className={styles.endQuizBtn}
@@ -660,47 +662,51 @@ const QuizEngineTimer = QuizTimerComponent;
             </div>
           </div>
 
-          {/* Controls / Power-Up Dock */}
-          <div className={styles.controls}>
-            <button
-              className={`${styles.controlBtn} ${used5050 ? styles.disabled : ""}`}
-              onClick={use5050}
-              disabled={used5050}
-              title="50/50 Lifeline (-3 points)"
-              data-icon="50/50"
-            />
-            
-            <button
-              className={`${styles.controlBtn} ${usedAskAudience ? styles.disabled : ""}`}
-              onClick={useAskAudience}
-              disabled={usedAskAudience}
-              title="Ask Audience (-3 points)"
-              data-icon="👥"
-            />
-            
-            <button
-               className={`${styles.controlBtn} ${styles.langToggle} ${isTranslating ? styles.loading : ""}`}
-               onClick={() => toggleLanguage(category?.storyText)}
-               title={language === "hi" ? "Switch to English" : "Switch to Hindi"}
-               data-icon={language === "hi" ? "EN" : "HI"}
-               disabled={isTranslating}
-            >
-               <span className={styles.langLabel}>{language === "hi" ? "A" : "अ"}</span>
-            </button>
-            
-            <button 
-              className={`${styles.controlBtn} ${!soundEnabled ? styles.disabled : ""}`} 
-              onClick={toggleSound}
-              title={soundEnabled ? "Disable Sound" : "Enable Sound"}
-              data-icon={soundEnabled ? "🔊" : "🔇"}
-            />
-            
-            <button 
-              className={styles.controlBtn} 
-              onClick={toggleFullscreen}
-              title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
-              data-icon={isFullscreen ? "↙️" : "↗️"}
-            />
+          {/* Controls / Power-Up Dock (The Lifeline Toolbar) */}
+          <div className={styles.toolbarContainer}>
+            <div className={styles.controls}>
+              <button
+                className={`${styles.controlBtn} ${used5050 ? styles.disabled : ""}`}
+                onClick={use5050}
+                disabled={used5050}
+                title="50/50 Lifeline (-3 points)"
+                data-icon="50/50"
+              />
+              
+              <button
+                className={`${styles.controlBtn} ${usedAskAudience ? styles.disabled : ""}`}
+                onClick={useAskAudience}
+                disabled={usedAskAudience}
+                title="Ask Audience (-3 points)"
+                data-icon="👥"
+              />
+              
+              <div className={styles.divider} />
+
+              <button
+                 className={`${styles.controlBtn} ${styles.langToggle} ${isTranslating ? styles.loading : ""}`}
+                 onClick={() => toggleLanguage(category?.storyText)}
+                 title={language === "hi" ? "Switch to English" : "Switch to Hindi"}
+                 data-icon={language === "hi" ? "EN" : "HI"}
+                 disabled={isTranslating}
+              >
+                 <span className={styles.langLabel}>{language === "hi" ? "A" : "अ"}</span>
+              </button>
+              
+              <button 
+                className={`${styles.controlBtn} ${!soundEnabled ? styles.disabled : ""}`} 
+                onClick={toggleSound}
+                title={soundEnabled ? "Disable Sound" : "Enable Sound"}
+                data-icon={soundEnabled ? "🔊" : "🔇"}
+              />
+              
+              <button 
+                className={styles.controlBtn} 
+                onClick={toggleFullscreen}
+                title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+                data-icon={isFullscreen ? "↙️" : "↗️"}
+              />
+            </div>
           </div>
 
           {/* Progress */}

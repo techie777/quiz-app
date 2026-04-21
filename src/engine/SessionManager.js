@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useSessionEngine } from '@/engine/SessionProvider';
 import SessionLobby from '@/components/engine/SessionLobby';
 import { getPlayerComponent } from '@/engine/lib/mapper';
@@ -137,7 +138,7 @@ export default function SessionManager({ sessionId }) {
         if (socket && session?.userId && session?.sessionId) {
             const status = document.visibilityState === 'visible' ? 'ACTIVE' : 'BUSY';
             console.log(`📡 [VISIBILITY] Operative is now: ${status}`);
-            socket.emit('UPDATE_STATUS', {
+            socket?.emit('UPDATE_STATUS', {
                 sessionId: session.sessionId,
                 userId: session.userId,
                 status: status
@@ -147,7 +148,7 @@ export default function SessionManager({ sessionId }) {
 
     const handleBeforeUnload = () => {
         if (socket && session?.userId && session?.sessionId && session?.role !== 'HOST') {
-            socket.emit('LEAVE_SESSION', { 
+            socket?.emit('LEAVE_SESSION', { 
                 sessionId: session.sessionId, 
                 userId: session.userId 
             });
@@ -194,7 +195,7 @@ export default function SessionManager({ sessionId }) {
   const handleLeaveSession = () => {
     if (window.confirm("Are you sure you want to exit the quiz room? Your progress will be lost.")) {
         if (socket && session?.userId) {
-            socket.emit('LEAVE_SESSION', { 
+            socket?.emit('LEAVE_SESSION', { 
                 sessionId: session.sessionId, 
                 userId: session.userId 
             });
@@ -214,6 +215,17 @@ export default function SessionManager({ sessionId }) {
     }
     return () => clearInterval(timer);
   }, [session?.sessionId]); // Depend on ID to handle re-joins
+
+  // 🔒 SYSTEM LOCK: Prevent background scroll when mission modals are active
+  useEffect(() => {
+    const isModalActive = session?.isPaused || (isHost && pendingParticipants.length > 0);
+    if (isModalActive && mounted) {
+        document.body.style.overflow = 'hidden';
+    } else {
+        document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [session?.isPaused, pendingParticipants.length, isHost, mounted]);
 
   const leadingPlayer = useMemo(() => {
     if (!participants || participants.length === 0) return null;
@@ -427,30 +439,31 @@ export default function SessionManager({ sessionId }) {
               </div>
           </div>
 
-          {/* ⏸️ PAUSE MODAL OVERLAY */}
-          {session?.isPaused && (
-             <div className="fixed inset-0 z-[99999] flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-xl animate-in fade-in duration-300 pointer-events-auto">
-                  <div className="bg-white p-6 md:p-12 rounded-[2rem] md:rounded-[3.5rem] shadow-[0_0_100px_rgba(0,0,0,0.5)] max-w-xl w-full text-center space-y-6 md:space-y-8 border border-slate-200 max-h-[95vh] overflow-y-auto">
-                    <div className="w-16 h-16 md:w-24 md:h-24 bg-indigo-600 rounded-full flex items-center justify-center text-white text-3xl md:text-5xl mx-auto shadow-2xl animate-pulse">⏸️</div>
+          {/* ⏸️ PAUSE MODAL OVERLAY (Portal Mounted) */}
+          {session?.isPaused && mounted && createPortal(
+             <div className="fixed inset-0 z-[1000000] flex items-center justify-center p-4 sm:p-6 bg-slate-900/90 backdrop-blur-2xl animate-in fade-in duration-500 pointer-events-auto">
+                  <div className="bg-white p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] shadow-[0_40px_100px_rgba(0,0,0,0.6)] max-w-md w-full text-center space-y-6 md:space-y-8 border border-slate-100 animate-in zoom-in duration-500">
+                    <div className="w-16 h-16 md:w-20 md:h-20 bg-indigo-600 rounded-full flex items-center justify-center text-white text-3xl md:text-4xl mx-auto shadow-2xl animate-pulse">⏸️</div>
                     <div className="space-y-3 md:space-y-4">
-                        <h2 className="text-2xl md:text-4xl font-black text-slate-900 uppercase tracking-tighter">Mission Paused</h2>
-                        <p className="text-sm md:text-lg font-bold text-slate-500 leading-relaxed uppercase">
-                            The session has been paused by the commander. This is temporary—stand by for resumption.
+                        <h2 className="text-xl md:text-3xl font-black text-slate-900 uppercase tracking-tighter">Mission Paused</h2>
+                        <p className="text-xs md:text-base font-bold text-slate-500 leading-relaxed uppercase px-4">
+                            The session has been paused by the commander. Stand by for resumption.
                         </p>
                     </div>
-                    <div className="py-3 px-5 md:py-4 md:px-6 bg-slate-50 rounded-2xl border border-slate-100 italic text-slate-400 font-bold text-[10px] md:text-sm">
+                    <div className="py-3 px-5 md:py-4 md:px-6 bg-slate-50 rounded-xl border border-slate-100 italic text-slate-400 font-bold text-[10px] md:text-sm">
                         Comms Uplink remains active. You can still chat with the squadron.
                     </div>
                     {(session?.role === 'HOST' || isHost) && (
                         <button 
-                            onClick={() => sendAction('RESUME_SESSION', { isPaused: false })}
-                            className="w-full bg-indigo-600 text-white py-4 md:py-6 rounded-2xl md:rounded-[2rem] font-black text-sm md:text-xl uppercase tracking-[0.3em] hover:scale-105 transition-all shadow-2xl"
+                            onClick={() => { playSessionSound('pause'); sendAction('RESUME_SESSION', { isPaused: false }); }}
+                            className="w-full bg-indigo-600 text-white py-4 md:py-5 rounded-2xl font-black text-xs md:text-lg uppercase tracking-[0.4em] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_15px_30px_rgba(79,70,229,0.3)]"
                         >
                             Resume Mission ▶️
                         </button>
                     )}
                  </div>
-             </div>
+             </div>,
+             document.body
           )}
 
           <div className="w-full max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 lg:gap-10 animate-in fade-in duration-500 px-4 md:px-8 py-6 md:py-12 pb-32">
@@ -478,7 +491,7 @@ export default function SessionManager({ sessionId }) {
 
                         <div className="flex items-center gap-3">
                             <button 
-                                onClick={() => sendAction(session?.isPaused ? 'RESUME_SESSION' : 'PAUSE_SESSION', { isPaused: !session?.isPaused })}
+                                onClick={() => { playSessionSound('pause'); sendAction(session?.isPaused ? 'RESUME_SESSION' : 'PAUSE_SESSION', { isPaused: !session?.isPaused }); }}
                                 className={`w-12 h-12 flex items-center justify-center rounded-2xl transition-all shadow-md group ${
                                     session?.isPaused ? 'bg-green-600 text-white' : 'bg-indigo-600 text-white'
                                 }`}
@@ -521,34 +534,35 @@ export default function SessionManager({ sessionId }) {
             </div>
           </div>
 
-          {/* 🚀 GLOBAL GLASSMORPHIC GUEST PORTAL (Host View - Mid Mission) */}
-          {isHost && pendingParticipants.length > 0 && (
-             <div className="fixed inset-0 z-[99999] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-in fade-in zoom-in duration-300 pointer-events-auto">
-                 <div className="bg-white/90 backdrop-blur-2xl p-6 sm:p-10 rounded-[2rem] sm:rounded-[2.5rem] border border-white/50 shadow-[0_30px_100px_rgba(0,0,0,0.3)] max-w-md w-full text-center space-y-8 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
-                    <div className="space-y-4">
-                        <div className="w-16 h-16 bg-indigo-600 rounded-3xl mx-auto flex items-center justify-center text-white text-3xl shadow-xl animate-bounce">💂</div>
-                        <h3 className="text-2xl font-black text-slate-900 tracking-tighter uppercase">Access Request</h3>
+          {/* 🚀 GLOBAL GLASSMORPHIC GUEST PORTAL (Portal Mounted) */}
+          {isHost && pendingParticipants.length > 0 && mounted && createPortal(
+             <div className="fixed inset-0 z-[1000000] flex items-center justify-center p-6 bg-slate-900/70 backdrop-blur-xl animate-in fade-in duration-500 pointer-events-auto">
+                 <div className="bg-white/95 backdrop-blur-2xl p-6 sm:p-10 rounded-[2rem] md:rounded-[2.5rem] border border-white/50 shadow-[0_50px_100px_rgba(0,0,0,0.5)] max-w-md w-full text-center space-y-8 relative overflow-hidden animate-in zoom-in duration-500">
+                    <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500"></div>
+                    <div className="space-y-3">
+                        <div className="w-16 h-16 bg-indigo-600 rounded-[1.5rem] mx-auto flex items-center justify-center text-white text-3xl shadow-xl animate-bounce">💂</div>
+                        <h3 className="text-xl md:text-2xl font-black text-slate-900 tracking-tighter uppercase">Access Request</h3>
                         <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Mid-Mission Clearance Required</p>
                     </div>
                     
-                    <div className="space-y-4 max-h-[250px] overflow-y-auto px-2 custom-scrollbar">
+                    <div className="space-y-4 max-h-[300px] overflow-y-auto px-2 custom-scrollbar">
                         {pendingParticipants.map((guest) => (
-                            <div key={guest.userId} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm animate-in slide-in-from-bottom-4 duration-500">
+                            <div key={guest.userId} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow animate-in slide-in-from-bottom-4 duration-500">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center font-black text-slate-400">{guest.userName[0]}</div>
+                                    <div className="w-10 h-10 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center font-black text-slate-400 text-sm shadow-inner">{guest.userName[0]}</div>
                                     <div className="text-left font-black text-slate-900 uppercase tracking-tight text-sm">{guest.userName}</div>
                                 </div>
                                 <div className="flex gap-2">
-                                    <button onClick={() => handleDenyGuest(guest.userId)} className="w-9 h-9 flex items-center justify-center bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all">×</button>
-                                    <button onClick={() => { playSessionSound('success'); handleApproveGuest(guest.userId); }} className="w-11 h-11 flex items-center justify-center bg-indigo-600 text-white rounded-xl shadow-lg hover:bg-indigo-700 transition-all">✓</button>
+                                    <button onClick={() => { playSessionSound('fail'); handleDenyGuest(guest.userId); }} className="w-8 h-8 flex items-center justify-center bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-sm">×</button>
+                                    <button onClick={() => { playSessionSound('success'); handleApproveGuest(guest.userId); }} className="w-10 h-10 flex items-center justify-center bg-indigo-600 text-white rounded-xl shadow-lg hover:bg-indigo-700 transition-all">✓</button>
                                 </div>
                             </div>
                         ))}
                     </div>
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest opacity-60">Operative recruitment ongoing. Approve to deploy.</p>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest opacity-60 px-4">New operatives are requesting clearance. Authorization required for deployment.</p>
                  </div>
-             </div>
+             </div>,
+             document.body
           )}
 
           {/* 🛰️ TACTICAL OVERLAYS */}

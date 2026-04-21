@@ -379,78 +379,98 @@ export default function FunFactVoyager({ params }) {
       )}
       
       {/* Voyager Hero Section (100vh viewport) */}
-      <div className="relative h-[100svh] md:min-h-[100svh] flex flex-col shrink-0">
-        {/* Background Layer */}
+      <div className="relative h-[100svh] md:min-h-[100svh] flex flex-col shrink-0 overflow-hidden">
+        {/* Background Layer - High Fidelity Object Cover for Full Immersion */}
         <div className="absolute inset-0 z-0">
          {(fact.image || fact.category?.image) ? (
-            <>
-              {/* Blurred background filling edges */}
-              <img src={fact.image || fact.category?.image} alt="Background Fill" className="absolute inset-0 w-full h-full object-cover blur-xl opacity-30" />
-              {/* Centered contained original image */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                 <img src={fact.image || fact.category?.image} alt="Fact Visual" className="w-full h-full object-contain opacity-80" />
-              </div>
-            </>
+            <img 
+              src={fact.image || fact.category?.image} 
+              alt="Background Visual" 
+              className="absolute inset-0 w-full h-full object-cover opacity-60" 
+            />
          ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 to-slate-900 opacity-30" />
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 via-slate-900 to-black" />
          )}
-         {/* Very subtle dark overlay for text legibility without killing brightness */}
-         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/20 via-transparent to-slate-950/60" />
+         {/* Advanced Multi-Stage Overlays for Depth and Legibility */}
+         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950/40" />
+         <div className="absolute inset-0 bg-black/20" />
         </div>
 
-      {/* Immersive Top Bar - Glass Header */}
-      <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-30 w-[95%] max-w-7xl h-auto transition-opacity duration-300 ${isFullScreen ? 'opacity-20 hover:opacity-100' : 'opacity-100'}`}>
-        <div className="bg-black/20 backdrop-blur-xl border border-white/10 rounded-full px-4 py-2 flex justify-between items-center shadow-lg">
-          <Link href="/fun-facts" className="group flex items-center bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/5 px-4 py-2 rounded-full text-slate-300 transition-all">
-             <ChevronLeft className="mr-1 group-hover:-translate-x-1 transition-transform" size={18} /> 
-             <span className="text-xs font-bold tracking-wider uppercase">Hub</span>
-          </Link>
-          
-          <div className="flex items-center gap-4">
-             <div className="flex gap-1 bg-white/5 p-1 rounded-full border border-white/10">
-                <button onClick={() => toggleLang("EN")} className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest transition-all ${lang === "EN" ? "bg-indigo-600 text-white shadow-[0_0_15px_rgba(79,70,229,0.5)]" : "text-slate-400 hover:text-white"}`}>EN</button>
-                <button onClick={() => toggleLang("HI")} className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest transition-all ${lang === "HI" ? "bg-indigo-600 text-white shadow-[0_0_15px_rgba(79,70,229,0.5)]" : "text-slate-400 hover:text-white"}`}>HI</button>
+      {/* Immersive Top Bar - Glass Header - Unified Command Center - Now scrolls with content */}
+      <div className={`absolute top-10 left-1/2 -translate-x-1/2 z-30 w-[95%] max-w-7xl h-auto transition-opacity duration-300 ${isFullScreen ? 'opacity-20 hover:opacity-100' : 'opacity-100'}`}>
+        <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-full px-3 py-1.5 flex justify-between items-center shadow-lg">
+          <div className="flex items-center gap-1.5">
+            <Link href="/fun-facts" className="group flex items-center bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full text-slate-300 transition-all">
+               <ChevronLeft className="mr-0.5 group-hover:-translate-x-1 transition-transform" size={14} /> 
+               <span className="text-[9px] font-bold tracking-wider uppercase">Hub</span>
+            </Link>
+            
+            {fact.image && (
+              <button 
+                onClick={handleDownload} 
+                className="p-2 bg-white/5 hover:bg-white/10 text-white/80 rounded-full border border-white/10 transition-all"
+                title="Download Card"
+              >
+                <Download size={14} />
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+             {/* Integrated Interaction Block - Visible on all screens */}
+             <div className="flex items-center bg-white/10 rounded-full px-2 py-0.5 border border-white/10">
+                <button onClick={() => toggleInteraction('like')} className="p-1.5 transition hover:scale-110">
+                  <Heart size={14} className={hasLiked ? "fill-rose-500 text-rose-500" : "text-slate-300"} />
+                </button>
+                <button onClick={() => toggleInteraction('favorite')} className="p-1.5 transition hover:scale-110" title="Save Fact">
+                  <Star size={14} className={hasFavorited ? "fill-amber-400 text-amber-400" : "text-slate-300"} />
+                </button>
+             </div>
+
+             <div className="flex gap-1 bg-white/5 p-0.5 rounded-full border border-white/10">
+                <button onClick={() => toggleLang("EN")} className={`px-2.5 py-1 rounded-full text-[8px] font-black tracking-widest transition-all ${lang === "EN" ? "bg-indigo-600 text-white" : "text-slate-400"}`}>EN</button>
+                <button onClick={() => toggleLang("HI")} className={`px-2.5 py-1 rounded-full text-[8px] font-black tracking-widest transition-all ${lang === "HI" ? "bg-indigo-600 text-white" : "text-slate-400"}`}>HI</button>
              </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content Area */}
-      <div className="relative z-10 flex-grow flex flex-col items-center justify-center px-4 md:px-12 max-w-5xl mx-auto w-full py-32">
-        {/* Fact Text - Glass Shield Frame */}
+      {/* Main Content Area - Increased pt to ensures text stays below hub row even when justify-centered */}
+      <div className="relative z-10 flex-grow flex flex-col items-center justify-center px-4 md:px-12 max-w-5xl mx-auto w-full pt-36 pb-12 md:pt-48 md:pb-24">
+        {/* Fact Text - Clear Frame (Removed semi-transparent layer as requested) */}
         <div className="relative max-w-4xl w-full">
-           <div className="relative z-10 border border-white/5 rounded-[2.5rem] px-8 md:px-16 py-12 md:py-20 text-center shadow-[0_10px_40px_rgba(0,0,0,0.3)]">
-              <span className="absolute -top-4 -left-2 md:-top-8 md:-left-8 text-7xl md:text-9xl text-indigo-400/20 font-serif leading-none select-none">&ldquo;</span>
+           <div className="relative z-10 rounded-[2.5rem] px-8 md:px-16 py-10 md:py-20 text-center">
+              <span className="absolute -top-4 -left-2 md:-top-12 md:-left-12 text-6xl md:text-9xl text-indigo-400/20 font-serif leading-none select-none">&ldquo;</span>
               <h1 
                 className={`text-xl md:text-3xl lg:text-5xl font-extrabold leading-[1.6] md:leading-[1.4] tracking-tight ${lang === 'HI' ? 'font-serif' : ''} text-white`}
                 style={{ 
-                  textShadow: '0 2px 4px rgba(0,0,0,0.8), 0 10px 30px rgba(0,0,0,0.5)',
+                  textShadow: '0 2px 4px rgba(0,0,0,0.9), 0 10px 40px rgba(0,0,0,0.7)',
                 }}
               >
                 {highlightFactText(displayText, true)}
               </h1>
-              <span className="absolute -bottom-8 -right-2 md:-bottom-16 md:-right-8 text-7xl md:text-9xl text-indigo-400/20 font-serif leading-none select-none">&rdquo;</span>
+              <span className="absolute -bottom-8 -right-2 md:-bottom-20 md:-right-12 text-6xl md:text-9xl text-indigo-400/20 font-serif leading-none select-none">&rdquo;</span>
            </div>
         </div>
 
-        {/* Explorers Count & Mobile Nav - Glass Footer */}
-        <div className="mt-12 w-fit px-8 py-4 bg-black/40 backdrop-blur-xl border border-white/10 rounded-full flex flex-col items-center gap-4 shadow-xl">
-           <div className="flex items-center gap-3 text-white/60 text-[10px] font-black tracking-[0.2em] uppercase">
-               <div className="w-4 h-[1px] bg-white/20" />
-               <span>{fact.views + 1} Explorers connected</span>
-               <div className="w-4 h-[1px] bg-white/20" />
+        {/* People Read Count & Mobile Nav - Shifted Lower & Wider Profile */}
+        <div className="mt-24 w-fit px-16 py-2.5 bg-black/40 backdrop-blur-xl border border-white/10 rounded-full flex flex-col items-center gap-1.5 shadow-xl">
+           <div className="flex items-center gap-2 text-white/50 text-[9px] font-bold tracking-[0.2em] uppercase">
+               <div className="w-3 h-[1px] bg-white/20" />
+               <span>{fact.views + 1} People Read</span>
+               <div className="w-3 h-[1px] bg-white/20" />
            </div>
 
-           {/* Mobile-only Optimized Navigation */}
+           {/* Mobile-only Optimized Navigation - Wide & Compact */}
            <div className="flex md:hidden items-center gap-8 pointer-events-auto">
                {prevId && (
-                 <button onClick={() => router.push(`/fun-facts/read/${prevId}`)} className="bg-white/5 text-white/60 p-3 rounded-full border border-white/10 active:scale-95 transition-all">
-                   <ArrowLeft strokeWidth={2} size={20} />
+                 <button onClick={() => router.push(`/fun-facts/read/${prevId}`)} className="bg-white/10 text-white/80 p-2 rounded-full border border-white/10 active:scale-90 transition-all">
+                   <ArrowLeft strokeWidth={2.5} size={16} />
                  </button>
                )}
                {nextId && (
-                 <button onClick={() => router.push(`/fun-facts/read/${nextId}`)} className="bg-white/5 text-white/60 p-3 rounded-full border border-white/10 active:scale-95 transition-all">
-                   <ArrowRight strokeWidth={2} size={20} />
+                 <button onClick={() => router.push(`/fun-facts/read/${nextId}`)} className="bg-white/10 text-white/80 p-2 rounded-full border border-white/10 active:scale-90 transition-all">
+                   <ArrowRight strokeWidth={2.5} size={16} />
                  </button>
                )}
            </div>

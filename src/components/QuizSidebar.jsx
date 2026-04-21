@@ -58,26 +58,6 @@ export default function QuizSidebar({
 
   return (
     <aside className={styles.sidebar}>
-      {/* Neural Performance Ring Overlay */}
-      {status === 'active' && (
-        <div className={styles.performanceStats}>
-          <div className={styles.streakInfo}>
-            <span className={styles.streakEmoji}>🔥</span>
-            <span className={styles.streakCount}>{score} Correct</span>
-          </div>
-          <div className={styles.timerDisplay}>
-            {TimerComponent && (
-              <TimerComponent 
-                seconds={timerSetting} 
-                onExpire={() => console.log('Time up!')}
-                isPaused={isPaused}
-                questionKey={currentIndex}
-              />
-            )}
-          </div>
-        </div>
-      )}
-
       {/* Mission Map Navigation */}
       <div className={styles.missionMap}>
         <div className={styles.missionHeader}>
@@ -126,33 +106,15 @@ export default function QuizSidebar({
                 title={`Question ${index + 1}`}
               >
                 {index + 1}
-                {isAnswered && (
-                  <span className={styles.nodeStatus}>
-                    {isCorrect ? "✓" : "✗"}
-                  </span>
-                )}
               </button>
             );
           })}
         </div>
         <div className={styles.mapFooter}>
-          <span className={styles.mapTime}>✓ {Array.isArray(answers) ? answers.filter(a => a.isCorrect).length : 0}</span>
           <span className={styles.mapTime}>⌛ {displayTime}</span>
         </div>
       </div>
 
-      {/* Tactical Actions */}
-      <div className={styles.actions}>
-        <button className={styles.actionBtn} onClick={() => console.log('Notes')}>
-          <span className={styles.btnEmoji}>📝</span> Notes
-        </button>
-        <button className={styles.actionBtn} onClick={() => console.log('Report')}>
-          <span className={styles.btnEmoji}>💡</span> Hint
-        </button>
-        <button className={`${styles.actionBtn} ${styles.exitBtn}`} onClick={onExit}>
-          <span className={styles.btnEmoji}>🚨</span> Exit
-        </button>
-      </div>
     </aside>
   );
 }

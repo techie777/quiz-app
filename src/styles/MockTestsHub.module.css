@@ -53,10 +53,10 @@
 }
 
 .searchWrapper {
-  max-width: 600px;
-  margin: 0 auto;
+  flex: 1;
+  max-width: 400px;
+  width: 100%;
   position: relative;
-  z-index: 2;
 }
 
 .searchIcon {
@@ -69,20 +69,20 @@
 
 .searchInput {
   width: 100%;
-  padding: 20px 20px 20px 60px;
-  border-radius: 16px;
-  border: 2px solid transparent;
-  font-size: 1.1rem;
+  padding: 12px 20px 12px 50px;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  font-size: 1rem;
   background: white;
   color: #1e293b;
   transition: all 0.3s;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.02);
 }
 
 .searchInput:focus {
   outline: none;
   border-color: #6366f1;
-  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
 }
 
 .mainLayout {
@@ -148,6 +148,11 @@
 
 .resultsHeader {
   margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
 .resultsHeader h2 {

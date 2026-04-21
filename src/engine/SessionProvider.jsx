@@ -363,12 +363,47 @@ export function SessionProvider({ children, sessionId: propSessionId }) {
         switch (type) {
             case 'ting': // Chat / Notification
             case 'chat':
+            case 'notify':
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(1318.51, ctx.currentTime);
-                gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+                gainNode.gain.setValueAtTime(0.05, ctx.currentTime); // Reduced volume
                 gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
                 osc.start();
                 osc.stop(ctx.currentTime + 0.4);
+                break;
+            case 'click': // Tactile Button Feedback
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(2000, ctx.currentTime);
+                gainNode.gain.setValueAtTime(0.03, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.05);
+                break;
+            case 'launch': // Mission Initiation Sweep
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(100, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.8);
+                gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.8);
+                break;
+            case 'pause': // Mission State Change (Pause/Resume)
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, ctx.currentTime);
+                gainNode.gain.setValueAtTime(0.05, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.15);
+                break;
+            case 'fail': // Incorrect Answer / Denial
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(150, ctx.currentTime);
+                osc.frequency.setValueAtTime(110, ctx.currentTime + 0.1);
+                gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.5);
                 break;
             case 'join': // New Player
                 osc.type = 'triangle';

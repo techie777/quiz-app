@@ -22,7 +22,7 @@ export default async function Page() {
           select: { questions: true }
         },
       },
-      orderBy: { sortOrder: "asc" },
+      orderBy: [{ sortOrder: "asc" }, { topic: "asc" }, { id: "asc" }],
       take: 12, // Match the itemsPerPage in client
     });
 

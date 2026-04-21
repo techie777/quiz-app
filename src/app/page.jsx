@@ -1,16 +1,18 @@
+"use client";
+
 import Link from "next/link";
-import { ArrowRight, Sparkles, Rocket, Zap, Globe } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import styles from "@/styles/HubPage.module.css";
-import dynamic from "next/dynamic";
-
-const MiniQuizPreview = dynamic(() => import("@/components/MiniQuizPreview"), {
-  ssr: false,
-});
-
-
-export const revalidate = 3600;
+import { useState, useEffect } from "react";
+import MiniQuizPreview from "@/components/MiniQuizPreview";
 
 export default function MasterHubPage() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
     <div className={styles.container}>
       <main className={styles.heroContent}>
@@ -22,7 +24,7 @@ export default function MasterHubPage() {
             <div className={styles.cardBody}>
               <div className={styles.cardIcon}>🧠</div>
               <div className={styles.previewWrapper}>
-                <MiniQuizPreview type="quiz" />
+                {mounted ? <MiniQuizPreview type="quiz" /> : <div className="animate-pulse bg-slate-100 rounded-2xl w-full h-full" />}
               </div>
               <h2 className={styles.cardTitle}>Quiz Hub</h2>
 
@@ -50,7 +52,7 @@ export default function MasterHubPage() {
             <div className={styles.cardBody}>
               <div className={styles.cardIcon}>🏛️</div>
               <div className={styles.previewWrapper}>
-                <MiniQuizPreview type="govt" />
+                {mounted ? <MiniQuizPreview type="govt" /> : <div className="animate-pulse bg-slate-100 rounded-2xl w-full h-full" />}
               </div>
               <h2 className={styles.cardTitle}>Govt Exams</h2>
 
@@ -84,7 +86,7 @@ export default function MasterHubPage() {
             <div className={styles.cardBody}>
               <div className={styles.cardIcon}>✨</div>
               <div className={styles.previewWrapper}>
-                <MiniQuizPreview type="facts" />
+                {mounted ? <MiniQuizPreview type="facts" /> : <div className="animate-pulse bg-slate-100 rounded-2xl w-full h-full" />}
               </div>
               <h2 className={styles.cardTitle}>Daily Insights</h2>
 
@@ -118,7 +120,7 @@ export default function MasterHubPage() {
             <div className={styles.cardBody}>
               <div className={styles.cardIcon}>🎓</div>
               <div className={styles.previewWrapper}>
-                <MiniQuizPreview type="resources" />
+                {mounted ? <MiniQuizPreview type="resources" /> : <div className="animate-pulse bg-slate-100 rounded-2xl w-full h-full" />}
               </div>
               <h2 className={styles.cardTitle}>Resources</h2>
 

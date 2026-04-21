@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 export async function GET(request, { params }) {
   const session = await getServerSession(authOptions);
@@ -31,33 +28,54 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: "Attempt not found" }, { status: 404 });
     }
 
-    // Prepare response
+    // Prepare response with comprehensive fallbacks
+    let questions = [];
+    try {
+        if (attempt.paper?.showSolutions) {
+            const parsedAnswers = JSON.parse(attempt.answersJson || "{}");
+            questions = (attempt.paper.questions || []).map(q => {
+                let options = [];
+                let optionsHi = [];
+                try {
+                    options = typeof q.options === 'string' ? JSON.parse(q.options) : (q.options || []);
+                } catch (pe) { console.warn(`Option parse error for Q ${q.id}:`, pe); }
+
+                try {
+                    optionsHi = typeof q.optionsHi === 'string' ? JSON.parse(q.optionsHi) : (q.optionsHi || []);
+                } catch (pe) { console.warn(`Hindi option parse error for Q ${q.id}:`, pe); }
+
+                return {
+                    id: q.id,
+                    text: q.text,
+                    textHi: q.textHi,
+                    options,
+                    optionsHi,
+                    correctAnswer: q.answer,
+                    userAnswer: parsedAnswers[q.id]?.option,
+                    explanation: q.explanation,
+                    explanationHi: q.explanationHi
+                };
+            });
+        }
+    } catch (qe) {
+        console.error("Critical error mapping questions for result view:", qe);
+    }
+
     const result = {
         id: attempt.id,
-        paperTitle: attempt.paper.title,
-        examName: attempt.paper.exam.name,
-        score: attempt.score,
-        totalMarks: attempt.paper.totalMarks,
-        correctCount: attempt.correctCount,
-        wrongCount: attempt.wrongCount,
-        attemptedCount: attempt.attemptedCount,
-        totalQuestions: attempt.paper.questions.length,
-        timeLeft: attempt.timeLeft,
+        paperTitle: attempt.paper?.title || "Mock Paper",
+        examName: attempt.paper?.exam?.name || "Mock Exam",
+        score: attempt.score || 0,
+        totalMarks: attempt.paper?.totalMarks || 100,
+        correctCount: attempt.correctCount || 0,
+        wrongCount: attempt.wrongCount || 0,
+        attemptedCount: attempt.attemptedCount || 0,
+        totalQuestions: attempt.paper?.questions?.length || 0,
+        timeLeft: attempt.timeLeft || 0,
         startedAt: attempt.startedAt,
         completedAt: attempt.completedAt,
-        showSolutions: attempt.paper.showSolutions,
-        // Only send keys if showSolutions is true
-        questions: attempt.paper.showSolutions ? attempt.paper.questions.map(q => ({
-            id: q.id,
-            text: q.text,
-            textHi: q.textHi,
-            options: JSON.parse(q.options || "[]"),
-            optionsHi: JSON.parse(q.optionsHi || "[]"),
-            correctAnswer: q.answer,
-            userAnswer: JSON.parse(attempt.answersJson || "{}")[q.id]?.option,
-            explanation: q.explanation,
-            explanationHi: q.explanationHi
-        })) : []
+        showSolutions: attempt.paper?.showSolutions || false,
+        questions
     };
 
     return NextResponse.json(result);

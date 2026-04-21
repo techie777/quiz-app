@@ -125,7 +125,7 @@ export default function SquadronIntelligence() {
                                            <button 
                                              onClick={() => {
                                                  if (window.confirm(`Dismiss ${p.userName}?`)) {
-                                                     socketService.getSocket().emit('HOST_ACTION', {
+                                                     socketService.getSocket()?.emit('HOST_ACTION', {
                                                          sessionId: session.sessionId,
                                                          action: 'KICK_PARTICIPANT',
                                                          payload: { userId: p.userId }

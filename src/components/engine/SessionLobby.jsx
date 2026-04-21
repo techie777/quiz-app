@@ -20,7 +20,7 @@ export default function SessionLobby({ sessionId, isHost, onApproveGuest, onDeny
       return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
   
-  const { participants, pendingParticipants, session, sendAction, syncSquad, sessionReady } = useSessionEngine();
+  const { participants, pendingParticipants, session, sendAction, syncSquad, sessionReady, playSessionSound } = useSessionEngine();
   const searchParams = useSearchParams();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
@@ -28,6 +28,8 @@ export default function SessionLobby({ sessionId, isHost, onApproveGuest, onDeny
   const prevParticipantsCount = React.useRef(participants.length);
   const hubRef = React.useRef(null);
   const selectionRef = React.useRef(null);
+  const setsRef = React.useRef(null);
+  const timerRef = React.useRef(null);
 
   useEffect(() => {
     if (participants.length < prevParticipantsCount.current) {
@@ -50,32 +52,58 @@ export default function SessionLobby({ sessionId, isHost, onApproveGuest, onDeny
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [timeLimit, setTimeLimit] = useState(0);
+  const [timeLimit, setTimeLimit] = useState(null);
   const [navStack, setNavStack] = useState([]); 
   const [currentParentId, setCurrentParentId] = useState(null);
   const [selectedSetIndex, setSelectedSetIndex] = useState(1);
+  const [previewSetIndex, setPreviewSetIndex] = useState(null);
+  const [previewQuestions, setPreviewQuestions] = useState({});
+  const [previewLoading, setPreviewLoading] = useState(false);
   const isInitialLoad = React.useRef(true);
   const notifiedGuestIds = React.useRef(new Set()); 
 
-  useEffect(() => {
-    if (selectedCategory && !isInitialLoad.current) {
-        // Precise scroll to the selection hub area
-        selectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const fetchPreviewQuestions = async (setIdx) => {
+    if (previewQuestions[setIdx]) {
+        setPreviewSetIndex(previewSetIndex === setIdx ? null : setIdx);
+        return;
     }
-  }, [selectedCategory?.id]);
 
+    setPreviewLoading(true);
+    setPreviewSetIndex(setIdx);
+    try {
+        const skip = (setIdx - 1) * 20;
+        const res = await axios.get(`/api/questions?categoryId=${selectedCategory?.id}&limit=20&skip=${skip}`);
+        setPreviewQuestions(prev => ({ ...prev, [setIdx]: res.data || [] }));
+    } catch (err) {
+        toast.error('Failed to decrypt question data.');
+    } finally {
+        setPreviewLoading(false);
+    }
+  };
+  useEffect(() => {
+    if (selectedCategory) {
+        // Smoothly scroll to the package selection area
+        setTimeout(() => {
+            setsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 800); 
+    }
+  }, [selectedCategory]);
+
+
+  useEffect(() => {
+    if (selectedSetIndex && !isInitialLoad.current) {
+        // Smoothly scroll to the timer/deploy area
+        setTimeout(() => {
+            timerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300); 
+    }
+  }, [selectedSetIndex]);
 
   useEffect(() => {
     setMounted(true);
     if (typeof window !== 'undefined') {
       const url = `${window.location.origin}/live/${sessionId}`;
       setInviteUrl(url);
-      
-      const catId = searchParams.get('categoryId');
-      const setIdx = parseInt(searchParams.get('setIndex'));
-      
-      if (catId) setCurrentParentId(catId);
-      if (setIdx) setSelectedSetIndex(setIdx);
 
       const handleVisibility = () => {
           socketService.getSocket()?.emit('USER_STATUS_UPDATE', { 
@@ -86,25 +114,32 @@ export default function SessionLobby({ sessionId, isHost, onApproveGuest, onDeny
       document.addEventListener('visibilitychange', handleVisibility);
       return () => document.removeEventListener('visibilitychange', handleVisibility);
     }
-  }, [sessionId, searchParams]);
+  }, [sessionId]);
 
   useEffect(() => {
     const fetchCategories = async (parentId = null) => {
+        if (!isHost) return;
         setLoading(true);
         try {
-            let results = [];
-            const targetId = parentId || currentParentId;
             const urlCategoryId = searchParams.get('categoryId');
+            const targetId = parentId || currentParentId;
             
-            if (isInitialLoad.current && urlCategoryId) {
+            // 1. Authoritative Deep Link Check (Runs only ONCE on mount)
+            if (urlCategoryId && isInitialLoad.current) {
+                console.log("📡 [LOBBY] Deep linking from URL:", urlCategoryId);
                 const res = await axios.get(`/api/categories?id=${urlCategoryId}&limit=1`);
+                
                 if (res.data.categories?.length > 0) {
                     const cat = res.data.categories[0];
                     setSelectedCategory(cat);
                     setNavStack([cat]);
+                    if (cat.parentId) setCurrentParentId(cat.parentId);
                 }
+                isInitialLoad.current = false;
             }
 
+            // 2. Standard Library Navigation
+            let results = [];
             if (targetId) {
                 const res = await axios.get(`/api/categories?parentId=${targetId}&limit=100`);
                 results = res.data.categories || [];
@@ -126,14 +161,15 @@ export default function SessionLobby({ sessionId, isHost, onApproveGuest, onDeny
             }
             setCategories(results);
         } catch (err) {
+            console.error("📡 Category Desync:", err);
             toast.error('Mission Library desynced.');
         } finally {
             setLoading(false);
             isInitialLoad.current = false;
         }
     };
-    if (isHost) fetchCategories();
-  }, [sessionId, isHost, currentParentId, searchParams, navStack]);
+    fetchCategories();
+  }, [sessionId, isHost, currentParentId, searchParams]);
 
   const filteredCategories = useMemo(() => {
     const list = categories.length > 0 ? categories : [];
@@ -156,6 +192,8 @@ export default function SessionLobby({ sessionId, isHost, onApproveGuest, onDeny
 
   const handleStart = () => {
     if (!selectedCategory) return toast.error('Please select a Quiz Topic!');
+    if (timeLimit === null) return toast.error('MISSION PROTOCOL: Please select a Timer setting!');
+    
     sendAction('START_SESSION', { 
       status: 'ACTIVE', 
       type: 'QUIZ', 
@@ -255,7 +293,7 @@ export default function SessionLobby({ sessionId, isHost, onApproveGuest, onDeny
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
           {/* 🎯 MAIN HUB (Mission Selection & Recruitment) (70%) */}
-          <div ref={hubRef} className="lg:col-span-8 flex flex-col gap-8 order-1">
+          <div ref={hubRef} className="lg:col-span-8 flex flex-col gap-8 order-1 lg:order-2">
             
             {/* 👥 RECRUITMENT ZONE (Global Focus) */}
             <div className="bg-white rounded-[2rem] border border-slate-100 shadow-xl p-8 sm:p-10 space-y-8 relative overflow-hidden group">
@@ -272,6 +310,7 @@ export default function SessionLobby({ sessionId, isHost, onApproveGuest, onDeny
                             <input readOnly value={inviteUrl} className="flex-1 bg-transparent px-4 text-xs font-bold text-slate-500 outline-none truncate" />
                             <button 
                                 onClick={() => {
+                                    playSessionSound('click');
                                     navigator.clipboard.writeText(inviteUrl);
                                     toast.success('Link Secured! 🔗');
                                     if (navigator.share) {
@@ -316,74 +355,7 @@ export default function SessionLobby({ sessionId, isHost, onApproveGuest, onDeny
                   )}
 
                   <div className="flex-1 flex flex-col gap-8">
-                        {/* SETS */}
-                        {selectedCategory && (
-                            <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-500">
-                                
-                                <div className="flex items-center gap-4">
-                                     <button 
-                                        onClick={() => { setSelectedCategory(null); setNavStack([]); setCurrentParentId(null); }}
-                                        className="w-12 h-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-xl text-slate-400 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm"
-                                        title="Back to Topics"
-                                     >←</button>
-                                     <div className="space-y-0.5">
-                                         <h4 className="text-xl font-black text-slate-900 uppercase tracking-tighter tracking-tight">{selectedCategory.topic || selectedCategory.name}</h4>
-                                         <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Select Question Package</p>
-                                     </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 w-full">
-                                         {Array.from({ length: Math.ceil((selectedCategory.questionCount || 0) / 20) || 1 }).map((_, i) => {
-                                             const setNum = i + 1;
-                                             const isActive = selectedSetIndex === setNum;
-                                             return (
-                                                 <button 
-                                                     key={setNum}
-                                                     onClick={() => setSelectedSetIndex(setNum)}
-                                                     className={`relative flex items-center p-4 sm:p-5 rounded-2xl border-2 transition-all group gap-5 w-full ${isActive ? 'bg-indigo-600 border-indigo-500 text-white shadow-2xl scale-[1.01]' : 'bg-white border-slate-100 text-slate-700 hover:border-indigo-400'}`}
-                                                 >
-                                                     <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex flex-col items-center justify-center flex-shrink-0 transition-all ${isActive ? 'bg-indigo-500' : 'bg-slate-50'}`}>
-                                                         <span className={`text-[7px] sm:text-[8px] font-black uppercase tracking-tighter ${isActive ? 'text-indigo-200' : 'text-slate-400'}`}>Set</span>
-                                                         <span className="text-lg sm:text-xl font-black italic">{setNum}</span>
-                                                     </div>
-                                                     <div className="flex-1 min-w-0 text-left space-y-1">
-                                                         <p className={`text-sm sm:text-base font-black truncate uppercase tracking-tight ${isActive ? 'text-white' : 'text-slate-900'}`}>{selectedCategory.topic || selectedCategory.name} Package {setNum}</p>
-                                                         <div className="flex items-center gap-3">
-                                                            <span className={`text-[9px] sm:text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border ${isActive ? 'bg-indigo-500/50 border-indigo-400 text-white' : 'bg-slate-50 border-slate-200 text-slate-400'}`}>20 Questions</span>
-                                                            <span className={`text-[9px] sm:text-[10px] font-bold uppercase tracking-widest ${isActive ? 'text-indigo-300' : 'text-slate-300'}`}>Full Sync</span>
-                                                         </div>
-                                                     </div>
-                                                     <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all border-2 ml-auto ${isActive ? 'bg-white border-white text-indigo-600 shadow-md scale-110' : 'bg-slate-50 border-slate-100 text-slate-100'}`}>
-                                                         {isActive ? <span className="text-base sm:text-lg">✓</span> : <span className="text-base sm:text-lg">○</span>}
-                                                     </div>
-                                                 </button>
-                                             );
-                                         })}
-                                </div>
-
-                                {/* TIMER CONFIG */}
-                                <div className="bg-slate-900 rounded-[1.5rem] sm:rounded-2xl border border-slate-800 p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between shadow-2xl gap-8 relative overflow-hidden group">
-                                    <div className="absolute inset-0 bg-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                                    <div className="space-y-1 text-center sm:text-left relative">
-                                        <h4 className="text-2xl sm:text-3xl font-black text-white tracking-tight uppercase">Timer</h4>
-                                        <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.4em]">Limit per question</p>
-                                    </div>
-                                    <div className="flex items-center gap-2 sm:gap-3 relative">
-                                        {[0, 15, 30, 60].map(val => (
-                                            <button 
-                                                key={val}
-                                                onClick={() => setTimeLimit(val)}
-                                                className={`px-4 py-3 sm:px-6 sm:py-4 rounded-xl text-[10px] sm:text-xs font-black transition-all border-2 ${timeLimit === val ? 'bg-indigo-600 border-indigo-500 text-white shadow-2xl scale-110' : 'bg-slate-800 border-slate-700 text-slate-500 hover:border-indigo-500/30'}`}
-                                            >
-                                                {val === 0 ? 'OFF' : `${val}S`}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* TOPICS */}
+                        {/* 1. TOPICS (Knowledge Domain) */}
                         <div className={`space-y-6 sm:space-y-8 ${selectedCategory ? 'opacity-40 hover:opacity-100 transition-all duration-500' : ''}`}>
                             <div className="flex items-center justify-between px-2">
                                 <h4 className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] sm:tracking-[0.4em]">
@@ -401,7 +373,14 @@ export default function SessionLobby({ sessionId, isHost, onApproveGuest, onDeny
                                     {filteredCategories.map(c => (
                                         <button 
                                             key={c.id} 
-                                            onClick={() => { if (selectedCategory?.id === c.id) return; setNavStack(prev => [...prev, c]); setCurrentParentId(c.id); setSelectedCategory(c); setSelectedSetIndex(1); }} 
+                                            onClick={() => { 
+                                                playSessionSound('click');
+                                                if (selectedCategory?.id === c.id) return; 
+                                                setNavStack(prev => [...prev, c]); 
+                                                setCurrentParentId(c.id); 
+                                                setSelectedCategory(c); 
+                                                setSelectedSetIndex(1); 
+                                            }} 
                                             className={`flex items-center gap-5 sm:gap-6 p-5 sm:p-6 rounded-2xl border-4 transition-all group relative overflow-hidden ${selectedCategory?.id === c.id ? 'bg-indigo-600 border-indigo-700 text-white shadow-2xl scale-105' : 'bg-white border-slate-100 text-slate-900 hover:border-indigo-400 hover:shadow-2xl'}`}
                                         >
                                             <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex-shrink-0 flex items-center justify-center text-3xl sm:text-4xl shadow-xl transition-transform group-hover:scale-110 ${selectedCategory?.id === c.id ? 'bg-indigo-700/50 shadow-inner' : 'bg-slate-50'}`}>{c.emoji || '🎒'}</div>
@@ -414,12 +393,152 @@ export default function SessionLobby({ sessionId, isHost, onApproveGuest, onDeny
                                 </div>
                             )}
                         </div>
+
+                        {/* 2. SETS (Package Selection) */}
+                        {selectedCategory && (
+                            <div ref={setsRef} className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-500 scroll-mt-32">
+                                
+                                <div className="flex items-center gap-4">
+                                     <button 
+                                        onClick={() => { setSelectedCategory(null); setNavStack([]); setCurrentParentId(null); }}
+                                        className="w-12 h-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-xl text-slate-400 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm"
+                                        title="Back to Topics"
+                                     >←</button>
+                                     <div className="space-y-0.5">
+                                         <h4 className="text-xl font-black text-slate-900 uppercase tracking-tighter tracking-tight">{selectedCategory.topic || selectedCategory.name}</h4>
+                                         <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Select Question Package</p>
+                                     </div>
+                                </div>
+
+                                 <div className="grid grid-cols-1 lg:grid-cols-1 gap-4 w-full">
+                                         {Array.from({ length: Math.ceil((selectedCategory.questionCount || 0) / 20) || 1 }).map((_, i) => {
+                                             const setNum = i + 1;
+                                             const isActive = selectedSetIndex === setNum;
+                                             const isPreviewing = previewSetIndex === setNum;
+                                             const questions = previewQuestions[setNum] || [];
+
+                                             return (
+                                                 <div key={setNum} className="flex flex-col gap-2">
+                                                     <div 
+                                                         onClick={() => { playSessionSound('click'); setSelectedSetIndex(setNum); }}
+                                                         className={`relative flex items-center p-4 sm:p-5 rounded-2xl border-2 transition-all group gap-5 w-full cursor-pointer ${isActive ? 'bg-indigo-600 border-indigo-500 text-white shadow-2xl scale-[1.01]' : 'bg-white border-slate-100 text-slate-700 hover:border-indigo-400'}`}
+                                                     >
+                                                         <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex flex-col items-center justify-center flex-shrink-0 transition-all ${isActive ? 'bg-indigo-500' : 'bg-slate-50'}`}>
+                                                             <span className={`text-[7px] sm:text-[8px] font-black uppercase tracking-tighter ${isActive ? 'text-indigo-200' : 'text-slate-400'}`}>Set</span>
+                                                             <span className="text-lg sm:text-xl font-black italic">{setNum}</span>
+                                                         </div>
+                                                         <div className="flex-1 min-w-0 text-left space-y-1">
+                                                             <p className={`text-sm sm:text-base font-black truncate uppercase tracking-tight ${isActive ? 'text-white' : 'text-slate-900'}`}>{selectedCategory.topic || selectedCategory.name} Package {setNum}</p>
+                                                              <div className="flex items-center">
+                                                                 <button 
+                                                                     onClick={(e) => { e.stopPropagation(); playSessionSound('click'); fetchPreviewQuestions(setNum); }}
+                                                                     className={`flex items-center gap-2 px-3 py-1 rounded-full border transition-all hover:scale-105 active:scale-95 ${
+                                                                         isActive 
+                                                                         ? 'bg-indigo-500/50 border-indigo-400 text-white' 
+                                                                         : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-indigo-300 hover:text-indigo-600'
+                                                                     }`}
+                                                                 >
+                                                                     <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-tight">20 Questions</span>
+                                                                     <div className={`w-px h-3 ${isActive ? 'bg-indigo-400' : 'bg-slate-200'}`}></div>
+                                                                     <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                                                                         {isPreviewing ? 'Hide' : 'View'} 👁️
+                                                                     </span>
+                                                                 </button>
+                                                              </div>
+                                                         </div>
+                                                         <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all border-2 ml-auto ${isActive ? 'bg-white border-white text-indigo-600 shadow-md scale-110' : 'bg-slate-50 border-slate-100 text-slate-100'}`}>
+                                                             {isActive ? <span className="text-base sm:text-lg">✓</span> : <span className="text-base sm:text-lg">○</span>}
+                                                         </div>
+                                                     </div>
+
+                                                     {/* QUESTION PREVIEW ACCORDION */}
+                                                     {isPreviewing && (
+                                                         <div className="animate-in slide-in-from-top-2 duration-300 overflow-hidden rounded-2xl border border-slate-100 bg-slate-50 shadow-inner p-4 sm:p-6 mb-4">
+                                                             {previewLoading && questions.length === 0 ? (
+                                                                 <div className="py-10 text-center text-xs font-black text-slate-300 uppercase tracking-widest animate-pulse">Decrypting Mission Data...</div>
+                                                             ) : (
+                                                                 <div className="space-y-4">
+                                                                     <div className="flex items-center justify-between px-2 mb-4">
+                                                                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Package Intelligence</span>
+                                                                         <span className="text-[10px] font-black text-indigo-500 bg-indigo-50 px-3 py-1 rounded-md">{questions.length} Questions</span>
+                                                                     </div>
+                                                                     <div className="overflow-x-auto rounded-xl border border-slate-100 bg-white">
+                                                                         <table className="w-full text-left border-collapse">
+                                                                             <thead>
+                                                                                 <tr className="bg-slate-50">
+                                                                                     <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 w-12 text-center">#</th>
+                                                                                     <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Question Statement</th>
+                                                                                     <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 hidden sm:table-cell text-right w-24">Diff</th>
+                                                                                 </tr>
+                                                                             </thead>
+                                                                             <tbody className="divide-y divide-slate-50">
+                                                                                 {questions.map((q, idx) => (
+                                                                                     <tr key={q.id} className="hover:bg-slate-50/50 transition-colors group">
+                                                                                         <td className="px-4 py-4 text-xs font-black text-slate-300 text-center group-hover:text-indigo-400">{idx+1}</td>
+                                                                                         <td className="px-4 py-4">
+                                                                                             <div className="space-y-2">
+                                                                                                 <p className="text-xs sm:text-sm font-bold text-slate-700 leading-relaxed">{q.text}</p>
+                                                                                                 <div className="flex flex-wrap gap-2 pt-1">
+                                                                                                     {(q.options || []).map((opt, i) => (
+                                                                                                         <span key={i} className="text-[9px] font-black uppercase px-2 py-0.5 rounded-md border bg-slate-50 border-slate-100 text-slate-400">
+                                                                                                             {opt}
+                                                                                                         </span>
+                                                                                                     ))}
+                                                                                                 </div>
+                                                                                             </div>
+                                                                                         </td>
+                                                                                         <td className="px-4 py-4 text-right hidden sm:table-cell">
+                                                                                             <span className={`text-[8px] font-black uppercase tracking-tighter px-2 py-1 rounded-md border ${
+                                                                                                 q.difficulty === 'hard' ? 'border-red-100 text-red-400 bg-red-50/30' : 
+                                                                                                 q.difficulty === 'medium' ? 'border-orange-100 text-orange-400 bg-orange-50/30' : 
+                                                                                                 'border-green-100 text-green-400 bg-green-50/30'
+                                                                                             }`}>
+                                                                                                 {q.difficulty || 'Easy'}
+                                                                                             </span>
+                                                                                         </td>
+                                                                                     </tr>
+                                                                                 ))}
+                                                                             </tbody>
+                                                                         </table>
+                                                                     </div>
+                                                                 </div>
+                                                             )}
+                                                         </div>
+                                                     )}
+                                                 </div>
+                                             );
+                                         })}
+                                </div>
+
+                                {/* TIMER CONFIG */}
+                                <div ref={timerRef} className="bg-slate-900 rounded-[1.5rem] sm:rounded-2xl border border-slate-800 p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between shadow-2xl gap-8 relative overflow-hidden group">
+                                    <div className="absolute inset-0 bg-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                    <div className="space-y-1 text-center sm:text-left relative">
+                                        <h4 className="text-2xl sm:text-3xl font-black text-white tracking-tight uppercase">Timer</h4>
+                                        <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.4em]">Limit per question</p>
+                                    </div>
+                                    <div className="flex items-center gap-2 sm:gap-3 relative">
+                                        {[0, 15, 30, 60].map(val => (
+                                            <button 
+                                                key={val}
+                                                onClick={() => { playSessionSound('click'); setTimeLimit(val); }}
+                                                className={`px-4 py-3 sm:px-6 sm:py-4 rounded-xl text-[10px] sm:text-xs font-black transition-all border-2 ${timeLimit === val ? 'bg-indigo-600 border-indigo-500 text-white shadow-2xl scale-110' : 'bg-slate-800 border-slate-700 text-slate-500 hover:border-indigo-500/30'}`}
+                                            >
+                                                {val === 0 ? 'OFF' : `${val}S`}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+
                   </div>
 
                   <div className="fixed bottom-0 left-0 w-full p-4 lg:p-0 lg:static lg:mt-auto bg-white/60 backdrop-blur-xl lg:bg-transparent z-50">
                       <button 
-                        onClick={handleStart} disabled={!selectedCategory}
-                        className={`w-full py-4 sm:py-5 rounded-2xl text-lg sm:text-xl font-black tracking-[0.3em] sm:tracking-[0.4em] transition-all transform active:scale-[0.98] shadow-[0_25px_50px_rgba(79,70,229,0.25)] flex items-center justify-center gap-6 border-b-4 ${selectedCategory ? 'bg-indigo-600 text-white hover:bg-indigo-700 border-indigo-800' : 'bg-slate-200 text-slate-400 cursor-not-allowed border-slate-300'}`}
+                        onClick={() => { playSessionSound('launch'); handleStart(); }} disabled={!selectedCategory || timeLimit === null}
+                        className={`w-full py-4 sm:py-5 rounded-2xl text-lg sm:text-xl font-black tracking-[0.3em] sm:tracking-[0.4em] transition-all transform active:scale-[0.98] shadow-[0_25px_50px_rgba(79,70,229,0.25)] flex items-center justify-center gap-6 border-b-4 ${selectedCategory && timeLimit !== null ? 'bg-indigo-600 text-white hover:bg-indigo-700 border-indigo-800' : 'bg-slate-200 text-slate-400 cursor-not-allowed border-slate-300'}`}
                       >
                          <span className="text-xl sm:text-2xl animate-pulse">🚀</span>
                          INITIATE MISSION
@@ -445,7 +564,7 @@ export default function SessionLobby({ sessionId, isHost, onApproveGuest, onDeny
           </div>
 
           {/* 👥 SIDE COLUMN: ACTIVE PLAYERS (30%) */}
-          <div className="lg:col-span-4 flex flex-col gap-8 lg:sticky lg:top-8 order-2">
+          <div className="lg:col-span-4 flex flex-col gap-8 lg:sticky lg:top-8 order-2 lg:order-1">
               <div className="bg-white rounded-[2rem] border border-slate-100 shadow-xl overflow-hidden">
                   <div className="p-8 sm:p-10 border-b border-slate-50 flex items-center justify-between bg-indigo-50/20">
                      <div className="space-y-1">

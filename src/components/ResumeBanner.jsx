@@ -47,21 +47,52 @@ export default function ResumeBanner() {
 
   if (!isVisible || !activeQuiz) return null;
 
+  // Calculate progress based on state
+  const totalQuestions = activeQuiz.questions?.length || 0;
+  const answeredCount = activeQuiz.answers?.length || 0;
+  const progressPercent = totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0;
+  const quizTitle = activeQuiz.categoryName || activeQuiz.mixedSectionName || "Quiz Session";
+
   return (
     <AnimatePresence>
       <motion.div 
         className={styles.bannerContainer}
-        initial={{ y: 50, opacity: 0 }}
+        initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 50, opacity: 0 }}
+        exit={{ y: 100, opacity: 0 }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
       >
+        <button 
+          className={styles.closeBtn}
+          onClick={() => setIsVisible(false)}
+          title="Dismiss"
+        >
+          ✕
+        </button>
+
         <div className={styles.bannerContent}>
           <div className={styles.info}>
-            <span className={styles.badge}>ACTIVE SESSION</span>
-            <p className={styles.text}>
-              You have {activeQuiz.categoryName ? <span className={styles.categoryHighlight}>{activeQuiz.categoryName}</span> : "a quiz"} in progress! Would you like to continue?
-            </p>
+            <div className={styles.topRow}>
+              <span className={styles.badge}>In Progress</span>
+            </div>
+            <h4 className={styles.title}>Resume your quiz</h4>
+            <p className={styles.subtitle}>{quizTitle} {activeQuiz.selectedSetIndex && `• Set ${activeQuiz.selectedSetIndex}`}</p>
           </div>
+
+          <div className={styles.progressContainer}>
+            <div className={styles.progressLabel}>
+              <span>{answeredCount} of {totalQuestions} Questions Completed</span>
+            </div>
+            <div className={styles.progressBar}>
+              <motion.div 
+                className={styles.progressFill}
+                initial={{ width: 0 }}
+                animate={{ width: `${progressPercent}%` }}
+                transition={{ duration: 1, ease: "easeOut" }}
+              />
+            </div>
+          </div>
+
           <div className={styles.actions}>
             <Link 
               href={`/quiz/${activeQuiz.quizId}`} 
@@ -69,12 +100,6 @@ export default function ResumeBanner() {
             >
               🚀 Resume Quiz
             </Link>
-            <button 
-              className={styles.closeBtn}
-              onClick={() => setIsVisible(false)}
-            >
-              ✕
-            </button>
           </div>
         </div>
       </motion.div>

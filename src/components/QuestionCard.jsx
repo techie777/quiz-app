@@ -289,13 +289,13 @@ export default function QuestionCard({
             >
               <div className={styles.optionContent}>
                 <span className={styles.hotkey}>{hotkeys[idx]}</span>
-                <span className={styles.optionText}>{option}</span>
+                <p className={styles.optionText}>{option}</p>
               </div>
               
               {revealed && (
-                <span className={styles.optionIndicator}>
+                <div className={styles.optionIndicator}>
                   {getOptionIndicator(idx)}
-                </span>
+                </div>
               )}
               {audienceStats && (
                 <span className={styles.audienceBadge}>{audienceStats[idx]}%</span>

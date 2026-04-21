@@ -60,6 +60,10 @@ export default function CategorySetsPage() {
   const [isTranslatingIndex, setIsTranslatingIndex] = useState(false);
   const [userProgress, setUserProgress] = useState([]);
   const [showResumeChoice, setShowResumeChoice] = useState(false);
+  const [isMixMode, setIsMixMode] = useState(false);
+  const [numQuestions, setNumQuestions] = useState(20);
+  const [difficulty, setDifficulty] = useState("ALL");
+  const [viewSetIndex, setViewSetIndex] = useState(null);
 
   // Sync index language with quiz context when clicking toggle
   const { translateQuiz } = useQuiz();
@@ -72,7 +76,7 @@ export default function CategorySetsPage() {
         .then(data => {
           setCategory(data);
           setLoaded(true);
-          
+
           // Now fetch all questions in the background
           fetch(`/api/categories/${params.id}`, { cache: 'no-store' })
             .then(res => res.json())
@@ -89,13 +93,13 @@ export default function CategorySetsPage() {
   // Fetch progress if logged in
   useEffect(() => {
     if (session?.user && params.id) {
-       fetch(`/api/progress?categoryId=${params.id}`)
-         .then(res => res.json())
-         .then(data => setUserProgress(Array.isArray(data) ? data : []))
-         .catch(err => {
-           console.error("Error fetching progress:", err);
-           setUserProgress([]);
-         });
+      fetch(`/api/progress?categoryId=${params.id}`)
+        .then(res => res.json())
+        .then(data => setUserProgress(Array.isArray(data) ? data : []))
+        .catch(err => {
+          console.error("Error fetching progress:", err);
+          setUserProgress([]);
+        });
     }
   }, [session, params.id]);
 
@@ -103,7 +107,7 @@ export default function CategorySetsPage() {
     if (!category || !setSize || setSize <= 0) return [];
     const count = category.questionCount || 0;
     const result = [];
-    
+
     for (let i = 0; i < count; i += setSize) {
       result.push({
         index: result.length + 1,
@@ -117,10 +121,10 @@ export default function CategorySetsPage() {
 
   const paginatedSets = useMemo(() => {
     return sets.map(set => {
-       const progress = Array.isArray(userProgress) 
-         ? userProgress.find(p => p.setIndex === set.index)
-         : null;
-       return { ...set, progress };
+      const progress = Array.isArray(userProgress)
+        ? userProgress.find(p => p.setIndex === set.index)
+        : null;
+      return { ...set, progress };
     }).slice((page - 1) * SETS_PER_PAGE, page * SETS_PER_PAGE);
   }, [sets, page, userProgress]);
 
@@ -128,7 +132,7 @@ export default function CategorySetsPage() {
 
   const filteredQuestions = useMemo(() => {
     if (!searchQuestion.trim()) return questions;
-    return questions.filter(q => 
+    return questions.filter(q =>
       q.text.toLowerCase().includes(searchQuestion.toLowerCase()) ||
       (q.options && q.options.some(opt => opt.toLowerCase().includes(searchQuestion.toLowerCase())))
     );
@@ -162,10 +166,10 @@ export default function CategorySetsPage() {
       ],
       "hasPart": questions.slice(0, 50).map((q, idx) => {
         const correctText = String(q.correctAnswer || "").trim();
-        const correctIdx = Array.isArray(q.options) 
+        const correctIdx = Array.isArray(q.options)
           ? q.options.findIndex(opt => String(opt).trim() === correctText)
           : -1;
-        
+
         return {
           "@type": "Question",
           "name": q.text,
@@ -186,7 +190,7 @@ export default function CategorySetsPage() {
       <main className={styles.page}>
         <div className={styles.skeletonPage}>
           <div className={styles.skeletonHeader}><div className={`${styles.skeletonCircle} ${styles.shimmer}`}></div></div>
-          <div className={styles.skeletonGrid}>{[1,2,3,4,5,6].map(i => <div key={i} className={styles.skeletonCard}></div>)}</div>
+          <div className={styles.skeletonGrid}>{[1, 2, 3, 4, 5, 6].map(i => <div key={i} className={styles.skeletonCard}></div>)}</div>
         </div>
       </main>
     );
@@ -194,7 +198,7 @@ export default function CategorySetsPage() {
 
   const handleLanguageToggle = async (targetLang) => {
     if (isTranslatingIndex || targetLang === language) return;
-    
+
     // Only translate if actually needed
     const currentContentLang = detectQuizLanguage(questions);
     if (currentContentLang === targetLang) {
@@ -219,20 +223,47 @@ export default function CategorySetsPage() {
       toast.error("Loading questions...");
       return;
     }
+    setIsMixMode(false);
     setSelectedSet(set);
     const detectedLang = detectQuizLanguage(set.questions);
     setLanguage(detectedLang);
   };
 
+  const handlePlayMix = () => {
+    if (!questionsLoaded) {
+      toast.error("Loading questions...");
+      return;
+    }
+    setIsMixMode(true);
+    setSelectedSet({ index: 'mix', questions: [] }); // Dummy set to open modal
+    setLanguage(detectQuizLanguage(questions));
+  };
+
   const handleStart = (mode = 'normal') => {
     if (!selectedSet || !questionsLoaded) return;
-    
+
+    let targetQuestions = selectedSet.questions;
+    let topicSuffix = isMixMode ? " (Mega Mix)" : ` Set ${selectedSet.index}`;
+
+    if (isMixMode) {
+      let filtered = [...questions];
+      if (difficulty !== "ALL") {
+        filtered = filtered.filter(q => (q.difficulty || "").toUpperCase() === difficulty);
+      }
+
+      if (filtered.length === 0) {
+        toast.error(`No ${difficulty.toLowerCase()} questions found in this category.`);
+        return;
+      }
+
+      const shuffled = filtered.sort(() => 0.5 - Math.random());
+      targetQuestions = shuffled.slice(0, numQuestions);
+    }
+
     if (selectedSet.progress && !selectedSet.progress.isComplete && mode !== 'fresh') {
-       // Resume last session (mode could be 'last' or 'unanswered')
-       startQuizResume(selectedSet.progress, selectedSet.questions, mode);
+      startQuizResume(selectedSet.progress, targetQuestions, mode);
     } else {
-       // Start new
-       startQuizSet(category.id, selectedSet.questions, timer, language, selectedSet.index, category.topic);
+      startQuizSet(category.id, targetQuestions, timer, language, selectedSet.index, category.topic + topicSuffix);
     }
     router.push(`/quiz/${category.id}`);
   };
@@ -249,25 +280,25 @@ export default function CategorySetsPage() {
   return (
     <main className={styles.page}>
       {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />}
-      
+
       <div className={styles.heroSection}>
         <div className={styles.categoryHeroGlass}>
           <div className={styles.heroLayout}>
             <div className={styles.heroIconBox}>
-                {category.image ? <img src={category.image} alt={category.topic} className={styles.heroImg} /> : <span className={styles.heroEmoji}>{category.emoji}</span>}
+              {category.image ? <img src={category.image} alt={category.topic} className={styles.heroImg} /> : <span className={styles.heroEmoji}>{category.emoji}</span>}
             </div>
             <div className={styles.heroContent}>
-                <div className={styles.heroBadgeRow}>
-                    <span className={styles.heroBadge}>{category.difficulty || 'Expert Mode'}</span>
-                    <span className={styles.heroBadgeSecondary}>{category.questionCount} Questions</span>
-                </div>
-                <h1 className={styles.heroTitle}>{category.topic}</h1>
-                <p className={styles.heroDesc}>{category.description || "Master these concepts with our curated study sets."}</p>
-                <div className={styles.heroStatsRow}>
-                    <div className={styles.heroStat}><span className={styles.hIcon}>📚</span> {sets.length} Sets</div>
-                    <div className={styles.heroStat}><span className={styles.hIcon}>⏱️</span> ~{Math.ceil(category.questionCount * 0.3)}m</div>
-                    <div className={styles.heroStat}><span className={styles.hIcon}>🌍</span> Multi-lang</div>
-                </div>
+              <div className={styles.heroBadgeRow}>
+                <span className={styles.heroBadge}>{category.difficulty || 'Expert Mode'}</span>
+                <span className={styles.heroBadgeSecondary}>{category.questionCount} Questions</span>
+              </div>
+              <h1 className={styles.heroTitle}>{category.topic}</h1>
+              <p className={styles.heroDesc}>{category.description || "Master these concepts with our curated study sets."}</p>
+              <div className={styles.heroStatsRow}>
+                <div className={styles.heroStat}><span className={styles.hIcon}>📚</span> {sets.length} Sets</div>
+                <div className={styles.heroStat}><span className={styles.hIcon}>⏱️</span> ~{Math.ceil(category.questionCount * 0.3)}m</div>
+                <div className={styles.heroStat}><span className={styles.hIcon}>🌍</span> Multi-lang</div>
+              </div>
             </div>
           </div>
         </div>
@@ -277,202 +308,266 @@ export default function CategorySetsPage() {
         {/* Sub-Categories Navigation (Hierarchy Flow) */}
         {subCategories.length > 0 && (
           <section className={styles.setsNavigation} style={{ marginBottom: '40px' }}>
-              <div className={styles.sectionHeader}>
-                  <h2 className={styles.sectionTitle}>📁 Specialized Sub-Topics</h2>
-                  <p className={styles.sectionLead}>Explore specific sub-categories inside {category.topic}.</p>
-              </div>
-              <div className={styles.setsGrid}>
-                  {subCategories.map(subCat => (
-                    <Link href={`/category/${subCat.id}`} key={subCat.id} className={styles.setCard} style={{ textDecoration: 'none', flexDirection: 'row', alignItems: 'center', gap: '16px', padding: '24px', cursor: 'pointer' }}>
-                        <div style={{ fontSize: '2.5rem', flexShrink: 0 }}>
-                            {subCat.image ? <img src={subCat.image} style={{ width: '50px', height: '50px', borderRadius: '12px', objectFit: 'cover' }} alt={subCat.topic}/> : (subCat.emoji || '📝')}
-                        </div>
-                        <div style={{ flex: 1 }}>
-                            <h3 className={styles.setCardTitle} style={{ marginBottom: '4px' }}>{subCat.topic}</h3>
-                            <p className={styles.setCardInfo} style={{ marginBottom: '0' }}>{subCat.description || 'Explore this specialized topic'}</p>
-                        </div>
-                        <div style={{ color: 'var(--accent)', fontSize: '1.5rem', fontWeight: 'bold', transition: 'transform 0.2s' }}>→</div>
-                    </Link>
-                  ))}
-              </div>
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>📁 Specialized Sub-Topics</h2>
+              <p className={styles.sectionLead}>Explore specific sub-categories inside {category.topic}.</p>
+            </div>
+            <div className={styles.setsGrid}>
+              {subCategories.map(subCat => (
+                <Link href={`/category/${subCat.id}`} key={subCat.id} className={styles.setCard} style={{ textDecoration: 'none', flexDirection: 'row', alignItems: 'center', gap: '16px', padding: '24px', cursor: 'pointer' }}>
+                  <div style={{ fontSize: '2.5rem', flexShrink: 0 }}>
+                    {subCat.image ? <img src={subCat.image} style={{ width: '50px', height: '50px', borderRadius: '12px', objectFit: 'cover' }} alt={subCat.topic} /> : (subCat.emoji || '📝')}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <h3 className={styles.setCardTitle} style={{ marginBottom: '4px' }}>{subCat.topic}</h3>
+                    <p className={styles.setCardInfo} style={{ marginBottom: '0' }}>{subCat.description || 'Explore this specialized topic'}</p>
+                  </div>
+                  <div style={{ color: 'var(--accent)', fontSize: '1.5rem', fontWeight: 'bold', transition: 'transform 0.2s' }}>→</div>
+                </Link>
+              ))}
+            </div>
           </section>
         )}
-        
+
+        {/* Mega Mix Challenge Card */}
+        <section className={styles.mixSection}>
+          <motion.div
+            className={styles.mixCard}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ scale: 1.02 }}
+          >
+            <div className={styles.mixCardInner}>
+              <div className={styles.mixIconWrapper}>
+                <span className={styles.mixIconCircle}>✨</span>
+              </div>
+              <h2 className={styles.mixTitle}>Mega Mix Challenge</h2>
+              <p className={styles.mixDesc}>
+                Mix questions from all sets in <strong>{category.topic}</strong>.
+              </p>
+              <button className={styles.btnMix} onClick={handlePlayMix}>
+                <span>▷</span> Configure & Play
+              </button>
+            </div>
+          </motion.div>
+        </section>
+
         {/* Sets Navigation */}
         <section className={styles.setsNavigation}>
-            <div className={styles.sectionHeader}>
-                <h2 className={styles.sectionTitle}>🎯 Interactive Practice Sets</h2>
-                <p className={styles.sectionLead}>Each set is optimized for focus and quick learning.</p>
-            </div>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>🎯 Interactive Practice Sets</h2>
+            <p className={styles.sectionLead}>Each set is optimized for focus and quick learning.</p>
+          </div>
 
-            <div className={styles.setsGrid}>
-                {paginatedSets.map((set) => (
-                    <motion.div 
-                        key={set.index} 
-                        className={styles.setCard}
-                        whileHover={{ y: -8, scale: 1.02 }}
-                        transition={{ type: "spring", stiffness: 300 }}
-                    >
-                        <div className={styles.setCardHeader}>
-                            <h3 className={styles.setCardTitle}>{category.topic} Set {set.index}</h3>
-                            {set.progress?.isComplete && (
-                               <span className={styles.masteryTick} title="100% Completed">✓</span>
-                            )}
-                            <div className={styles.setMeta}>
-                              {set.progress?.progress > 0 && !set.progress.isComplete && (
-                                <span className={styles.progressPercent}>{Math.round(set.progress.progress)}% Done</span>
-                              )}
-                            </div>
-                        </div>
-                        <div className={styles.setCardBody}>
-                          <p className={styles.setCardInfo}>Contains {set.end - set.start} targeted questions.</p>
-                          {set.progress && (
-                            <div className={styles.scoreLine}>
-                              <span className={styles.scoreLabel}>Last Score:</span>
-                              <span className={styles.bestScore}>
-                                {(() => {
-                                  try {
-                                    const answers = JSON.parse(set.progress.answersJson || "[]");
-                                    const correct = answers.filter(a => a.isCorrect).length;
-                                    return `${correct} / ${set.end - set.start}`;
-                                  } catch (e) { return "0 / 0"; }
-                                })()}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        <div className={styles.setCardActions}>
-                            <button className={styles.playIconButton} onClick={() => handlePlay(set)}>
-                                <span>{set.progress?.progress > 0 && !set.progress.isComplete ? "Continue Learning" : "Play Quiz"}</span>
-                                <span className={styles.playArrow}>&gt;</span>
-                            </button>
-                            <button className={styles.liveButtonStyle} onClick={() => handleLivePlay(set)}>
-                                <span className={styles.liveDot}></span>
-                                Play Live
-                            </button>
-                        </div>
-                    </motion.div>
-                ))}
-            </div>
-
-            {totalPages > 1 && (
-                <div className={styles.paginationArea}>
-                    <button className={styles.pageArrow} disabled={page === 1} onClick={() => setPage(page-1)}>&lt;</button>
-                    <div className={styles.pageDots}>
-                        {Array.from({ length: totalPages }).map((_, i) => (
-                            <button key={i} className={`${styles.pageDot} ${page === i+1 ? styles.dotActive : ""}`} onClick={() => setPage(i+1)}>{i+1}</button>
-                        ))}
-                    </div>
-                    <button className={styles.pageArrow} disabled={page === totalPages} onClick={() => setPage(page+1)}>→</button>
+          <div className={styles.setsGrid}>
+            {paginatedSets.map((set) => (
+              <motion.div
+                key={set.index}
+                className={styles.setCard}
+                whileHover={{ y: -8, scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <div className={styles.setCardHeader}>
+                  <h3 className={styles.setCardTitle}>{category.topic} Set {set.index}</h3>
+                  {set.progress?.isComplete && (
+                    <span className={styles.masteryTick} title="100% Completed">✓</span>
+                  )}
+                  <div className={styles.setMeta}>
+                    {set.progress?.progress > 0 && !set.progress.isComplete && (
+                      <span className={styles.progressPercent}>{Math.round(set.progress.progress)}% Done</span>
+                    )}
+                  </div>
                 </div>
-            )}
+                <div className={styles.setCardBody}>
+                  <p className={styles.setCardInfo}>Contains {set.end - set.start} targeted questions.</p>
+                  {set.progress && (
+                    <div className={styles.scoreLine}>
+                      <span className={styles.scoreLabel}>Last Score:</span>
+                      <span className={styles.bestScore}>
+                        {(() => {
+                          try {
+                            const answers = JSON.parse(set.progress.answersJson || "[]");
+                            const correct = answers.filter(a => a.isCorrect).length;
+                            return `${correct} / ${set.end - set.start}`;
+                          } catch (e) { return "0 / 0"; }
+                        })()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className={styles.setCardActions}>
+                  <button className={styles.playIconButton} onClick={() => handlePlay(set)}>
+                    <span>{set.progress?.progress > 0 && !set.progress.isComplete ? "Continue Learning" : "Play Quiz"}</span>
+                    <span className={styles.playArrow}>&gt;</span>
+                  </button>
+                  <button
+                    className={`${styles.viewQuestionsBtn} ${viewSetIndex === set.index ? styles.viewBtnActive : ""}`}
+                    onClick={() => setViewSetIndex(viewSetIndex === set.index ? null : set.index)}
+                    title={viewSetIndex === set.index ? "Hide Questions" : "View Questions"}
+                  >
+                    👁️
+                  </button>
+                  <button className={styles.liveButtonStyle} onClick={() => handleLivePlay(set)}>
+                    <span className={styles.liveDot}></span>
+                    Play Live
+                  </button>
+                </div>
+
+                <AnimatePresence>
+                  {viewSetIndex === set.index && (
+                    <motion.div
+                      className={styles.questionsAccordion}
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <div className={styles.accordionHeader}>
+                        <span>📝 Prep Review: {set.end - set.start} Questions</span>
+                      </div>
+                      <div className={styles.accordionList}>
+                        {set.questions.map((q, idx) => (
+                          <div key={q.id || idx} className={styles.accordionItem}>
+                            <div className={styles.accordionQ}>
+                              <span className={styles.accQNum}>Q{idx + 1}</span>
+                              <p className={styles.accQText}>{q.text}</p>
+                            </div>
+                            <div className={styles.accOptions}>
+                              {Array.isArray(q.options) && q.options.map((opt, oIdx) => (
+                                <span key={oIdx} className={styles.accOptBadge}>{opt}</span>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <button className={styles.accordionStartBtn} onClick={() => handlePlay(set)}>
+                        Start This Set Now 🚀
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <div className={styles.paginationArea}>
+              <button className={styles.pageArrow} disabled={page === 1} onClick={() => setPage(page - 1)}>&lt;</button>
+              <div className={styles.pageDots}>
+                {Array.from({ length: totalPages }).map((_, i) => (
+                  <button key={i} className={`${styles.pageDot} ${page === i + 1 ? styles.dotActive : ""}`} onClick={() => setPage(i + 1)}>{i + 1}</button>
+                ))}
+              </div>
+              <button className={styles.pageArrow} disabled={page === totalPages} onClick={() => setPage(page + 1)}>→</button>
+            </div>
+          )}
         </section>
 
         {/* --- Senior Strategy: SEO Question Index --- */}
         <section className={styles.seoIndexSection}>
-             <div className={styles.indexHeader}>
-                <div className={styles.indexTitleGroup}>
-                    <h2 className={styles.indexTitle}>📑 Question Index & Study Guide</h2>
-                    <div className={styles.indexLangToggle}>
-                        <button 
-                            className={language === "en" ? styles.langActive : ""} 
-                            onClick={() => handleLanguageToggle("en")}
-                            disabled={isTranslatingIndex}
-                        >{isTranslatingIndex && language !== "en" ? "..." : "English Index"}</button>
-                        <button 
-                            className={language === "hi" ? styles.langActive : ""} 
-                            onClick={() => handleLanguageToggle("hi")}
-                            disabled={isTranslatingIndex}
-                        >{isTranslatingIndex && language !== "hi" ? "..." : "Hindi Index"}</button>
+          <div className={styles.indexHeader}>
+            <div className={styles.indexTitleGroup}>
+              <h2 className={styles.indexTitle}>📑 Question Index & Study Guide</h2>
+              <div className={styles.indexLangToggle}>
+                <button
+                  className={language === "en" ? styles.langActive : ""}
+                  onClick={() => handleLanguageToggle("en")}
+                  disabled={isTranslatingIndex}
+                >{isTranslatingIndex && language !== "en" ? "..." : "English Index"}</button>
+                <button
+                  className={language === "hi" ? styles.langActive : ""}
+                  onClick={() => handleLanguageToggle("hi")}
+                  disabled={isTranslatingIndex}
+                >{isTranslatingIndex && language !== "hi" ? "..." : "Hindi Index"}</button>
+              </div>
+            </div>
+            <div className={styles.searchBar}>
+              <span className={styles.searchIcon}>🔍</span>
+              <input
+                type="text"
+                placeholder="Search specific questions..."
+                className={styles.searchInput}
+                value={searchQuestion}
+                onChange={(e) => setSearchQuestion(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className={styles.questionsList}>
+            {!questionsLoaded ? <div className={styles.loadingIndex}>Optimizing question index...</div> : (
+              sets.map((set) => {
+                const setQuestions = set.questions.filter(q =>
+                  !searchQuestion.trim() ||
+                  q.text.toLowerCase().includes(searchQuestion.toLowerCase()) ||
+                  (q.options && q.options.some(opt => opt.toLowerCase().includes(searchQuestion.toLowerCase())))
+                );
+
+                if (setQuestions.length === 0) return null;
+
+                return (
+                  <div key={set.index} className={styles.indexSetGroup}>
+                    <div className={styles.indexSetHeader}>
+                      <div className={styles.indexSetInfo}>
+                        <h3 className={styles.indexSetTitle}>{category.topic} Set {set.index}</h3>
+                        <p className={styles.indexSetSub}>Questions #{set.start + 1} to #{set.end}</p>
+                      </div>
+                      <button className={styles.indexPlayBtn} onClick={() => handlePlay(set)}>
+                        Play {category.topic} Quiz (Set {set.index}) →
+                      </button>
                     </div>
-                </div>
-                <div className={styles.searchBar}>
-                    <span className={styles.searchIcon}>🔍</span>
-                    <input 
-                        type="text" 
-                        placeholder="Search specific questions..." 
-                        className={styles.searchInput}
-                        value={searchQuestion}
-                        onChange={(e) => setSearchQuestion(e.target.value)}
-                    />
-                </div>
-             </div>
+                    <div className={styles.indexSetQuestions}>
+                      {setQuestions.map((q, qOffset) => {
+                        const globalIdx = set.start + set.questions.indexOf(q);
+                        return (
+                          <div key={globalIdx} className={styles.indexItem}>
+                            {/* Monetization Slot Placeholder */}
+                            {globalIdx > 0 && globalIdx % 10 === 0 && <div className={styles.adPlaceholder}><span>ADVERTISEMENT SLOT</span></div>}
 
-             <div className={styles.questionsList}>
-                 {!questionsLoaded ? <div className={styles.loadingIndex}>Optimizing question index...</div> : (
-                     sets.map((set) => {
-                         const setQuestions = set.questions.filter(q => 
-                             !searchQuestion.trim() || 
-                             q.text.toLowerCase().includes(searchQuestion.toLowerCase()) ||
-                             (q.options && q.options.some(opt => opt.toLowerCase().includes(searchQuestion.toLowerCase())))
-                         );
+                            <div className={styles.indexQuestion}>
+                              <span className={styles.qNum}>#{globalIdx + 1}</span>
+                              <h3 className={styles.qText}>{q.text}</h3>
+                            </div>
 
-                         if (setQuestions.length === 0) return null;
+                            <div className={styles.indexActions}>
+                              <button className={styles.revealBtn} onClick={() => toggleAnswer(globalIdx)}>
+                                {revealedAnswers.has(globalIdx) ? "Hide Details" : "Reveal Answer & Options"}
+                              </button>
+                            </div>
 
-                         return (
-                             <div key={set.index} className={styles.indexSetGroup}>
-                                 <div className={styles.indexSetHeader}>
-                                     <div className={styles.indexSetInfo}>
-                                         <h3 className={styles.indexSetTitle}>{category.topic} Set {set.index}</h3>
-                                         <p className={styles.indexSetSub}>Questions #{set.start + 1} to #{set.end}</p>
-                                     </div>
-                                     <button className={styles.indexPlayBtn} onClick={() => handlePlay(set)}>
-                                         Play {category.topic} Quiz (Set {set.index}) →
-                                     </button>
-                                 </div>
-                                 <div className={styles.indexSetQuestions}>
-                                     {setQuestions.map((q, qOffset) => {
-                                         const globalIdx = set.start + set.questions.indexOf(q);
-                                         return (
-                                             <div key={globalIdx} className={styles.indexItem}>
-                                                 {/* Monetization Slot Placeholder */}
-                                                 {globalIdx > 0 && globalIdx % 10 === 0 && <div className={styles.adPlaceholder}><span>ADVERTISEMENT SLOT</span></div>}
-
-                                                 <div className={styles.indexQuestion}>
-                                                     <span className={styles.qNum}>#{globalIdx + 1}</span>
-                                                     <h3 className={styles.qText}>{q.text}</h3>
-                                                 </div>
-                                                 
-                                                 <div className={styles.indexActions}>
-                                                     <button className={styles.revealBtn} onClick={() => toggleAnswer(globalIdx)}>
-                                                         {revealedAnswers.has(globalIdx) ? "Hide Details" : "Reveal Answer & Options"}
-                                                     </button>
-                                                 </div>
-
-                                                 <AnimatePresence>
-                                                    {revealedAnswers.has(globalIdx) && (
-                                                        <motion.div 
-                                                            className={styles.expandedDetails}
-                                                            initial={{ height: 0, opacity: 0 }}
-                                                            animate={{ height: "auto", opacity: 1 }}
-                                                            exit={{ height: 0, opacity: 0 }}
-                                                        >
-                                                            <ul className={styles.optionsList}>
-                                                                {q.options.map((opt, oIdx) => {
-                                                                    const isCorrect = String(opt).trim() === String(q.correctAnswer).trim();
-                                                                    return (
-                                                                        <li key={oIdx} className={isCorrect ? styles.correctOpt : ""}>
-                                                                            {opt} {isCorrect && <span className={styles.check}>✓</span>}
-                                                                        </li>
-                                                                    );
-                                                                })}
-                                                            </ul>
-                                                            {q.explanation && <p className={styles.explanation}><strong>Explanation:</strong> {q.explanation}</p>}
-                                                        </motion.div>
-                                                    )}
-                                                 </AnimatePresence>
-                                             </div>
-                                         );
-                                     })}
-                                 </div>
-                             </div>
-                         );
-                     })
-                 )}
-                 {questionsLoaded && sets.every(s => s.questions.filter(q => !searchQuestion.trim() || q.text.toLowerCase().includes(searchQuestion.toLowerCase()) || (q.options && q.options.some(opt => opt.toLowerCase().includes(searchQuestion.toLowerCase())))).length === 0) && (
-                     <p className={styles.noResults}>No questions found matching your search.</p>
-                 )}
-             </div>
+                            <AnimatePresence>
+                              {revealedAnswers.has(globalIdx) && (
+                                <motion.div
+                                  className={styles.expandedDetails}
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: "auto", opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                >
+                                  <ul className={styles.optionsList}>
+                                    {q.options.map((opt, oIdx) => {
+                                      const isCorrect = String(opt).trim() === String(q.correctAnswer).trim();
+                                      return (
+                                        <li key={oIdx} className={isCorrect ? styles.correctOpt : ""}>
+                                          {opt} {isCorrect && <span className={styles.check}>✓</span>}
+                                        </li>
+                                      );
+                                    })}
+                                  </ul>
+                                  {q.explanation && <p className={styles.explanation}><strong>Explanation:</strong> {q.explanation}</p>}
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+            {questionsLoaded && sets.every(s => s.questions.filter(q => !searchQuestion.trim() || q.text.toLowerCase().includes(searchQuestion.toLowerCase()) || (q.options && q.options.some(opt => opt.toLowerCase().includes(searchQuestion.toLowerCase())))).length === 0) && (
+              <p className={styles.noResults}>No questions found matching your search.</p>
+            )}
+          </div>
         </section>
       </div>
 
@@ -489,55 +584,57 @@ export default function CategorySetsPage() {
               ✕
             </button>
             <div className={styles.modalHeader}>
-              <span className={styles.modalEmoji}>{category.emoji}</span>
-              <h2 className={styles.modalTitle}>Configure Practice: Set {selectedSet.index}</h2>
+              <span className={styles.modalEmoji}>{isMixMode ? "✨" : category.emoji}</span>
+              <h2 className={styles.modalTitle}>
+                {isMixMode ? "Mega Mix Challenge Configuration" : `Configure Practice: Set ${selectedSet.index}`}
+              </h2>
+            </div>
+
+            {isMixMode && (
+              <>
+                <div className={styles.settingGroup}>
+                  <label>📈 Number of Questions</label>
+                  <div className={styles.tabRow}>
+                    {[10, 20, 30, 50].map(n => (
+                      <button key={n} className={numQuestions === n ? styles.tabActive : ""} onClick={() => setNumQuestions(n)}>{n}</button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className={styles.settingGroup}>
+                  <label>📊 Difficulty Level</label>
+                  <div className={styles.tabRow}>
+                    {["ALL", "EASY", "MEDIUM", "HARD"].map(d => (
+                      <button key={d} className={difficulty === d ? styles.tabActive : ""} onClick={() => setDifficulty(d)}>{d}</button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
+            <div className={styles.settingGroup}>
+              <label>Prefer English or Hindi?</label>
+              <div className={styles.tabRow}>
+                <button className={language === "en" ? styles.tabActive : ""} onClick={() => setLanguage("en")}>English</button>
+                <button className={language === "hi" ? styles.tabActive : ""} onClick={() => setLanguage("hi")}>Hindi</button>
+              </div>
             </div>
 
             <div className={styles.settingGroup}>
-                <label>Prefer English or Hindi?</label>
-                <div className={styles.tabRow}>
-                    <button className={language === "en" ? styles.tabActive : ""} onClick={() => setLanguage("en")}>English</button>
-                    <button className={language === "hi" ? styles.tabActive : ""} onClick={() => setLanguage("hi")}>Hindi</button>
-                </div>
-            </div>
-
-            <div className={styles.settingGroup}>
-                <label>Set your pace (Time per question)</label>
-                <div className={styles.tabRow}>
-                    {TIMER_OPTIONS.map(o => <button key={o.value} className={timer === o.value ? styles.tabActive : ""} onClick={() => setTimer(o.value)}>{o.label}</button>)}
-                </div>
+              <label>Set your pace (Time per question)</label>
+              <div className={styles.tabRow}>
+                {TIMER_OPTIONS.map(o => <button key={o.value} className={timer === o.value ? styles.tabActive : ""} onClick={() => setTimer(o.value)}>{o.label}</button>)}
+              </div>
             </div>
 
             <div className={styles.modalActions}>
-              {selectedSet.progress && !selectedSet.progress.isComplete ? (
-                <>
-                  <button 
-                    className={styles.btnLaunch} 
-                    onClick={() => handleStart('last')}
-                    disabled={!questionsLoaded}
-                  >
-                    🚀 Resume Session
-                  </button>
-                  <button 
-                    className={styles.btnMastery} 
-                    onClick={() => handleStart('unanswered')}
-                    disabled={!questionsLoaded}
-                  >
-                    🎯 Practice Unanswered
-                  </button>
-                  <button className={styles.btnReset} onClick={() => handleStart('fresh')}>
-                    Start Fresh
-                  </button>
-                </>
-              ) : (
-                <button 
-                  className={styles.btnLaunch} 
-                  onClick={() => handleStart('normal')}
-                  disabled={!questionsLoaded}
-                >
-                  🚀 {selectedSet.progress?.isComplete ? "Practice Again" : "Start Mastering"}
-                </button>
-              )}
+              <button
+                className={styles.btnLaunch}
+                onClick={() => handleStart('normal')}
+                disabled={!questionsLoaded}
+              >
+                🚀 {isMixMode ? "Start Challenge" : (selectedSet.progress?.isComplete ? "Practice Again" : "Start Mastering")}
+              </button>
               <button className={styles.btnLater} onClick={closeModal}>Decide Later</button>
             </div>
           </div>
@@ -551,5 +648,6 @@ export default function CategorySetsPage() {
   function closeModal() {
     setSelectedSet(null);
     setTimer(0);
+    setIsMixMode(false);
   }
 }

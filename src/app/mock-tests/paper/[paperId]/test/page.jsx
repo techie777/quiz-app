@@ -31,13 +31,20 @@ export default function MockTestEngine() {
   const { paperId } = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   
   // ── CORE DATA STATE ──
   const [paper, setPaper] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   
+  // ── ENTRANCE GUARD (Strict Mock Protocol) ──
+  useEffect(() => {
+    if (status === "unauthenticated") {
+        router.push(`/api/auth/signin?callbackUrl=${encodeURIComponent(window.location.href)}`);
+    }
+  }, [status, router]);
+
   // ── TEST PROGRESS STATE ──
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState({}); // { qId: { option, status } }
@@ -49,8 +56,6 @@ export default function MockTestEngine() {
   const [showSummary, setShowSummary] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-
-  
   // ── REFS ──
   const timerRef = useRef(null);
   const autoSaveRef = useRef(null);
@@ -59,6 +64,7 @@ export default function MockTestEngine() {
   // ── INITIAL HYDRATION ──
   useEffect(() => {
     async function init() {
+      if (status === "loading" || status === "unauthenticated") return;
       try {
         const [paperRes, qRes] = await Promise.all([
           fetch(`/api/mock-tests/paper/${paperId}`),
@@ -74,16 +80,49 @@ export default function MockTestEngine() {
         setQuestions(qData);
         setActiveSection(paperData.sections[0]?.id);
         
-        // Restore from LocalStorage if exists
-        const saved = localStorage.getItem(`mock_state_${paperId}`);
-        if (saved) {
-            const { sa, st, si } = JSON.parse(saved);
-            setAnswers(sa || {});
-            setTimeLeft(st || paperData.timeLimit * 60);
-            setCurrentIndex(si || 0);
+        // 1. Initial State Check (Strict separation of Fresh vs Resume)
+        const mode = searchParams.get('mode');
+        let initialAnswers = {};
+        let initialTime = paperData.timeLimit * 60;
+        let initialIndex = 0;
+
+        if (mode === 'resume') {
+            console.log("🔄 [INIT] Resumption mode active.");
+            
+            // Check LocalStorage first for speed
+            const saved = localStorage.getItem(`mock_state_${paperId}`);
+            if (saved) {
+                const { sa, st, si } = JSON.parse(saved);
+                initialAnswers = sa || {};
+                initialTime = st || paperData.timeLimit * 60;
+                initialIndex = si || 0;
+            }
+
+            // Sync with DB if signed in (Master Record)
+            if (session?.user) {
+                try {
+                    const res = await fetch(`/api/mock-tests/attempt/resume/${paperId}`);
+                    if (res.ok) {
+                        const dbAttempt = await res.json();
+                        if (dbAttempt && dbAttempt.id) {
+                            console.log("📡 [RESUME] Syncing with Cloud Session:", dbAttempt.id);
+                            if (dbAttempt.answersJson) initialAnswers = JSON.parse(dbAttempt.answersJson);
+                            if (dbAttempt.timeLeft) initialTime = dbAttempt.timeLeft;
+                        }
+                    }
+                } catch (e) {
+                    console.error("DB Resumption sync failed:", e);
+                }
+            }
         } else {
-            setTimeLeft(paperData.timeLimit * 60);
+            console.log("✨ [INIT] Fresh Start mode active. Ignoring previous session data.");
+            // Explicitly ensure local cache is clean
+            localStorage.removeItem(`mock_state_${paperId}`);
         }
+
+        setAnswers(initialAnswers);
+        setTimeLeft(initialTime);
+        setCurrentIndex(initialIndex);
       } catch (e) {
         toast.error("Critical: Failed to load exam protocol.");
         console.error(e);
@@ -112,18 +151,43 @@ export default function MockTestEngine() {
     return () => clearInterval(timerRef.current);
   }, [loading, isPaused]);
 
-  // ── AUTO-SYNC LOGIC (10s) ──
+  // ── AUTO-SYNC LOGIC (LocalStorage every 5s, DB every 30s) ──
   useEffect(() => {
     if (loading) return;
-    autoSaveRef.current = setInterval(() => {
+    
+    // Local Backup (Fast)
+    const localSave = setInterval(() => {
        localStorage.setItem(`mock_state_${paperId}`, JSON.stringify({
            sa: answers,
            st: timeLeft,
            si: currentIndex
        }));
-    }, 10000);
-    return () => clearInterval(autoSaveRef.current);
-  }, [loading, answers, timeLeft, currentIndex, paperId]);
+    }, 5000);
+
+    // DB Backup (Signed-in only, slower)
+    let dbSave;
+    if (session?.user) {
+        dbSave = setInterval(async () => {
+            try {
+                await fetch(`/api/mock-tests/attempt/resume/${paperId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        answersJson: JSON.stringify(answers),
+                        timeLeft
+                    })
+                });
+            } catch (e) {
+                console.warn("[SYNC] DB sync failed", e);
+            }
+        }, 30000);
+    }
+
+    return () => {
+        clearInterval(localSave);
+        if (dbSave) clearInterval(dbSave);
+    };
+  }, [loading, answers, timeLeft, currentIndex, paperId, session]);
 
   // ── VIEW TRIGGER: Mark NOT_VISITED as NOT_ANSWERED upon viewing ──
   useEffect(() => {
@@ -194,10 +258,22 @@ export default function MockTestEngine() {
       updateAnswer(currentQuestion.id, undefined, STATUS.NOT_ANSWERED);
   };
 
-  const handleSubmitFinal = async () => {
-      if (isSubmitting) return;
-      setIsSubmitting(true);
-      const loadingToast = toast.loading("Encrypting & Submitting Response...");
+    const handleSubmitFinal = async () => {
+       if (isSubmitting) return;
+
+       // 1. Session Safeguard
+       if (!session?.user) {
+           toast.error("Session expired. Please sign in again.");
+           router.push('/api/auth/signin');
+           return;
+       }
+
+       // 2. Final User Confirmation
+       const confirmSubmit = window.confirm("⚠️ FINAL WARNING: Read carefully!\n\nYou are about to end this examination. Once submitted, you cannot change your answers. Do you wish to proceed and VIEW YOUR SCORECARD?");
+       if (!confirmSubmit) return;
+
+       setIsSubmitting(true);
+       const loadingToast = toast.loading("Saving Final Responses...");
       
       try {
           const payload = {
@@ -206,7 +282,7 @@ export default function MockTestEngine() {
               timeLeft
           };
 
-          console.log("✈️ Submitting Payload:", payload);
+          console.log("🚀 [ENGINE] Submitting Payload:", payload);
           const res = await fetch('/api/mock-tests/attempt/submit', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -214,26 +290,22 @@ export default function MockTestEngine() {
           });
 
           const data = await res.json();
-          console.log("📡 Server Response:", data);
-
           if (data.error) throw new Error(data.error);
 
           toast.success("Examination Complete!", { id: loadingToast });
           localStorage.removeItem(`mock_state_${paperId}`);
           
-          // Force a small delay to ensure toast is visible before redirect
-          setTimeout(() => {
-            router.push(`/mock-tests/result/${data.id}`);
-          }, 500);
+          console.log("🏁 [ENGINE] Redirecting to SCORECARD:", `/mock-tests/result/${data.id}`);
+          window.location.href = `/mock-tests/result/${data.id}`;
       } catch (err) {
-          console.error("❌ Submission Error:", err);
-          toast.error(`Critical: Submission Failed. ${err.message}`, { id: loadingToast });
+          console.error("❌ [ENGINE] Submission Failure:", err);
+          toast.error(`Submission Failed: ${err.message}`, { id: loadingToast });
           setIsSubmitting(false);
       }
-
-  };
+    };
 
   const handleAutoSubmit = () => {
+
       toast.success("TIME EXPIRED: Processing submission...");
       handleSubmitFinal();
   };

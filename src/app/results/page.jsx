@@ -73,15 +73,15 @@ export default function ResultPage() {
     ).slice(0, showAllQuizzes ? 50 : 10);
   }, [quizzes, searchQuery, showAllQuizzes]);
 
-  // Show suggestions after 2.5 seconds
+  // Show suggestions 5 seconds after results are revealed (post-ad)
   useEffect(() => {
-    if (questions && questions.length > 0) {
+    if (questions && questions.length > 0 && !showGateAd) {
       const timer = setTimeout(() => {
         setShowPostQuizPopup(true);
-      }, 2500);
+      }, 5000);
       return () => clearTimeout(timer);
     }
-  }, [questions]);
+  }, [questions, showGateAd]);
 
   const handleContinueNextSet = () => {
      if (isMixedMode) {
@@ -185,14 +185,15 @@ export default function ResultPage() {
   // Always return JSX - never return null or conditionally skip hooks
   return (
     <main className={styles.page}>
-      {total === 0 ? (
-        // Empty state - always render this when no results
-        <div className={styles.scoreCard}>
-          <h1>Loading...</h1>
-          <p>Redirecting to home...</p>
+      {total === 0 || (showGateAd && !isPro) ? (
+        // Loading / Gated state
+        <div className={styles.loadingContainer}>
+          <div className={styles.spinner}></div>
+          <h1>{showGateAd ? "Unlocking Your Results..." : "Loading Results..."}</h1>
+          <p>{showGateAd ? "Support us by watching this short update." : "Analyzing your performance..."}</p>
         </div>
       ) : (
-        // Full results
+        // Full results show only after ad is done or if user is Pro
         <div className={styles.resultContainer}>
           {/* Left Sidebar: You May Like */}
           <aside className={styles.sidebarLeft}>

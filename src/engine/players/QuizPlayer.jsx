@@ -67,6 +67,17 @@ export default function QuizPlayer({ state, onLeave }) {
     if (state.activeContentId) fetchContent();
   }, [state.activeContentId, questionLimit, setIndex]);
 
+  // 🔄 MISSION RESET HOOK: Clears local state when commander launches a new set
+  useEffect(() => {
+    setCurrentIndex(0);
+    setScore(0);
+    setFinished(false);
+    setSelectedOption(null);
+    setIsCorrect(null);
+    setShowQuestions(false);
+    setCountdown(3);
+  }, [state.setIndex, state.activeContentId]);
+
   useEffect(() => {
      if (!loading && questions.length > 0 && countdown > 0) {
         const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
@@ -133,6 +144,8 @@ export default function QuizPlayer({ state, onLeave }) {
     if (correct) {
         setScore(s => s + 1);
         playSessionSound('success');
+    } else {
+        playSessionSound('fail');
     }
 
     setTimeout(() => {
@@ -363,7 +376,18 @@ export default function QuizPlayer({ state, onLeave }) {
             )}
             <div className="flex items-center justify-between gap-6 px-2">
                <div className="space-y-2">
-                  <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase">{state.missionName}</h2>
+                  <div className="flex items-center gap-4">
+                      <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase">{state.missionName}</h2>
+                      {engineSession?.role !== 'HOST' && (
+                          <button 
+                            onClick={onLeave}
+                            className="hidden lg:flex items-center gap-2 px-4 py-2 bg-red-50 text-red-500 border border-red-100 rounded-xl hover:bg-red-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-widest shadow-sm"
+                          >
+                            <span>🛫</span>
+                            <span>Abort Mission</span>
+                          </button>
+                      )}
+                  </div>
                   <div className="flex items-center gap-3">
                      <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Tactical Assessment</p>
                      {state.timeLimit > 0 && (
@@ -400,7 +424,12 @@ export default function QuizPlayer({ state, onLeave }) {
                       }
 
                       return (
-                         <button key={i} onClick={() => handleAnswer(opt)} disabled={!!selectedOption} className={`group min-h-[72px] p-4 rounded-2xl text-left transition-all active:scale-95 flex items-center gap-4 ${btnClass}`}>
+                         <button 
+                            key={i} 
+                            onClick={() => { playSessionSound('click'); handleAnswer(opt); }} 
+                            disabled={!!selectedOption} 
+                            className={`group min-h-[72px] p-4 rounded-2xl text-left transition-all active:scale-95 flex items-center gap-4 ${btnClass}`}
+                         >
                             <div className={`w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center font-black text-lg ${isSelected ? 'bg-white/20' : 'bg-slate-100'}`}>{String.fromCharCode(65 + i)}</div>
                             <span className="text-sm md:text-base font-black tracking-tight flex-1 leading-snug">{opt}</span>
                          </button>

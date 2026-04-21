@@ -14,21 +14,56 @@ export default function MockInstructions() {
   const [loading, setLoading] = useState(true);
   const [agreed, setAgreed] = useState(false);
   const [language, setLanguage] = useState("English");
+  const [hasExistingSession, setHasExistingSession] = useState(false);
 
   useEffect(() => {
-    async function fetchPaper() {
+    async function init() {
       try {
-        const res = await fetch(`/api/mock-tests/paper/${paperId}`);
-        const data = await res.json();
-        if (data && !data.error) setPaper(data);
+        const [paperRes, sessionRes] = await Promise.all([
+            fetch(`/api/mock-tests/paper/${paperId}`),
+            session?.user ? fetch(`/api/mock-tests/attempt/resume/${paperId}`) : Promise.resolve(null)
+        ]);
+
+        const paperData = await paperRes.json();
+        if (paperData && !paperData.error) setPaper(paperData);
+
+        if (sessionRes && sessionRes.ok) {
+            const sessionData = await sessionRes.json();
+            if (sessionData && sessionData.id) {
+                setHasExistingSession(true);
+            }
+        }
       } catch (e) {
         console.error(e);
       } finally {
         setLoading(false);
       }
     }
-    fetchPaper();
-  }, [paperId]);
+    init();
+  }, [paperId, session]);
+
+  const handleStartFresh = async () => {
+    setLoading(true);
+    try {
+        // 1. Clear Local Storage
+        localStorage.removeItem(`mock_state_${paperId}`);
+        
+        // 2. Clear DB Session if signed in
+        if (session?.user) {
+            await fetch(`/api/mock-tests/attempt/resume/${paperId}`, { method: 'DELETE' });
+        }
+        
+        router.push(`/mock-tests/paper/${paperId}/test?lang=${language}&mode=fresh`);
+    } catch (e) {
+        console.error("Failed to start fresh:", e);
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  const handleResume = () => {
+    router.push(`/mock-tests/paper/${paperId}/test?lang=${language}&mode=resume`);
+  };
 
   if (loading) return (
     <div className="min-h-screen bg-white flex items-center justify-center">
@@ -40,7 +75,7 @@ export default function MockInstructions() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col font-sans text-slate-800">
-      {/* 🏛️ HEADER (TCS STYLE) */}
+      {/* ... Header stays same ... */}
       <header className="h-14 border-b border-slate-200 flex items-center justify-between px-6 bg-white sticky top-0 z-50">
         <div className="flex items-center gap-3">
           <span className="text-xl font-black text-indigo-600 tracking-tighter">QuizWeb!</span>
@@ -49,9 +84,6 @@ export default function MockInstructions() {
             {paper.title}
           </h2>
         </div>
-        <div className="flex items-center gap-4">
-           {/* Placeholder for any top-right actions */}
-        </div>
       </header>
 
       {/* 📝 MAIN CONTENT AREA */}
@@ -59,10 +91,19 @@ export default function MockInstructions() {
         {/* LEFT: INSTRUCTIONS */}
         <div className="flex-1 overflow-y-auto p-4 md:p-10 custom-scrollbar">
           <div className="max-w-4xl mx-auto">
+            {hasExistingSession && (
+                <div className="bg-indigo-50 border border-indigo-100 p-6 rounded-3xl mb-8 flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div>
+                        <h3 className="text-lg font-black text-indigo-900">Found Unfinished Attempt!</h3>
+                        <p className="text-indigo-600 text-sm font-medium">You were in the middle of this exam. Would you like to resume where you left off or start completely fresh?</p>
+                    </div>
+                </div>
+            )}
+
             <h1 className="text-sm font-black uppercase text-slate-900 border-b-2 border-slate-900 inline-block mb-6">General Instructions:</h1>
             
             <div className="space-y-6 text-[14px] leading-relaxed text-slate-700">
-              <section>
+               <section>
                 <p className="font-bold">1. Digital Clock Calibration:</p>
                 <p>The clock will be set at the server. The countdown timer at the top right corner of the screen will display the remaining time available for you to complete the examination. When the timer reaches zero, the examination will end by itself. You need not terminate the examination or submit your paper.</p>
               </section>
@@ -169,17 +210,39 @@ export default function MockInstructions() {
                 </div>
             </div>
 
-            <button 
-                onClick={() => router.push(`/mock-tests/paper/${paperId}/test?lang=${language}`)}
-                disabled={!agreed}
-                className={`w-full md:w-auto px-10 py-3 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-widest transition-all ${
-                    agreed 
-                    ? 'bg-sky-500 text-white shadow-lg hover:bg-sky-400 hover:shadow-sky-100' 
-                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                }`}
-            >
-                I am ready to begin
-            </button>
+            <div className="flex items-center gap-3 w-full md:w-auto">
+                {!session?.user ? (
+                    <button 
+                        onClick={() => router.push('/api/auth/signin')}
+                        className="w-full md:w-auto px-10 py-3 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-widest bg-indigo-600 text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all"
+                    >
+                        Sign In to Start Test
+                    </button>
+                ) : (
+                    <>
+                        <button 
+                            onClick={handleStartFresh}
+                            disabled={!agreed}
+                            className={`flex-1 md:flex-none px-6 py-3 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-widest transition-all ${
+                                agreed 
+                                ? 'bg-slate-900 text-white shadow-lg hover:bg-black' 
+                                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                            }`}
+                        >
+                            {hasExistingSession ? 'Start Fresh' : 'I am ready to begin'}
+                        </button>
+                        
+                        {hasExistingSession && (
+                            <button 
+                                onClick={handleResume}
+                                className="flex-1 md:flex-none px-6 py-3 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-widest bg-indigo-600 text-white shadow-lg hover:bg-indigo-700 active:scale-95 transition-all"
+                            >
+                                Resume Attempt
+                            </button>
+                        )}
+                    </>
+                )}
+            </div>
         </div>
       </footer>
     </div>

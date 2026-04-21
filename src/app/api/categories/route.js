@@ -27,18 +27,21 @@ export async function GET(request) {
     let where = {};
     const andConditions = [];
 
+    // Admin view should still permit filtering by id and parentId.
+    const parentIdParam = searchParams.get("parentId");
+    const idParam = searchParams.get("id");
+
+    if (idParam) {
+      andConditions.push({ id: idParam });
+    } else if (parentIdParam) {
+      andConditions.push({ parentId: parentIdParam });
+    }
+
     if (!isAdmin) {
       where.hidden = false;
       
-      const parentIdParam = searchParams.get("parentId");
-      const idParam = searchParams.get("id");
-
-      if (idParam) {
-        andConditions.push({ id: idParam });
-      } else if (parentIdParam) {
-        andConditions.push({ parentId: parentIdParam });
-      } else if (limitRaw > 0) {
-        // Only top-level categories if no specific parent or ID is requested
+      // If no specific parent or ID is requested, only show top-level categories
+      if (!idParam && !parentIdParam && limitRaw > 0) {
         andConditions.push({
           OR: [
             { parentId: null },
@@ -83,12 +86,14 @@ export async function GET(request) {
     }
 
     // Determine ordering
-    let orderBy = { sortOrder: "asc" };
-    if (sortBy === "alphabetical") orderBy = { topic: "asc" };
-    if (sortBy === "newest") orderBy = { updatedAt: "desc" };
-    if (sortBy === "popular") {
-      // popular would normally be based on attempts, but we'll use question count as a proxy
-      // since that's what the frontend was doing.
+    let orderBy = [];
+    if (sortBy === "alphabetical") {
+      orderBy = [{ topic: "asc" }, { sortOrder: "asc" }, { id: "asc" }];
+    } else if (sortBy === "newest") {
+      orderBy = [{ updatedAt: "desc" }, { sortOrder: "asc" }, { id: "asc" }];
+    } else {
+      // Default: sortOrder ASC, with topic and ID as stable fallbacks
+      orderBy = [{ sortOrder: "asc" }, { topic: "asc" }, { id: "asc" }];
     }
 
     const needsInMemoryFilteringOrSorting = qCount !== "all" || sortBy === "popular";

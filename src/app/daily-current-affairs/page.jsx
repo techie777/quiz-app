@@ -5,8 +5,34 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useMonetization } from "@/context/MonetizationContext";
+import { motion, AnimatePresence } from "framer-motion";
 import AdGate from "@/components/monetization/AdGate";
 import styles from "@/styles/CurrentAffairs.module.css";
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 260,
+      damping: 20
+    }
+  }
+};
+
+// ... existing formatDate, etc ...
 
 function formatDate(d) {
   if (!d) return "";
@@ -52,6 +78,16 @@ function getTodayDateString() {
   return `${year}-${month}-${day}`;
 }
 
+function adjustDate(dateStr, days) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() + days);
+  const ny = dt.getFullYear();
+  const nm = String(dt.getMonth() + 1).padStart(2, '0');
+  const nd = String(dt.getDate()).padStart(2, '0');
+  return `${ny}-${nm}-${nd}`;
+}
+
 export default function DailyCurrentAffairsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -72,58 +108,130 @@ export default function DailyCurrentAffairsPage() {
 
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedMonth, setSelectedMonth] = useState("");
-  const [selectedDate, setSelectedDate] = useState(() => {
-    // Set today's date by default (27-03-2026) - use local timezone
-    return getTodayDateString();
-  });
+  const [selectedDate, setSelectedDate] = useState(""); // Initialize empty for hydration safety
   const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [hasMounted, setHasMounted] = useState(false);
 
-  const query = useMemo(() => {
+  // Group items by date uniquely
+  const groupedItems = useMemo(() => {
+    const groups = {};
+    // Double-layered uniqueness check: ID + (Heading + Date)
+    const seenIds = new Set();
+    const seenBriefings = new Set();
+    
+    items.forEach(item => {
+      const briefingKey = `${item.date}-${item.heading}`;
+      if (seenIds.has(item.id) || seenBriefings.has(briefingKey)) return;
+      
+      seenIds.add(item.id);
+      seenBriefings.add(briefingKey);
+      
+      if (!groups[item.date]) groups[item.date] = [];
+      groups[item.date].push(item);
+    });
+    return groups;
+  }, [items]);
+
+  const sortedDates = useMemo(() => {
+    return Object.keys(groupedItems).sort((a, b) => b.localeCompare(a));
+  }, [groupedItems]);
+
+  // Load items
+  const loadItems = async (pageNum, reset = false) => {
+    if (pageNum > 1 && !hasMore) return;
+    
+    setLoading(true);
     const params = new URLSearchParams();
-    params.set("page", String(page));
+    params.set("page", String(pageNum));
     params.set("pageSize", String(pageSize));
     if (selectedCategory && selectedCategory !== "all") params.set("category", selectedCategory);
-    if (selectedDate) params.set("date", selectedDate);
-    if (!selectedDate && selectedMonth) params.set("month", selectedMonth);
-    return params.toString();
-  }, [page, pageSize, selectedCategory, selectedDate, selectedMonth]);
+    
+    const activeDate = selectedDate || getTodayDateString();
 
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      setLoading(true);
-      try {
-        const res = await fetch(`/api/current-affairs?${query}`, { cache: "no-store" });
-        if (!res.ok) return;
-        const data = await res.json();
-        if (cancelled) return;
-        setItems(Array.isArray(data.items) ? data.items : []);
-        setTotal(Number(data.total || 0));
-        setCategories(Array.isArray(data.categories) ? data.categories : []);
-        setMonths(Array.isArray(data.months) ? data.months : []);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+    if (selectedDate) {
+      params.set("date", selectedDate);
+      if (pageNum === 1) params.set("fallback", "true");
+    } else if (selectedMonth) {
+      params.set("month", selectedMonth);
     }
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [query]);
 
+    try {
+      const res = await fetch(`/api/current-affairs?${params.toString()}`, { cache: "no-store" });
+      if (!res.ok) return;
+      const data = await res.json();
+      
+      const newItems = Array.isArray(data.items) ? data.items : [];
+      
+      if (reset) {
+        setItems(newItems);
+      } else {
+        setItems(prev => {
+          const existingIds = new Set(prev.map(i => i.id));
+          const filteredNew = newItems.filter(i => !existingIds.has(i.id));
+          return [...prev, ...filteredNew];
+        });
+      }
+
+      setHasMore(newItems.length === pageSize);
+      setTotal(Number(data.total || 0));
+      setCategories(Array.isArray(data.categories) ? data.categories : []);
+      setMonths(Array.isArray(data.months) ? data.months : []);
+
+      if (data.date && data.date !== selectedDate && pageNum === 1 && selectedDate) {
+        setSelectedDate(data.date);
+      }
+    } catch (err) {
+      console.error("Load Items Error:", err);
+    } finally {
+      setLoading(false);
+      setIsInitialLoad(false);
+    }
+  };
+
+  // Set initial state on client to avoid hydration mismatch
   useEffect(() => {
-    setPage(1);
-  }, [selectedCategory, selectedDate, selectedMonth]);
+    setHasMounted(true);
+    if (!selectedDate) {
+      setSelectedDate(getTodayDateString());
+    }
+  }, []);
 
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const pagination = useMemo(() => {
-    const current = clamp(page, 1, totalPages);
-    const start = Math.max(1, current - 3);
-    const end = Math.min(totalPages, start + 6);
-    const nums = [];
-    for (let i = start; i <= end; i++) nums.push(i);
-    return nums;
-  }, [page, totalPages]);
+  // Initial load or filter change
+  useEffect(() => {
+    if (!hasMounted || selectedDate === "") return;
+    setPage(1);
+    loadItems(1, true);
+  }, [selectedCategory, selectedDate, selectedMonth, hasMounted]);
+
+  // Infinite Scroll Trigger
+  useEffect(() => {
+    if (loading || !hasMore || (page === 1 && isInitialLoad)) return;
+
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting && !loading) {
+          setPage(prev => {
+            const nextPage = prev + 1;
+            loadItems(nextPage);
+            return nextPage;
+          });
+        }
+      },
+      { 
+        threshold: 0.1,
+        rootMargin: '400px' 
+      }
+    );
+
+    const target = document.getElementById('load-more-trigger');
+    if (target) observer.observe(target);
+
+    return () => {
+      if (target) observer.unobserve(target);
+    };
+  }, [loading, hasMore, isInitialLoad, page]);
 
   const exportHref = useMemo(() => {
     const params = new URLSearchParams();
@@ -426,65 +534,117 @@ export default function DailyCurrentAffairsPage() {
     };
   };
 
+  const WallCurrentAffairCard = ({ item, isRead, isFav, toggleFav, handleReadMore, handleShare, isPro, caCount, maxFree }) => {
+    const [localLang, setLocalLang] = useState("EN");
+    
+    const displayHeading = localLang === "HI" && item.headingHi ? item.headingHi : item.heading;
+    const displayDesc = localLang === "HI" && item.descriptionHi ? item.descriptionHi : item.description;
+
+    return (
+      <motion.div 
+        variants={itemVariants}
+        className={styles.wallCard}
+        layout
+      >
+        <div className={styles.actionBadge}>
+          <button 
+             onClick={(e) => { e.stopPropagation(); setLocalLang(localLang === "EN" ? "HI" : "EN"); }} 
+             className={styles.badgeBtn}
+          >
+            {localLang}
+          </button>
+          <button 
+             onClick={(e) => { e.stopPropagation(); toggleFav(item.id); }} 
+             className={styles.badgeBtn}
+          >
+            {isFav ? "❤️" : "🤍"}
+          </button>
+        </div>
+
+        <div 
+          className={`${styles.wallCardContent} ${item.image ? styles.wallCardContentWithImg : ''}`}
+          style={item.image ? { backgroundImage: `linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 100%), url('${item.image}')` } : {}}
+          onClick={() => handleReadMore(item)}
+        >
+           <div className={styles.quoteWrapper}>
+             <span className={styles.quoteMark}>“</span>
+             <h3 className={styles.bigCardText}>{displayHeading}</h3>
+           </div>
+           
+           <div className={styles.cardFooter}>
+             <span className={styles.cardCategory}>{getCategoryIcon(item.category)} {item.category}</span>
+             <div className="flex gap-2 items-center">
+                {isRead && <span className="text-[10px] bg-emerald-500/80 text-white px-2 py-0.5 rounded-full font-bold">READ</span>}
+                <button 
+                  onClick={(e) => { e.stopPropagation(); handleShare(item); }}
+                  className="p-1.5 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+                >
+                  📤
+                </button>
+             </div>
+           </div>
+        </div>
+      </motion.div>
+    );
+  };
+
+  if (!hasMounted) {
+    return (
+      <main className={styles.page}>
+        <div className={styles.header}>
+           <h1 className={styles.title}>Intelligence Briefing</h1>
+           <div className={styles.skeletonTitle} style={{ width: '200px', height: '20px' }}></div>
+        </div>
+        <div className={styles.skeletonList}>
+           <div className={styles.skeletonCard} style={{ height: '400px' }}></div>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className={styles.page}>
-      <div className={styles.header}>
-        <div className={styles.headerLeft}>
-          <div>
-            <h1 className={styles.title}>Intelligence Briefing</h1>
-            <p className={styles.subtitle}>
-              {selectedDate && selectedDate === getTodayDateString()
-                ? `Active Directives - ${formatDate(selectedDate)}`
-                : selectedDate
-                ? `Archived Briefs for ${formatDate(selectedDate)}`
-                : 'Browse intelligence feeds date-wise and category-wise.'}
-            </p>
-          </div>
-          <div className={styles.headerFilters}>
-            <div className={styles.filterGroup}>
-              <label>Date</label>
-              <input
-                type="date"
-                value={selectedDate}
-                max={getTodayDateString()}
-                onChange={(e) => {
-                  setSelectedDate(e.target.value);
-                  if (e.target.value) setSelectedMonth("");
-                }}
-              />
-            </div>
-            <div className={styles.filterGroup}>
-              <label>Month</label>
-              <select
-                value={selectedMonth}
-                onChange={(e) => {
-                  setSelectedMonth(e.target.value);
-                  if (e.target.value) setSelectedDate("");
-                }}
-              >
-                <option value="">All</option>
-                {months.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className={styles.filterGroup}>
-              <label>Category</label>
-              <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)}>
-                <option value="all">All</option>
-                {categories.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+      {/* Date Navigation Ribbon - Now includes Export */}
+      <div className={styles.dateRibbon}>
+        <button 
+           className={styles.ribbonBtn} 
+           onClick={() => setSelectedDate(prev => adjustDate(prev || getTodayDateString(), -1))}
+           title="Previous Day"
+        >
+          ←
+        </button>
+        
+        <div className={styles.ribbonCenter}>
+           <input 
+              type="date" 
+              value={selectedDate} 
+              max={getTodayDateString()}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="bg-transparent border-none outline-none font-bold text-slate-700 cursor-pointer"
+           />
+           <div className={styles.selectedDateText}>
+              {formatDate(selectedDate || getTodayDateString())}
+           </div>
         </div>
-        <a className={styles.exportBtn} href={exportHref} target="_blank" rel="noreferrer">
-           <span>📥</span> Export Intel
+
+        <button 
+           className={styles.ribbonBtn} 
+           onClick={() => setSelectedDate(prev => adjustDate(prev || getTodayDateString(), 1))}
+           disabled={(selectedDate || getTodayDateString()) >= getTodayDateString()}
+           title="Next Day"
+        >
+          →
+        </button>
+
+        <button 
+           className={styles.todayBtn}
+           onClick={() => setSelectedDate(getTodayDateString())}
+        >
+          Today
+        </button>
+
+        <a className={styles.exportBtnSmall} href={exportHref} target="_blank" rel="noreferrer" title="Export Intelligence">
+           📥
         </a>
       </div>
 
@@ -513,108 +673,68 @@ export default function DailyCurrentAffairsPage() {
         <section className={styles.content}>
           {loading ? (
             <div className={styles.skeletonList}>
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className={styles.skeletonCard}>
-                  <div className={styles.skeletonImage} />
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className={styles.skeletonCard} style={{ height: '320px', borderRadius: '1.5rem' }}>
                   <div className={styles.skeletonBody}>
                     <div className={styles.skeletonTitle} />
                     <div className={styles.skeletonMeta} />
-                    <div className={styles.skeletonLine} />
-                    <div className={styles.skeletonLineShort} />
                   </div>
                 </div>
               ))}
             </div>
           ) : items.length === 0 ? (
-            <div className={styles.empty}>No current affairs found.</div>
+            <div className={styles.empty}>No intelligence found for the selected parameters.</div>
           ) : (
-            <>
-              {/* Show Today's Current Affairs indicator */}
-              {selectedDate && selectedDate === getTodayDateString() && (
-                <div className={styles.todayIndicator}>
-                  <span className={styles.todayBadge}>📡 Live Intelligence Stream</span>
-                  <span className={styles.todayDate}>{formatDate(selectedDate)}</span>
-                </div>
-              )}
-              
-              <div className={styles.list}>
-                {items.map((it) => (
-                  <article key={it.id} className={styles.card}>
-                    <div className={styles.imageWrap}>
-                      {it.image ? (
-                        <img src={it.image} alt={it.heading} className={styles.image} />
-                      ) : (
-                        <div className={styles.imageFallback}>
-                          <span className={styles.fallbackIcon}>{getCategoryIcon(it.category)}</span>
-                        </div>
-                      )}
-                      <button
-                        className={styles.favOverlay}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          toggleFav(it.id);
-                        }}
-                        title="Favourite"
-                      >
-                        {favIds.has(it.id) ? "❤️" : "🤍"}
-                      </button>
-                      {readItems.has(it.id) && (
-                        <div className={styles.readOverlay} title="Read">
-                          ✓
-                        </div>
-                      )}
+            <div className={styles.feedContainer}>
+              <AnimatePresence mode="popLayout">
+                {sortedDates.map(date => (
+                  <motion.div 
+                    key={date} 
+                    className={styles.dateGroup}
+                    initial="hidden"
+                    animate="visible"
+                    variants={containerVariants}
+                    layout
+                  >
+                    <div className={styles.dateHeader}>
+                      <span className={styles.dateHeaderIcon}>📅</span>
+                      <span className={styles.dateHeaderText}>{formatDate(date)} Intelligence</span>
+                      <div className={styles.dateHeaderLine}></div>
                     </div>
-                    <div className={styles.body}>
-                      <h3 className={styles.heading}>{it.heading}</h3>
-                      <div className={styles.meta}>
-                        <span>{formatDate(it.date)}</span>
-                        {it.category ? <span className={styles.dot}>•</span> : null}
-                        {it.category ? (
-                          <span className={styles.chip} style={chipStyle(it.category)}>
-                            {it.category}
-                          </span>
-                        ) : null}
-                      </div>
-                      <p className={styles.desc}>{it.description}</p>
-                      <div className={styles.actionsRow}>
-                        <button className={styles.readMoreBtn} onClick={() => handleReadMore(it)}>
-                          <span>VIEW BRIEF</span>
-                          {!isPro && (
-                            <span className={styles.freeReadIndicator}>
-                              {useCounts.ca < maxFreeReads 
-                                ? `(${maxFreeReads - useCounts.ca} free left)` 
-                                : "(Watch Ad)"
-                              }
-                            </span>
-                          )}
-                          <span className={styles.btnArrow}>→</span>
-                        </button>
-                      </div>
-                    </div>
-                  </article>
+                    
+                    <motion.div className={styles.wallGrid} layout>
+                      {groupedItems[date].map((it) => (
+                        <WallCurrentAffairCard 
+                          key={it.id} 
+                          item={it}
+                          isRead={readItems.has(it.id)}
+                          isFav={favIds.has(it.id)}
+                          toggleFav={toggleFav}
+                          handleReadMore={handleReadMore}
+                          handleShare={handleShare}
+                          isPro={isPro}
+                          caCount={useCounts.ca}
+                          maxFree={maxFreeReads}
+                        />
+                      ))}
+                    </motion.div>
+                  </motion.div>
                 ))}
+              </AnimatePresence>
+              
+              <div id="load-more-trigger" className={styles.loadMoreTrigger}>
+                {loading && !isInitialLoad && (
+                  <div className={styles.miniLoader}>
+                    <div className={styles.briefingSpinner}></div>
+                    <span>Decrypting more briefings...</span>
+                  </div>
+                )}
+                {!hasMore && items.length > 0 && (
+                  <div className={styles.endOfFeed}>
+                    <span>Complete Mission History Decrypted</span>
+                  </div>
+                )}
               </div>
-            </>
-          )}
-
-          {!loading && totalPages > 1 && (
-            <div className={styles.pagination}>
-              <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
-                ‹
-              </button>
-              {pagination.map((n) => (
-                <button
-                  key={n}
-                  className={n === page ? styles.pageActive : ""}
-                  onClick={() => setPage(n)}
-                >
-                  {n}
-                </button>
-              ))}
-              <button disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
-                ›
-              </button>
             </div>
           )}
         </section>

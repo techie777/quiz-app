@@ -1,39 +1,257 @@
-/* TrueFalse.module.css - Premium Space Theme (Green/Blue Variant) */
-
+/* Premium Bright & Attractive Architecture */
 .page {
+  background: radial-gradient(circle at top right, #1e1b4b 0%, #0f172a 50%, #020617 100%);
   min-height: 100vh;
-  background-color: var(--bg-primary);
-  padding: 3rem 1rem;
+  color: white;
+  padding: 4rem 1rem;
 }
 
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
+.wallGrid { 
+  display: grid; 
+  grid-template-columns: repeat(1, 1fr); 
+  gap: 2rem; 
+  margin-top: 3rem;
+}
+@media (min-width: 640px) { .wallGrid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1280px) { .wallGrid { grid-template-columns: repeat(3, 1fr); } }
+
+.wallCard { 
+  background: rgba(255, 255, 255, 0.03); 
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 2rem; 
+  overflow: hidden; 
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3); 
+  border: 1px solid rgba(255, 255, 255, 0.1); 
+  display: flex; 
+  flex-direction: column; 
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  min-height: 320px;
+}
+
+.wallCard:hover {
+  transform: translateY(-8px) scale(1.02);
+  border-color: rgba(34, 211, 238, 0.4);
+  box-shadow: 0 25px 60px rgba(34, 211, 238, 0.15);
+}
+
+.wallCardContent { 
+  padding: 2.5rem; 
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: linear-gradient(135deg, rgba(30, 27, 75, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+  position: relative;
+}
+
+.wallCardContentWithImg {
+  background-size: cover;
+  background-position: center;
+}
+
+.bigCardText {
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1.3;
+  color: #fff;
+  z-index: 1;
+  text-shadow: 0 4px 12px rgba(0,0,0,0.6);
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cardFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cardCategory {
+  font-size: 0.75rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  background: linear-gradient(to right, #22d3ee, #818cf8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Category Filter Scroll */
+.categoryFilterScroll { 
+  display: flex; 
+  overflow-x: auto; 
+  overflow-y: hidden;
+  gap: 1rem; 
+  padding: 1rem 0.5rem 1.5rem; 
+  margin: 1rem 0 3rem; 
+  scrollbar-width: none; 
+}
+.categoryFilterScroll::-webkit-scrollbar { display: none; }
+
+.filterChip { 
+  white-space: nowrap; 
+  flex-shrink: 0;
+  padding: 0.75rem 1.75rem; 
+  border-radius: 9999px; 
+  background: rgba(255, 255, 255, 0.05); 
+  border: 1px solid rgba(255, 255, 255, 0.1); 
+  cursor: pointer; 
+  font-weight: 800; 
+  font-size: 0.9rem; 
+  color: #94a3b8;
+  transition: all 0.3s; 
+}
+
+.filterChip:hover {
+  border-color: #22d3ee;
+  color: #22d3ee;
+  background: rgba(34, 211, 238, 0.05);
+}
+
+.filterChipActive { 
+  background: linear-gradient(to right, #22d3ee, #0ea5e9); 
+  color: white !important; 
+  border-color: #22d3ee; 
+  box-shadow: 0 4px 20px rgba(34, 211, 238, 0.3);
+}
+
+.actionBadge {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 10;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.badgeBtn {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.badgeBtn:hover {
+  background: rgba(34, 211, 238, 0.2);
+  transform: scale(1.1);
+  border-color: #22d3ee;
+}
+
+.wallCardActions {
+  display: flex;
+  gap: 1.25rem;
+  margin-top: 2.5rem;
+  z-index: 20;
+}
+
+.guessBtn {
+  flex: 1;
+  padding: 0.85rem;
+  border-radius: 1.25rem;
+  font-weight: 900;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: all 0.4s;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  backdrop-filter: blur(8px);
+}
+
+.guessBtn:hover {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+}
+
+.trueBtn:hover { 
+  border-color: #22d3ee; 
+  color: #22d3ee; 
+  background: rgba(34, 211, 238, 0.1); 
+  box-shadow: 0 0 20px rgba(34, 211, 238, 0.2);
+}
+
+.falseBtn:hover { 
+  border-color: #f472b6; 
+  color: #f472b6; 
+  background: rgba(244, 114, 182, 0.1); 
+  box-shadow: 0 0 20px rgba(244, 114, 182, 0.2);
+}
+
+.resPill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 1.5rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-size: 1rem;
+  margin-top: 2.5rem;
+  animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes popIn {
+  from { transform: scale(0.8) translateY(20px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.correctPill { 
+  background: linear-gradient(to right, #059669, #10b981); 
+  color: white; 
+  box-shadow: 0 8px 30px rgba(16, 185, 129, 0.4); 
+}
+
+.incorrectPill { 
+  background: linear-gradient(to right, #dc2626, #ef4444); 
+  color: white; 
+  box-shadow: 0 8px 30px rgba(239, 68, 68, 0.4); 
 }
 
 .header {
   text-align: center;
-  margin-bottom: 4rem;
+  margin-bottom: 5rem;
 }
 
 .title {
-  font-size: 3rem;
+  font-size: 3.5rem;
   font-weight: 900;
-  margin-bottom: 1rem;
-  background: linear-gradient(to right, #10b981, #059669);
+  margin-bottom: 1.5rem;
+  background: linear-gradient(to right, #22d3ee, #818cf8, #f472b6);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
+  gap: 1rem;
+  letter-spacing: -0.02em;
 }
 
 .checkIcon {
-  color: #10b981;
-  width: 2.5rem;
-  height: 2.5rem;
+  color: #22d3ee;
+  width: 3rem;
+  height: 3rem;
+  filter: drop-shadow(0 0 10px rgba(34, 211, 238, 0.5));
 }
 
 @media (min-width: 768px) {

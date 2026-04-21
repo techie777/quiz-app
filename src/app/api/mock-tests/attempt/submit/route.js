@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 export async function POST(request) {
   const session = await getServerSession(authOptions);
@@ -42,22 +39,57 @@ export async function POST(request) {
       }
     });
 
+    // ── ATTEMPT RECORDING ──
     const score = (correctCount * paper.positiveMarking) - (wrongCount * paper.negativeMarking);
 
-    const attempt = await prisma.mockAttempt.create({
-      data: {
+    // Find if there was an in-progress attempt to finish
+    const existingAttempt = await prisma.mockAttempt.findFirst({
+      where: {
         userId: session.user.id,
         paperId,
-        answersJson,
-        status: "COMPLETED",
-        timeLeft,
-        score,
-        correctCount,
-        wrongCount,
-        attemptedCount,
-        completedAt: new Date()
-      }
+        status: "IN_PROGRESS"
+      },
+      orderBy: { updatedAt: "desc" }
     });
+
+    let attempt;
+    if (existingAttempt) {
+      console.log(`✅ [SUBMIT] Finalizing existing attempt: ${existingAttempt.id}`);
+      attempt = await prisma.mockAttempt.update({
+        where: { id: existingAttempt.id },
+        data: {
+          answersJson,
+          status: "COMPLETED",
+          timeLeft,
+          score,
+          correctCount,
+          wrongCount,
+          attemptedCount,
+          completedAt: new Date(),
+          updatedAt: new Date()
+        }
+      });
+    } else {
+      console.log(`✅ [SUBMIT] No in-progress attempt found. Creating new COMPLETED record.`);
+      attempt = await prisma.mockAttempt.create({
+        data: {
+          userId: session.user.id,
+          paperId,
+          answersJson,
+          status: "COMPLETED",
+          timeLeft,
+          score,
+          correctCount,
+          wrongCount,
+          attemptedCount,
+          completedAt: new Date()
+        }
+      });
+    }
+
+    if (!attempt || !attempt.id) {
+       throw new Error("Failed to generate attempt ID from database recording layer.");
+    }
 
     return NextResponse.json({
         id: attempt.id,
@@ -69,7 +101,10 @@ export async function POST(request) {
         totalMarks: paper.totalMarks
     });
   } catch (error) {
-    console.error("Error submitting mock test:", error);
-    return NextResponse.json({ error: "Submission failed" }, { status: 500 });
+    console.error("❌ [SUBMIT] Fatal Error:", error);
+    return NextResponse.json({ 
+        error: "Submission failed in the final recording phase.", 
+        details: error.message 
+    }, { status: 500 });
   }
 }

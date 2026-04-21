@@ -84,11 +84,14 @@ function quizReducer(state, action) {
       );
       const raw = filtered.length > 0 ? filtered : quiz.questions;
       
-      // Deep shuffle: shuffle questions AND their options
-      const shuffledQuestions = shuffleArray(raw).map(q => ({
-        ...q,
-        options: shuffleArray(q.options)
-      }));
+      // Deep shuffle and sanitize (strip userAnswer)
+      const shuffledQuestions = shuffleArray(raw).map(q => {
+        const { userAnswer, ...pristineQ } = q;
+        return {
+          ...pristineQ,
+          options: shuffleArray(q.options)
+        };
+      });
 
       return {
         ...initialState,
@@ -111,11 +114,14 @@ function quizReducer(state, action) {
     case "START_QUIZ_SET": {
       const { quizId, questions, timer, language, setIndex, categoryName } = action.payload;
       
-      // Deep shuffle: shuffle questions AND their options
-      const shuffledQuestions = shuffleArray(questions).map(q => ({
-        ...q,
-        options: Array.isArray(q.options) ? shuffleArray(q.options) : []
-      }));
+      // Deep shuffle and sanitize (strip userAnswer)
+      const shuffledQuestions = shuffleArray(questions).map(q => {
+        const { userAnswer, ...pristineQ } = q;
+        return {
+          ...pristineQ,
+          options: Array.isArray(q.options) ? shuffleArray(q.options) : []
+        };
+      });
 
       return {
         ...initialState,
@@ -137,10 +143,14 @@ function quizReducer(state, action) {
     case "START_MIXED_QUIZ": {
       const { questions, sectionName, timer, difficulty, language } = action.payload;
       
-      const shuffledQuestions = shuffleArray(questions).map(q => ({
-        ...q,
-        options: Array.isArray(q.options) ? shuffleArray(q.options) : []
-      }));
+      // Deep shuffle and sanitize (strip userAnswer)
+      const shuffledQuestions = shuffleArray(questions).map(q => {
+        const { userAnswer, ...pristineQ } = q;
+        return {
+          ...pristineQ,
+          options: Array.isArray(q.options) ? shuffleArray(q.options) : []
+        };
+      });
 
       return {
         ...initialState,

@@ -35,12 +35,25 @@ export const authOptions = {
         // Find user
         let user = await prisma.user.findUnique({ where: { email } });
 
-        if (credentials.isNewUser === "true") {
-          throw new Error("New user registration is administratively restricted.");
+        if (!user) {
+           // Truly new user - depends on your policy.
+           // If you want to enable automatic registration, you would call prisma.user.create here.
+           throw new Error("No account found for this email. Please use Google to create an account first.");
+        }
+
+        // If user exists but HAS NO PIN (likely a Google-only user until now)
+        if (!user.pin) {
+            console.log(`🔐 [AUTH] Setting initial PIN for Google user: ${email}`);
+            user = await prisma.user.update({
+                where: { id: user.id },
+                data: { pin }
+            });
         } else {
-          if (!user) throw new Error("User not found");
-          if (!user.pin) throw new Error("No PIN set for this account. Please contact admin.");
-          if (user.pin !== pin) throw new Error("Invalid PIN");
+            // Existing user with a PIN - standard verification
+            if (user.pin !== pin) {
+                console.warn(`🚫 [AUTH] Invalid PIN attempt for: ${email}`);
+                throw new Error("Invalid PIN. Please try again.");
+            }
         }
 
         return {
@@ -60,8 +73,7 @@ export const authOptions = {
         token.role = "user";
         token.isAdmin = false;
 
-        // Enforce 1-user-1-device: bump sessionVersion on each fresh sign-in.
-        // Old tokens will become invalid when their sessionVersion mismatches.
+        // Enforce 1-user-1-device: attempt to bump sessionVersion.
         try {
           const updated = await prisma.user.update({
             where: { id: user.id },
@@ -69,9 +81,10 @@ export const authOptions = {
             select: { sessionVersion: true },
           });
           token.sessionVersion = updated.sessionVersion;
-        } catch {
-          // If DB is temporarily unavailable, fall back to existing token behavior.
-          token.sessionVersion = token.sessionVersion ?? 0;
+        } catch (updateError) {
+          // LOG: DB or Schema mismatch. Default to 0 to allow login.
+          console.error("⚠️ [AUTH] Session versioning failed during login:", updateError.message);
+          token.sessionVersion = 0;
         }
       }
       return token;
@@ -89,12 +102,15 @@ export const authOptions = {
             select: { sessionVersion: true },
           });
           const dbV = row?.sessionVersion ?? 0;
-          const tokV = Number.isFinite(token.sessionVersion) ? token.sessionVersion : Number(token.sessionVersion ?? 0);
+          const tokV = Number.isFinite(token.sessionVersion) ? Number(token.sessionVersion) : 0;
+          
           if (tokV !== dbV) {
+            console.warn("🚫 [AUTH] Session version mismatch (multi-device login detected).");
             return null;
           }
-        } catch {
+        } catch (checkError) {
           // If DB read fails, don't hard-lock users out.
+          console.warn("⚠️ [AUTH] Session validation skipped due to DB error.");
         }
       }
       return session;

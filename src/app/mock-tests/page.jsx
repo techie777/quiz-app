@@ -41,27 +41,7 @@ export default function MockTestsHub() {
   return (
     <main className={styles.page}>
       
-      {/* Header Section */}
-      <section className={styles.hero}>
-        <div className={styles.heroContent}>
-          <h1 className={styles.title}>Free Mock <span className={styles.textAccent}>Tests</span></h1>
-          <p className={styles.subtitle}>Supercharge your Govt Exam preparation with real-time simulations.</p>
-          
-          <div className={styles.searchWrapper}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={styles.searchIcon}>
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-            <input 
-              type="text" 
-              placeholder="Search for an exam (e.g. SSC CGL)..." 
-              className={styles.searchInput}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-        </div>
-      </section>
+
 
       {loading ? (
         <div className={styles.loaderArea}>
@@ -96,12 +76,25 @@ export default function MockTestsHub() {
           <div className={styles.contentArea}>
             <div className={styles.resultsHeader}>
               <h2>Showing {filteredExams.length} Exams</h2>
+              <div className={styles.searchWrapper}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={styles.searchIcon}>
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input 
+                  type="text" 
+                  placeholder="Search for an exam (e.g. SSC CGL)..." 
+                  className={styles.searchInput}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
             </div>
             
             {filteredExams.length === 0 ? (
               <div className={styles.emptyState}>
                 <span className="text-6xl mb-4 block">🔍</span>
-                <h3>No Exams Found</h3>
+                <h3>No data found</h3>
                 <p>Try adjusting your search criteria or category filter.</p>
               </div>
             ) : (
