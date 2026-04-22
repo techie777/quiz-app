@@ -14,6 +14,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import styles from "@/styles/QuizEngine.module.css";
 import { initSounds, playCorrectSound, playWrongSound, playTickerSound } from "@/lib/sounds";
 import timerStyles from "@/styles/Timer.module.css";
+import toast from "react-hot-toast";
 
 // Persistent-Fix Local Timer Component
 const QuizTimerComponent = ({ seconds, onExpire, questionKey, isPaused }) => {
@@ -49,7 +50,7 @@ const QuizTimerComponent = ({ seconds, onExpire, questionKey, isPaused }) => {
   }, [timeLeft === 0, questionKey, isPaused, onExpire]);
 
   const progress = (timeLeft / seconds) * 100;
-  const radius = 20;
+  const radius = 24;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (progress / 100) * circumference;
   const isTimeLow = timeLeft <= 5;
@@ -58,11 +59,11 @@ const QuizTimerComponent = ({ seconds, onExpire, questionKey, isPaused }) => {
 
   return (
     <div className={`${timerStyles.timerContainer} ${isTimeLow ? timerStyles.low : ""}`}>
-      <svg className={timerStyles.timerRing} width="50" height="50">
-        <circle className={timerStyles.ringTrack} cx="25" cy="25" r={radius} />
+      <svg className={timerStyles.timerRing} width="60" height="60">
+        <circle className={timerStyles.ringTrack} cx="30" cy="30" r={radius} />
         <circle
           className={timerStyles.ringFill}
-          cx="25" cy="25" r={radius}
+          cx="30" cy="30" r={radius}
           style={{
             strokeDasharray: circumference,
             strokeDashoffset: isNaN(offset) ? 0 : offset
@@ -181,6 +182,7 @@ function QuizEngineContent() {
   const [searchQuestion, setSearchQuestion] = useState("");
   const [showingAd, setShowingAd] = useState(false);
   const [adCallback, setAdCallback] = useState(null);
+  const [lifelineEffect, setLifelineEffect] = useState(null); // '5050' or 'poll'
   
   // Track free usage per session
   const [freeLifelinesUsed, setFreeLifelinesUsed] = useState({
@@ -305,15 +307,9 @@ const QuizEngineTimer = QuizTimerComponent;
     };
   }, [status, currentIndex, questions?.length, moveToNextQuestion]);
 
-  // Reset question start time when question changes
   useEffect(() => {
     setQuestionStartTime(Date.now());
     setIsSubmitting(false);
-    
-    // Reset revealed state for new question
-    if (window.QuestionCardRef) {
-      window.QuestionCardRef.resetQuestion();
-    }
   }, [currentIndex]);
 
   // Capture referrer on component mount
@@ -435,7 +431,13 @@ const QuizEngineTimer = QuizTimerComponent;
   // Hint System
   const useHint = () => {
     setShowHint(true);
+    toast.success("Hint Unlocked! (-5 points)", { icon: '💡' });
     if (score > 5) updateScore(-5);
+  };
+
+  const triggerLifelineEffect = (type) => {
+    setLifelineEffect(type);
+    setTimeout(() => setLifelineEffect(null), 1500);
   };
 
   // 50/50 Lifeline
@@ -455,6 +457,8 @@ const QuizEngineTimer = QuizTimerComponent;
       updateScore(-3);
       setRemovedOptions(toRemove);
       setFreeLifelinesUsed(prev => ({ ...prev, "50/50": true }));
+      triggerLifelineEffect('5050');
+      toast.success("50:50 Activated! (-3 points)", { icon: '✂️' });
     };
 
     // Rule: 1 free per session. If used already, triggers Ad.
@@ -486,6 +490,8 @@ const QuizEngineTimer = QuizTimerComponent;
       setUsedAskAudience(true);
       updateScore(-3);
       setFreeLifelinesUsed(prev => ({ ...prev, "poll": true }));
+      triggerLifelineEffect('poll');
+      toast.success("Audience Poll Live! (-3 points)", { icon: '👥' });
     };
 
     // Rule: 1 free per session.
@@ -737,6 +743,15 @@ const QuizEngineTimer = QuizTimerComponent;
             <div className={styles.celebrationOverlay}>
               <div className={styles.celebrationEffect}>
                 🎉 Correct! 🎉
+              </div>
+            </div>
+          )}
+
+          {/* Lifeline Animation Effect */}
+          {lifelineEffect && (
+            <div className={styles.lifelineOverlay}>
+              <div className={styles.lifelineAnimation}>
+                {lifelineEffect === '5050' ? '✂️ 50:50 Activated' : '👥 Audience Poll Live'}
               </div>
             </div>
           )}

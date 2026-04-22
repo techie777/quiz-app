@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "./generated-client"
 }
 
 datasource db {
@@ -42,6 +41,8 @@ model User {
   funFactLikes      FunFactLike[]
   funFactFavorites  FunFactFavorite[]
   funFactComments   FunFactComment[]
+  
+  interestedCategories String[]    @default([]) // Array of Category IDs/Slugs
 }
 
 model VerificationToken {

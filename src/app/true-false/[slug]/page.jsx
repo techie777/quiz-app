@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { CheckCircle, ArrowRight, ArrowLeft, Eye, Maximize2, Minimize2, Globe, Share2, Sparkles, Rocket } from "lucide-react";
 import toast from "react-hot-toast";
 import styles from "@/styles/TrueFalse.module.css";
@@ -14,6 +14,8 @@ const AntiGravity = dynamic(() => import("../../../components/fun-facts/AntiGrav
 
 export default function TrueFalseQuiz() {
   const { slug } = useParams();
+  const searchParams = useSearchParams();
+  const questionId = searchParams.get("id");
   const cardRef = useRef(null);
   const [question, setQuestion] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -42,7 +44,7 @@ export default function TrueFalseQuiz() {
   }, []);
 
   useEffect(() => {
-    fetchQuestion();
+    fetchQuestion(null, questionId);
     
     const handleFsChange = () => {
       setIsFullScreen(!!document.fullscreenElement);
@@ -79,7 +81,8 @@ export default function TrueFalseQuiz() {
     try {
       let url = "/api/true-false?";
       if (slug && slug !== "voyager") url += `categoryId=${slug}&`;
-      if (omitQuestionId) url += `omitQuestionId=${omitQuestionId}`;
+      if (omitQuestionId) url += `omitQuestionId=${omitQuestionId}&`;
+      if (questionId && !omitQuestionId) url += `id=${questionId}`;
       
       const response = await fetch(url);
       const data = await response.json();
@@ -316,7 +319,15 @@ export default function TrueFalseQuiz() {
                    </div>
                 </motion.div>
               ) : (
-                <div className="text-gray-400">Scanning for more challenges...</div>
+                <motion.div 
+                   key="scanning"
+                   initial={{ opacity: 0 }}
+                   animate={{ opacity: 1 }}
+                   exit={{ opacity: 0 }}
+                   className="text-gray-400 text-center py-20"
+                >
+                   Scanning for more challenges...
+                </motion.div>
               )}
             </AnimatePresence>
           </div>

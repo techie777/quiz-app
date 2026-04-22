@@ -2,8 +2,23 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
-import { CheckCircle, ArrowRight, Brain, Sparkles } from "lucide-react";
+import { CheckCircle, ArrowRight, Brain, Sparkles, Play } from "lucide-react";
 import styles from "@/styles/TrueFalse.module.css";
+
+const LanguageToggle = ({ lang, onChange, className }) => (
+  <div 
+    className={`${styles.langToggle} ${className}`} 
+    onClick={(e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onChange(lang === "EN" ? "HI" : "EN");
+    }}
+  >
+    <div className={`${styles.langThumb} ${lang === "HI" ? styles.langThumbHindi : ""}`} />
+    <div className={`${styles.langOption} ${lang === "EN" ? styles.langOptionActive : ""}`}>EN</div>
+    <div className={`${styles.langOption} ${lang === "HI" ? styles.langOptionActive : ""}`}>HI</div>
+  </div>
+);
 
 export default function TrueFalseHub() {
   const [categories, setCategories] = useState([]);
@@ -13,6 +28,7 @@ export default function TrueFalseHub() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [globalLang, setGlobalLang] = useState("EN");
 
   // Initial data load
   useEffect(() => {
@@ -70,31 +86,20 @@ export default function TrueFalseHub() {
   return (
     <div className={styles.page}>
       <div className={styles.container}>
-        <div className={styles.header}>
-          <h1 className={styles.title}>
-            <CheckCircle className={styles.checkIcon} /> True/False Wall
-          </h1>
-          <p className={styles.description}>
-            The ultimate intelligence stream. Infinite true/false challenges to sharpen your mind.
-          </p>
+
+        {/* Voyager Play Button */}
+        <div className={styles.voyagerPlayWrapper}>
+          <Link href="/true-false/voyager" className={styles.voyagerPlayBtn} title="Launch Voyager Mode">
+            <Play fill="currentColor" size={24} />
+          </Link>
+          <span className={styles.voyagerPlayLabel}>Launch Voyager</span>
         </div>
 
-        <Link href="/true-false/voyager">
-          <div className={styles.voyagerHero} style={{ marginBottom: '3rem' }}>
-            <div className={styles.voyagerBadge}>LIVE STREAM</div>
-            <div className={styles.voyagerIconContainer}>
-              <Brain className={styles.voyagerIcon} />
-            </div>
-            <div className={styles.voyagerInfo}>
-              <span className={styles.voyagerLabel}>Non-Stop Challenge</span>
-              <h2 className={styles.voyagerTitle}>Interactive Voyager</h2>
-              <p className={styles.voyagerSubtitle}>Launch the full immersive experience.</p>
-            </div>
-            <div className="bg-white/10 p-4 rounded-full">
-              <ArrowRight className="text-white" />
-            </div>
-          </div>
-        </Link>
+        {/* Global Language Toggle */}
+        <div className={styles.globalLangWrapper}>
+          <span className={styles.globalLangLabel}>Stream Language</span>
+          <LanguageToggle lang={globalLang} onChange={setGlobalLang} />
+        </div>
 
         {/* Category Filters */}
         <div className={styles.categoryFilterScroll}>
@@ -106,9 +111,9 @@ export default function TrueFalseHub() {
           </div>
           {categories.map(cat => (
             <div 
-              key={cat.id}
-              className={`${styles.filterChip} ${selectedCategory === cat.id ? styles.filterChipActive : ''}`}
-              onClick={() => setSelectedCategory(cat.id)}
+               key={cat.id}
+               className={`${styles.filterChip} ${selectedCategory === cat.id ? styles.filterChipActive : ''}`}
+               onClick={() => setSelectedCategory(cat.id)}
             >
               {cat.name}
             </div>
@@ -129,6 +134,7 @@ export default function TrueFalseHub() {
                 question={q} 
                 isLast={questions.length === idx + 1}
                 lastRef={lastElementRef}
+                globalLang={globalLang}
               />
             ))}
           </div>
@@ -150,11 +156,12 @@ export default function TrueFalseHub() {
   );
 }
 
-function WallTrueFalseCard({ question, isLast, lastRef }) {
-  const [localLang, setLocalLang] = useState("EN");
+function WallTrueFalseCard({ question, isLast, lastRef, globalLang }) {
+  const [localLang, setLocalLang] = useState(null);
   const [userGuess, setUserGuess] = useState(null); // null, 'correct', 'incorrect'
   
-  const displayText = localLang === "HI" && question.statementHi ? question.statementHi : question.statement;
+  const currentLang = localLang || globalLang;
+  const displayText = currentLang === "HI" && question.statementHi ? question.statementHi : question.statement;
 
   const handleGuess = (e, guess) => {
     e.preventDefault();
@@ -172,12 +179,11 @@ function WallTrueFalseCard({ question, isLast, lastRef }) {
   return (
     <div className={styles.wallCard} ref={isLast ? lastRef : null}>
        <div className={styles.actionBadge}>
-          <button 
-             onClick={(e) => { e.preventDefault(); e.stopPropagation(); setLocalLang(localLang === "EN" ? "HI" : "EN"); }} 
-             className={styles.badgeBtn}
-          >
-            {localLang}
-          </button>
+          <LanguageToggle 
+            lang={currentLang} 
+            onChange={setLocalLang} 
+            className={styles.langToggleSmall}
+          />
         </div>
 
        <Link href={`/true-false/${question.category?.slug}?id=${question.id}`} className="flex-1 flex flex-col">

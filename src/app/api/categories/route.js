@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { safeJsonParse } from "@/lib/utils";
 import { requireAdmin, getAdminFromRequest } from "@/lib/adminSessionServer";
 import { enforceRateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
@@ -19,9 +21,24 @@ export async function GET(request) {
     const difficulty = searchParams.get("difficulty") || "all";
     const qCount = searchParams.get("questionCount") || "all";
     const chipsParam = searchParams.get("chips") || "";
+    const personalized = searchParams.get("personalized") === "true";
+    const showAll = searchParams.get("showAll") === "true";
 
     const admin = await getAdminFromRequest();
     const isAdmin = !!admin;
+
+    let userInterests = [];
+    if (personalized && !isAdmin) {
+      const session = await getServerSession(authOptions);
+      if (session?.user?.id) {
+        const user = await prisma.user.findUnique({
+          where: { id: session.user.id },
+          select: { interestedCategories: true }
+        });
+        userInterests = user?.interestedCategories || [];
+      }
+    }
+
 
     // Build the "where" clause for Prisma
     let where = {};
@@ -41,7 +58,8 @@ export async function GET(request) {
       where.hidden = false;
       
       // If no specific parent or ID is requested, only show top-level categories
-      if (!idParam && !parentIdParam && limitRaw > 0) {
+      // Unless we are in personalized mode or 'showAll' is requested
+      if (!idParam && !parentIdParam && limitRaw > 0 && !personalized && !showAll) {
         andConditions.push({
           OR: [
             { parentId: null },
@@ -78,6 +96,17 @@ export async function GET(request) {
     if (andConditions.length > 0) {
       where.AND = andConditions;
     }
+
+    if (personalized) {
+      if (userInterests.length > 0) {
+        where.id = { in: userInterests };
+      } else {
+        // Return nothing if personalized is requested but no interests are set
+        where.id = { in: ["_none_"] }; 
+      }
+    }
+
+
 
     if (difficulty !== "all") {
       where.questions = {

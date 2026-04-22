@@ -104,16 +104,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={inter.className}>
       <head>
-        {/* Preconnect to external domains */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        
-        {/* DNS prefetch for performance */}
         <link rel="dns-prefetch" href="//www.googletagmanager.com" />
         <link rel="dns-prefetch" href="//connect.facebook.net" />
         <link rel="dns-prefetch" href="//www.google-analytics.com" />
-        
-        {/* Structured Data */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: websiteStructuredData }}
@@ -122,20 +117,12 @@ export default function RootLayout({ children }) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: organizationStructuredData }}
         />
-        
-        {/* Theme color */}
         <meta name="theme-color" content="#3b82f6" />
-        
-        {/* Viewport and mobile optimization */}
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
-        
-        {/* Apple touch icon */}
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
         <link rel="manifest" href="/site.webmanifest" />
-        
-        {/* Preload critical resources */}
         <link rel="preload" href="/fonts/inter-var.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
       </head>
       <body style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }} className="antialiased">
@@ -156,31 +143,18 @@ export default function RootLayout({ children }) {
 
         <PwaInstallPrompt />
         
-        {/* Performance monitoring script in production */}
         {process.env.NODE_ENV === 'production' && (
           <script
             dangerouslySetInnerHTML={{
               __html: `
-                // Performance monitoring
                 if ('serviceWorker' in navigator) {
                   window.addEventListener('load', () => {
-                    navigator.serviceWorker.register('/sw.js').catch(() => {
-                      // Service worker registration failed
-                    });
+                    navigator.serviceWorker.register('/sw.js').catch(() => {});
                   });
                 }
-                
-                // Web Vitals monitoring
                 if ('PerformanceObserver' in window) {
                   const observer = new PerformanceObserver((list) => {
                     list.getEntries().forEach((entry) => {
-                      if (entry.entryType === 'largest-contentful-paint') {
-                        // Send LCP to analytics
-                      } else if (entry.entryType === 'first-input') {
-                        // Send FID to analytics
-                      } else if (entry.entryType === 'layout-shift') {
-                        // Send CLS to analytics
-                      }
                     });
                   });
                   observer.observe({ entryTypes: ['largest-contentful-paint', 'first-input', 'layout-shift'] });

@@ -36,13 +36,22 @@ export const authOptions = {
         let user = await prisma.user.findUnique({ where: { email } });
 
         if (!user) {
-           // Truly new user - depends on your policy.
-           // If you want to enable automatic registration, you would call prisma.user.create here.
-           throw new Error("No account found for this email. Please use Google to create an account first.");
-        }
-
-        // If user exists but HAS NO PIN (likely a Google-only user until now)
-        if (!user.pin) {
+           console.log(`✨ [AUTH] Creating new user via PIN: ${email}`);
+           try {
+             user = await prisma.user.create({
+               data: {
+                 email,
+                 pin,
+                 name: email.split('@')[0],
+                 sessionVersion: 1,
+                 lastLoginAt: new Date()
+               }
+             });
+           } catch (createError) {
+             console.error("❌ [AUTH] User creation failed:", createError);
+             throw new Error("Failed to create account. Please try again.");
+           }
+        } else if (!user.pin) {
             console.log(`🔐 [AUTH] Setting initial PIN for Google user: ${email}`);
             user = await prisma.user.update({
                 where: { id: user.id },

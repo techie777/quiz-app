@@ -1,25 +1,15 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { adminAuthOptions } from "@/lib/adminAuth";
+import { requireAdmin } from "@/lib/adminSessionServer";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-// Helper function to check admin permissions
-async function checkAdminAuth() {
-  const session = await getServerSession(adminAuthOptions);
-  if (!session?.user?.isAdmin) {
-    return { authorized: false, error: "Unauthorized", status: 401 };
-  }
-  return { authorized: true, session };
-}
-
 // GET - Fetch categories and questions
 export async function GET(request) {
   try {
-    const auth = await checkAdminAuth();
-    if (!auth.authorized) {
-      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    const admin = await requireAdmin();
+    if (!admin.ok) {
+      return NextResponse.json({ error: admin.error }, { status: admin.status });
     }
 
     const { searchParams } = new URL(request.url);
@@ -77,9 +67,9 @@ export async function GET(request) {
 // POST - Create categories or questions
 export async function POST(request) {
   try {
-    const auth = await checkAdminAuth();
-    if (!auth.authorized) {
-      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    const admin = await requireAdmin();
+    if (!admin.ok) {
+      return NextResponse.json({ error: admin.error }, { status: admin.status });
     }
 
     const body = await request.json();
@@ -88,11 +78,18 @@ export async function POST(request) {
     if (type === "category") {
       const { name, nameHi, slug, image, sortOrder } = data;
       
-      const category = await prisma.trueFalseCategory.create({
-        data: {
+      const category = await prisma.trueFalseCategory.upsert({
+        where: { name },
+        update: {
+          nameHi,
+          slug: slug || name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+          image,
+          sortOrder: sortOrder || 0
+        },
+        create: {
           name,
           nameHi,
-          slug,
+          slug: slug || name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
           image,
           sortOrder: sortOrder || 0
         }
@@ -130,9 +127,9 @@ export async function POST(request) {
 // PUT - Update categories or questions
 export async function PUT(request) {
   try {
-    const auth = await checkAdminAuth();
-    if (!auth.authorized) {
-      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    const admin = await requireAdmin();
+    if (!admin.ok) {
+      return NextResponse.json({ error: admin.error }, { status: admin.status });
     }
 
     const body = await request.json();
@@ -167,9 +164,9 @@ export async function PUT(request) {
 // DELETE - Delete categories or questions
 export async function DELETE(request) {
   try {
-    const auth = await checkAdminAuth();
-    if (!auth.authorized) {
-      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    const admin = await requireAdmin();
+    if (!admin.ok) {
+      return NextResponse.json({ error: admin.error }, { status: admin.status });
     }
 
     const { searchParams } = new URL(request.url);

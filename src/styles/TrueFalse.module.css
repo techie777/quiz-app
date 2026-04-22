@@ -4,6 +4,12 @@
   min-height: 100vh;
   color: white;
   padding: 4rem 1rem;
+  transition: background 0.5s ease, color 0.5s ease;
+}
+
+:global([data-theme='light']) .page {
+  background: radial-gradient(circle at top right, #f8fafc 0%, #f1f5f9 100%);
+  color: #1e293b;
 }
 
 .wallGrid { 
@@ -30,6 +36,12 @@
   min-height: 320px;
 }
 
+:global([data-theme='light']) .wallCard {
+  background: white;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
 .wallCard:hover {
   transform: translateY(-8px) scale(1.02);
   border-color: rgba(34, 211, 238, 0.4);
@@ -37,13 +49,18 @@
 }
 
 .wallCardContent { 
-  padding: 2.5rem; 
+  padding: 3.5rem 2.5rem 2.5rem; /* Increased top padding to avoid toggle overlap */
   flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   background: linear-gradient(135deg, rgba(30, 27, 75, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
   position: relative;
+  transition: background 0.5s ease;
+}
+
+:global([data-theme='light']) .wallCardContent {
+  background: white;
 }
 
 .wallCardContentWithImg {
@@ -64,6 +81,12 @@
   line-clamp: 5;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  transition: color 0.5s ease;
+}
+
+:global([data-theme='light']) .bigCardText {
+  color: #0f172a;
+  text-shadow: none;
 }
 
 .cardFooter {
@@ -73,6 +96,11 @@
   margin-top: 2rem;
   padding-top: 1.5rem;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
+  transition: border-color 0.5s ease;
+}
+
+:global([data-theme='light']) .cardFooter {
+  border-top-color: rgba(0, 0, 0, 0.05);
 }
 
 .cardCategory {
@@ -134,23 +162,108 @@
   gap: 0.75rem;
 }
 
-.badgeBtn {
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(12px);
+/* Premium Language Toggle Switch */
+.langToggle {
+  display: flex;
+  align-items: center;
+  background: #022c22;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 1rem;
-  font-size: 0.75rem;
-  font-weight: 900;
+  padding: 3px;
+  border-radius: 999px;
   cursor: pointer;
-  transition: all 0.2s;
+  position: relative;
+  width: 90px;
+  height: 36px;
+  user-select: none;
+  transition: all 0.3s ease;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-.badgeBtn:hover {
-  background: rgba(34, 211, 238, 0.2);
-  transform: scale(1.1);
+:global([data-theme='light']) .langToggle {
+  background: #f1f5f9;
+  border-color: rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.langToggleSmall {
+  width: 70px;
+  height: 28px;
+  padding: 2px;
+}
+
+.langToggle:hover {
   border-color: #22d3ee;
+  box-shadow: 0 0 15px rgba(34, 211, 238, 0.2);
+}
+
+.langOption {
+  flex: 1;
+  text-align: center;
+  font-size: 0.7rem; /* Reduced font size */
+  font-weight: 900;
+  z-index: 2;
+  color: rgba(255, 255, 255, 0.4);
+  transition: color 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+:global([data-theme='light']) .langOption {
+  color: #64748b;
+}
+
+.langToggleSmall .langOption {
+  font-size: 0.6rem;
+}
+
+.langOptionActive {
+  color: #022c22;
+}
+
+.langThumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  height: calc(100% - 6px);
+  background: white;
+  border-radius: 999px;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.langToggleSmall .langThumb {
+  top: 2px;
+  left: 2px;
+  width: calc(50% - 2px);
+  height: calc(100% - 4px);
+}
+
+.langThumbHindi {
+  transform: translateX(100%);
+}
+
+.globalLangWrapper {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 2rem;
+  align-items: center;
+  gap: 1rem;
+}
+
+.globalLangLabel {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  transition: color 0.5s ease;
+}
+
+:global([data-theme='light']) .globalLangLabel {
+  color: #64748b;
 }
 
 .wallCardActions {
@@ -316,23 +429,22 @@
 }
 
 .factCard {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-radius: 3rem;
-  padding: 4rem 3rem 3rem;
-  text-align: center;
+  width: 100%;
   max-width: 45rem;
-  width: calc(100vw - 4rem);
-  min-width: 320px;
-  min-height: 500px;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
+  background: rgba(16, 185, 129, 0.1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 2.5rem;
+  padding: 2rem;
   display: flex;
   flex-direction: column;
+  min-height: 85vh; /* Taller card for thumb-friendly layout */
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  justify-content: space-between;
 }
 
 .factCard:fullscreen {
@@ -367,20 +479,240 @@
   border-color: rgba(239, 68, 68, 0.5);
 }
 
-.categoryBadge {
-  display: inline-flex;
+/* --- New Voyager Overhaul Styles --- */
+
+.voyagerTopBar {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.4rem 1rem;
+  width: 100%;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+}
+
+.scoreDisplay {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.scoreLabel {
+  font-size: 0.55rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  color: #94a3b8;
+}
+
+.scoreValue {
+  font-size: 1rem;
+  font-weight: 900;
+  color: #fff;
+}
+
+.pauseBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.pauseBtn:hover {
   background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
+}
+
+.pulseActive {
+  border-color: #10b981;
   color: #10b981;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 800;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+}
+
+.voyagerHeroArea {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 1rem 0;
+}
+
+.categoryBadgeTop {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  padding: 0.35rem 1rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   margin-bottom: 2rem;
   border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.voyagerFactText {
+  font-size: 1.8rem;
+  font-weight: 900;
+  line-height: 1.5; /* Increased Engagement leading */
+  color: #fff;
+  margin-bottom: 2rem;
+  text-shadow: 0 4px 15px rgba(0, 0, 0, 0.5); /* Pop against background */
+  font-family: 'Outfit', 'Inter', sans-serif;
+}
+
+.voyagerInteractionArea {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.tactileBtn {
+  height: 80px; /* Taller thumb-friendly */
+  border-radius: 1.25rem;
+  font-size: 1.1rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.trueBtnTactile {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  box-shadow: 0 8px 0 #047857;
+}
+
+.trueBtnTactile:active {
+  transform: scale(0.98);
+  box-shadow: 0 4px 0 #047857;
+}
+
+.falseBtnTactile {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  box-shadow: 0 8px 0 #b91c1c;
+}
+
+.falseBtnTactile:active {
+  transform: scale(0.98);
+  box-shadow: 0 4px 0 #b91c1c;
+}
+
+.socialProofBottom {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.4);
+  margin-bottom: 1rem;
+}
+
+.voyagerBottomNav {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: auto;
+}
+
+.navIconBtn {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.6);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.navIconBtn:hover {
+  color: white;
+  transform: scale(1.2);
+}
+
+.nextBtnContainer {
+  position: relative;
+  width: 70px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.progressRing {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: rotate(-90deg);
+}
+
+.progressRingCircle {
+  transition: stroke-dashoffset 0.05s linear;
+}
+
+.progressRingCircleBg {
+  stroke: rgba(255, 255, 255, 0.1);
+}
+
+.navNextBtn {
+  width: 50px;
+  height: 50px;
+  background: white;
+  color: #059669;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  z-index: 2;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.nextBtnContainer:hover .navNextBtn {
+  transform: scale(1.1);
+}
+
+.filterChip {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.6);
+  padding: 0.6rem 1.5rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+:global([data-theme='light']) .filterChip {
+  background: #f1f5f9;
+  color: #64748b;
+  border-color: rgba(0, 0, 0, 0.05);
 }
 
 .factDescription {
@@ -628,38 +960,50 @@
   margin-top: 2rem;
 }
 
-/* Voyager Specifics */
-.voyagerHero {
-  background: linear-gradient(135deg, #059669 0%, #0d9488 100%);
-  border-radius: 2.5rem;
-  padding: 2.5rem;
-  position: relative;
-  overflow: hidden;
+/* /* Voyager Play Button */
+.voyagerPlayWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4rem;
+  gap: 1rem;
+}
+
+.voyagerPlayBtn {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-radius: 50%;
   display: flex;
   align-items: center;
-  gap: 2rem;
-  cursor: pointer;
-  transition: all 0.4s ease;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 20px 40px rgba(16, 185, 129, 0.3);
-}
-
-.voyagerHero:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 30px 60px rgba(13, 148, 136, 0.4);
-}
-
-.voyagerBadge {
-  position: absolute;
-  top: 1.5rem;
-  right: 1.5rem;
-  background: #10b981;
+  justify-content: center;
   color: white;
-  padding: 0.35rem 0.75rem;
-  border-radius: 999px;
-  font-size: 0.65rem;
+  box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.voyagerPlayBtn:hover {
+  transform: scale(1.15) rotate(5deg);
+  box-shadow: 0 15px 35px rgba(16, 185, 129, 0.6);
+  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  border-color: white;
+}
+
+.voyagerPlayLabel {
+  font-size: 0.75rem;
   font-weight: 900;
-  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: #10b981;
+  opacity: 0.8;
+  transition: color 0.5s ease;
+}
+
+:global([data-theme='light']) .voyagerPlayLabel {
+  color: #059669;
+  opacity: 1;
 }
 
 /* Hub Grid */

@@ -232,7 +232,7 @@ export default function ResultPage() {
 
             {/* Score Card */}
             <div className={`${styles.scoreCard} glass-card`}>
-              {quizId && (
+              {(quizId || isMixedMode) && (
                 <div className={styles.nextSetTeaser} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '16px' }}>
                   <button className={styles.nextSetLink} onClick={handleContinueNextSet}>
                     {isMixedMode 
@@ -240,18 +240,18 @@ export default function ResultPage() {
                       : `Continue to ${category?.topic || "Next Set"} (${selectedSetIndex ? `Set ${selectedSetIndex + 1}` : "Next"})`
                     }
                   </button>
-                  <button onClick={() => {
-                      const shareText = `I just scored ${score}/${total} (${percentage}%) in ${category?.topic || 'QuizWeb'}! Think you can beat me?`;
-                      const shareUrl = window.location.origin + `/category/${quizId}`;
-                      if (navigator.share) {
-                          navigator.share({ title: 'My Quiz Score!', text: shareText, url: shareUrl }).catch(()=>{});
-                      } else { 
-                          navigator.clipboard.writeText(`${shareText} ${shareUrl}`); 
-                          toast.success("Score copied to clipboard!"); 
-                      }
-                  }} className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-widest hover:bg-indigo-100 transition-all ml-auto">
-                      <Share2 size={14} /> Share
-                  </button>
+                    <button onClick={() => {
+                        const shareText = `I just scored ${score}/${total} (${percentage}%) in ${category?.topic || mixedSectionName || 'QuizWeb'}! Think you can beat me?`;
+                        const shareUrl = window.location.origin + (quizId ? `/category/${quizId}` : '/');
+                        if (navigator.share) {
+                            navigator.share({ title: 'My Quiz Score!', text: shareText, url: shareUrl }).catch(()=>{});
+                        } else { 
+                            navigator.clipboard.writeText(`${shareText} ${shareUrl}`); 
+                            toast.success("Score copied to clipboard!"); 
+                        }
+                    }} className="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-widest hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all ml-auto">
+                        <Share2 size={14} /> Share
+                    </button>
                 </div>
               )}
               <div className={styles.trophy}>🏆</div>
@@ -313,16 +313,16 @@ export default function ResultPage() {
             </div>
 
             {/* Post-Quiz Donation Prompt */}
-            <Link href="/donate" className="block mt-8 mb-4 p-1 rounded-2xl bg-gradient-to-r from-rose-100 to-rose-50 border border-rose-200 hover:scale-[1.01] transition-transform group">
-              <div className="bg-white rounded-xl px-6 py-4 flex items-center justify-between gap-4">
+            <Link href="/donate" className="block mt-8 mb-4 p-1 rounded-2xl bg-gradient-to-r from-rose-100 to-rose-50 dark:from-rose-900/20 dark:to-rose-800/10 border border-rose-200 dark:border-rose-800/30 hover:scale-[1.01] transition-transform group">
+              <div className="bg-white dark:bg-slate-900/50 rounded-xl px-6 py-4 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">☕</div>
+                  <div className="w-12 h-12 rounded-xl bg-rose-50 dark:bg-rose-900/20 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">☕</div>
                   <div>
-                    <h4 className="text-sm font-black text-slate-800">Support Free Learning</h4>
-                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Help us keep QuizWeb ad-free for everyone</p>
+                    <h4 className="text-sm font-black text-slate-800 dark:text-slate-200">Support Free Learning</h4>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Help us keep QuizWeb ad-free for everyone</p>
                   </div>
                 </div>
-                <div className="hidden sm:flex items-center gap-2 text-rose-500 font-black text-xs uppercase tracking-widest">
+                <div className="hidden sm:flex items-center gap-2 text-rose-500 dark:text-rose-400 font-black text-xs uppercase tracking-widest">
                   Donate <ArrowRight size={14} />
                 </div>
               </div>

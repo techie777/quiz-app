@@ -7,6 +7,7 @@ import { QuizProvider } from "@/context/QuizContext";
 import { UIProvider } from "@/context/UIContext";
 import { MonetizationProvider } from "@/context/MonetizationContext";
 import { Toaster } from "react-hot-toast";
+import GlobalModals from "@/components/GlobalModals";
 
 export default function Providers({ children }) {
   return (
@@ -19,6 +20,7 @@ export default function Providers({ children }) {
               <QuizProvider>{children}</QuizProvider>
             </MonetizationProvider>
           </DataProvider>
+          <GlobalModals />
         </UIProvider>
       </ThemeProvider>
     </SessionProvider>

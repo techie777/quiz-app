@@ -5,7 +5,23 @@ import { CheckCircle, Globe, Maximize2, Minimize2, Eye, Share2, Play, Pause, Spa
 import toast from "react-hot-toast";
 import styles from "@/styles/TrueFalse.module.css";
 import { AnimatePresence, motion } from "framer-motion";
+import confetti from "canvas-confetti";
 import dynamic from "next/dynamic";
+
+const LanguageToggle = ({ lang, onChange, className }) => (
+  <div 
+    className={`${styles.langToggle} ${className}`} 
+    onClick={(e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onChange(lang === "EN" ? "HI" : "EN");
+    }}
+  >
+    <div className={`${styles.langThumb} ${lang === "HI" ? styles.langThumbHindi : ""}`} />
+    <div className={`${styles.langOption} ${lang === "EN" ? styles.langOptionActive : ""}`}>EN</div>
+    <div className={`${styles.langOption} ${lang === "HI" ? styles.langOptionActive : ""}`}>HI</div>
+  </div>
+);
 
 const AntiGravity = dynamic(() => import("../../../components/fun-facts/AntiGravity"), { ssr: false });
 
@@ -13,7 +29,8 @@ export default function TrueFalseVoyager() {
   const cardRef = useRef(null);
   const [question, setQuestion] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [language, setLanguage] = useState("hi"); 
+  const [language, setLanguage] = useState("EN"); 
+  const [timeLeft, setTimeLeft] = useState(100); // Percentage for progress circle
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [showResult, setShowResult] = useState(false);
@@ -46,12 +63,25 @@ export default function TrueFalseVoyager() {
   }, []);
 
   useEffect(() => {
+    let interval;
     if (showResult && autoAdvance && !loading) {
-      const timer = setTimeout(() => {
-        handleNext();
-      }, autoAdvanceDelay);
-      return () => clearTimeout(timer);
+      const startTime = Date.now();
+      const endTime = startTime + autoAdvanceDelay;
+      
+      interval = setInterval(() => {
+        const now = Date.now();
+        const percentage = Math.max(0, 100 - ((now - startTime) / autoAdvanceDelay) * 100);
+        setTimeLeft(percentage);
+        
+        if (now >= endTime) {
+          clearInterval(interval);
+          handleNext();
+        }
+      }, 50);
+    } else {
+      setTimeLeft(100);
     }
+    return () => clearInterval(interval);
   }, [showResult, autoAdvance, autoAdvanceDelay, loading]);
 
   const toggleFullScreen = () => {
@@ -96,6 +126,22 @@ export default function TrueFalseVoyager() {
     
     setIsSubmitting(true);
     
+    // Sprinkle stars!
+    const rect = document.activeElement?.getBoundingClientRect();
+    if (rect) {
+      confetti({
+        particleCount: 40,
+        spread: 70,
+        origin: { x: (rect.left + rect.width / 2) / window.innerWidth, y: (rect.top + rect.height / 2) / window.innerHeight },
+        shapes: ['star'],
+        colors: ['#fbbf24', '#f59e0b', '#10b981', '#34d399'],
+        ticks: 200,
+        gravity: 1.2,
+        decay: 0.94,
+        startVelocity: 30
+      });
+    }
+    
     try {
       const response = await fetch("/api/true-false", {
         method: "POST",
@@ -103,7 +149,7 @@ export default function TrueFalseVoyager() {
         body: JSON.stringify({
           questionId: question.id,
           userAnswer,
-          language
+          language: language.toLowerCase()
         }),
       });
       
@@ -181,76 +227,22 @@ export default function TrueFalseVoyager() {
           ref={cardRef}
           className={`${styles.factCard} ${(!question || question?.id?.charCodeAt(0) % 2 === 0) ? styles.greenTheme : styles.tealTheme} ${showResult ? (result?.correct ? styles.correctGlow : styles.incorrectGlow) : ""}`}
         >
-          {/* Top Control Bar - Improved Layout */}
-          <div className={styles.topControls}>
-            {/* First Row - Language, Auto-advance, Score */}
-            <div className="flex flex-wrap items-center justify-between w-full mb-3 gap-2">
-              {/* Left: Language Toggle */}
-              <div className={styles.compactLangToggle}>
-                    <button 
-                        className={`${styles.compactLangBtn} ${language === "en" ? styles.activeLang : ""}`}
-                        onClick={() => setLanguage("en")}
-                    >EN</button>
-                    <button 
-                        className={`${styles.compactLangBtn} ${language === "hi" ? styles.activeLang : ""}`}
-                        onClick={() => setLanguage("hi")}
-                    >HI</button>
-              </div>
-
-              {/* Center: Score Display */}
-              <div className={styles.scoreBar}>
-                <div className={styles.scorePill}>
-                  Score: <span className={styles.scoreValue}>{score.correct}/{score.total}</span>
-                </div>
-                {streak > 1 && (
-                  <div className={styles.scorePill}>
-                    🔥 {streak} Streak
-                  </div>
-                )}
-              </div>
-
-              {/* Right: Auto-advance Controls */}
-              <div className={styles.compactLangToggle}>
-                    <button 
-                        className={`${styles.compactLangBtn} ${autoAdvance ? styles.activeLang : ""}`}
-                        onClick={() => setAutoAdvance(!autoAdvance)}
-                    >
-                        {autoAdvance ? <Pause size={14} /> : <Play size={14} />}
-                    </button>
-                    {autoAdvance && (
-                        <select 
-                            value={autoAdvanceDelay}
-                            onChange={(e) => setAutoAdvanceDelay(Number(e.target.value))}
-                            className="bg-transparent text-[10px] text-white font-bold px-2 outline-none border-none cursor-pointer"
-                        >
-                            <option value={3000} className="text-black">3s</option>
-                            <option value={5000} className="text-black">5s</option>
-                            <option value={10000} className="text-black">10s</option>
-                        </select>
-                    )}
-              </div>
+          {/* New Top Bar: Simplified Language & Score */}
+          <div className={styles.voyagerTopBar}>
+            <LanguageToggle lang={language} onChange={setLanguage} />
+            
+            <div className={styles.scoreDisplay}>
+               <span className={styles.scoreLabel}>POINTS</span>
+               <span className={styles.scoreValue}>{score.correct} / {score.total}</span>
             </div>
 
-            {/* Second Row - Navigation, Fullscreen, Share */}
-            <div className="flex flex-wrap items-center justify-end gap-3">
-              {/* Navigation Buttons */}
-              <button 
-                disabled={loading || showResult}
-                onClick={handleNext}
-                className={`${styles.iconButton} ${styles.nextFactBtn}`}
-              >
-                <ArrowRight className="w-4 h-4" />
-              </button>
-
-              {/* Fullscreen and Share */}
-              <button onClick={toggleFullScreen} className={styles.iconButton}>
-                {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-              </button>
-
-              <button onClick={handleShare} className={styles.iconButton} disabled={!question}>
-                <Share2 className="w-4 h-4" />
-              </button>
-            </div>
+            <button 
+              className={`${styles.pauseBtn} ${autoAdvance ? styles.pulseActive : ""}`}
+              onClick={() => setAutoAdvance(!autoAdvance)}
+              title={autoAdvance ? "Pause Auto-advance" : "Resume Auto-advance"}
+            >
+              {autoAdvance ? <Pause size={18} /> : <Play size={18} />}
+            </button>
           </div>
 
             
@@ -270,32 +262,41 @@ export default function TrueFalseVoyager() {
                   transition={{ duration: 0.3 }}
                   className="w-full"
                 >
-                   {!showResult ? (
-                     <>
-                        <div className={styles.categoryBadge}>
-                            <Rocket className="w-3 h-3 mr-2" />
-                            {language === "hi" && question.category.nameHi ? question.category.nameHi : question.category.name}
+                    {!showResult ? (
+                      <>
+                        <div className={styles.voyagerHeroArea}>
+                           <div className={styles.categoryBadgeTop}>
+                              {language === "HI" && question.category.nameHi ? question.category.nameHi : question.category.name}
+                           </div>
+
+                           <h2 className={styles.voyagerFactText}>
+                               {language === "HI" && question.statementHi ? question.statementHi : question.statement}
+                           </h2>
+
+                           {question.image && (
+                               <div className={styles.factImageContainer}>
+                                   <img src={question.image} alt="Quest" className={styles.factImage} />
+                               </div>
+                           )}
                         </div>
 
-                        <h2 className={styles.factDescription}>
-                            {language === "hi" && question.statementHi ? question.statementHi : question.statement}
-                        </h2>
-
-                        {question.image && (
-                            <div className={styles.factImageContainer}>
-                                <img src={question.image} alt="Quest" className={styles.factImage} />
-                            </div>
-                        )}
-
-                        <div className={styles.answerButtonsGroup}>
-                            <button className={`${styles.answerBtn} ${styles.trueBtn}`} onClick={() => handleAnswer(true)} disabled={isSubmitting}>
-                                True
+                        <div className={styles.voyagerInteractionArea}>
+                            <button 
+                               className={`${styles.tactileBtn} ${styles.trueBtnTactile}`} 
+                               onClick={() => handleAnswer(true)} 
+                               disabled={isSubmitting}
+                            >
+                                TRUE
                             </button>
-                            <button className={`${styles.answerBtn} ${styles.falseBtn}`} onClick={() => handleAnswer(false)} disabled={isSubmitting}>
-                                False
+                            <button 
+                               className={`${styles.tactileBtn} ${styles.falseBtnTactile}`} 
+                               onClick={() => handleAnswer(false)} 
+                               disabled={isSubmitting}
+                            >
+                                FALSE
                             </button>
                         </div>
-                     </>
+                      </>
                    ) : (
                      <div className={styles.resultContainer}>
                         <div className={`${styles.resultTitle} ${result.correct ? styles.correctText : styles.incorrectText}`}>
@@ -303,7 +304,7 @@ export default function TrueFalseVoyager() {
                         </div>
                         
                         <p className={styles.explanation}>
-                            {language === "hi" && result.explanationHi ? result.explanationHi : (result.explanation || "Correct answer revealed below.")}
+                            {language === "HI" && result.explanationHi ? result.explanationHi : (result.explanation || "Correct answer revealed below.")}
                         </p>
 
                         <div className={styles.correctAnswer}>
@@ -320,15 +321,64 @@ export default function TrueFalseVoyager() {
                      </div>
                    )}
 
-                   <div className={styles.viewCount}>
-                      <Eye className="w-4 h-4" />
-                      <span>{question.views || 0} explorers tested</span>
+                   {/* Social Proof Above Bottom Bar */}
+                   <div className={styles.socialProofBottom}>
+                      <Eye className="w-4 h-4 mr-2" />
+                      <span>{question?.views || 0} explorers tested</span>
                    </div>
                 </motion.div>
               ) : (
-                <div className="text-gray-400">Scanning for more challenges...</div>
+                <motion.div 
+                   key="scanning"
+                   initial={{ opacity: 0 }}
+                   animate={{ opacity: 1 }}
+                   exit={{ opacity: 0 }}
+                   className="text-gray-400 text-center py-20"
+                >
+                   Scanning for more challenges...
+                </motion.div>
               )}
             </AnimatePresence>
+
+            {/* Bottom Navigation Bar - Back Inside */}
+            <div className={styles.voyagerBottomNav}>
+               <button onClick={handleShare} className={styles.navIconBtn} disabled={!question}>
+                  <Share2 size={20} />
+               </button>
+
+               <div className={styles.nextBtnContainer} onClick={handleNext}>
+                  <svg className={styles.progressRing} width="70" height="70">
+                     <circle
+                        className={styles.progressRingCircleBg}
+                        stroke="rgba(255,255,255,0.1)"
+                        strokeWidth="4"
+                        fill="transparent"
+                        r="30"
+                        cx="35"
+                        cy="35"
+                     />
+                     <circle
+                        className={styles.progressRingCircle}
+                        stroke="#10b981"
+                        strokeWidth="4"
+                        strokeDasharray={2 * Math.PI * 30}
+                        strokeDashoffset={2 * Math.PI * 30 * (1 - timeLeft / 100)}
+                        strokeLinecap="round"
+                        fill="transparent"
+                        r="30"
+                        cx="35"
+                        cy="35"
+                     />
+                  </svg>
+                  <button className={styles.navNextBtn}>
+                     <ArrowRight size={24} />
+                  </button>
+               </div>
+
+               <button onClick={toggleFullScreen} className={styles.navIconBtn}>
+                  {isFullScreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+               </button>
+            </div>
           </div>
         </div>
       </div>

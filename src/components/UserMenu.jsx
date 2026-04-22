@@ -5,10 +5,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useUI } from "@/context/UIContext";
 import styles from "@/styles/Header.module.css";
 
 export default function UserMenu() {
   const { data: session } = useSession();
+  const { openOnboarding } = useUI();
   const [isOpen, setIsOpen] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [avatar, setAvatar] = useState("");
@@ -110,6 +112,17 @@ export default function UserMenu() {
                     <Link href="/leaderboard" className={styles.dropdownLink} onClick={() => setIsOpen(false)}>
                       <span className={styles.menuIcon}>🏆</span> Global Leaderboard
                     </Link>
+                  </li>
+                  <li>
+                    <button 
+                      className={styles.dropdownLink} 
+                      onClick={() => {
+                        setIsOpen(false);
+                        openOnboarding();
+                      }}
+                    >
+                      <span className={styles.menuIcon}>🎯</span> Manage Interests
+                    </button>
                   </li>
                 </>
               )}

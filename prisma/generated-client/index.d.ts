@@ -5819,6 +5819,7 @@ export namespace Prisma {
     factsReadCount: number
     tfAnsweredCount: number
     proBadge: number
+    interestedCategories: number
     _all: number
   }
 
@@ -5894,6 +5895,7 @@ export namespace Prisma {
     factsReadCount?: true
     tfAnsweredCount?: true
     proBadge?: true
+    interestedCategories?: true
     _all?: true
   }
 
@@ -6002,6 +6004,7 @@ export namespace Prisma {
     factsReadCount: number
     tfAnsweredCount: number
     proBadge: string | null
+    interestedCategories: string[]
     _count: UserCountAggregateOutputType | null
     _avg: UserAvgAggregateOutputType | null
     _sum: UserSumAggregateOutputType | null
@@ -6042,6 +6045,7 @@ export namespace Prisma {
     factsReadCount?: boolean
     tfAnsweredCount?: boolean
     proBadge?: boolean
+    interestedCategories?: boolean
     accounts?: boolean | User$accountsArgs<ExtArgs>
     favourites?: boolean | User$favouritesArgs<ExtArgs>
     schoolProgress?: boolean | User$schoolProgressArgs<ExtArgs>
@@ -6075,9 +6079,10 @@ export namespace Prisma {
     factsReadCount?: boolean
     tfAnsweredCount?: boolean
     proBadge?: boolean
+    interestedCategories?: boolean
   }
 
-  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "email" | "emailVerified" | "image" | "nickname" | "avatar" | "pin" | "sessionVersion" | "lastLoginAt" | "createdAt" | "updatedAt" | "isPro" | "proExpiresAt" | "purchasedPasses" | "factsReadCount" | "tfAnsweredCount" | "proBadge", ExtArgs["result"]["user"]>
+  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "email" | "emailVerified" | "image" | "nickname" | "avatar" | "pin" | "sessionVersion" | "lastLoginAt" | "createdAt" | "updatedAt" | "isPro" | "proExpiresAt" | "purchasedPasses" | "factsReadCount" | "tfAnsweredCount" | "proBadge" | "interestedCategories", ExtArgs["result"]["user"]>
   export type UserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     accounts?: boolean | User$accountsArgs<ExtArgs>
     favourites?: boolean | User$favouritesArgs<ExtArgs>
@@ -6123,6 +6128,7 @@ export namespace Prisma {
       factsReadCount: number
       tfAnsweredCount: number
       proBadge: string | null
+      interestedCategories: string[]
     }, ExtArgs["result"]["user"]>
     composites: {}
   }
@@ -6542,6 +6548,7 @@ export namespace Prisma {
     readonly factsReadCount: FieldRef<"User", 'Int'>
     readonly tfAnsweredCount: FieldRef<"User", 'Int'>
     readonly proBadge: FieldRef<"User", 'String'>
+    readonly interestedCategories: FieldRef<"User", 'String[]'>
   }
     
 
@@ -55342,7 +55349,8 @@ export namespace Prisma {
     purchasedPasses: 'purchasedPasses',
     factsReadCount: 'factsReadCount',
     tfAnsweredCount: 'tfAnsweredCount',
-    proBadge: 'proBadge'
+    proBadge: 'proBadge',
+    interestedCategories: 'interestedCategories'
   };
 
   export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
@@ -56150,6 +56158,7 @@ export namespace Prisma {
     factsReadCount?: IntFilter<"User"> | number
     tfAnsweredCount?: IntFilter<"User"> | number
     proBadge?: StringNullableFilter<"User"> | string | null
+    interestedCategories?: StringNullableListFilter<"User">
     accounts?: AccountListRelationFilter
     favourites?: FavouriteListRelationFilter
     schoolProgress?: SchoolProgressListRelationFilter
@@ -56180,6 +56189,7 @@ export namespace Prisma {
     factsReadCount?: SortOrder
     tfAnsweredCount?: SortOrder
     proBadge?: SortOrder
+    interestedCategories?: SortOrder
     accounts?: AccountOrderByRelationAggregateInput
     favourites?: FavouriteOrderByRelationAggregateInput
     schoolProgress?: SchoolProgressOrderByRelationAggregateInput
@@ -56213,6 +56223,7 @@ export namespace Prisma {
     factsReadCount?: IntFilter<"User"> | number
     tfAnsweredCount?: IntFilter<"User"> | number
     proBadge?: StringNullableFilter<"User"> | string | null
+    interestedCategories?: StringNullableListFilter<"User">
     accounts?: AccountListRelationFilter
     favourites?: FavouriteListRelationFilter
     schoolProgress?: SchoolProgressListRelationFilter
@@ -56243,6 +56254,7 @@ export namespace Prisma {
     factsReadCount?: SortOrder
     tfAnsweredCount?: SortOrder
     proBadge?: SortOrder
+    interestedCategories?: SortOrder
     _count?: UserCountOrderByAggregateInput
     _avg?: UserAvgOrderByAggregateInput
     _max?: UserMaxOrderByAggregateInput
@@ -56272,6 +56284,7 @@ export namespace Prisma {
     factsReadCount?: IntWithAggregatesFilter<"User"> | number
     tfAnsweredCount?: IntWithAggregatesFilter<"User"> | number
     proBadge?: StringNullableWithAggregatesFilter<"User"> | string | null
+    interestedCategories?: StringNullableListFilter<"User">
   }
 
   export type VerificationTokenWhereInput = {
@@ -59916,6 +59929,7 @@ export namespace Prisma {
     factsReadCount?: number
     tfAnsweredCount?: number
     proBadge?: string | null
+    interestedCategories?: UserCreateinterestedCategoriesInput | string[]
     accounts?: AccountCreateNestedManyWithoutUserInput
     favourites?: FavouriteCreateNestedManyWithoutUserInput
     schoolProgress?: SchoolProgressCreateNestedManyWithoutUserInput
@@ -59946,6 +59960,7 @@ export namespace Prisma {
     factsReadCount?: number
     tfAnsweredCount?: number
     proBadge?: string | null
+    interestedCategories?: UserCreateinterestedCategoriesInput | string[]
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
     favourites?: FavouriteUncheckedCreateNestedManyWithoutUserInput
     schoolProgress?: SchoolProgressUncheckedCreateNestedManyWithoutUserInput
@@ -59975,6 +59990,7 @@ export namespace Prisma {
     factsReadCount?: IntFieldUpdateOperationsInput | number
     tfAnsweredCount?: IntFieldUpdateOperationsInput | number
     proBadge?: NullableStringFieldUpdateOperationsInput | string | null
+    interestedCategories?: UserUpdateinterestedCategoriesInput | string[]
     accounts?: AccountUpdateManyWithoutUserNestedInput
     favourites?: FavouriteUpdateManyWithoutUserNestedInput
     schoolProgress?: SchoolProgressUpdateManyWithoutUserNestedInput
@@ -60004,6 +60020,7 @@ export namespace Prisma {
     factsReadCount?: IntFieldUpdateOperationsInput | number
     tfAnsweredCount?: IntFieldUpdateOperationsInput | number
     proBadge?: NullableStringFieldUpdateOperationsInput | string | null
+    interestedCategories?: UserUpdateinterestedCategoriesInput | string[]
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     favourites?: FavouriteUncheckedUpdateManyWithoutUserNestedInput
     schoolProgress?: SchoolProgressUncheckedUpdateManyWithoutUserNestedInput
@@ -60034,6 +60051,7 @@ export namespace Prisma {
     factsReadCount?: number
     tfAnsweredCount?: number
     proBadge?: string | null
+    interestedCategories?: UserCreateinterestedCategoriesInput | string[]
   }
 
   export type UserUpdateManyMutationInput = {
@@ -60054,6 +60072,7 @@ export namespace Prisma {
     factsReadCount?: IntFieldUpdateOperationsInput | number
     tfAnsweredCount?: IntFieldUpdateOperationsInput | number
     proBadge?: NullableStringFieldUpdateOperationsInput | string | null
+    interestedCategories?: UserUpdateinterestedCategoriesInput | string[]
   }
 
   export type UserUncheckedUpdateManyInput = {
@@ -60074,6 +60093,7 @@ export namespace Prisma {
     factsReadCount?: IntFieldUpdateOperationsInput | number
     tfAnsweredCount?: IntFieldUpdateOperationsInput | number
     proBadge?: NullableStringFieldUpdateOperationsInput | string | null
+    interestedCategories?: UserUpdateinterestedCategoriesInput | string[]
   }
 
   export type VerificationTokenCreateInput = {
@@ -64076,6 +64096,7 @@ export namespace Prisma {
     factsReadCount?: SortOrder
     tfAnsweredCount?: SortOrder
     proBadge?: SortOrder
+    interestedCategories?: SortOrder
   }
 
   export type UserAvgOrderByAggregateInput = {
@@ -66674,6 +66695,10 @@ export namespace Prisma {
     set: string[]
   }
 
+  export type UserCreateinterestedCategoriesInput = {
+    set: string[]
+  }
+
   export type AccountCreateNestedManyWithoutUserInput = {
     create?: XOR<AccountCreateWithoutUserInput, AccountUncheckedCreateWithoutUserInput> | AccountCreateWithoutUserInput[] | AccountUncheckedCreateWithoutUserInput[]
     connectOrCreate?: AccountCreateOrConnectWithoutUserInput | AccountCreateOrConnectWithoutUserInput[]
@@ -66831,6 +66856,11 @@ export namespace Prisma {
   }
 
   export type UserUpdatepurchasedPassesInput = {
+    set?: string[]
+    push?: string | string[]
+  }
+
+  export type UserUpdateinterestedCategoriesInput = {
     set?: string[]
     push?: string | string[]
   }
@@ -69866,6 +69896,7 @@ export namespace Prisma {
     factsReadCount?: number
     tfAnsweredCount?: number
     proBadge?: string | null
+    interestedCategories?: UserCreateinterestedCategoriesInput | string[]
     favourites?: FavouriteCreateNestedManyWithoutUserInput
     schoolProgress?: SchoolProgressCreateNestedManyWithoutUserInput
     chapterAttempts?: ChapterAttemptCreateNestedManyWithoutUserInput
@@ -69895,6 +69926,7 @@ export namespace Prisma {
     factsReadCount?: number
     tfAnsweredCount?: number
     proBadge?: string | null
+    interestedCategories?: UserCreateinterestedCategoriesInput | string[]
     favourites?: FavouriteUncheckedCreateNestedManyWithoutUserInput
     schoolProgress?: SchoolProgressUncheckedCreateNestedManyWithoutUserInput
     chapterAttempts?: ChapterAttemptUncheckedCreateNestedManyWithoutUserInput
@@ -69939,6 +69971,7 @@ export namespace Prisma {
     factsReadCount?: IntFieldUpdateOperationsInput | number
     tfAnsweredCount?: IntFieldUpdateOperationsInput | number
     proBadge?: NullableStringFieldUpdateOperationsInput | string | null
+    interestedCategories?: UserUpdateinterestedCategoriesInput | string[]
     favourites?: FavouriteUpdateManyWithoutUserNestedInput
     schoolProgress?: SchoolProgressUpdateManyWithoutUserNestedInput
     chapterAttempts?: ChapterAttemptUpdateManyWithoutUserNestedInput
@@ -69967,6 +70000,7 @@ export namespace Prisma {
     factsReadCount?: IntFieldUpdateOperationsInput | number
     tfAnsweredCount?: IntFieldUpdateOperationsInput | number
     proBadge?: NullableStringFieldUpdateOperationsInput | string | null
+    interestedCategories?: UserUpdateinterestedCategoriesInput | string[]
     favourites?: FavouriteUncheckedUpdateManyWithoutUserNestedInput
     schoolProgress?: SchoolProgressUncheckedUpdateManyWithoutUserNestedInput
     chapterAttempts?: ChapterAttemptUncheckedUpdateManyWithoutUserNestedInput
@@ -70444,6 +70478,7 @@ export namespace Prisma {
     factsReadCount?: number
     tfAnsweredCount?: number
     proBadge?: string | null
+    interestedCategories?: UserCreateinterestedCategoriesInput | string[]
     accounts?: AccountCreateNestedManyWithoutUserInput
     favourites?: FavouriteCreateNestedManyWithoutUserInput
     schoolProgress?: SchoolProgressCreateNestedManyWithoutUserInput
@@ -70473,6 +70508,7 @@ export namespace Prisma {
     factsReadCount?: number
     tfAnsweredCount?: number
     proBadge?: string | null
+    interestedCategories?: UserCreateinterestedCategoriesInput | string[]
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
     favourites?: FavouriteUncheckedCreateNestedManyWithoutUserInput
     schoolProgress?: SchoolProgressUncheckedCreateNestedManyWithoutUserInput
@@ -70566,6 +70602,7 @@ export namespace Prisma {
     factsReadCount?: IntFieldUpdateOperationsInput | number
     tfAnsweredCount?: IntFieldUpdateOperationsInput | number
     proBadge?: NullableStringFieldUpdateOperationsInput | string | null
+    interestedCategories?: UserUpdateinterestedCategoriesInput | string[]
     accounts?: AccountUpdateManyWithoutUserNestedInput
     favourites?: FavouriteUpdateManyWithoutUserNestedInput
     schoolProgress?: SchoolProgressUpdateManyWithoutUserNestedInput
@@ -70594,6 +70631,7 @@ export namespace Prisma {
     factsReadCount?: IntFieldUpdateOperationsInput | number
     tfAnsweredCount?: IntFieldUpdateOperationsInput | number
     proBadge?: NullableStringFieldUpdateOperationsInput | string | null
+    interestedCategories?: UserUpdateinterestedCategoriesInput | string[]
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     favourites?: FavouriteUncheckedUpdateManyWithoutUserNestedInput
     schoolProgress?: SchoolProgressUncheckedUpdateManyWithoutUserNestedInput
@@ -70676,6 +70714,7 @@ export namespace Prisma {
     factsReadCount?: number
     tfAnsweredCount?: number
     proBadge?: string | null
+    interestedCategories?: UserCreateinterestedCategoriesInput | string[]
     accounts?: AccountCreateNestedManyWithoutUserInput
     schoolProgress?: SchoolProgressCreateNestedManyWithoutUserInput
     chapterAttempts?: ChapterAttemptCreateNestedManyWithoutUserInput
@@ -70705,6 +70744,7 @@ export namespace Prisma {
     factsReadCount?: number
     tfAnsweredCount?: number
     proBadge?: string | null
+    interestedCategories?: UserCreateinterestedCategoriesInput | string[]
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
     schoolProgress?: SchoolProgressUncheckedCreateNestedManyWithoutUserInput
     chapterAttempts?: ChapterAttemptUncheckedCreateNestedManyWithoutUserInput
@@ -70778,6 +70818,7 @@ export namespace Prisma {
     factsReadCount?: IntFieldUpdateOperationsInput | number
     tfAnsweredCount?: IntFieldUpdateOperationsInput | number
     proBadge?: NullableStringFieldUpdateOperationsInput | string | null
+    interestedCategories?: UserUpdateinterestedCategoriesInput | string[]
     accounts?: AccountUpdateManyWithoutUserNestedInput
     schoolProgress?: SchoolProgressUpdateManyWithoutUserNestedInput
     chapterAttempts?: ChapterAttemptUpdateManyWithoutUserNestedInput
@@ -70806,6 +70847,7 @@ export namespace Prisma {
     factsReadCount?: IntFieldUpdateOperationsInput | number
     tfAnsweredCount?: IntFieldUpdateOperationsInput | number
     proBadge?: NullableStringFieldUpdateOperationsInput | string | null
+    interestedCategories?: UserUpdateinterestedCategoriesInput | string[]
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     schoolProgress?: SchoolProgressUncheckedUpdateManyWithoutUserNestedInput
     chapterAttempts?: ChapterAttemptUncheckedUpdateManyWithoutUserNestedInput
@@ -71754,6 +71796,7 @@ export namespace Prisma {
     factsReadCount?: number
     tfAnsweredCount?: number
     proBadge?: string | null
+    interestedCategories?: UserCreateinterestedCategoriesInput | string[]
     accounts?: AccountCreateNestedManyWithoutUserInput
     favourites?: FavouriteCreateNestedManyWithoutUserInput
     chapterAttempts?: ChapterAttemptCreateNestedManyWithoutUserInput
@@ -71783,6 +71826,7 @@ export namespace Prisma {
     factsReadCount?: number
     tfAnsweredCount?: number
     proBadge?: string | null
+    interestedCategories?: UserCreateinterestedCategoriesInput | string[]
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
     favourites?: FavouriteUncheckedCreateNestedManyWithoutUserInput
     chapterAttempts?: ChapterAttemptUncheckedCreateNestedManyWithoutUserInput
@@ -71854,6 +71898,7 @@ export namespace Prisma {
     factsReadCount?: IntFieldUpdateOperationsInput | number
     tfAnsweredCount?: IntFieldUpdateOperationsInput | number
     proBadge?: NullableStringFieldUpdateOperationsInput | string | null
+    interestedCategories?: UserUpdateinterestedCategoriesInput | string[]
     accounts?: AccountUpdateManyWithoutUserNestedInput
     favourites?: FavouriteUpdateManyWithoutUserNestedInput
     chapterAttempts?: ChapterAttemptUpdateManyWithoutUserNestedInput
@@ -71882,6 +71927,7 @@ export namespace Prisma {
     factsReadCount?: IntFieldUpdateOperationsInput | number
     tfAnsweredCount?: IntFieldUpdateOperationsInput | number
     proBadge?: NullableStringFieldUpdateOperationsInput | string | null
+    interestedCategories?: UserUpdateinterestedCategoriesInput | string[]
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     favourites?: FavouriteUncheckedUpdateManyWithoutUserNestedInput
     chapterAttempts?: ChapterAttemptUncheckedUpdateManyWithoutUserNestedInput
@@ -72605,6 +72651,7 @@ export namespace Prisma {
     factsReadCount?: number
     tfAnsweredCount?: number
     proBadge?: string | null
+    interestedCategories?: UserCreateinterestedCategoriesInput | string[]
     accounts?: AccountCreateNestedManyWithoutUserInput
     favourites?: FavouriteCreateNestedManyWithoutUserInput
     schoolProgress?: SchoolProgressCreateNestedManyWithoutUserInput
@@ -72634,6 +72681,7 @@ export namespace Prisma {
     factsReadCount?: number
     tfAnsweredCount?: number
     proBadge?: string | null
+    interestedCategories?: UserCreateinterestedCategoriesInput | string[]
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
     favourites?: FavouriteUncheckedCreateNestedManyWithoutUserInput
     schoolProgress?: SchoolProgressUncheckedCreateNestedManyWithoutUserInput
@@ -72705,6 +72753,7 @@ export namespace Prisma {
     factsReadCount?: IntFieldUpdateOperationsInput | number
     tfAnsweredCount?: IntFieldUpdateOperationsInput | number
     proBadge?: NullableStringFieldUpdateOperationsInput | string | null
+    interestedCategories?: UserUpdateinterestedCategoriesInput | string[]
     accounts?: AccountUpdateManyWithoutUserNestedInput
     favourites?: FavouriteUpdateManyWithoutUserNestedInput
     schoolProgress?: SchoolProgressUpdateManyWithoutUserNestedInput
@@ -72733,6 +72782,7 @@ export namespace Prisma {
     factsReadCount?: IntFieldUpdateOperationsInput | number
     tfAnsweredCount?: IntFieldUpdateOperationsInput | number
     proBadge?: NullableStringFieldUpdateOperationsInput | string | null
+    interestedCategories?: UserUpdateinterestedCategoriesInput | string[]
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     favourites?: FavouriteUncheckedUpdateManyWithoutUserNestedInput
     schoolProgress?: SchoolProgressUncheckedUpdateManyWithoutUserNestedInput
@@ -73885,6 +73935,7 @@ export namespace Prisma {
     factsReadCount?: number
     tfAnsweredCount?: number
     proBadge?: string | null
+    interestedCategories?: UserCreateinterestedCategoriesInput | string[]
     accounts?: AccountCreateNestedManyWithoutUserInput
     favourites?: FavouriteCreateNestedManyWithoutUserInput
     schoolProgress?: SchoolProgressCreateNestedManyWithoutUserInput
@@ -73914,6 +73965,7 @@ export namespace Prisma {
     factsReadCount?: number
     tfAnsweredCount?: number
     proBadge?: string | null
+    interestedCategories?: UserCreateinterestedCategoriesInput | string[]
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
     favourites?: FavouriteUncheckedCreateNestedManyWithoutUserInput
     schoolProgress?: SchoolProgressUncheckedCreateNestedManyWithoutUserInput
@@ -74009,6 +74061,7 @@ export namespace Prisma {
     factsReadCount?: IntFieldUpdateOperationsInput | number
     tfAnsweredCount?: IntFieldUpdateOperationsInput | number
     proBadge?: NullableStringFieldUpdateOperationsInput | string | null
+    interestedCategories?: UserUpdateinterestedCategoriesInput | string[]
     accounts?: AccountUpdateManyWithoutUserNestedInput
     favourites?: FavouriteUpdateManyWithoutUserNestedInput
     schoolProgress?: SchoolProgressUpdateManyWithoutUserNestedInput
@@ -74037,6 +74090,7 @@ export namespace Prisma {
     factsReadCount?: IntFieldUpdateOperationsInput | number
     tfAnsweredCount?: IntFieldUpdateOperationsInput | number
     proBadge?: NullableStringFieldUpdateOperationsInput | string | null
+    interestedCategories?: UserUpdateinterestedCategoriesInput | string[]
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     favourites?: FavouriteUncheckedUpdateManyWithoutUserNestedInput
     schoolProgress?: SchoolProgressUncheckedUpdateManyWithoutUserNestedInput
@@ -74703,6 +74757,7 @@ export namespace Prisma {
     factsReadCount?: number
     tfAnsweredCount?: number
     proBadge?: string | null
+    interestedCategories?: UserCreateinterestedCategoriesInput | string[]
     accounts?: AccountCreateNestedManyWithoutUserInput
     favourites?: FavouriteCreateNestedManyWithoutUserInput
     schoolProgress?: SchoolProgressCreateNestedManyWithoutUserInput
@@ -74732,6 +74787,7 @@ export namespace Prisma {
     factsReadCount?: number
     tfAnsweredCount?: number
     proBadge?: string | null
+    interestedCategories?: UserCreateinterestedCategoriesInput | string[]
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
     favourites?: FavouriteUncheckedCreateNestedManyWithoutUserInput
     schoolProgress?: SchoolProgressUncheckedCreateNestedManyWithoutUserInput
@@ -74813,6 +74869,7 @@ export namespace Prisma {
     factsReadCount?: IntFieldUpdateOperationsInput | number
     tfAnsweredCount?: IntFieldUpdateOperationsInput | number
     proBadge?: NullableStringFieldUpdateOperationsInput | string | null
+    interestedCategories?: UserUpdateinterestedCategoriesInput | string[]
     accounts?: AccountUpdateManyWithoutUserNestedInput
     favourites?: FavouriteUpdateManyWithoutUserNestedInput
     schoolProgress?: SchoolProgressUpdateManyWithoutUserNestedInput
@@ -74841,6 +74898,7 @@ export namespace Prisma {
     factsReadCount?: IntFieldUpdateOperationsInput | number
     tfAnsweredCount?: IntFieldUpdateOperationsInput | number
     proBadge?: NullableStringFieldUpdateOperationsInput | string | null
+    interestedCategories?: UserUpdateinterestedCategoriesInput | string[]
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     favourites?: FavouriteUncheckedUpdateManyWithoutUserNestedInput
     schoolProgress?: SchoolProgressUncheckedUpdateManyWithoutUserNestedInput
@@ -74911,6 +74969,7 @@ export namespace Prisma {
     factsReadCount?: number
     tfAnsweredCount?: number
     proBadge?: string | null
+    interestedCategories?: UserCreateinterestedCategoriesInput | string[]
     accounts?: AccountCreateNestedManyWithoutUserInput
     favourites?: FavouriteCreateNestedManyWithoutUserInput
     schoolProgress?: SchoolProgressCreateNestedManyWithoutUserInput
@@ -74940,6 +74999,7 @@ export namespace Prisma {
     factsReadCount?: number
     tfAnsweredCount?: number
     proBadge?: string | null
+    interestedCategories?: UserCreateinterestedCategoriesInput | string[]
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
     favourites?: FavouriteUncheckedCreateNestedManyWithoutUserInput
     schoolProgress?: SchoolProgressUncheckedCreateNestedManyWithoutUserInput
@@ -75021,6 +75081,7 @@ export namespace Prisma {
     factsReadCount?: IntFieldUpdateOperationsInput | number
     tfAnsweredCount?: IntFieldUpdateOperationsInput | number
     proBadge?: NullableStringFieldUpdateOperationsInput | string | null
+    interestedCategories?: UserUpdateinterestedCategoriesInput | string[]
     accounts?: AccountUpdateManyWithoutUserNestedInput
     favourites?: FavouriteUpdateManyWithoutUserNestedInput
     schoolProgress?: SchoolProgressUpdateManyWithoutUserNestedInput
@@ -75049,6 +75110,7 @@ export namespace Prisma {
     factsReadCount?: IntFieldUpdateOperationsInput | number
     tfAnsweredCount?: IntFieldUpdateOperationsInput | number
     proBadge?: NullableStringFieldUpdateOperationsInput | string | null
+    interestedCategories?: UserUpdateinterestedCategoriesInput | string[]
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     favourites?: FavouriteUncheckedUpdateManyWithoutUserNestedInput
     schoolProgress?: SchoolProgressUncheckedUpdateManyWithoutUserNestedInput
@@ -75119,6 +75181,7 @@ export namespace Prisma {
     factsReadCount?: number
     tfAnsweredCount?: number
     proBadge?: string | null
+    interestedCategories?: UserCreateinterestedCategoriesInput | string[]
     accounts?: AccountCreateNestedManyWithoutUserInput
     favourites?: FavouriteCreateNestedManyWithoutUserInput
     schoolProgress?: SchoolProgressCreateNestedManyWithoutUserInput
@@ -75148,6 +75211,7 @@ export namespace Prisma {
     factsReadCount?: number
     tfAnsweredCount?: number
     proBadge?: string | null
+    interestedCategories?: UserCreateinterestedCategoriesInput | string[]
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
     favourites?: FavouriteUncheckedCreateNestedManyWithoutUserInput
     schoolProgress?: SchoolProgressUncheckedCreateNestedManyWithoutUserInput
@@ -75229,6 +75293,7 @@ export namespace Prisma {
     factsReadCount?: IntFieldUpdateOperationsInput | number
     tfAnsweredCount?: IntFieldUpdateOperationsInput | number
     proBadge?: NullableStringFieldUpdateOperationsInput | string | null
+    interestedCategories?: UserUpdateinterestedCategoriesInput | string[]
     accounts?: AccountUpdateManyWithoutUserNestedInput
     favourites?: FavouriteUpdateManyWithoutUserNestedInput
     schoolProgress?: SchoolProgressUpdateManyWithoutUserNestedInput
@@ -75257,6 +75322,7 @@ export namespace Prisma {
     factsReadCount?: IntFieldUpdateOperationsInput | number
     tfAnsweredCount?: IntFieldUpdateOperationsInput | number
     proBadge?: NullableStringFieldUpdateOperationsInput | string | null
+    interestedCategories?: UserUpdateinterestedCategoriesInput | string[]
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     favourites?: FavouriteUncheckedUpdateManyWithoutUserNestedInput
     schoolProgress?: SchoolProgressUncheckedUpdateManyWithoutUserNestedInput

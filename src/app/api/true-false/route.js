@@ -4,9 +4,33 @@ import { prisma } from "@/lib/prisma";
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const categoryId = searchParams.get("categoryId");
+    const id = searchParams.get("id");
+    const categorySlug = searchParams.get("categoryId"); // This was being passed as slug from frontend
     const omitQuestionId = searchParams.get("omitQuestionId");
     
+    // 1. If a specific ID is requested, return it directly
+    if (id) {
+      const question = await prisma.trueFalseQuestion.findUnique({
+        where: { id, hidden: false },
+        include: { category: true }
+      });
+      if (question) {
+        // Increment views
+        await prisma.trueFalseQuestion.update({
+          where: { id: question.id },
+          data: { views: { increment: 1 } }
+        });
+        return NextResponse.json({ question }, { status: 200 });
+      }
+    }
+
+    // 2. Resolve category slug to ID if necessary
+    let categoryId = null;
+    if (categorySlug && categorySlug !== "all") {
+       const cat = await prisma.trueFalseCategory.findUnique({ where: { slug: categorySlug } });
+       if (cat) categoryId = cat.id;
+    }
+
     const whereClause = {
       hidden: false,
       ...(categoryId && { categoryId }),

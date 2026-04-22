@@ -56,31 +56,31 @@ export default function AdGate({ isOpen, onClose, onComplete, title = "Unlocking
           initial={{ scale: 0.9, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.9, opacity: 0, y: 20 }}
-          className="relative bg-white w-full max-w-sm rounded-[32px] shadow-2xl overflow-hidden text-center p-6"
+          className="relative bg-white dark:bg-slate-800 w-full max-w-sm rounded-[32px] shadow-2xl overflow-hidden text-center p-6"
         >
           {/* Top accent */}
           <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-orange-400 to-rose-500" />
           
           <button 
             onClick={onClose}
-            className="absolute top-4 right-4 p-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 transition text-slate-400 hover:text-rose-500"
+            className="absolute top-4 right-4 p-1.5 rounded-xl bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 transition text-slate-400 hover:text-rose-500"
             title="Close"
           >
             <X size={18} strokeWidth={3} />
           </button>
 
-          <div className="w-16 h-16 bg-orange-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Zap className="text-orange-500 animate-pulse" size={32} />
+          <div className="w-16 h-16 bg-orange-50 dark:bg-orange-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Zap className="text-orange-500" size={32} />
           </div>
 
-          <h3 className="text-xl font-black text-slate-900 mb-1">{title}</h3>
-          <p className="text-slate-500 text-[12px] mb-6 px-4 leading-normal">
+          <h3 className="text-xl font-black text-slate-900 dark:text-white mb-1">{title}</h3>
+          <p className="text-slate-500 dark:text-slate-400 text-[12px] mb-6 px-4 leading-normal">
             Support us to keep learning free for everyone. Watch this short update to continue.
           </p>
 
           {/* Ad Simulation Slot */}
-          <div className="bg-slate-50 rounded-2xl p-4 mb-6 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center">
-            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Ad Simulation</div>
+          <div className="bg-slate-50 dark:bg-slate-700/30 rounded-2xl p-4 mb-6 border-2 border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center">
+            <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Ad Simulation</div>
             <div className="flex items-center gap-3">
               <Sparkles className="text-orange-300" size={16} />
               <div className="text-lg font-black text-slate-300">Google Ads</div>
@@ -90,7 +90,7 @@ export default function AdGate({ isOpen, onClose, onComplete, title = "Unlocking
 
           <div className="space-y-3">
             {!canSkip ? (
-              <div className="w-full py-3 bg-slate-50 text-slate-400 rounded-xl font-bold text-sm flex items-center justify-center gap-2">
+              <div className="w-full py-3 bg-slate-50 dark:bg-slate-700/50 text-slate-400 dark:text-slate-500 rounded-xl font-bold text-sm flex items-center justify-center gap-2">
                 <Clock size={16} /> Continue in {timeLeft}s...
               </div>
             ) : (
@@ -112,7 +112,7 @@ export default function AdGate({ isOpen, onClose, onComplete, title = "Unlocking
             </Link>
           </div>
 
-          <div className="mt-6 pt-4 border-t border-slate-50 flex items-center justify-center gap-4 text-[9px] font-black uppercase tracking-widest text-slate-200">
+          <div className="mt-6 pt-4 border-t border-slate-50 dark:border-slate-700 flex items-center justify-center gap-4 text-[9px] font-black uppercase tracking-widest text-slate-200 dark:text-slate-600">
              <div className="flex items-center gap-1"><ShieldCheck size={10} /> Secure</div>
              <div className="flex items-center gap-1"><Zap size={10} /> Instant</div>
           </div>

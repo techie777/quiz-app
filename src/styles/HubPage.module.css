@@ -4,6 +4,10 @@
   padding-bottom: 5rem;
 }
 
+[data-theme='dark'] .container {
+  background: radial-gradient(circle at 50% 0%, #0a0e27, #020617);
+}
+
 .heroContent {
   max-width: 1400px;
   margin: 0 auto;
@@ -44,6 +48,11 @@
   min-height: 500px;
 }
 
+[data-theme='dark'] .card {
+  background: var(--bg-secondary);
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
 .card:hover {
   transform: translateY(-8px) scale(1.01);
   box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.1), 0 18px 36px -18px rgba(0, 0, 0, 0.08);
@@ -60,6 +69,10 @@
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0));
   pointer-events: none;
   z-index: 1;
+}
+
+[data-theme='dark'] .card::before {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0));
 }
 
 .cardIcon {
@@ -195,6 +208,10 @@
   position: relative;
   z-index: 2;
   max-width: 62%; /* Tightened to prevent overlap */
+}
+
+[data-theme='dark'] .cardDescription {
+  color: #94a3b8;
 }
 
 .linksGrid {
@@ -422,6 +439,10 @@
   font-weight: 800;
   color: #1e293b;
   transition: gap 0.3s ease;
+}
+
+[data-theme='dark'] .viewAll {
+  color: #e2e8f0;
 }
 
 .card:hover .viewAll {

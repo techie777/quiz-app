@@ -36,6 +36,7 @@ export default function AdminTrueFalsePage() {
   // Bulk Upload
   const [bulkFile, setBulkFile] = useState(null);
   const [bulkUploading, setBulkUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [bulkResults, setBulkResults] = useState(null);
   
   // Filters
@@ -112,7 +113,7 @@ export default function AdminTrueFalsePage() {
       return;
     }
 
-    const slug = catSlug.trim() || catName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const slug = catSlug.trim() || catName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     
     try {
       const response = await fetch("/api/admin/true-false", {
@@ -272,6 +273,34 @@ export default function AdminTrueFalsePage() {
     setQuestionImage("");
   };
 
+  const downloadTemplate = () => {
+    const templateData = [
+      {
+        "Category EN": "Human Body",
+        "Category HI": "मानव शरीर",
+        "Question EN": "The human heart beats about 100,000 times a day.",
+        "Question HI": "मानव हृदय दिन में लगभग 1,00,000 बार धड़कता है।",
+        "True/False": "True",
+        "Explanation EN": "An average heart beats 70-80 times per minute, totaling over 100k a day.",
+        "Explanation HI": "एक औसत हृदय प्रति मिनट 70-80 बार धड़कता है, जो दिन में 1 लाख से अधिक होता है।"
+      },
+      {
+        "Category EN": "Human Body",
+        "Category HI": "मानव शरीर",
+        "Question EN": "Adults have more bones than babies.",
+        "Question HI": "वयस्कों में शिशुओं की तुलना में अधिक हड्डियाँ होती हैं।",
+        "True/False": "False",
+        "Explanation EN": "Babies are born with 300 bones, but many fuse together to form 206 in adults.",
+        "Explanation HI": "बच्चे 300 हड्डियों के साथ पैदा होते हैं, लेकिन वयस्कों में कई जुड़कर 206 रह जाती हैं।"
+      }
+    ];
+
+    const worksheet = XLSX.utils.json_to_sheet(templateData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Template");
+    XLSX.writeFile(workbook, "TrueFalse_Bulk_Upload_Template.xlsx");
+  };
+
   const handleBulkUpload = async () => {
     if (!bulkFile) {
       toast.error("Please select a file to upload");
@@ -302,7 +331,7 @@ export default function AdminTrueFalsePage() {
           const rows = jsonData.slice(1);
           
           // Validate headers
-          const requiredHeaders = ['Category', 'Question', 'True/False'];
+          const requiredHeaders = ['Category EN', 'Question EN', 'True/False'];
           const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
           
           if (missingHeaders.length > 0) {
@@ -321,7 +350,11 @@ export default function AdminTrueFalsePage() {
             questionsCreated: 0
           };
 
+          // Maintain a local copy of categories to avoid duplicate creation in the loop
+          let localCategories = [...categories];
+
           for (let i = 0; i < rows.length; i++) {
+            setUploadProgress(Math.round(((i + 1) / rows.length) * 100));
             const row = rows[i];
             if (!row || row.length === 0) continue;
 
@@ -332,7 +365,7 @@ export default function AdminTrueFalsePage() {
               });
 
               // Validate required fields
-              if (!rowData.Category || !rowData.Question || rowData['True/False'] === undefined) {
+              if (!rowData['Category EN'] || !rowData['Question EN'] || rowData['True/False'] === undefined) {
                 results.failed++;
                 results.errors.push(`Row ${i + 2}: Missing required fields`);
                 continue;
@@ -343,8 +376,8 @@ export default function AdminTrueFalsePage() {
               const correctAnswer = trueFalseValue === 'true' || trueFalseValue === '1' || trueFalseValue === 'yes';
 
               // Create or find category
-              let category = categories.find(cat => 
-                cat.name.toLowerCase() === rowData.Category.toLowerCase().trim()
+              let category = localCategories.find(cat => 
+                cat.name.toLowerCase() === rowData['Category EN'].toLowerCase().trim()
               );
 
               if (!category) {
@@ -353,22 +386,23 @@ export default function AdminTrueFalsePage() {
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
                     type: "category",
-                    name: rowData.Category.trim(),
-                    nameHi: rowData['Category Hindi']?.trim() || '',
-                    slug: rowData.Category.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-'),
+                    name: rowData['Category EN'].trim(),
+                    nameHi: rowData['Category HI']?.trim() || '',
+                    slug: rowData['Category EN'].toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
                     image: '',
                     sortOrder: 0
                   })
                 });
 
+                const catData = await catResponse.json();
                 if (catResponse.ok) {
-                  const catData = await catResponse.json();
                   category = catData.category;
                   results.categoriesCreated.add(category.name);
-                  await fetchCategories(); // Refresh categories
+                  localCategories.push(category);
+                  setCategories(prev => [...prev, category]);
                 } else {
                   results.failed++;
-                  results.errors.push(`Row ${i + 2}: Failed to create category`);
+                  results.errors.push(`Row ${i + 2}: Category Creation Failed - ${catData.error || 'Unknown error'}`);
                   continue;
                 }
               }
@@ -380,12 +414,12 @@ export default function AdminTrueFalsePage() {
                 body: JSON.stringify({
                   type: "question",
                   categoryId: category.id,
-                  statement: rowData.Question.trim(),
-                  statementHi: rowData['Question Hindi']?.trim() || '',
+                  statement: rowData['Question EN'].trim(),
+                  statementHi: rowData['Question HI']?.trim() || '',
                   correctAnswer: correctAnswer,
-                  explanation: rowData['Explanation']?.trim() || '',
-                  explanationHi: rowData['Explanation Hindi']?.trim() || '',
-                  image: rowData['Image']?.trim() || ''
+                  explanation: rowData['Explanation EN']?.trim() || '',
+                  explanationHi: rowData['Explanation HI']?.trim() || '',
+                  image: ''
                 })
               });
 
@@ -395,12 +429,12 @@ export default function AdminTrueFalsePage() {
               } else {
                 results.failed++;
                 const errorData = await questionResponse.json();
-                results.errors.push(`Row ${i + 2}: ${errorData.error || 'Failed to create question'}`);
+                results.errors.push(`Row ${i + 2}: Question Creation Failed - ${errorData.error || 'Unknown error'}`);
               }
 
             } catch (error) {
               results.failed++;
-              results.errors.push(`Row ${i + 2}: ${error.message}`);
+              results.errors.push(`Row ${i + 2}: Unexpected error - ${error.message}`);
             }
           }
 
@@ -838,38 +872,62 @@ export default function AdminTrueFalsePage() {
                 <div className="bg-gray-100 p-3 rounded text-xs">
                   <p><strong>Required Columns:</strong></p>
                   <ul className="ml-4 mb-2">
-                    <li>Category (English name)</li>
-                    <li>Question (English statement)</li>
+                    <li>Category EN (English name)</li>
+                    <li>Question EN (English statement)</li>
                     <li>True/False (true/false/1/0/yes/no)</li>
                   </ul>
                   <p><strong>Optional Columns:</strong></p>
                   <ul className="ml-4 mb-2">
-                    <li>Category Hindi (Hindi category name)</li>
-                    <li>Question Hindi (Hindi statement)</li>
-                    <li>Explanation (English explanation)</li>
-                    <li>Explanation Hindi (Hindi explanation)</li>
-                    <li>Image (URL)</li>
+                    <li>Category HI (Hindi category name)</li>
+                    <li>Question HI (Hindi statement)</li>
+                    <li>Explanation EN (English explanation)</li>
+                    <li>Explanation HI (Hindi explanation)</li>
                   </ul>
                 </div>
               </div>
               
-              <button
-                onClick={handleBulkUpload}
-                disabled={!bulkFile || bulkUploading}
-                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-400"
-              >
-                {bulkUploading ? (
-                  <>
-                    <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <FileSpreadsheet size={16} className="inline mr-2" />
-                    Upload Questions
-                  </>
-                )}
-              </button>
+              {bulkUploading && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-medium">
+                    <span>Uploading questions...</span>
+                    <span>{uploadProgress}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2.5">
+                    <div 
+                      className="bg-green-500 h-2.5 rounded-full transition-all duration-300" 
+                      style={{ width: `${uploadProgress}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <button
+                  onClick={handleBulkUpload}
+                  disabled={!bulkFile || bulkUploading}
+                  className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-400 flex items-center"
+                >
+                  {bulkUploading ? (
+                    <>
+                      <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Processing {uploadProgress}%
+                    </>
+                  ) : (
+                    <>
+                      <Upload size={16} className="mr-2" />
+                      Upload Questions
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={downloadTemplate}
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center"
+                >
+                  <Download size={16} className="mr-2" />
+                  Download Template
+                </button>
+              </div>
               
               {bulkResults && (
                 <div className="mt-4 p-4 bg-gray-50 rounded">

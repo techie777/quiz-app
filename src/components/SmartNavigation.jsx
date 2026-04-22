@@ -10,6 +10,7 @@ import { ChevronDown, ChevronUp, Heart } from "lucide-react";
 import styles from "@/styles/SmartNavigation.module.css";
 
 const fallbackNavigationItems = [
+  { name: "Personalized Quiz", href: "/#personalized", icon: "✨", description: "Tailored for you", isPersonalized: true },
   { name: "Home", href: "/", icon: "🏠", description: "Master Hub" },
   { name: "Global Leaderboard", href: "/leaderboard", icon: "🏆", description: "World intelligence rankings" },
   { name: "QuizWeb Pro", href: "/pro", icon: "👑", description: "Unlock premium features" },
@@ -24,7 +25,7 @@ const fallbackNavigationItems = [
 const HIDDEN_PATHS = ["/daily", "/govt-jobs-alerts", "/govt-study", "/book-my-course", "/school-study"];
 
 export default function SmartNavigation() {
-  const { isMobileMenuOpen, closeMobileMenu } = useUI();
+  const { isMobileMenuOpen, closeMobileMenu, openOnboarding } = useUI();
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
   const { data: session, status } = useSession();
@@ -49,7 +50,13 @@ export default function SmartNavigation() {
           const data = await res.json();
           if (Array.isArray(data) && data.length > 0) {
             const visibleItems = data.filter(item => !HIDDEN_PATHS.includes(item.href));
-            setNavigationItems(visibleItems);
+            // Always keep Personalized Quiz at the top if it exists in fallback
+            const personalizedItem = fallbackNavigationItems.find(i => i.isPersonalized);
+            if (personalizedItem) {
+              setNavigationItems([personalizedItem, ...visibleItems]);
+            } else {
+              setNavigationItems(visibleItems);
+            }
           }
         }
       } catch (e) { console.error("Nav fetch error:", e); }
@@ -103,11 +110,17 @@ export default function SmartNavigation() {
                 <li key={item.href} role="none">
                   <Link
                     href={item.href}
-                    className={`${styles.navLink} ${isActive ? styles.active : ''}`}
+                    className={`${styles.navLink} ${isActive ? styles.active : ''} ${item.isPersonalized ? styles.personalizedLink : ''}`}
                     role="menuitem"
                     aria-current={isActive ? "page" : undefined}
                     title={item.description}
                     data-keywords={item.keywords}
+                    onClick={(e) => {
+                      if (item.isPersonalized) {
+                        e.preventDefault();
+                        openOnboarding();
+                      }
+                    }}
                   >
                     {isActive && (
                       <motion.div
@@ -256,10 +269,16 @@ export default function SmartNavigation() {
                       <li key={item.href} role="none">
                         <Link
                           href={item.href}
-                          className={`${styles.mobileNavLink} ${isActive ? styles.active : ''}`}
+                          className={`${styles.mobileNavLink} ${isActive ? styles.active : ''} ${item.isPersonalized ? styles.personalizedLink : ''}`}
                           role="menuitem"
                           aria-current={isActive ? "page" : undefined}
-                          onClick={closeMobileMenu}
+                          onClick={(e) => {
+                            if (item.isPersonalized) {
+                              e.preventDefault();
+                              openOnboarding();
+                            }
+                            closeMobileMenu();
+                          }}
                         >
                           <div className={styles.mobileNavIcon}>{item.icon}</div>
                           <div className={styles.mobileNavInfo}>

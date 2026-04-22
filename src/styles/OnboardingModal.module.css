@@ -1,0 +1,193 @@
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease;
+}
+
+.modalContent {
+  background: var(--bg-primary);
+  width: 90%;
+  max-width: 800px;
+  max-height: 85vh;
+  border-radius: 32px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--card-border);
+  position: relative;
+}
+
+.modalHeader {
+  padding: 2.5rem;
+  text-align: center;
+  background: linear-gradient(to bottom, var(--bg-secondary), transparent);
+}
+
+.modalTitle {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
+}
+
+.modalSubtitle {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+}
+
+.modalBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 2.5rem 2.5rem;
+}
+
+.categoryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 1.25rem;
+}
+
+.categoryCard {
+  aspect-ratio: 1;
+  background: var(--bg-secondary);
+  border: 2px solid var(--card-border);
+  border-radius: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 1rem;
+  text-align: center;
+}
+
+.categoryCard:hover {
+  transform: translateY(-5px);
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+
+.categoryCard.selected {
+  background: var(--brand-gradient);
+  border-color: transparent;
+  color: white;
+  transform: scale(1.05);
+  box-shadow: 0 10px 20px rgba(0, 229, 255, 0.3);
+}
+
+.categoryEmoji {
+  font-size: 2.5rem;
+  transition: transform 0.3s ease;
+}
+
+.categoryCard.selected .categoryEmoji {
+  transform: scale(1.2);
+}
+
+.categoryName {
+  font-weight: 800;
+  font-size: 0.95rem;
+  line-height: 1.2;
+}
+
+.modalFooter {
+  padding: 2rem 2.5rem;
+  border-top: 1px solid var(--card-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-secondary);
+}
+
+.selectionCount {
+  font-weight: 700;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.saveBtn {
+  background: var(--accent);
+  color: white;
+  padding: 1rem 2.5rem;
+  border-radius: 16px;
+  font-weight: 800;
+  font-size: 1.1rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 10px 20px -5px rgba(0, 229, 255, 0.4);
+}
+
+.saveBtn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+  box-shadow: 0 15px 30px -5px rgba(0, 229, 255, 0.5);
+}
+
+.saveBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: grayscale(1);
+}
+
+.closeBtn {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: var(--text-primary);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  transition: all 0.2s;
+  z-index: 10;
+}
+
+.closeBtn:hover {
+  background: var(--bg-secondary);
+  transform: rotate(90deg);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (max-width: 640px) {
+  .modalHeader {
+    padding: 1.5rem;
+  }
+  .modalTitle {
+    font-size: 1.75rem;
+  }
+  .modalBody {
+    padding: 1.5rem;
+  }
+  .categoryGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .modalFooter {
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1.5rem;
+  }
+  .saveBtn {
+    width: 100%;
+  }
+}

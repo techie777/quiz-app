@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { debounce } from "lodash";
 import { useSession, signIn } from "next-auth/react";
+import { useUI } from "@/context/UIContext";
 import toast from "react-hot-toast";
 import styles from "@/styles/LandingPage.module.css";
 import WelcomePromoPopup from "@/components/WelcomePromoPopup";
@@ -497,7 +498,9 @@ const MainCategorySection = React.memo(({ category, categorizedData, sectionIds,
 MainCategorySection.displayName = "MainCategorySection";
 
 export default function LandingPage({ initialCategories = [] }) {
+  const { data: session } = useSession();
   const { settings, loaded, quizzes } = useData();
+  const { openOnboarding } = useUI();
   const router = useRouter();
   const [sections, setSections] = useState([]);
   const [sectionsLoaded, setSectionsLoaded] = useState(false);
@@ -554,8 +557,29 @@ export default function LandingPage({ initialCategories = [] }) {
   const [sortBy, setSortBy] = useState("default"); // default, newest, popular, alphabetical
   const [difficultyFilter, setDifficultyFilter] = useState("all"); // all, easy, medium, hard
   const [questionCountFilter, setQuestionCountFilter] = useState("all"); // all, small, medium, large
+  const [isPersonalized, setIsPersonalized] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [showSignInModal, setShowSignInModal] = useState(false);
+  const [userInterestsCount, setUserInterestsCount] = useState(0);
+  const [userInterests, setUserInterests] = useState([]);
+
+  // Check for interests on load
+  useEffect(() => {
+    if (session?.user?.id) {
+      fetch("/api/user/interests")
+        .then(r => r.json())
+        .then(data => {
+          const interests = data.interestedCategories || [];
+          setUserInterests(interests);
+          setUserInterestsCount(interests.length);
+          if (interests.length > 0) {
+            setIsPersonalized(true); // Default to personalized if they have interests
+          }
+        })
+        .catch(() => {});
+    }
+  }, [session?.user?.id]);
+
   const [userProgress, setUserProgress] = useState({});
   const [previewCategory, setPreviewCategory] = useState(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
@@ -574,6 +598,7 @@ export default function LandingPage({ initialCategories = [] }) {
     if (reset) {
       setLoading(true);
       setPage(1);
+      setVisibleCategories([]); // Clear immediately for visual feedback
     } else {
       setLoadingMore(true);
     }
@@ -589,7 +614,8 @@ export default function LandingPage({ initialCategories = [] }) {
         sortBy: sortBy,
         difficulty: difficultyFilter,
         questionCount: questionCountFilter,
-        chips: activeFilters.join(",")
+        chips: activeFilters.join(","),
+        personalized: isPersonalized.toString()
       });
 
       const res = await fetch(`/api/categories?${params}`, { cache: "no-store" });
@@ -608,11 +634,11 @@ export default function LandingPage({ initialCategories = [] }) {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [page, debouncedSearch, sortBy, difficultyFilter, questionCountFilter, activeFilters]);
+  }, [page, debouncedSearch, sortBy, difficultyFilter, questionCountFilter, activeFilters, isPersonalized]);
 
   useEffect(() => {
     fetchCategories(true);
-  }, [debouncedSearch, sortBy, difficultyFilter, questionCountFilter, activeFilters]);
+  }, [debouncedSearch, sortBy, difficultyFilter, questionCountFilter, activeFilters, isPersonalized]);
 
   const handleLoadMore = () => {
     setPage(prev => prev + 1);
@@ -815,8 +841,16 @@ export default function LandingPage({ initialCategories = [] }) {
   // but we should eventually optimize /api/sections to return only what's needed.
   const dailyCategoryIds = useMemo(() => getDailyCategoryIds(quizzes), [quizzes]);
   const baseFilteredCategories = useMemo(() => {
-    let list = quizzes.filter((c) => !c.hidden && !c.parentId && !dailyCategoryIds.has(c.id));
+    let list = quizzes.filter((c) => !c.hidden && !dailyCategoryIds.has(c.id));
     
+    // Apply Personalization to the base list if active
+    if (isPersonalized && userInterests.length > 0) {
+      list = list.filter(c => userInterests.includes(c.id));
+    } else {
+      // If not personalized, only show top-level categories to keep the UI clean
+      list = list.filter(c => !c.parentId);
+    }
+
     // Apply Advanced Filters to the main view as well
     if (difficultyFilter !== "all") {
       list = list.filter(c => c.questions?.some(q => q.difficulty === difficultyFilter));
@@ -841,7 +875,7 @@ export default function LandingPage({ initialCategories = [] }) {
     }
 
     return list;
-  }, [quizzes, dailyCategoryIds, difficultyFilter, questionCountFilter, sortBy]);
+  }, [quizzes, dailyCategoryIds, difficultyFilter, questionCountFilter, sortBy, isPersonalized, userInterests]);
 
   const categorizedQuizzes = useMemo(() => {
     return categorizeQuizzes(baseFilteredCategories, sections);
@@ -927,6 +961,28 @@ export default function LandingPage({ initialCategories = [] }) {
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Feed Mode Tabs - Promoted for Visibility */}
+          <div className={styles.feedTabs}>
+            <button 
+              className={`${styles.feedTab} ${!isPersonalized ? styles.active : ''}`}
+              onClick={() => setIsPersonalized(false)}
+            >
+              All Quizzes
+            </button>
+            <button 
+              className={`${styles.feedTab} ${isPersonalized ? styles.active : ''}`}
+              onClick={() => {
+                if (userInterestsCount === 0) {
+                  openOnboarding();
+                } else {
+                  setIsPersonalized(true);
+                }
+              }}
+            >
+              For You {userInterestsCount > 0 && <span className={styles.sparkle}>✨</span>}
+            </button>
           </div>
 
           {/* Advanced Filters Nested in Hero */}
@@ -1131,6 +1187,24 @@ export default function LandingPage({ initialCategories = [] }) {
             initial="hidden"
             animate="show"
           >
+            {/* For You Welcome Banner */}
+      {isPersonalized && userInterestsCount > 0 && (
+        <div className="max-w-6xl mx-auto mb-10 p-6 rounded-3xl bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-cyan-500 flex items-center justify-center text-2xl shadow-lg shadow-cyan-500/20">✨</div>
+            <div>
+              <h3 className="text-xl font-black text-slate-800 dark:text-white">Your Personalized Feed is Ready!</h3>
+              <p className="text-slate-500 dark:text-slate-400 text-sm">We&apos;ve curated these quizzes based on the {userInterestsCount} interests you selected.</p>
+            </div>
+          </div>
+          <button 
+            onClick={openOnboarding}
+            className="px-6 py-2 bg-slate-800 dark:bg-white dark:text-slate-900 text-white rounded-xl font-bold text-sm hover:scale-105 transition-transform"
+          >
+            Manage Interests
+          </button>
+        </div>
+      )}
             {/* Regular Quiz Cards */}
             {loading && visibleCategories.length === 0
               ? Array.from({ length: 9 }).map((_, idx) => (

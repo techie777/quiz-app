@@ -132,7 +132,8 @@ exports.Prisma.UserScalarFieldEnum = {
   purchasedPasses: 'purchasedPasses',
   factsReadCount: 'factsReadCount',
   tfAnsweredCount: 'tfAnsweredCount',
-  proBadge: 'proBadge'
+  proBadge: 'proBadge',
+  interestedCategories: 'interestedCategories'
 };
 
 exports.Prisma.VerificationTokenScalarFieldEnum = {

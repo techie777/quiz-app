@@ -7,6 +7,7 @@ const UIContext = createContext(null);
 
 export function UIProvider({ children }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -21,12 +22,18 @@ export function UIProvider({ children }) {
     setIsMobileMenuOpen(false);
   };
 
+  const openOnboarding = () => setIsOnboardingOpen(true);
+  const closeOnboarding = () => setIsOnboardingOpen(false);
+
   return (
     <UIContext.Provider
       value={{
         isMobileMenuOpen,
         toggleMobileMenu,
         closeMobileMenu,
+        isOnboardingOpen,
+        openOnboarding,
+        closeOnboarding,
       }}
     >
       {children}

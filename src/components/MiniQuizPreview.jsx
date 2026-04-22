@@ -58,16 +58,16 @@ export default function MiniQuizPreview({ type = "quiz" }) {
     <div style={{
       width: '100%',
       height: '100%',
-      backgroundColor: '#ffffff',
+      backgroundColor: 'var(--bg-primary)',
       borderRadius: '20px',
       padding: '12px',
       fontSize: '11px',
       display: 'flex',
       flexDirection: 'column',
-      border: '1px solid rgba(0,0,0,0.05)',
+      border: '1px solid var(--card-border)',
       boxShadow: '0 8px 20px -5px rgba(0, 0, 0, 0.05)',
       overflow: 'hidden',
-      color: '#1e293b',
+      color: 'var(--text-primary)',
       position: 'relative'
     }}>
       {step === 3 ? (
@@ -96,7 +96,7 @@ export default function MiniQuizPreview({ type = "quiz" }) {
               fontWeight: '800', 
               lineHeight: '1.2',
               fontSize: '12px',
-              color: '#0f172a'
+              color: 'var(--text-primary)'
             }}>
               {current.q}
             </div>
@@ -107,9 +107,9 @@ export default function MiniQuizPreview({ type = "quiz" }) {
             {current.options.map((opt, i) => {
               const isSelected = selected === i;
               const isCorrect = current.correct === i;
-              let bg = '#f8fafc';
-              let border = '#f1f5f9';
-              let color = '#475569';
+              let bg = 'var(--bg-secondary)';
+              let border = 'var(--card-border)';
+              let color = 'var(--text-secondary)';
 
               if (step >= 2 && isSelected) {
                 bg = isCorrect ? '#ecfdf5' : '#fef2f2';
@@ -157,7 +157,7 @@ export default function MiniQuizPreview({ type = "quiz" }) {
             width: '3px',
             height: '3px',
             borderRadius: '50%',
-            backgroundColor: i === index ? '#6366f1' : '#e2e8f0'
+            backgroundColor: i === index ? '#6366f1' : 'var(--card-border)'
           }} />
         ))}
       </div>

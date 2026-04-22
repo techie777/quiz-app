@@ -238,7 +238,7 @@ function quizReducer(state, action) {
       return { 
         ...state, 
         ...action.payload, 
-        status: action.payload.status === 'finished' ? 'idle' : action.payload.status,
+        status: action.payload.status,
         originalTotal: action.payload.originalTotal || action.payload.questions?.length || state.originalTotal
       };
     case "SET_RESUMING":
@@ -252,9 +252,8 @@ export function QuizProvider({ children }) {
   const { quizzes } = useData();
   const [state, dispatch] = useReducer(quizReducer, initialState);
 
-  // Persistence: Save state
   useEffect(() => {
-    if (state.status === 'active') {
+    if (state.status === 'active' || state.status === 'finished') {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         ...state,
         // Don't save transient UI states
@@ -271,7 +270,7 @@ export function QuizProvider({ children }) {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (parsed.status === 'active' && parsed.questions.length > 0) {
+        if ((parsed.status === 'active' || parsed.status === 'finished') && parsed.questions.length > 0) {
           dispatch({ type: "LOAD_STATE", payload: parsed });
         }
       } catch (e) {

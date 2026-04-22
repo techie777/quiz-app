@@ -110,6 +110,17 @@
   border: 1px solid rgba(var(--accent-rgb), 0.15);
 }
 
+.personalizedLink {
+  color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.05);
+  box-shadow: 0 0 15px rgba(var(--accent-rgb), 0.1);
+}
+
+.personalizedLink:hover {
+  background: rgba(var(--accent-rgb), 0.08);
+  box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.15);
+}
+
 /* Mobile Menu */
 .mobileMenu {
   position: absolute;
@@ -173,6 +184,16 @@
 .mobileNavLink.active {
   background: var(--accent-light);
   border-color: var(--accent);
+  color: var(--accent);
+}
+
+.mobileNavLink.personalizedLink {
+  background: rgba(var(--accent-rgb), 0.03);
+  border: 1px dashed rgba(var(--accent-rgb), 0.2);
+}
+
+.mobileNavLink.personalizedLink .mobileNavIcon {
+  background: var(--accent-light);
   color: var(--accent);
 }
 

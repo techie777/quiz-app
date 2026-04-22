@@ -23,10 +23,10 @@
 /* Sidebars */
 .sidebarLeft, .sidebarRight {
   flex: 0 0 250px;
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 16px;
   padding: 24px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--card-border);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
   position: sticky;
   top: 100px;
@@ -39,7 +39,7 @@
   color: var(--text-primary);
   margin-bottom: 20px;
   padding-bottom: 12px;
-  border-bottom: 2px solid #f1f5f9;
+  border-bottom: 2px solid var(--card-border);
 }
 
 .suggestedList {
@@ -53,7 +53,7 @@
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: #f8fafc;
+  background: var(--bg-primary);
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -61,7 +61,7 @@
 }
 
 .suggestedCard:hover {
-  background: white;
+  background: var(--bg-secondary);
   border-color: #4361ee;
   transform: translateX(4px);
   box-shadow: 0 4px 12px rgba(67, 97, 238, 0.1);
@@ -79,12 +79,12 @@
 .suggestedName {
   font-size: 0.95rem;
   font-weight: 600;
-  color: #334155;
+  color: var(--text-primary);
 }
 
 .suggestedQuestions {
   font-size: 0.8rem;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 @media (max-width: 1100px) {

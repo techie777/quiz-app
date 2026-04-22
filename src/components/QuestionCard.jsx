@@ -261,7 +261,7 @@ export default function QuestionCard({
           <div className={styles.audienceChart}>
             {question.options.map((option, idx) => (
               <div key={idx} className={styles.audienceBar}>
-                <div className={styles.audienceBarFill} style={{ width: `${audienceStats[idx]}%` }}>
+                <div className={styles.audienceBarFill} style={{ '--percent': audienceStats[idx] }}>
                   <span className={styles.audiencePercent}>{audienceStats[idx]}%</span>
                 </div>
                 <span className={styles.audienceOption}>{option}</span>
