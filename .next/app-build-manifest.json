@@ -1,10 +1,10 @@
 {
   "pages": {
-    "/quizzes/page": [
+    "/category/[slug]/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/css/app/quizzes/page.css",
-      "static/chunks/app/quizzes/page.js"
+      "static/css/app/category/[slug]/page.css",
+      "static/chunks/app/category/[slug]/page.js"
     ],
     "/layout": [
       "static/chunks/webpack.js",
@@ -30,17 +30,17 @@
       "static/css/app/_not-found/page.css",
       "static/chunks/app/_not-found/page.js"
     ],
-    "/admin/true-false/page": [
+    "/sawal-jawab/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/css/app/admin/true-false/page.css",
-      "static/chunks/app/admin/true-false/page.js"
+      "static/css/app/sawal-jawab/page.css",
+      "static/chunks/app/sawal-jawab/page.js"
     ],
-    "/admin/layout": [
+    "/true-false/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/css/app/admin/layout.css",
-      "static/chunks/app/admin/layout.js"
+      "static/css/app/true-false/page.css",
+      "static/chunks/app/true-false/page.js"
     ],
     "/page": [
       "static/chunks/webpack.js",

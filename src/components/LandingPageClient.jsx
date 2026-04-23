@@ -197,7 +197,7 @@ const SubSection = React.memo(({ title, quizzes, onViewAll, showMixCard, section
     e.stopPropagation();
 
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const url = `${origin}/category/${quiz.id}`;
+    const url = `${origin}/category/${quiz.slug || quiz.id}`;
     const text = `${quiz.topic} - ${quiz.questionCount || 0} questions`;
 
     async function shareLinkOnly() {
@@ -370,7 +370,7 @@ const SubSection = React.memo(({ title, quizzes, onViewAll, showMixCard, section
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <Link href={`/category/${quiz.id}`} className={styles.subSectionCardLink}>
+            <Link href={`/category/${quiz.slug || quiz.id}`} className={styles.subSectionCardLink}>
               <div className={styles.subSectionCardImage}>
                 {quiz.image ? (
                   <img 
@@ -411,7 +411,7 @@ const SubSection = React.memo(({ title, quizzes, onViewAll, showMixCard, section
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      window.location.href = `/category/${quiz.id}`;
+                      window.location.href = `/category/${quiz.slug || quiz.id}`;
                     }}
                     aria-label={`Play ${quiz.topic} quiz`}
                   >
@@ -719,6 +719,7 @@ export default function LandingPage({ initialCategories = [] }) {
         .slice(0, 12) // Limit to 12 suggestions
         .map(cat => ({
           id: cat.id,
+          slug: cat.slug,
           topic: cat.topic,
           description: cat.description,
           emoji: cat.emoji
@@ -763,7 +764,7 @@ export default function LandingPage({ initialCategories = [] }) {
           setDebouncedSearch(selectedSuggestion.topic);
           setShowSuggestions(false);
           setSelectedSuggestionIndex(-1);
-          router.push(`/category/${selectedSuggestion.id}`);
+          router.push(`/category/${selectedSuggestion.slug || selectedSuggestion.id}`);
         }
         break;
       case 'Escape':
@@ -778,7 +779,7 @@ export default function LandingPage({ initialCategories = [] }) {
     setDebouncedSearch(suggestion.topic);
     setShowSuggestions(false);
     setSelectedSuggestionIndex(-1);
-    router.push(`/category/${suggestion.id}`);
+    router.push(`/category/${suggestion.slug || suggestion.id}`);
   }, [router]);
 
   const handlePreviewClick = useCallback((category) => {
@@ -1094,7 +1095,7 @@ export default function LandingPage({ initialCategories = [] }) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <Link href="/category/65f1a2b3c4d5e6f7a8b9c0d9" className={styles.subSectionCardLink}>
+                <Link href="/category/quiz-of-the-day" className={styles.subSectionCardLink}>
                   <div className={styles.subSectionCardImage}>
                     <span className={styles.subSectionCardEmoji}>🌟</span>
                   </div>
@@ -1105,7 +1106,7 @@ export default function LandingPage({ initialCategories = [] }) {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        window.location.href = "/category/65f1a2b3c4d5e6f7a8b9c0d9";
+                        window.location.href = "/category/quiz-of-the-day";
                       }}
                     >
                       Play Quiz
@@ -1240,7 +1241,7 @@ export default function LandingPage({ initialCategories = [] }) {
                       layoutId={cat.id}
                     >
                       <Link
-                        href={`/category/${cat.id}`}
+                        href={`/category/${cat.slug || cat.id}`}
                         className={styles.subSectionCardLink}
                         aria-label={`View ${cat.topic} quiz category with ${cat.questions.length} questions`}
                         onClick={() => {
@@ -1271,7 +1272,7 @@ export default function LandingPage({ initialCategories = [] }) {
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              window.location.href = `/category/${cat.id}`;
+                              window.location.href = `/category/${cat.slug || cat.id}`;
                             }}
                             aria-label={`Play ${cat.topic} quiz`}
                           >
@@ -1386,7 +1387,7 @@ export default function LandingPage({ initialCategories = [] }) {
             
             <div className={styles.modalFooter}>
               <Link 
-                href={`/category/${previewCategory.id}`}
+                href={`/category/${previewCategory.slug || previewCategory.id}`}
                 className={styles.modalPrimaryButton}
                 onClick={closePreviewModal}
               >

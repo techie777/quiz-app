@@ -66,7 +66,7 @@ export default function QuizSuggestions({ currentCategory }) {
       setShowWarningModal(true);
     } else {
       // Navigate directly if no active quiz
-      window.location.href = `/category/${quiz.id}`;
+      window.location.href = `/category/${quiz.slug || quiz.id}`;
     }
   };
 
@@ -74,7 +74,7 @@ export default function QuizSuggestions({ currentCategory }) {
     // Reset current quiz and navigate to new quiz
     resetQuiz();
     if (pendingQuiz) {
-      window.location.href = `/category/${pendingQuiz.id}`;
+      window.location.href = `/category/${pendingQuiz.slug || pendingQuiz.id}`;
     }
   };
 
@@ -136,7 +136,7 @@ export default function QuizSuggestions({ currentCategory }) {
                         navigator.share({
                           title: quiz.topic,
                           text: quiz.description,
-                          url: `${window.location.origin}/category/${quiz.id}`
+                          url: `${window.location.origin}/category/${quiz.slug || quiz.id}`
                         });
                       }
                     }}

@@ -192,7 +192,7 @@ function QuizEngineContent() {
 
   const category = useMemo(() => {
     if (isMixedMode) return null;
-    return (quizzes || []).find((q) => q.id === params?.id);
+    return (quizzes || []).find((q) => q.id === params?.id || q.slug === params?.id);
   }, [quizzes, params?.id, isMixedMode]);
 
   const storyTextToDisplay = useMemo(() => {
@@ -363,11 +363,11 @@ const QuizEngineTimer = QuizTimerComponent;
     if (referrer) {
       router.push(referrer);
     } else {
-      const categoryId = params?.id;
+      const categoryId = category?.slug || params?.id;
       if (categoryId) router.push(`/category/${categoryId}`);
       else router.push('/');
     }
-  }, [resetQuiz, referrer, router, params?.id]);
+  }, [resetQuiz, referrer, router, params?.id, category]);
 
   // Set up global navigation handlers
   useEffect(() => {

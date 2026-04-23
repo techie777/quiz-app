@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useData } from "@/context/DataContext";
 import { useAdmin } from "@/context/AdminContext";
 import styles from "@/styles/AdminUpload.module.css";
@@ -316,7 +317,12 @@ export default function AdminUploadPage() {
   return (
     <div className={styles.page}>
       <h1 className={styles.title}>Bulk Upload</h1>
-      <p className={styles.subtitle}>Import questions via Excel or JSON</p>
+      <p className={styles.subtitle}>
+        Import questions via Excel or JSON. 
+        <Link href="/admin/sawal-jawab" className="text-indigo-600 ml-2 font-bold hover:underline">
+          Go to Sawal / Jawab Bulk Import →
+        </Link>
+      </p>
 
       {/* Tab Switcher */}
       <div className={styles.tabs}>

@@ -72,6 +72,7 @@ export async function POST(request) {
         upload: true,
         settings: true,
         notifications: true,
+        sawalJawab: true,
       }),
     },
     create: {
@@ -85,6 +86,7 @@ export async function POST(request) {
         upload: true,
         settings: true,
         notifications: true,
+        sawalJawab: true,
       }),
     },
   });
@@ -109,6 +111,7 @@ export async function POST(request) {
           upload: true,
           settings: true,
           notifications: true,
+          sawalJawab: true,
         }),
     },
     { status: 201 }

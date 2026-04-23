@@ -140,10 +140,22 @@
   transition: all 0.3s; 
 }
 
+:global([data-theme='light']) .filterChip {
+  background: white;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+}
+
 .filterChip:hover {
   border-color: #22d3ee;
   color: #22d3ee;
   background: rgba(34, 211, 238, 0.05);
+}
+
+:global([data-theme='light']) .filterChip:hover {
+  border-color: #3b82f6;
+  color: #3b82f6;
+  background: #eff6ff;
 }
 
 .filterChipActive { 
@@ -151,6 +163,13 @@
   color: white !important; 
   border-color: #22d3ee; 
   box-shadow: 0 4px 20px rgba(34, 211, 238, 0.3);
+}
+
+:global([data-theme='light']) .filterChipActive {
+  background: linear-gradient(135deg, #6366f1, #a855f7) !important;
+  border-color: transparent !important;
+  color: white !important;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3) !important;
 }
 
 .actionBadge {

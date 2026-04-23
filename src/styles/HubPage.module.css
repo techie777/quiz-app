@@ -191,13 +191,13 @@
 
 
 .cardTitle {
-  font-size: 2.5rem;
-  font-weight: 800;
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  font-weight: 900;
   margin-bottom: 1rem;
   position: relative;
   z-index: 2;
   letter-spacing: -0.02em;
-  max-width: 58%; /* Tightened to prevent overlap */
+  max-width: 90%; /* Increased from 58% to prevent unnecessary wrapping */
 }
 
 .cardDescription {
@@ -207,7 +207,7 @@
   margin-bottom: 2.5rem;
   position: relative;
   z-index: 2;
-  max-width: 62%; /* Tightened to prevent overlap */
+  max-width: 85%; /* Increased from 62% */
 }
 
 [data-theme='dark'] .cardDescription {

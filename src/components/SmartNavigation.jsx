@@ -19,6 +19,7 @@ const fallbackNavigationItems = [
   { name: "Mock Tests", href: "/mock-tests", icon: "✍️", description: "Practice papers" },
   { name: "Career Guide", href: "/career-guide", icon: "🧭", description: "Career guidance" },
   { name: "Fun facts", href: "/fun-facts", icon: "✨", description: "Amazing facts" },
+  { name: "Sawal/Jawab", href: "/sawal-jawab", icon: "❓", description: "Tricky riddles" },
   { name: "True/False", href: "/true-false", icon: "✅", description: "Interactive challenges" }
 ];
 
@@ -49,14 +50,19 @@ export default function SmartNavigation() {
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data) && data.length > 0) {
-            const visibleItems = data.filter(item => !HIDDEN_PATHS.includes(item.href));
-            // Always keep Personalized Quiz at the top if it exists in fallback
-            const personalizedItem = fallbackNavigationItems.find(i => i.isPersonalized);
-            if (personalizedItem) {
-              setNavigationItems([personalizedItem, ...visibleItems]);
-            } else {
-              setNavigationItems(visibleItems);
-            }
+            const dbItems = data.filter(item => !HIDDEN_PATHS.includes(item.href));
+            
+            // Merge with fallback to ensure essential items are present
+            // We use a Map to keep unique items by href, prioritizing DB items
+            const mergedMap = new Map();
+            
+            // First, add all fallbacks
+            fallbackNavigationItems.forEach(item => mergedMap.set(item.href, item));
+            
+            // Then, overwrite/add with DB items
+            dbItems.forEach(item => mergedMap.set(item.href, item));
+            
+            setNavigationItems(Array.from(mergedMap.values()));
           }
         }
       } catch (e) { console.error("Nav fetch error:", e); }
@@ -74,27 +80,34 @@ export default function SmartNavigation() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   if (pathname?.startsWith("/admin") || pathname?.includes("/mock-tests/paper/")) return null;
 
   return (
     <>
-      {/* SEO-friendly structured data */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "BreadcrumbList",
-            "itemListElement": navigationItems.map((item, index) => ({
-              "@type": "ListItem",
-              "position": index + 1,
-              "name": item.name,
-              "description": item.description,
-              "item": `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}${item.href}`
-            }))
-          })
-        }}
-      />
+      {/* SEO-friendly structured data - Only rendered on client to avoid hydration mismatch */}
+      {isMounted && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "BreadcrumbList",
+              "itemListElement": navigationItems.map((item, index) => ({
+                "@type": "ListItem",
+                "position": index + 1,
+                "name": item.name,
+                "description": item.description,
+                "item": `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}${item.href}`
+              }))
+            })
+          }}
+        />
+      )}
 
       <nav 
         className={`${styles.navigation} ${scrolled ? styles.scrolled : ''}`}
@@ -114,7 +127,6 @@ export default function SmartNavigation() {
                     role="menuitem"
                     aria-current={isActive ? "page" : undefined}
                     title={item.description}
-                    data-keywords={item.keywords}
                     onClick={(e) => {
                       if (item.isPersonalized) {
                         e.preventDefault();

@@ -5,8 +5,10 @@ import React, { useState, useEffect } from "react";
 // Content for the mini-quiz
 const CONTENT = {
   quiz: [
-    { q: "Largest planet?", options: ["Earth", "Jupiter", "Mars"], correct: 1 },
-    { q: "Fastest mammal?", options: ["Lion", "Cheetah", "Horse"], correct: 1 },
+    { label: "QUIZ", q: "Largest planet in our solar system?", options: ["Earth", "Jupiter", "Mars"], correct: 1 },
+    { label: "FUN FACT", q: "How many hearts does an octopus have?", options: ["One", "Two", "Three"], correct: 2 },
+    { label: "TRUE/FALSE", q: "Water boils at 100°C?", options: ["True", "False"], correct: 0 },
+    { label: "SAWAL JAWAB", q: "20 फीट सीढ़ी से गिरी पर चोट नहीं आई?", options: ["सबसे नीचे थी", "जादू था", "सपना था"], correct: 0 },
   ],
   govt: [
     { q: "First PM of India?", options: ["Nehru", "Gandhi", "Patel"], correct: 0 },
@@ -90,7 +92,7 @@ export default function MiniQuizPreview({ type = "quiz" }) {
               fontSize: '8px',
               letterSpacing: '0.05em'
             }}>
-              Q{index + 1}
+              {current.label || `Q${index + 1}`}
             </div>
             <div style={{ 
               fontWeight: '800', 

@@ -379,6 +379,25 @@
   margin: 0;
 }
 
+.setCardBadges {
+  margin: 12px 0;
+  display: flex;
+  gap: 8px;
+}
+
+.questionCountBadge {
+  background: var(--accent-light);
+  color: var(--accent);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
+}
+
 .setCardActions {
   display: flex;
   gap: 12px;
@@ -389,33 +408,49 @@
 
 .playIconButton {
   padding: 12px 20px;
-  background: var(--bg-primary);
-  border: 1px solid var(--card-border);
-  border-radius: 12px;
-  color: var(--text-primary);
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  border: none;
+  border-radius: 14px;
+  color: white;
   font-weight: 800;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex: 1;
-  /* Balanced with live button */
+  flex: 1.5; /* take more space */
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   white-space: nowrap;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
 }
 
 .playIconButton:hover {
-  background: var(--bg-secondary);
-  border-color: var(--accent);
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+}
+
+.playArrow {
+  background: rgba(255,255,255,0.2);
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 0.8rem;
+  font-weight: 900;
+  transition: transform 0.2s;
+}
+
+.playIconButton:hover .playArrow {
+  transform: translateX(3px);
 }
 
 .liveButtonStyle {
   flex: 1;
-  background: white;
-  color: #ef4444;
-  border: 1px solid #fee2e2;
-  border-radius: 12px;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  border: none;
+  border-radius: 14px;
   padding: 10px 16px;
   font-size: 0.85rem;
   font-weight: 800;
@@ -423,44 +458,59 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   cursor: pointer;
   white-space: nowrap;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
 }
 
 .liveButtonStyle:hover {
-  background: #fef2f2;
-  border-color: #fecaca;
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+}
+
+.liveDot {
+  width: 8px;
+  height: 8px;
+  background-color: white;
+  border-radius: 50%;
+  animation: livePulse 1.5s infinite;
+}
+
+@keyframes livePulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(255, 255, 255, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
 }
 
 .viewQuestionsBtn {
-  width: 44px;
-  height: 44px;
+  width: 46px;
+  height: 46px;
   background: white;
-  border: 2px solid var(--accent-light);
-  border-radius: 12px;
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
   display: flex !important;
   align-items: center;
   justify-content: center;
   font-size: 1.2rem;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
 
 .viewQuestionsBtn:hover {
-  background: var(--accent-light);
+  background: var(--bg-secondary);
   border-color: var(--accent);
-  transform: scale(1.1);
-  box-shadow: 0 10px 15px rgba(99, 102, 241, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.15);
 }
 
 .viewBtnActive {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
   color: white;
-  transform: rotate(180deg);
+  transform: translateY(-2px) rotate(180deg) !important;
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3) !important;
 }
 
 .questionsAccordion {

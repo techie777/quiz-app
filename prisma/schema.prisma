@@ -78,6 +78,7 @@ model Account {
 model Category {
   id                      String      @id @default(auto()) @map("_id") @db.ObjectId
   topic                   String
+  slug                    String?     @unique
   emoji                   String
   description             String      @default("")
   categoryClass           String      @default("")
@@ -790,6 +791,37 @@ model TrueFalseQuestion {
   explanation   String?
   explanationHi String?
   image         String?
+  views         Int       @default(0)
+  hidden        Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+
+// --- Sawal/Jawab (Tricky Questions) Module ---
+
+model SawalJawabCategory {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  name      String    @unique
+  nameHi    String?
+  slug      String    @unique
+  image     String?
+  sortOrder Int       @default(0)
+  hidden    Boolean   @default(false)
+  items     SawalJawab[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model SawalJawab {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  categoryId    String    @db.ObjectId
+  category      SawalJawabCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  question      String
+  questionHi    String?
+  answer        String
+  answerHi      String?
+  image         String?   // Optional background image for the card
   views         Int       @default(0)
   hidden        Boolean   @default(false)
   createdAt     DateTime  @default(now())

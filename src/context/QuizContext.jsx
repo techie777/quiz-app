@@ -44,6 +44,7 @@ function shuffleArray(arr) {
 
 const initialState = {
   quizId: null,
+  quizSlug: null,
   difficulty: "easy",
   timerSetting: 0,
   questions: [],
@@ -96,6 +97,7 @@ function quizReducer(state, action) {
       return {
         ...initialState,
         quizId: quiz.id,
+        quizSlug: quiz.slug,
         difficulty: difficulty,
         timerSetting: timer,
         questions: shuffledQuestions,
@@ -112,7 +114,7 @@ function quizReducer(state, action) {
       };
     }
     case "START_QUIZ_SET": {
-      const { quizId, questions, timer, language, setIndex, categoryName } = action.payload;
+      const { quizId, quizSlug, questions, timer, language, setIndex, categoryName } = action.payload;
       
       // Deep shuffle and sanitize (strip userAnswer)
       const shuffledQuestions = shuffleArray(questions).map(q => {
@@ -126,6 +128,7 @@ function quizReducer(state, action) {
       return {
         ...initialState,
         quizId,
+        quizSlug,
         timerSetting: timer,
         questions: shuffledQuestions,
         status: "active",
@@ -532,9 +535,8 @@ export function QuizProvider({ children }) {
   }, [quizzes, translateQuiz]);
 
   const startQuizSet = useCallback(async (quizId, questions, timer, language = "en", setIndex = null, categoryName = null) => {
-    dispatch({ type: "START_QUIZ_SET", payload: { quizId, questions, timer, language, setIndex, categoryName } });
-    
     const quiz = quizzes.find(q => q.id === quizId);
+    dispatch({ type: "START_QUIZ_SET", payload: { quizId, quizSlug: quiz?.slug, questions, timer, language, setIndex, categoryName } });
     
     // Detect actual content language
     const detectedLang = detectQuizLanguage(questions);

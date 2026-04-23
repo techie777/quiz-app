@@ -59,10 +59,16 @@ export default function MasterHubPage() {
               </p>
               <div className={styles.linksGrid}>
                 <Link href="/quizzes" className={styles.linkItem}>
-                  <span className={styles.linkIcon}>🏆</span> Daily Quiz
+                  <span className={styles.linkIcon}>🏆</span> Quiz
                 </Link>
-                <Link href="/quizzes" className={styles.linkItem}>
-                  <span className={styles.linkIcon}>⚡</span> Live Play
+                <Link href="/fun-facts" className={styles.linkItem}>
+                  <span className={styles.linkIcon}>✨</span> Fun facts
+                </Link>
+                <Link href="/true-false" className={styles.linkItem}>
+                  <span className={styles.linkIcon}>✅</span> True & False
+                </Link>
+                <Link href="/sawal-jawab" className={styles.linkItem}>
+                  <span className={styles.linkIcon}>❓</span> Sawal Jawab
                 </Link>
               </div>
             </div>
@@ -120,17 +126,17 @@ export default function MasterHubPage() {
                 daily current affairs to keep you updated.
               </p>
               <div className={styles.linksGrid}>
-                <Link href="/fun-facts" className={styles.linkItem}>
-                  <span className={styles.linkIcon}>🔍</span> Fun facts
-                </Link>
-                <Link href="/true-false" className={styles.linkItem}>
-                  <span className={styles.linkIcon}>✅</span> True / False
-                </Link>
                 <Link href="/current-affairs" className={styles.linkItem}>
-                  <span className={styles.linkIcon}>📰</span> Current Affairs
+                  <span className={styles.linkIcon}>📰</span> Current affairs
                 </Link>
                 <Link href="/quizzes" className={styles.linkItem}>
                   <span className={styles.linkIcon}>🕙</span> Daily Quiz
+                </Link>
+                <Link href="/fun-facts" className={styles.linkItem}>
+                  <span className={styles.linkIcon}>✨</span> Fun facts
+                </Link>
+                <Link href="/sawal-jawab" className={styles.linkItem}>
+                  <span className={styles.linkIcon}>❓</span> Sawal & Jawab
                 </Link>
               </div>
             </div>

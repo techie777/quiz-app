@@ -11,8 +11,13 @@ export async function GET(request, { params }) {
   const metaOnly = searchParams.get("metaOnly") === "true";
   
   try {
-    const category = await prisma.category.findUnique({
-      where: { id },
+    // Determine if we should search by ID or Slug
+    const isObjectId = id.length === 24 && /^[0-9a-fA-F]{24}$/.test(id);
+    
+    const category = await prisma.category.findFirst({
+      where: isObjectId 
+        ? { OR: [{ id }, { slug: id }] } 
+        : { slug: id },
       include: { 
         questions: metaOnly ? { select: { id: true } } : true 
       },
@@ -21,7 +26,7 @@ export async function GET(request, { params }) {
     if (!category) return NextResponse.json({ error: "Not found" }, { status: 404 });
     
     const subCategories = await prisma.category.findMany({
-      where: { parentId: id, hidden: false },
+      where: { parentId: category.id, hidden: false },
       orderBy: { sortOrder: "asc" }
     });
     
@@ -241,6 +246,7 @@ export async function PUT(request, { params }) {
     where: { id },
     data: {
       ...(body.topic !== undefined && { topic: body.topic }),
+      ...(body.slug !== undefined && { slug: body.slug }),
       ...(body.emoji !== undefined && { emoji: body.emoji }),
       ...(body.description !== undefined && { description: body.description }),
       ...(body.categoryClass !== undefined && { categoryClass: body.categoryClass }),

@@ -49,18 +49,11 @@ const Breadcrumbs = () => {
         // that we don't link segments that lead to dead ends.
         label = 'Practice Session';
       }
-    } else if (segment.length === 24) {
-      // Robust lookup for category topic
-      const category = quizzes?.find(q => q.id === segment);
-      if (category) {
-        label = category.topic;
-        // If we're on a quiz page or deep in category, ensure the link is correct
-        if (pathname.includes('/quiz/')) {
-          finalHref = `/category/${segment}`;
-        }
-      } else {
-        // Fallback or while loading
-        label = ''; // Leave empty to trigger skeleton in render
+    } else if (quizzes?.some(q => q.id === segment || q.slug === segment)) {
+      const category = quizzes.find(q => q.id === segment || q.slug === segment);
+      label = category.topic;
+      if (pathname.includes('/quiz/')) {
+        finalHref = `/category/${category.slug || category.id}`;
       }
     } else if (segment === 'govt-jobs-alerts') {
       label = 'Job Alerts';

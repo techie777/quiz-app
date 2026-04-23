@@ -202,6 +202,7 @@ export async function GET(request) {
     const result = paginatedCategories.map((cat) => ({
       id: cat.id,
       topic: cat.topic,
+      slug: cat.slug,
       emoji: cat.emoji,
       description: cat.description,
       categoryClass: cat.categoryClass,
@@ -255,9 +256,12 @@ export async function POST(request) {
     const maxSort = await prisma.category.aggregate({ _max: { sortOrder: true } });
     console.log("[API/categories] maxSort:", maxSort._max.sortOrder);
 
+    const slug = body.slug || topic.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]+/g, '').replace(/--+/g, '-');
+
     const category = await prisma.category.create({
       data: {
         topic,
+        slug,
         emoji: emojiStr,
         description: description || "",
         categoryClass: categoryClass || `category-${topic.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")}`,

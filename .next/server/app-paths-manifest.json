@@ -1,15 +1,6 @@
 {
-  "/quizzes/page": "app/quizzes/page.js",
-  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
-  "/_not-found/page": "app/_not-found/page.js",
-  "/api/sections/route": "app/api/sections/route.js",
-  "/api/user/profile/route": "app/api/user/profile/route.js",
-  "/api/settings/route": "app/api/settings/route.js",
-  "/api/navigation/route": "app/api/navigation/route.js",
-  "/api/categories/route": "app/api/categories/route.js",
-  "/api/user/interests/route": "app/api/user/interests/route.js",
-  "/api/user/monetization-status/route": "app/api/user/monetization-status/route.js",
-  "/page": "app/page.js",
-  "/api/category-favourites/route": "app/api/category-favourites/route.js",
-  "/admin/true-false/page": "app/admin/true-false/page.js"
+  "/sawal-jawab/page": "app/sawal-jawab/page.js",
+  "/category/[slug]/page": "app/category/[slug]/page.js",
+  "/true-false/page": "app/true-false/page.js",
+  "/page": "app/page.js"
 }

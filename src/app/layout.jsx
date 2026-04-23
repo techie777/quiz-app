@@ -102,7 +102,7 @@ export default function RootLayout({ children }) {
   const organizationStructuredData = generateOrganizationStructuredData();
 
   return (
-    <html lang="en" className={inter.className}>
+    <html lang="en" className={inter.className} suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -143,26 +143,24 @@ export default function RootLayout({ children }) {
 
         <PwaInstallPrompt />
         
-        {process.env.NODE_ENV === 'production' && (
-          <script
-            dangerouslySetInnerHTML={{
-              __html: `
-                if ('serviceWorker' in navigator) {
-                  window.addEventListener('load', () => {
-                    navigator.serviceWorker.register('/sw.js').catch(() => {});
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                  navigator.serviceWorker.register('/sw.js').catch((err) => console.error('SW Registration failed:', err));
+                });
+              }
+              if ('PerformanceObserver' in window) {
+                const observer = new PerformanceObserver((list) => {
+                  list.getEntries().forEach((entry) => {
                   });
-                }
-                if ('PerformanceObserver' in window) {
-                  const observer = new PerformanceObserver((list) => {
-                    list.getEntries().forEach((entry) => {
-                    });
-                  });
-                  observer.observe({ entryTypes: ['largest-contentful-paint', 'first-input', 'layout-shift'] });
-                }
-              `
-            }}
-          />
-        )}
+                });
+                observer.observe({ entryTypes: ['largest-contentful-paint', 'first-input', 'layout-shift'] });
+              }
+            `
+          }}
+        />
       </body>
     </html>
   );

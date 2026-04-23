@@ -28,13 +28,13 @@ export default function Footer() {
     const popular = [...activeQuizzes]
       .sort((a, b) => (b.questions?.length || 0) - (a.questions?.length || 0))
       .slice(0, 10)
-      .map(q => ({ id: q.id, label: `${q.topic} Quiz`, href: `/category/${q.id}` }));
+      .map(q => ({ id: q.id, label: `${q.topic} Quiz`, href: `/category/${q.slug || q.id}` }));
 
     // 2. 6 Most Recent Challenges
     const recent = [...activeQuizzes]
       .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
       .slice(0, 6)
-      .map(q => ({ id: q.id, label: q.topic, href: `/category/${q.id}` }));
+      .map(q => ({ id: q.id, label: q.topic, href: `/category/${q.slug || q.id}` }));
 
     // 3. SEO Tag Cloud
     const allTopics = activeQuizzes.map(q => q.topic);

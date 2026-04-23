@@ -47,7 +47,8 @@ export default function CategorySetsPage() {
 
   const [category, setCategory] = useState(null);
   const [questions, setQuestions] = useState([]);
-  const [loaded, setLoaded] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [questionsLoaded, setQuestionsLoaded] = useState(false);
   const [setSize, setSetSize] = useState(20);
 
@@ -68,17 +69,23 @@ export default function CategorySetsPage() {
   // Sync index language with quiz context when clicking toggle
   const { translateQuiz } = useQuiz();
 
-  // Load category metadata first for instant UI
+  // Load category metadata first
   useEffect(() => {
-    if (params.id) {
-      fetch(`/api/categories/${params.id}?metaOnly=true`, { cache: 'no-store' })
-        .then(res => res.json())
+    if (params.slug) {
+      setLoading(true);
+      setError(null);
+      fetch(`/api/categories/${params.slug}?metaOnly=true`, { cache: 'no-store' })
+        .then(res => {
+          if (!res.ok) throw new Error("Category not found");
+          return res.json();
+        })
         .then(data => {
+          if (data.error) throw new Error(data.error);
           setCategory(data);
-          setLoaded(true);
+          setLoading(false);
 
-          // Now fetch all questions in the background
-          fetch(`/api/categories/${params.id}`, { cache: 'no-store' })
+          // Background fetch all questions
+          fetch(`/api/categories/${params.slug}`, { cache: 'no-store' })
             .then(res => res.json())
             .then(fullData => {
               setQuestions(fullData.questions || []);
@@ -86,22 +93,25 @@ export default function CategorySetsPage() {
             })
             .catch(err => console.error("Error loading questions:", err));
         })
-        .catch(err => console.error("Error loading category:", err));
+        .catch(err => {
+          console.error("Error loading category:", err);
+          setError(err.message);
+          setLoading(false);
+        });
     }
-  }, [params.id]);
+  }, [params.slug]);
 
-  // Fetch progress if logged in
+  // Fetch progress
   useEffect(() => {
-    if (session?.user && params.id) {
-      fetch(`/api/progress?categoryId=${params.id}`)
+    if (session?.user && category?.id) {
+      fetch(`/api/progress?categoryId=${category.id}`)
         .then(res => res.json())
         .then(data => setUserProgress(Array.isArray(data) ? data : []))
         .catch(err => {
           console.error("Error fetching progress:", err);
-          setUserProgress([]);
         });
     }
-  }, [session, params.id]);
+  }, [session?.user, category?.id]);
 
   const sets = useMemo(() => {
     if (!category || !setSize || setSize <= 0) return [];
@@ -146,7 +156,7 @@ export default function CategorySetsPage() {
     const sessionId = Math.random().toString(36).substring(2, 10).toUpperCase();
     toast.success("Creating live room for this set...");
     const setQuery = set ? `&setIndex=${set.index}` : '';
-    router.push(`/live/${sessionId}?is_host=true&categoryId=${params.id}${setQuery}`);
+    router.push(`/live/${sessionId}?is_host=true&categoryId=${category?.id || params.slug}${setQuery}`);
   };
 
   // JSON-LD Schema for SEO
@@ -185,16 +195,6 @@ export default function CategorySetsPage() {
     };
   }, [category, questions, questionsLoaded]);
 
-  if (!loaded) {
-    return (
-      <main className={styles.page}>
-        <div className={styles.skeletonPage}>
-          <div className={styles.skeletonHeader}><div className={`${styles.skeletonCircle} ${styles.shimmer}`}></div></div>
-          <div className={styles.skeletonGrid}>{[1, 2, 3, 4, 5, 6].map(i => <div key={i} className={styles.skeletonCard}></div>)}</div>
-        </div>
-      </main>
-    );
-  }
 
   const handleLanguageToggle = async (targetLang) => {
     if (isTranslatingIndex || targetLang === language) return;
@@ -265,7 +265,7 @@ export default function CategorySetsPage() {
     } else {
       startQuizSet(category.id, targetQuestions, timer, language, selectedSet.index, category.topic + topicSuffix);
     }
-    router.push(`/quiz/${category.id}`);
+    router.push(`/quiz/${category.slug || category.id}`);
   };
 
   const toggleAnswer = (idx) => {
@@ -276,6 +276,36 @@ export default function CategorySetsPage() {
       return next;
     });
   };
+
+  if (loading) {
+    return (
+      <main className={styles.page}>
+        <div className={styles.skeletonPage}>
+          <div className={`${styles.skeletonHeader} ${styles.shimmer}`}></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className={`${styles.skeletonCard} ${styles.shimmer}`}></div>
+            ))}
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (error || !category) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-6 p-4 text-center">
+        <div className="text-6xl mb-4">🔍</div>
+        <h1 className="text-3xl font-black text-slate-800">Mystery Not Found</h1>
+        <p className="text-slate-500 max-w-md font-medium">
+          We couldn&apos;t find the quiz category you&apos;re looking for. It might have moved or disappeared into the void!
+        </p>
+        <Link href="/" className="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-black shadow-xl hover:bg-indigo-700 transition-all">
+          Back to Safety (Home)
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <main className={styles.page}>
@@ -314,7 +344,7 @@ export default function CategorySetsPage() {
             </div>
             <div className={styles.setsGrid}>
               {subCategories.map(subCat => (
-                <Link href={`/category/${subCat.id}`} key={subCat.id} className={styles.setCard} style={{ textDecoration: 'none', flexDirection: 'row', alignItems: 'center', gap: '16px', padding: '24px', cursor: 'pointer' }}>
+                <Link href={`/category/${subCat.slug || subCat.id}`} key={subCat.id} className={styles.setCard} style={{ textDecoration: 'none', flexDirection: 'row', alignItems: 'center', gap: '16px', padding: '24px', cursor: 'pointer' }}>
                   <div style={{ fontSize: '2.5rem', flexShrink: 0 }}>
                     {subCat.image ? <img src={subCat.image} style={{ width: '50px', height: '50px', borderRadius: '12px', objectFit: 'cover' }} alt={subCat.topic} /> : (subCat.emoji || '📝')}
                   </div>
@@ -356,6 +386,7 @@ export default function CategorySetsPage() {
         <section className={styles.setsNavigation}>
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>🎯 Interactive Practice Sets</h2>
+            <h3 className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500 my-2">{category.topic}</h3>
             <p className={styles.sectionLead}>Each set is optimized for focus and quick learning.</p>
           </div>
 
@@ -368,18 +399,32 @@ export default function CategorySetsPage() {
                 transition={{ type: "spring", stiffness: 300 }}
               >
                 <div className={styles.setCardHeader}>
-                  <h3 className={styles.setCardTitle}>{category.topic} Set {set.index}</h3>
-                  {set.progress?.isComplete && (
-                    <span className={styles.masteryTick} title="100% Completed">✓</span>
-                  )}
-                  <div className={styles.setMeta}>
-                    {set.progress?.progress > 0 && !set.progress.isComplete && (
-                      <span className={styles.progressPercent}>{Math.round(set.progress.progress)}% Done</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <h3 className={styles.setCardTitle}>Set {set.index}</h3>
+                    {set.progress?.isComplete && (
+                      <span className={styles.masteryTick} title="100% Completed">✓</span>
                     )}
+                  </div>
+                  <div className={styles.setMeta}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      {set.progress?.progress > 0 && !set.progress.isComplete && (
+                        <span className={styles.progressPercent}>{Math.round(set.progress.progress)}% Done</span>
+                      )}
+                      <button
+                        className={`${styles.viewQuestionsBtn} ${viewSetIndex === set.index ? styles.viewBtnActive : ""}`}
+                        onClick={() => setViewSetIndex(viewSetIndex === set.index ? null : set.index)}
+                        title={viewSetIndex === set.index ? "Hide Questions" : "View Questions"}
+                        style={{ width: '38px', height: '38px', fontSize: '1rem', borderRadius: '12px', padding: 0 }}
+                      >
+                        👁️
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <div className={styles.setCardBody}>
-                  <p className={styles.setCardInfo}>Contains {set.end - set.start} targeted questions.</p>
+                  <div className={styles.setCardBadges}>
+                    <span className={styles.questionCountBadge}>📝 {set.end - set.start} Questions</span>
+                  </div>
                   {set.progress && (
                     <div className={styles.scoreLine}>
                       <span className={styles.scoreLabel}>Last Score:</span>
@@ -399,13 +444,6 @@ export default function CategorySetsPage() {
                   <button className={styles.playIconButton} onClick={() => handlePlay(set)}>
                     <span>{set.progress?.progress > 0 && !set.progress.isComplete ? "Continue Learning" : "Play Quiz"}</span>
                     <span className={styles.playArrow}>&gt;</span>
-                  </button>
-                  <button
-                    className={`${styles.viewQuestionsBtn} ${viewSetIndex === set.index ? styles.viewBtnActive : ""}`}
-                    onClick={() => setViewSetIndex(viewSetIndex === set.index ? null : set.index)}
-                    title={viewSetIndex === set.index ? "Hide Questions" : "View Questions"}
-                  >
-                    👁️
                   </button>
                   <button className={styles.liveButtonStyle} onClick={() => handleLivePlay(set)}>
                     <span className={styles.liveDot}></span>

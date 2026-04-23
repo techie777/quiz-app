@@ -8,6 +8,7 @@ const DAILY_CATEGORIES = [
   {
     id: "65f1a2b3c4d5e6f7a8b9c0d9", // Valid 24-char hex
     topic: "Quiz of the day",
+    slug: "quiz-of-the-day",
     emoji: "🌟",
     description: "Daily curated quiz",
     categoryClass: "category-quiz-of-the-day",
@@ -15,6 +16,7 @@ const DAILY_CATEGORIES = [
   {
     id: "65f1a2b3c4d5e6f7a8b9c0e1", // Valid 24-char hex
     topic: "Daily current affairs",
+    slug: "daily-current-affairs",
     emoji: "🗞️",
     description: "Daily current affairs quiz",
     categoryClass: "category-daily-current-affairs",
@@ -36,6 +38,7 @@ export async function POST() {
         where: { id: cat.id },
         data: {
           topic: cat.topic,
+          slug: cat.slug,
           emoji: cat.emoji,
           description: cat.description,
           categoryClass: cat.categoryClass,
@@ -48,6 +51,7 @@ export async function POST() {
         data: {
           id: cat.id,
           topic: cat.topic,
+          slug: cat.slug,
           emoji: cat.emoji,
           description: cat.description,
           categoryClass: cat.categoryClass,

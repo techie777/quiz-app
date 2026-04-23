@@ -12,7 +12,9 @@ import { Download, FileText, Lock, Crown, Share2 } from "lucide-react";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import AdGate from "@/components/monetization/AdGate";
+import { toPng } from "html-to-image";
 import toast from "react-hot-toast";
+import { useRef } from "react";
 
 function getMotivation(percentage) {
   if (percentage === 100) return { text: "Perfect Score!", emoji: "🌟" };
@@ -41,7 +43,9 @@ export default function ResultPage() {
     startQuizSet,
     startMixedQuiz,
     isMixedMode,
-    mixedSectionName
+    mixedSectionName,
+    quizSlug,
+    categoryName: quizCategoryName
   } = useQuiz();
   const { quizzes } = useData();
   const [showReview, setShowReview] = useState(false);
@@ -50,6 +54,7 @@ export default function ResultPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showAllQuizzes, setShowAllQuizzes] = useState(false);
   const [showGateAd, setShowGateAd] = useState(true);
+  const resultCardRef = useRef(null);
 
   const category = useMemo(() => {
     if (isMixedMode) return null;
@@ -88,12 +93,14 @@ export default function ResultPage() {
        router.push("/");
        return;
      }
-     router.push(`/category/${quizId}`);
+     router.push(`/category/${quizSlug || quizId}`);
    };
 
    const handleSuggestionClick = (suggestionId) => {
      setShowPostQuizPopup(false);
-     router.push(`/category/${suggestionId}`);
+      const suggestion = quizzes.find(q => q.id === suggestionId);
+      router.push(`/category/${suggestion?.slug || suggestionId}`);
+
    };
 
   const performance = useMemo(() => {
@@ -148,7 +155,7 @@ export default function ResultPage() {
       router.push("/");
       return;
     }
-    router.push(`/category/${quizId}`);
+    router.push(`/category/${quizSlug || quizId}`);
   };
 
   const handleExportPDF = () => {
@@ -200,7 +207,7 @@ export default function ResultPage() {
             <h3 className={styles.sidebarTitle}>You May Like</h3>
             <div className={styles.suggestedList}>
               {quizzes.slice(0, 3).map(quiz => (
-                <div key={quiz.id} className={styles.suggestedCard} onClick={() => router.push(`/category/${quiz.id}`)}>
+                <div key={quiz.id} className={styles.suggestedCard} onClick={() => router.push(`/category/${quiz.slug || quiz.id}`)}>
                   <span className={styles.suggestedEmoji}>{quiz.emoji || "📝"}</span>
                   <div className={styles.suggestedInfo}>
                     <span className={styles.suggestedName}>{quiz.topic}</span>
@@ -231,7 +238,7 @@ export default function ResultPage() {
             </div>
 
             {/* Score Card */}
-            <div className={`${styles.scoreCard} glass-card`}>
+            <div id="result-card" ref={resultCardRef} className={`${styles.scoreCard} glass-card`}>
               {(quizId || isMixedMode) && (
                 <div className={styles.nextSetTeaser} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '16px' }}>
                   <button className={styles.nextSetLink} onClick={handleContinueNextSet}>
@@ -240,9 +247,29 @@ export default function ResultPage() {
                       : `Continue to ${category?.topic || "Next Set"} (${selectedSetIndex ? `Set ${selectedSetIndex + 1}` : "Next"})`
                     }
                   </button>
-                    <button onClick={() => {
-                        const shareText = `I just scored ${score}/${total} (${percentage}%) in ${category?.topic || mixedSectionName || 'QuizWeb'}! Think you can beat me?`;
-                        const shareUrl = window.location.origin + (quizId ? `/category/${quizId}` : '/');
+                    <button onClick={async () => {
+                        const shareText = `I just scored ${score}/${total} (${percentage}%) in ${quizCategoryName || category?.topic || mixedSectionName || 'QuizWeb'}! Think you can beat me?`;
+                        const shareUrl = window.location.origin + (quizSlug || quizId ? `/category/${quizSlug || quizId}` : '/');
+                        
+                        try {
+                          if (resultCardRef.current && navigator.share && navigator.canShare) {
+                            const dataUrl = await toPng(resultCardRef.current, { cacheBust: true, pixelRatio: 2, backgroundColor: '#0f172a' });
+                            const blob = await (await fetch(dataUrl)).blob();
+                            const file = new File([blob], 'quiz-result.png', { type: 'image/png' });
+                            
+                            if (navigator.canShare({ files: [file] })) {
+                              await navigator.share({
+                                files: [file],
+                                title: 'My Quiz Score!',
+                                text: shareText + "\n" + shareUrl,
+                              });
+                              return;
+                            }
+                          }
+                        } catch (err) {
+                          console.error("Share image failed:", err);
+                        }
+
                         if (navigator.share) {
                             navigator.share({ title: 'My Quiz Score!', text: shareText, url: shareUrl }).catch(()=>{});
                         } else { 
@@ -376,7 +403,7 @@ export default function ResultPage() {
             <h3 className={styles.sidebarTitle}>Suggested Quizzes</h3>
             <div className={styles.suggestedList}>
               {quizzes.slice(3, 6).map(quiz => (
-                <div key={quiz.id} className={styles.suggestedCard} onClick={() => router.push(`/category/${quiz.id}`)}>
+                <div key={quiz.id} className={styles.suggestedCard} onClick={() => router.push(`/category/${quiz.slug || quiz.id}`)}>
                   <span className={styles.suggestedEmoji}>{quiz.emoji || "🔥"}</span>
                   <div className={styles.suggestedInfo}>
                     <span className={styles.suggestedName}>{quiz.topic}</span>

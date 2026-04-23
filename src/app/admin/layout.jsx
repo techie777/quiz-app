@@ -9,6 +9,7 @@ import styles from "@/styles/Admin.module.css";
 import "./globals.css"; // Import admin-specific globals
 
 const JR_NAV = [
+  { href: "/admin/sawal-jawab", label: "Sawal / Jawab", icon: "📖", perm: "sawalJawab" },
   { href: "/admin", label: "Dashboard", icon: "📊", perm: "dashboard" },
   { href: "/admin/daily", label: "Daily Quizzes", icon: "📅", perm: "daily" },
   { href: "/admin/current-affairs", label: "Current Affairs", icon: "🗞️", perm: "currentAffairs" },
@@ -21,7 +22,7 @@ const JR_NAV = [
   { href: "/admin/upload", label: "Bulk Upload", icon: "📤", perm: "upload" },
   { href: "/admin/notifications", label: "Notifications", icon: "🔔", perm: "notifications" },
   { href: "/admin/fun-facts", label: "Fun Facts", icon: "💡", perm: "funFacts" },
-  { href: "/admin/true-false", label: "True/False", icon: "", perm: "trueFalse" },
+  { href: "/admin/true-false", label: "True/False", icon: "✅", perm: "trueFalse" },
   { href: "/admin/book-my-course", label: "Book My Course", icon: "📚", perm: "bookMyCourse" },
   { href: "/admin/career-guides", label: "Career Guides", icon: "🧭", perm: "careerGuides" },
   { href: "/admin/school-study", label: "School Study", icon: "🏫", perm: "schoolStudy" },
@@ -29,6 +30,7 @@ const JR_NAV = [
 ];
 
 const MASTER_NAV = [
+  { href: "/admin/sawal-jawab", label: "Sawal / Jawab", icon: "📖", perm: "sawalJawab" },
   { href: "/admin", label: "Dashboard", icon: "📊", perm: "dashboard" },
   { href: "/admin/daily", label: "Daily Quizzes", icon: "📅", perm: "daily" },
   { href: "/admin/current-affairs", label: "Current Affairs", icon: "🗞️", perm: "currentAffairs" },
