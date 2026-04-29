@@ -8,7 +8,13 @@ const UIContext = createContext(null);
 export function UIProvider({ children }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+  const [engineTheme, setEngineTheme] = useState("indigo");
   const pathname = usePathname();
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("quizEngineTheme");
+    if (savedTheme) setEngineTheme(savedTheme);
+  }, []);
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
@@ -25,6 +31,11 @@ export function UIProvider({ children }) {
   const openOnboarding = () => setIsOnboardingOpen(true);
   const closeOnboarding = () => setIsOnboardingOpen(false);
 
+  const updateEngineTheme = (theme) => {
+    setEngineTheme(theme);
+    localStorage.setItem("quizEngineTheme", theme);
+  };
+
   return (
     <UIContext.Provider
       value={{
@@ -34,6 +45,8 @@ export function UIProvider({ children }) {
         isOnboardingOpen,
         openOnboarding,
         closeOnboarding,
+        engineTheme,
+        updateEngineTheme,
       }}
     >
       {children}

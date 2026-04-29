@@ -8,9 +8,6 @@ export async function GET(request) {
     // Fetch users with their activity counts
     // For "Global Intelligence Leaderboard", we sum their interactions
     const users = await prisma.user.findMany({
-      where: {
-        isAdmin: false,
-      },
       select: {
         id: true,
         name: true,

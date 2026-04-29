@@ -5,7 +5,8 @@ import { useRouter, useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useQuiz } from "@/context/QuizContext";
 import { useData } from "@/context/DataContext";
-import QuestionCard from "@/components/QuestionCard";
+import { useUI } from "@/context/UIContext";
+import QuestionCardV2 from "@/components/QuestionCardV2";
 import ProgressBar from "@/components/ProgressBar";
 import QuizSidebar from "@/components/QuizSidebar";
 import QuizSuggestions from "@/components/QuizSuggestions";
@@ -184,6 +185,18 @@ function QuizEngineContent() {
   const [adCallback, setAdCallback] = useState(null);
   const [lifelineEffect, setLifelineEffect] = useState(null); // '5050' or 'poll'
   
+  // Prevent body scroll when in fullscreen
+  useEffect(() => {
+    if (isFullscreen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isFullscreen]);
+
   // Track free usage per session
   const [freeLifelinesUsed, setFreeLifelinesUsed] = useState({
     "50/50": false,
@@ -595,16 +608,14 @@ const QuizEngineTimer = QuizTimerComponent;
   const startTime = useMemo(() => Date.now(), []);
 
   // Early return while loading or redirecting
-  if (status === "idle" || !questions || questions.length === 0 || isTranslating) {
-    const target = translateTarget || language;
-    const loadingText = isTranslating
-      ? target === "hi" ? "प्रश्नोत्तरी का हिंदी में अनुवाद किया जा रहा है..." : "Translating quiz to English..."
-      : language === "hi" ? "प्रश्नोत्तरी लोड हो रही है..." : "Loading quiz...";
+  // Early return ONLY while initial loading or redirecting
+  if (status === "idle" || !questions || questions.length === 0) {
+    const loadingText = language === "hi" ? "प्रश्नोत्तरी लोड हो रही है..." : "Loading quiz...";
     return (
       <div className={styles.page}>
         <div className={styles.loadingContainer}>
           <p>{loadingText}</p>
-          {isTranslating && <div className={styles.spinner}></div>}
+          <div className={styles.spinner}></div>
         </div>
       </div>
     );
@@ -625,23 +636,47 @@ const QuizEngineTimer = QuizTimerComponent;
   const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
   const displayTime = `${String(Math.floor(elapsedSeconds / 60)).padStart(2, "0")}:${String(elapsedSeconds % 60).padStart(2, "0")}`;
 
+  const { engineTheme } = useUI();
+  const themeClasses = {
+    indigo: "theme-pattern-indigo",
+    midnight: "theme-pattern-midnight text-white",
+    sunset: "theme-pattern-sunset",
+    emerald: "theme-pattern-emerald",
+  };
+
   return (
-    <main
-      className={`${styles.page} ${isFullscreen ? styles.fullscreen : ""}`}
-      style={{ ["--quizFontScale"]: String(fontScale || 1) }}
-    >
-      <div className={styles.mainLayout}>
-        <div className={styles.quizArea}>
-          {/* Top Bar */}
-          <div className={styles.topBar}>
-            <div className={styles.topLeft}>
-              <div className={styles.scoreInfo}>
-                <span className={styles.streakCount}>
-                  {(answers.length >= 3 && answers.slice(-3).every(a => a.isCorrect)) ? "🔥 " : ""}
-                  {score} {language === "hi" ? "सही" : "Correct"}
-                </span>
-              </div>
+    <div className={`min-h-screen w-full transition-all duration-500 ${themeClasses[engineTheme] || themeClasses.indigo}`}>
+      {isTranslating && (
+        <div className={styles.translatingOverlay}>
+          <div className={styles.translatingContent}>
+            <div className={styles.translatingLoader}>
+              <div className={styles.translatingCircle} />
+              <span className={styles.translatingBrain}>🧠</span>
             </div>
+            <div className={styles.translatingText}>
+              {translateTarget === "hi" ? "अनुवाद किया जा रहा है..." : "Translating..."}
+            </div>
+            <div className={styles.translatingSub}>
+              {translateTarget === "hi" ? "हिंदी संस्करण तैयार हो रहा है" : "Preparing English Version"}
+            </div>
+          </div>
+        </div>
+      )}
+      <main
+        className={`${styles.page} ${isFullscreen ? `${styles.fullscreen} ${themeClasses[engineTheme] || themeClasses.indigo}` : ""}`}
+        style={{ ["--quizFontScale"]: String(fontScale || 1) }}
+      >
+        <div className={styles.mainLayout}>
+          <div className={styles.quizArea}>
+            {/* Top Bar */}
+            <div className={styles.topBar}>
+              <div className={styles.topLeft}>
+                <div className={styles.scoreInfo}>
+                  <span className={styles.streakCount}>
+                    {score} {language === "hi" ? "सही" : "Correct"}
+                  </span>
+                </div>
+              </div>
             <div className={styles.topCenter}>
               {timerSetting > 0 && status === "active" && currentQuestion && (
                 <QuizTimerComponent
@@ -721,7 +756,7 @@ const QuizEngineTimer = QuizTimerComponent;
           {/* Question */}
           {currentQuestion && (
             <div className={`${isPaused || showStory ? styles.pausedContent : ""} ${questionTransition ? styles.transitioning : ""}`}>
-              <QuestionCard
+              <QuestionCardV2
                 key={currentQuestion.id}
                 question={currentQuestion}
                 onAnswer={handleSubmitAnswer}
@@ -734,6 +769,7 @@ const QuizEngineTimer = QuizTimerComponent;
                 audienceStats={audienceStats}
                 showExplanation={showExplanation}
                 explanation={currentQuestion.explanation}
+                language={language}
               />
             </div>
           )}
@@ -841,5 +877,6 @@ const QuizEngineTimer = QuizTimerComponent;
       {/* Ad Simulation Overlay */}
       {showingAd && <AdOverlay onComplete={handleAdComplete} />}
     </main>
+    </div>
   );
 }

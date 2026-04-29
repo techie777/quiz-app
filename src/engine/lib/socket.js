@@ -35,6 +35,7 @@ class SocketService {
         reconnectionDelay: 1000,
         timeout: 10000,
         forceNew: true,
+        transports: ['websocket'] // Force WebSocket to avoid XHR polling errors
       });
       
       console.log('???? Socket Engine Initialized:', socketUrl);

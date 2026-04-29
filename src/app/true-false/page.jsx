@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
+import { useLanguage } from "@/context/LanguageContext";
 import { CheckCircle, ArrowRight, Brain, Sparkles, Play } from "lucide-react";
 import styles from "@/styles/TrueFalse.module.css";
 
@@ -21,6 +22,7 @@ const LanguageToggle = ({ lang, onChange, className }) => (
 );
 
 export default function TrueFalseHub() {
+  const { t, language: globalAppLang } = useLanguage();
   const [categories, setCategories] = useState([]);
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,7 +30,12 @@ export default function TrueFalseHub() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [globalLang, setGlobalLang] = useState("EN");
+  const [globalLang, setGlobalLang] = useState(globalAppLang.toUpperCase());
+
+  // Sync with global app language
+  useEffect(() => {
+    setGlobalLang(globalAppLang.toUpperCase());
+  }, [globalAppLang]);
 
   // Initial data load
   useEffect(() => {
@@ -89,15 +96,15 @@ export default function TrueFalseHub() {
 
         {/* Voyager Play Button */}
         <div className={styles.voyagerPlayWrapper}>
-          <Link href="/true-false/voyager" className={styles.voyagerPlayBtn} title="Launch Voyager Mode">
+          <Link href="/true-false/voyager" className={styles.voyagerPlayBtn} title={t('tf.voyager')}>
             <Play fill="currentColor" size={24} />
           </Link>
-          <span className={styles.voyagerPlayLabel}>Launch Voyager</span>
+          <span className={styles.voyagerPlayLabel}>{t('tf.voyager')}</span>
         </div>
 
         {/* Global Language Toggle */}
         <div className={styles.globalLangWrapper}>
-          <span className={styles.globalLangLabel}>Stream Language</span>
+          <span className={styles.globalLangLabel}>{t('tf.streamLang')}</span>
           <LanguageToggle lang={globalLang} onChange={setGlobalLang} />
         </div>
 
@@ -107,7 +114,7 @@ export default function TrueFalseHub() {
              className={`${styles.filterChip} ${selectedCategory === 'all' ? styles.filterChipActive : ''}`}
              onClick={() => setSelectedCategory('all')}
           >
-            All Challenges
+            {t('tf.all')}
           </div>
           {categories.map(cat => (
             <div 
@@ -115,7 +122,7 @@ export default function TrueFalseHub() {
                className={`${styles.filterChip} ${selectedCategory === cat.id ? styles.filterChipActive : ''}`}
                onClick={() => setSelectedCategory(cat.id)}
             >
-              {cat.name}
+              {globalAppLang === 'hi' && cat.nameHi ? cat.nameHi : cat.name}
             </div>
           ))}
         </div>
@@ -135,6 +142,7 @@ export default function TrueFalseHub() {
                 isLast={questions.length === idx + 1}
                 lastRef={lastElementRef}
                 globalLang={globalLang}
+                t={t}
               />
             ))}
           </div>
@@ -148,7 +156,7 @@ export default function TrueFalseHub() {
 
         {!hasMore && questions.length > 0 && (
           <div className="text-center py-10 text-emerald-500/50 font-bold">
-            End of intelligence stream.
+            {t('tf.end')}
           </div>
         )}
       </div>
@@ -156,7 +164,7 @@ export default function TrueFalseHub() {
   );
 }
 
-function WallTrueFalseCard({ question, isLast, lastRef, globalLang }) {
+function WallTrueFalseCard({ question, isLast, lastRef, globalLang, t }) {
   const [localLang, setLocalLang] = useState(null);
   const [userGuess, setUserGuess] = useState(null); // null, 'correct', 'incorrect'
   
@@ -196,21 +204,21 @@ function WallTrueFalseCard({ question, isLast, lastRef, globalLang }) {
              {/* Gamification Layer */}
              {!userGuess ? (
                <div className={styles.wallCardActions}>
-                  <button className={`${styles.guessBtn} ${styles.trueBtn}`} onClick={(e) => handleGuess(e, true)}>True</button>
-                  <button className={`${styles.guessBtn} ${styles.falseBtn}`} onClick={(e) => handleGuess(e, false)}>False</button>
+                  <button className={`${styles.guessBtn} ${styles.trueBtn}`} onClick={(e) => handleGuess(e, true)}>{t('tf.true')}</button>
+                  <button className={`${styles.guessBtn} ${styles.falseBtn}`} onClick={(e) => handleGuess(e, false)}>{t('tf.false')}</button>
                </div>
              ) : (
                <div className={`${styles.resPill} ${userGuess === 'correct' ? styles.correctPill : styles.incorrectPill}`}>
                   {userGuess === 'correct' ? (
-                     <><span>🎯</span> You are Right!</>
+                     <><span>🎯</span> {t('tf.right')}</>
                   ) : (
-                     <><span>❌</span> You are Wrong!</>
+                     <><span>❌</span> {t('tf.wrong')}</>
                   )}
                </div>
              )}
 
              <div className={styles.cardFooter}>
-               <span className={styles.cardCategory}>{question.category?.name}</span>
+               <span className={styles.cardCategory}>{globalLang === 'HI' && question.category?.nameHi ? question.category?.nameHi : question.category?.name}</span>
                <div className="flex gap-2">
                  <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30">
                     <CheckCircle className="w-4 h-4 text-emerald-400" />

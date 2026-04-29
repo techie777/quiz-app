@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLanguage } from "@/context/LanguageContext";
 import styles from "@/styles/ResumeBanner.module.css";
 
 const STORAGE_KEY = 'global_quiz_state';
 
 export default function ResumeBanner() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [activeQuiz, setActiveQuiz] = useState(null);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -65,7 +67,7 @@ export default function ResumeBanner() {
         <button 
           className={styles.closeBtn}
           onClick={() => setIsVisible(false)}
-          title="Dismiss"
+          title={t('common.dismiss') || "Dismiss"}
         >
           ✕
         </button>
@@ -73,15 +75,15 @@ export default function ResumeBanner() {
         <div className={styles.bannerContent}>
           <div className={styles.info}>
             <div className={styles.topRow}>
-              <span className={styles.badge}>In Progress</span>
+              <span className={styles.badge}>{t('banners.resume.badge')}</span>
             </div>
-            <h4 className={styles.title}>Resume your quiz</h4>
+            <h4 className={styles.title}>{t('banners.resume.title')}</h4>
             <p className={styles.subtitle}>{quizTitle} {activeQuiz.selectedSetIndex && `• Set ${activeQuiz.selectedSetIndex}`}</p>
           </div>
 
           <div className={styles.progressContainer}>
             <div className={styles.progressLabel}>
-              <span>{answeredCount} of {totalQuestions} Questions Completed</span>
+              <span>{answeredCount} {t('common.of') || 'of'} {totalQuestions} {t('banners.resume.progress')}</span>
             </div>
             <div className={styles.progressBar}>
               <motion.div 
@@ -98,7 +100,7 @@ export default function ResumeBanner() {
               href={`/quiz/${activeQuiz.quizId}`} 
               className={styles.resumeBtn}
             >
-              🚀 Resume Quiz
+              {t('banners.resume.btn')}
             </Link>
           </div>
         </div>

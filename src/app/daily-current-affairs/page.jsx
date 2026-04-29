@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useMonetization } from "@/context/MonetizationContext";
 import { motion, AnimatePresence } from "framer-motion";
 import AdGate from "@/components/monetization/AdGate";
+import { useLanguage } from "@/context/LanguageContext";
 import styles from "@/styles/CurrentAffairs.module.css";
 
 const containerVariants = {
@@ -98,6 +99,7 @@ export default function DailyCurrentAffairsPage() {
   const [page, setPage] = useState(1);
   const pageSize = 10;
   const [favIds, setFavIds] = useState(new Set());
+  const { t, isHindi } = useLanguage();
   const { isPro, useCounts, incrementCount } = useMonetization();
   const [readItems, setReadItems] = useState(new Set()); 
   const [showAdGate, setShowAdGate] = useState(false);
@@ -299,7 +301,7 @@ export default function DailyCurrentAffairsPage() {
       // Only mark as read and increment counter if it's a new item
       if (!readItems.has(previousItem.id)) {
         setReadItems(prev => new Set([...prev, previousItem.id]));
-        setFreeReadsUsed(prev => prev + 1);
+        incrementCount("ca");
       }
     }
   };
@@ -319,7 +321,7 @@ export default function DailyCurrentAffairsPage() {
       // Only mark as read and increment counter if it's a new item
       if (!readItems.has(nextItem.id)) {
         setReadItems(prev => new Set([...prev, nextItem.id]));
-        setFreeReadsUsed(prev => prev + 1);
+        incrementCount("ca");
       }
     }
   };
@@ -353,22 +355,17 @@ export default function DailyCurrentAffairsPage() {
       ctx.fillStyle = '#3b82f6';
       ctx.fillRect(0, 0, canvas.width, 100);
       
-      // Logo and website name in header
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 24px Arial';
-      ctx.fillText('🧠 QuizWeb', 40, 55);
-      
       // Tagline
       ctx.font = '16px Arial';
-      ctx.fillText('Education & Exam Preparation Platform', 40, 75);
+      ctx.fillText(t('ca.shareTagline'), 40, 75);
       
       // Current affairs badge
       ctx.fillStyle = '#1e40af';
       ctx.fillRect(canvas.width - 200, 20, 160, 60);
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 18px Arial';
-      ctx.fillText('Daily Current', canvas.width - 180, 45);
-      ctx.fillText('Affairs', canvas.width - 180, 65);
+      ctx.fillText(isHindi ? "दैनिक" : 'Daily Current', canvas.width - 180, 45);
+      ctx.fillText(isHindi ? "जानकारी" : 'Affairs', canvas.width - 180, 65);
       
       // Main card area
       ctx.fillStyle = '#ffffff';
@@ -426,16 +423,16 @@ export default function DailyCurrentAffairsPage() {
       // Website info
       ctx.fillStyle = '#3b82f6';
       ctx.font = 'bold 20px Arial';
-      ctx.fillText('Read more Daily Current Affairs on QuizWeb', 60, 590);
+      ctx.fillText(t('ca.readMore'), 60, 590);
       
       ctx.fillStyle = '#64748b';
       ctx.font = '16px Arial';
-      ctx.fillText('Stay updated with latest news and exam preparation materials', 60, 615);
+      ctx.fillText(t('ca.subtitle'), 60, 615);
       
       // Website URL
       ctx.fillStyle = '#1e40af';
       ctx.font = 'bold 18px Arial';
-      ctx.fillText('🌐 quizweb.example.com', 60, 645);
+      ctx.fillText(`🌐 ${window.location.host}`, 60, 645);
       
       // Footer
       ctx.fillStyle = '#94a3b8';
@@ -592,7 +589,7 @@ export default function DailyCurrentAffairsPage() {
     return (
       <main className={styles.page}>
         <div className={styles.header}>
-           <h1 className={styles.title}>Intelligence Briefing</h1>
+           <h1 className={styles.title}>{hasMounted ? t('ca.title') : 'Intelligence Briefing'}</h1>
            <div className={styles.skeletonTitle} style={{ width: '200px', height: '20px' }}></div>
         </div>
         <div className={styles.skeletonList}>
@@ -640,7 +637,7 @@ export default function DailyCurrentAffairsPage() {
            className={styles.todayBtn}
            onClick={() => setSelectedDate(getTodayDateString())}
         >
-          Today
+          {t('ca.today')}
         </button>
 
         <a className={styles.exportBtnSmall} href={exportHref} target="_blank" rel="noreferrer" title="Export Intelligence">
@@ -650,13 +647,13 @@ export default function DailyCurrentAffairsPage() {
 
       <div className={styles.layout}>
         <aside className={styles.sidebar}>
-          <div className={styles.sidebarTitle}>Current Affairs Category</div>
+          <div className={styles.sidebarTitle}>{t('ca.sidebarTitle')}</div>
           <button
             className={`${styles.sideItem} ${selectedCategory === "all" ? styles.sideActive : ""}`}
             onClick={() => setSelectedCategory("all")}
           >
             <span className={styles.sideIcon}>🌐</span>
-            <span className={styles.sideText}>All Intelligence</span>
+            <span className={styles.sideText}>{t('ca.all')}</span>
           </button>
           {categories.map((c) => (
             <button
@@ -683,7 +680,7 @@ export default function DailyCurrentAffairsPage() {
               ))}
             </div>
           ) : items.length === 0 ? (
-            <div className={styles.empty}>No intelligence found for the selected parameters.</div>
+            <div className={styles.empty}>{t('ca.noResults')}</div>
           ) : (
             <div className={styles.feedContainer}>
               <AnimatePresence mode="popLayout">
@@ -698,7 +695,7 @@ export default function DailyCurrentAffairsPage() {
                   >
                     <div className={styles.dateHeader}>
                       <span className={styles.dateHeaderIcon}>📅</span>
-                      <span className={styles.dateHeaderText}>{formatDate(date)} Intelligence</span>
+                      <span className={styles.dateHeaderText}>{t('ca.dateHeader').replace('{date}', formatDate(date))}</span>
                       <div className={styles.dateHeaderLine}></div>
                     </div>
                     
@@ -726,12 +723,12 @@ export default function DailyCurrentAffairsPage() {
                 {loading && !isInitialLoad && (
                   <div className={styles.miniLoader}>
                     <div className={styles.briefingSpinner}></div>
-                    <span>Decrypting more briefings...</span>
+                    <span>{t('ca.loading')}</span>
                   </div>
                 )}
                 {!hasMore && items.length > 0 && (
                   <div className={styles.endOfFeed}>
-                    <span>Complete Mission History Decrypted</span>
+                    <span>{t('ca.end')}</span>
                   </div>
                 )}
               </div>
@@ -750,7 +747,7 @@ export default function DailyCurrentAffairsPage() {
                 onClick={navigateToPrevious}
                 disabled={items.findIndex(item => item.id === reading?.id) === 0}
               >
-                ← Previous
+                ← {t('ca.prev')}
               </button>
               
               <div className={styles.navInfo}>
@@ -762,7 +759,7 @@ export default function DailyCurrentAffairsPage() {
                 onClick={navigateToNext}
                 disabled={items.findIndex(item => item.id === reading?.id) === items.length - 1}
               >
-                Next →
+                {t('ca.next')} →
               </button>
             </div>
 
@@ -782,7 +779,7 @@ export default function DailyCurrentAffairsPage() {
               
               <div className={styles.modalMetaWithActions}>
                 <div className={styles.modalMetaLeft}>
-                  <span className={styles.postedBy}>Posted by: Admin</span>
+                  <span className={styles.postedBy}>{t('ca.postedBy')}: Admin</span>
                   <span className={styles.metaSeparator}>•</span>
                   {reading.category && (
                     <>
@@ -794,7 +791,7 @@ export default function DailyCurrentAffairsPage() {
                   )}
                   {readItems.has(reading.id) && (
                     <>
-                      <span className={styles.readIndicator}>✓ Read</span>
+                      <span className={styles.readIndicator}>✓ {t('ca.read')}</span>
                       <span className={styles.metaSeparator}>•</span>
                     </>
                   )}
@@ -899,7 +896,7 @@ export default function DailyCurrentAffairsPage() {
                 setPendingItem(null);
             }
         }}
-        title="Unlocking Current Affairs"
+        title={hasMounted ? t('ca.title') : "Intelligence Briefing"}
       />
     </main>
   );

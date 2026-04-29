@@ -8,8 +8,10 @@ import { useSearchParams, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { useSession } from "next-auth/react";
 import { useMonetization } from "@/context/MonetizationContext";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function DonationPage() {
+  const { t } = useLanguage();
   const [showModal, setShowModal] = useState(false);
   const [selectedTier, setSelectedTier] = useState(null);
   const searchParams = useSearchParams();
@@ -21,10 +23,10 @@ export default function DonationPage() {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const tiers = [
-    { id: 'coffee', emoji: '☕', value: '$5', label: 'Cup of Coffee', desc: 'Sponsor a few hours of high-performance hosting.' },
-    { id: 'book', emoji: '📚', value: '$25', label: 'Knowledge Pack', desc: 'Helps us add 100+ new verified quiz questions.' },
-    { id: 'rocket', emoji: '🚀', value: '$50', label: 'Growth Catalyst', desc: 'Powers our new feature development for a week.' },
-    { id: 'crown', emoji: '👑', value: '$150', label: 'Grand Patron', desc: 'Directly funds local community events and rewards.' }
+    { id: 'coffee', emoji: '☕', value: '$5', label: t('donate.tiers.coffee.label'), desc: t('donate.tiers.coffee.desc') },
+    { id: 'book', emoji: '📚', value: '$25', label: t('donate.tiers.book.label'), desc: t('donate.tiers.book.desc') },
+    { id: 'rocket', emoji: '🚀', value: '$50', label: t('donate.tiers.rocket.label'), desc: t('donate.tiers.rocket.desc') },
+    { id: 'crown', emoji: '👑', value: '$150', label: t('donate.tiers.crown.label'), desc: t('donate.tiers.crown.desc') }
   ];
 
   const handleDonate = async (tier) => {
@@ -34,7 +36,7 @@ export default function DonationPage() {
     // If this is a specific unlock action, process the mock payment
     if (action === "pro" || action === "mockpass") {
         if (!session) {
-            toast.error("Please sign in to complete purchase");
+            toast.error(t('donate.toasts.signIn'));
             return;
         }
 
@@ -50,16 +52,16 @@ export default function DonationPage() {
             });
 
             if (res.ok) {
-                toast.success("Payment Successful! Features unlocked.");
+                toast.success(t('donate.toasts.success'));
                 refreshStatus(); // Refresh context
                 setTimeout(() => {
                     router.back();
                 }, 1500);
             } else {
-                toast.error("Transaction failed");
+                toast.error(t('donate.toasts.failed'));
             }
         } catch(err) {
-            toast.error("Network error");
+            toast.error(t('donate.toasts.network'));
         } finally {
             setIsProcessing(false);
         }
@@ -74,34 +76,34 @@ export default function DonationPage() {
           animate={{ opacity: 1, y: 0 }}
           className={styles.badge}
         >
-          <Heart size={14} fill="currentColor" /> Support our Vision
+          <Heart size={14} fill="currentColor" /> {t('donate.hero.badge')}
         </motion.div>
-        <h1 className={styles.title}>Keep Learning <br /> Free for Everyone</h1>
+        <h1 className={styles.title}>{t('donate.hero.title')}</h1>
         <p className={styles.subtitle}>
-          Your contribution helps us maintain server costs, verify content accuracy, and keep high-quality education accessible to millions.
+          {t('donate.hero.subtitle')}
         </p>
       </header>
 
       <main className={styles.contentRow}>
         <section className={styles.missionCard}>
           <span className={styles.missionIcon}>🌍</span>
-          <h2 className={styles.missionTitle}>Our Mission</h2>
+          <h2 className={styles.missionTitle}>{t('donate.mission.title')}</h2>
           <div className={styles.missionText}>
             <p className="mb-4 text-sm">
-              QuizWeb was built on a simple idea: that knowledge shouldn&apos;t be behind a paywall. We provide professional-grade mock exams, career guidance, and daily learning tools for free.
+              {t('donate.mission.text1')}
             </p>
             <p className="mb-4 text-sm">
-              However, maintaining a global platform at scale incurs significant infrastructure and content verification costs.
+              {t('donate.mission.text2')}
             </p>
             <div className="space-y-3 mt-6">
               <div className="flex items-center gap-3 text-sm font-bold text-slate-700">
-                <ShieldCheck className="text-emerald-500" size={18} /> 100% Ad-Free Core Experience
+                <ShieldCheck className="text-emerald-500" size={18} /> {t('donate.mission.feature1')}
               </div>
               <div className="flex items-center gap-3 text-sm font-bold text-slate-700">
-                <ShieldCheck className="text-emerald-500" size={18} /> Expert-Verified Question Bank
+                <ShieldCheck className="text-emerald-500" size={18} /> {t('donate.mission.feature2')}
               </div>
               <div className="flex items-center gap-3 text-sm font-bold text-slate-700">
-                <ShieldCheck className="text-emerald-500" size={18} /> Multi-language Accessibility
+                <ShieldCheck className="text-emerald-500" size={18} /> {t('donate.mission.feature3')}
               </div>
             </div>
           </div>
@@ -113,17 +115,17 @@ export default function DonationPage() {
               <span className={styles.tierEmoji}>{tier.emoji}</span>
               <div className={styles.tierValue}>{tier.value}</div>
               <div className={styles.tierLabel}>{tier.label}</div>
-              <div className={styles.tierAction}>Support Now</div>
+              <div className={styles.tierAction}>{t('donate.tiers.supportNow')}</div>
             </div>
           ))}
-          <div className={`${styles.tier} ${styles.customAmount}`} onClick={() => handleDonate({ label: "Custom Amount" })}>
-            <div className={styles.tierLabel} style={{ marginBottom: 0 }}>Prefer a custom amount?</div>
+          <div className={`${styles.tier} ${styles.customAmount}`} onClick={() => handleDonate({ label: t('donate.tiers.customLabel') })}>
+            <div className={styles.tierLabel} style={{ marginBottom: 0 }}>{t('donate.tiers.customQ')}</div>
           </div>
         </section>
       </main>
 
       <footer className={styles.footerNote}>
-        <p>© 2026 QuizWeb International. Transforming digital education together.</p>
+        <p>{t('footer.rights')}</p>
       </footer>
 
       {/* Placeholder Modal for Razorpay */}
@@ -156,17 +158,17 @@ export default function DonationPage() {
               </div>
               
               <h3 className="text-2xl font-black text-slate-900 mb-2">
-                {isProcessing ? "Processing..." : (action ? "Simulating Payment" : "Gateways Opening Soon!")}
+                {isProcessing ? t('donate.modal.processing') : (action ? t('donate.modal.simulating') : t('donate.modal.gateways'))}
               </h3>
               <p className="text-slate-500 text-sm leading-relaxed mb-8">
                 {action 
-                    ? "As our Razorpay account is pending, this dummy screen acts as your successful transaction. Unlocking features now..."
-                    : "We are currently finalizing our **Razorpay Integration** to ensure your contributions are handled with maximum security."
+                    ? t('donate.modal.simulationDesc')
+                    : t('donate.modal.finalizeDesc')
                 }
               </p>
               
               <div className="bg-slate-50 rounded-2xl p-4 text-xs font-bold text-slate-400 uppercase tracking-widest mb-8">
-                Target: {action ? (action === "pro" ? "QuizWeb Pro Subscription - ₹11" : `Mock Exam Pass - ₹49`) : (selectedTier?.label || "Donation")}
+                {t('common.target') || 'Target'}: {action ? (action === "pro" ? "QuizWeb Pro Subscription - ₹11" : `Mock Exam Pass - ₹49`) : (selectedTier?.label || "Donation")}
               </div>
 
               {!action && (
@@ -174,7 +176,7 @@ export default function DonationPage() {
                     onClick={() => setShowModal(false)}
                     className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition shadow-lg"
                   >
-                    Got It, Thanks!
+                    {t('common.gotIt') || 'Got It, Thanks!'}
                   </button>
               )}
             </motion.div>

@@ -6,7 +6,7 @@ import { useAdmin } from "@/context/AdminContext";
 import styles from "@/styles/AdminCategories.module.css";
 import toast from "react-hot-toast";
 
-const EMPTY_CAT = { id: "", topic: "", emoji: "", description: "", categoryClass: "", hidden: false, image: "", parentId: "", showSubCategoriesOnHome: false, storyText: "", storyImage: "", originalLang: "en", isTrending: false, chips: [] };
+const EMPTY_CAT = { id: "", topic: "", topicHi: "", emoji: "", description: "", descriptionHi: "", categoryClass: "", hidden: false, image: "", parentId: "", showSubCategoriesOnHome: false, storyText: "", storyImage: "", originalLang: "en", isTrending: false, chips: [] };
 
 async function submitPending(type, payload) {
   const res = await fetch("/api/admin/pending", {
@@ -132,6 +132,25 @@ const EditForm = ({ category, onSave, onCancel, isNew = false, quizzes = [], set
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
             placeholder="Short description"
+            className={styles.input}
+          />
+        </div>
+        
+        <div className={styles.field}>
+          <label>Topic Name (Hindi)</label>
+          <input
+            value={form.topicHi || ""}
+            onChange={(e) => setForm({ ...form, topicHi: e.target.value })}
+            placeholder="जैसे: विज्ञान"
+            className={styles.input}
+          />
+        </div>
+        <div className={styles.field}>
+          <label>Description (Hindi)</label>
+          <input
+            value={form.descriptionHi || ""}
+            onChange={(e) => setForm({ ...form, descriptionHi: e.target.value })}
+            placeholder="संक्षिप्त विवरण"
             className={styles.input}
           />
         </div>
@@ -324,8 +343,10 @@ export default function AdminCategoriesPage() {
 
       const data = { 
         topic: topicStr, 
+        topicHi: formData.topicHi || null,
         emoji: emojiStr, 
         description: formData.description || "", 
+        descriptionHi: formData.descriptionHi || null,
         categoryClass: formData.categoryClass || `category-${topicStr.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")}`,
         hidden: !!formData.hidden, 
         image: formData.image || null, 

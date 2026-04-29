@@ -411,7 +411,7 @@ export default function QuizPlayer({ state, onLeave }) {
                       const isSelected = selectedOption === opt;
                       const isCorrectAnswer = opt === questions[currentIndex]?.correctAnswer;
                       
-                      let btnClass = "bg-white border border-slate-200 text-slate-900 hover:border-indigo-400 hover:-translate-y-1 hover:shadow-lg";
+                      let btnClass = "bg-white border border-slate-200 text-slate-900 lg:hover:border-indigo-400 lg:hover:-translate-y-1 lg:hover:shadow-lg";
                       
                       if (selectedOption) {
                          if (isCorrectAnswer) {

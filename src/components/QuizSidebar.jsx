@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { useQuiz } from "@/context/QuizContext";
 import { useData } from "@/context/DataContext";
+import { useLanguage } from "@/context/LanguageContext";
 import styles from "@/styles/QuizSidebar.module.css";
 
 export default function QuizSidebar({ 
@@ -22,6 +23,7 @@ export default function QuizSidebar({
   answers,
   TimerComponent
 }) {
+  const { t } = useLanguage();
   const { status } = useQuiz();
   // State for elapsed time
   const [elapsed, setElapsed] = useState(0);
@@ -66,22 +68,22 @@ export default function QuizSidebar({
               className={styles.navBtn} 
               onClick={onBack} 
               disabled={currentIndex === 0}
-              title="Previous Question (Arrow Left)"
+               title={t('common.back') || "Previous Question (Arrow Left)"}
             >
               <span className={styles.navIcon}>←</span>
-              <span>Back</span>
+              <span>{t('common.back')}</span>
             </button>
             <div className={styles.missionCounter}>
-              <span className={styles.missionLabel}>Mission</span>
+              <span className={styles.missionLabel}>{t('live.lobby.selection.set')}</span>
               <span className={styles.missionValue}>Q{currentIndex + 1} / {questions.length}</span>
             </div>
             <button 
               className={styles.navBtn} 
               onClick={onResume} 
               disabled={currentIndex === questions.length - 1}
-              title="Next Question (Arrow Right)"
+               title={t('common.next') || "Next Question (Arrow Right)"}
             >
-              <span>Next</span>
+              <span>{t('common.next')}</span>
               <span className={styles.navIcon}>→</span>
             </button>
           </div>

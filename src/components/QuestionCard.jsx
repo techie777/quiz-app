@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useQuiz } from "@/context/QuizContext";
@@ -10,28 +10,33 @@ import { Share2, Heart } from "lucide-react";
 import Image from "next/image";
 import styles from "@/styles/QuizEngine.module.css";
 
-export default function QuestionCard({ 
-  question, 
-  onAnswer, 
-  favouriteIds, 
-  quizId, 
-  disabled, 
-  userAnswer, 
-  showHint, 
-  removedOptions = [], 
-  audienceStats, 
-  showExplanation, 
-  explanation 
+export default function QuestionCard({
+  question,
+  // Cache bust
+  onAnswer,
+  userAnswer,
+  showExplanation,
+  explanation,
+  language = "en",
+  disabled,
+  showHint,
+  removedOptions = [],
+  audienceStats,
+  favouriteIds,
+  quizId,
 }) {
+  const isHindi = language === 'hi';
   const { data: session, status } = useSession();
   const router = useRouter();
-  const { soundEnabled } = useQuiz();
+  const { soundEnabled, quizSessionId, combo } = useQuiz();
+  
   const [selected, setSelected] = useState(null);
   const [revealed, setRevealed] = useState(false);
   const [fav, setFav] = useState(false);
   const [loginPrompt, setLoginPrompt] = useState(false);
   const [sharing, setSharing] = useState(false);
-  const [shaking, setShaking] = useState(false);
+  const [shakingType, setShakingType] = useState(""); // "", "shake", "megaShake"
+
   const isUser = session?.user && !session.user.isAdmin;
 
   // Update selected when userAnswer changes (navigation)
@@ -42,27 +47,48 @@ export default function QuestionCard({
     }
   }, [userAnswer]);
 
-  // Check if this question is already favourited
+  // 1. Sync fav state when favouriteIds or question.id changes
   useEffect(() => {
-    if (favouriteIds && question) {
+    if (favouriteIds && typeof favouriteIds.has === 'function' && question?.id) {
       setFav(favouriteIds.has(question.id));
     }
-  }, [question?.id, favouriteIds, question]);
+  }, [favouriteIds, question?.id]);
 
-  // Set up ref for external access
-  useEffect(() => {
-    window.QuestionCardRef = {
-      resetQuestion: () => {
-        setSelected(null);
-        setRevealed(false);
-        setShaking(false);
-      }
-    };
+  // 2. Generate a stable shuffled order of indices for this question instance
+  const shuffledOrder = useMemo(() => {
+    if (!question || !Array.isArray(question.options)) return [0, 1, 2, 3];
     
-    return () => {
-      delete window.QuestionCardRef;
+    const indices = question.options.map((_, i) => i);
+    // Fisher-Yates shuffle with fixed seed (question id + session id)
+    // We'll use a simple deterministic shuffle based on the IDs
+    const seed = (question.id || 0) + (quizSessionId || 0);
+    const seededRandom = () => {
+      const x = Math.sin(seed) * 10000;
+      return x - Math.floor(x);
     };
-  }, []);
+
+    const shuffled = [...indices];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(seededRandom() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  }, [question?.id, quizSessionId]);
+
+  // 3. Map current language options to the stable shuffled order
+  const shuffledOptions = useMemo(() => {
+    if (!question) return [];
+    const opts = (isHindi && Array.isArray(question.optionsHi) && question.optionsHi.length > 0) 
+      ? question.optionsHi 
+      : question.options;
+      
+    if (!Array.isArray(opts)) return [];
+    
+    return shuffledOrder.map(originalIndex => ({
+      text: opts[originalIndex] || "",
+      index: originalIndex
+    }));
+  }, [shuffledOrder, isHindi, question]);
 
   // Hotkey Listener
   useEffect(() => {
@@ -70,22 +96,21 @@ export default function QuestionCard({
       if (revealed || disabled) return;
       const key = e.key.toUpperCase();
       const map = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
-      if (map[key] !== undefined && question.options[map[key]]) {
-        handleSelect(map[key]);
+      const displayIdx = map[key];
+      if (displayIdx !== undefined && shuffledOptions[displayIdx]) {
+        handleSelect(shuffledOptions[displayIdx].index);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [revealed, disabled, question]);
+  }, [revealed, disabled, question, shuffledOptions]);
 
   const handleFavClick = async () => {
     if (disabled || !question) return;
-    // If not logged in, show login prompt
     if (status !== "authenticated" || !isUser) {
       setLoginPrompt(true);
       return;
     }
-    // Toggle favourite
     try {
       const res = await fetch("/api/favourites", {
         method: "POST",
@@ -112,206 +137,136 @@ export default function QuestionCard({
     setSharing(false);
   };
 
-  const handleSelect = (optionIndex) => {
+  const handleSelect = (originalIndex) => {
     if (revealed || disabled || !question) return;
     
-    // Normalize comparison
-    const selectedOptionText = String(question.options[optionIndex] || "").trim();
-    const correctAnswerText = String(question.correctAnswer || "").trim();
-    const isCorrect = selectedOptionText === correctAnswerText;
-    
-    // Set selected and revealed immediately for live feedback
-    setSelected(optionIndex);
+    const isCorrect = originalIndex === question.correctAnswer;
+    setSelected(originalIndex);
     setRevealed(true);
-    
-    // ONLY sound feedback
+
     if (soundEnabled) {
-      if (isCorrect) {
-        playCorrectSound();
-      } else {
-        playWrongSound();
-        setShaking(true);
-        setTimeout(() => setShaking(false), 500);
-      }
+      if (isCorrect) playCorrectSound(combo);
+      else playWrongSound();
     }
-    onAnswer(optionIndex);
-  };
 
-  const getOptionClass = (optionIndex) => {
-    // Always return base option class
-    let className = styles.option;
-    
-    if (!revealed || !question) return className;
-    
-    // Normalize comparison for Hindi and other characters
-    const selectedOptionText = String(question.options[optionIndex] || "").trim();
-    const correctAnswerText = String(question.correctAnswer || "").trim();
-    const isCorrect = selectedOptionText === correctAnswerText;
-    
     if (isCorrect) {
-      className += ` ${styles.correct} correct-answer`;
-    } else if (optionIndex === selected && !isCorrect) {
-      className += ` ${styles.wrong} wrong-answer`;
+      if (combo >= 20) setShakingType("megaShake");
+      else if (combo >= 10) setShakingType("shake");
     }
-    
-    return className;
+
+    onAnswer(originalIndex);
   };
 
-  const getOptionStyle = (optionIndex) => {
-    // We already apply styles via CSS classes in getOptionClass
-    // This can be used for dynamic styles if needed, but for now we keep it minimal
-    if (!revealed) return {};
-    return {};
-  };
-
-  const getOptionIndicator = (optionIndex) => {
-    if (!revealed || !question) return null;
-    // Normalize comparison
-    const selectedOptionText = String(question.options[optionIndex] || "").trim();
-    const correctAnswerText = String(question.correctAnswer || "").trim();
-    const isCorrect = selectedOptionText === correctAnswerText;
-    
-    if (isCorrect) return '✓';
-    if (optionIndex === selected && !isCorrect) return '✗';
-    return null;
-  };
-
-  // Guard against missing question
   if (!question) return null;
 
   return (
-    <div className={`${styles.questionSection} ${shaking ? "animate-vibrate" : ""}`}>
-      <div className={styles.questionCard}>
-        <div className={styles.questionHeader}>
-          <p className={styles.questionText}>{question.text}</p>
-          <div className={styles.actionBtns}>
-            <button
-              className={styles.favBtn}
-              onClick={handleFavClick}
-              title="Favourite"
-            >
-              <Heart size={18} fill={fav ? "currentColor" : "none"} color={fav ? "#ef4444" : "currentColor"} />
-            </button>
-            <button
-              className={styles.shareBtn}
-              onClick={handleShare}
-              disabled={sharing}
-              title="Share this question"
-            >
-              <Share2 size={18} />
-            </button>
-          </div>
+    <div className={`${styles.questionCard} ${shakingType ? styles[shakingType] : ""}`}>
+      {/* Header with Category and Actions */}
+      <div className={styles.questionHeader}>
+        <span className={styles.categoryBadge}>
+          {isHindi ? (question.category?.nameHi || question.category?.name) : question.category?.name}
+        </span>
+        <div className={styles.actionBtns}>
+          <button 
+            onClick={handleShare} 
+            disabled={sharing}
+            className={styles.shareBtn}
+            title="Share Question"
+          >
+            <Share2 className={sharing ? styles.spinning : ""} />
+          </button>
+          <button 
+            onClick={handleFavClick} 
+            className={`${styles.favBtn} ${fav ? styles.activeHeart : ""}`}
+            title="Add to Favourites"
+          >
+            <Heart fill={fav ? "currentColor" : "none"} />
+          </button>
         </div>
+      </div>
+
+      {/* Question Text */}
+      <div className={styles.questionSection}>
+        <h2 className={styles.questionText}>
+          {isHindi ? (question.textHi || question.text) : question.text}
+        </h2>
         {question.image && (
-          <div className={styles.imageWrapper}>
+          <div className={styles.questionImageWrapper}>
             <Image 
               src={question.image} 
-              alt={question.text || "Question image"} 
-              width={600}
-              height={300}
+              alt="Question Visual" 
+              width={600} 
+              height={300} 
               className={styles.questionImage}
-              style={{ objectFit: 'contain', width: '100%', height: 'auto' }}
-              priority={true}
             />
           </div>
         )}
       </div>
 
-      {/* Login prompt for favourite */}
-      {loginPrompt && (
-        <div className={styles.loginPrompt}>
-          <p>Sign in to save favourites</p>
-          <div className={styles.loginPromptBtns}>
-            <button
-              className="btn-primary"
-              onClick={() => router.push("/signin")}
-            >
-              Sign In
-            </button>
-            <button
-              className="btn-secondary"
-              onClick={() => setLoginPrompt(false)}
-            >
-              Dismiss
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Hint Display */}
-      {showHint && (
-        <div className={styles.hintBox}>
-          <div className={styles.hintHeader}>
-            <span>💡 Hint</span>
-            <span className={styles.hintPenalty}>-5 points</span>
-          </div>
-          <p className={styles.hintText}>
-            {question.hint || "Think carefully about the question and try to eliminate the obviously wrong options."}
-          </p>
-        </div>
-      )}
-
-      {/* Ask Audience Results */}
-      {audienceStats && (
-        <div className={styles.audienceBox}>
-          <div className={styles.audienceHeader}>
-            <span>👥 Audience Poll</span>
-            <span className={styles.audiencePenalty}>-3 points</span>
-          </div>
-          <div className={styles.audienceChart}>
-            {question.options.map((option, idx) => (
-              <div key={idx} className={styles.audienceBar}>
-                <div className={styles.audienceBarFill} style={{ '--percent': audienceStats[idx] }}>
-                  <span className={styles.audiencePercent}>{audienceStats[idx]}%</span>
-                </div>
-                <span className={styles.audienceOption}>{option}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
+      {/* Options Grid */}
       <div className={styles.optionsGrid}>
-        {question.options.map((option, idx) => {
-          const isRemoved = removedOptions.includes(idx);
-          const hotkeys = ['A', 'B', 'C', 'D'];
-          
-          if (isRemoved) return null;
-          
+        {shuffledOptions.map((opt, i) => {
+          const isSelected = selected === opt.index;
+          const isCorrect = opt.index === question.correctAnswer;
+          const isWrong = isSelected && !isCorrect;
+          const isRemoved = removedOptions.includes(opt.index);
+
+          let optionClass = styles.option;
+          if (revealed) {
+            if (isCorrect) optionClass += ` ${styles.correct}`;
+            else if (isWrong) optionClass += ` ${styles.wrong}`;
+            else optionClass += ` ${styles.dimmed}`;
+          } else if (isSelected) {
+            optionClass += ` ${styles.selected}`;
+          }
+
+          if (isRemoved) optionClass += ` ${styles.removed}`;
+
           return (
             <button
-              key={idx}
-              data-option-index={idx}
-              className={`${getOptionClass(idx)} ${isRemoved ? styles.removed : ''} ${audienceStats ? styles.withAudience : ''}`}
-              style={getOptionStyle(idx)}
-              onClick={() => handleSelect(idx)}
-              disabled={revealed || disabled}
+              key={i}
+              onClick={() => handleSelect(opt.index)}
+              disabled={revealed || disabled || isRemoved}
+              className={optionClass}
             >
-              <div className={styles.optionContent}>
-                <span className={styles.hotkey}>{hotkeys[idx]}</span>
-                <p className={styles.optionText}>{option}</p>
-              </div>
+              <span className={styles.optionLetter}>{String.fromCharCode(65 + i)}</span>
+              <span className={styles.optionText}>{opt.text}</span>
               
-              {revealed && (
-                <div className={styles.optionIndicator}>
-                  {getOptionIndicator(idx)}
+              {audienceStats && audienceStats[opt.index] !== undefined && (
+                <div className={styles.pollBar} style={{ width: `${audienceStats[opt.index]}%` }}>
+                  <span className={styles.pollLabel}>{audienceStats[opt.index]}%</span>
                 </div>
-              )}
-              {audienceStats && (
-                <span className={styles.audienceBadge}>{audienceStats[idx]}%</span>
               )}
             </button>
           );
         })}
       </div>
 
-      {/* Explanation Display */}
-      {showExplanation && explanation && (
+      {/* Explanation Footer */}
+      {revealed && showExplanation && explanation && (
         <div className={styles.explanationBox}>
-          <div className={styles.explanationHeader}>
-            <span>📚 Explanation</span>
-          </div>
+          <h4 className={styles.explanationTitle}>
+            {isHindi ? "स्पष्टीकरण" : "Explanation"}
+          </h4>
           <p className={styles.explanationText}>{explanation}</p>
+        </div>
+      )}
+
+      {/* Login Prompt Overlay */}
+      {loginPrompt && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal}>
+            <h3>{isHindi ? "लॉगिन आवश्यक" : "Login Required"}</h3>
+            <p>{isHindi ? "पसंदीदा में जोड़ने के लिए कृपया लॉगिन करें।" : "Please login to add questions to your favourites."}</p>
+            <div className={styles.modalActions}>
+              <button onClick={() => router.push("/login")} className={styles.primaryBtn}>
+                {isHindi ? "लॉगिन" : "Login"}
+              </button>
+              <button onClick={() => setLoginPrompt(false)} className={styles.secondaryBtn}>
+                {isHindi ? "रद्द करें" : "Cancel"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

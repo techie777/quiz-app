@@ -8,40 +8,37 @@ import { useSession, signIn, signOut } from "next-auth/react";
 import { useUI } from "@/context/UIContext";
 import { ChevronDown, ChevronUp, Heart } from "lucide-react";
 import styles from "@/styles/SmartNavigation.module.css";
+import { useLanguage } from "@/context/LanguageContext";
+import { useQuiz } from "@/context/QuizContext";
 
 const fallbackNavigationItems = [
-  { name: "Personalized Quiz", href: "/#personalized", icon: "✨", description: "Tailored for you", isPersonalized: true },
-  { name: "Home", href: "/", icon: "🏠", description: "Master Hub" },
-  { name: "Global Leaderboard", href: "/leaderboard", icon: "🏆", description: "World intelligence rankings" },
-  { name: "QuizWeb Pro", href: "/pro", icon: "👑", description: "Unlock premium features" },
-  { name: "Quizzes", href: "/quizzes", icon: "🧠", description: "Play dynamic quizzes" },
-  { name: "Daily Current Affairs", href: "/daily-current-affairs", icon: "📰", description: "Latest daily updates" },
-  { name: "Mock Tests", href: "/mock-tests", icon: "✍️", description: "Practice papers" },
-  { name: "Career Guide", href: "/career-guide", icon: "🧭", description: "Career guidance" },
-  { name: "Fun facts", href: "/fun-facts", icon: "✨", description: "Amazing facts" },
-  { name: "Sawal/Jawab", href: "/sawal-jawab", icon: "❓", description: "Tricky riddles" },
-  { name: "True/False", href: "/true-false", icon: "✅", description: "Interactive challenges" }
+  { key: "personalized", href: "/#personalized", icon: "✨", isPersonalized: true },
+  { key: "home", href: "/", icon: "🏠" },
+  { key: "leaderboard", href: "/leaderboard", icon: "🏆" },
+  { key: "pro", href: "/pro", icon: "👑" },
+  { key: "quizzes", href: "/quizzes", icon: "🧠" },
+  { key: "currentAffairs", href: "/daily-current-affairs", icon: "📰" },
+  { key: "mockTests", href: "/mock-tests", icon: "✍️" },
+  { key: "careerGuide", href: "/career-guide", icon: "🧭" },
+  { key: "funFacts", href: "/fun-facts", icon: "💡" },
+  { key: "sawalJawab", href: "/sawal-jawab", icon: "❓" },
+  { key: "trueFalse", href: "/true-false", icon: "✅" }
 ];
 
 const HIDDEN_PATHS = ["/daily", "/govt-jobs-alerts", "/govt-study", "/book-my-course", "/school-study"];
 
 export default function SmartNavigation() {
   const { isMobileMenuOpen, closeMobileMenu, openOnboarding } = useUI();
+  const { t, mounted } = useLanguage();
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const isUser = session?.user && !session.user.isAdmin;
   
+  const { isFullscreen } = useQuiz();
   const [navigationItems, setNavigationItems] = useState(fallbackNavigationItems);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSignOutConfirm, setIsSignOutConfirm] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-
-  useEffect(() => {
-    const handleFullscreen = () => setIsFullscreen(!!document.fullscreenElement);
-    document.addEventListener("fullscreenchange", handleFullscreen);
-    return () => document.removeEventListener("fullscreenchange", handleFullscreen);
-  }, []);
 
   useEffect(() => {
     const fetchNav = async () => {
@@ -53,14 +50,21 @@ export default function SmartNavigation() {
             const dbItems = data.filter(item => !HIDDEN_PATHS.includes(item.href));
             
             // Merge with fallback to ensure essential items are present
-            // We use a Map to keep unique items by href, prioritizing DB items
+            // We use a Map to keep unique items by href, prioritizing DB items but preserving keys
             const mergedMap = new Map();
             
             // First, add all fallbacks
-            fallbackNavigationItems.forEach(item => mergedMap.set(item.href, item));
+            fallbackNavigationItems.forEach(item => mergedMap.set(item.href, { ...item }));
             
-            // Then, overwrite/add with DB items
-            dbItems.forEach(item => mergedMap.set(item.href, item));
+            // Then, overwrite/add with DB items, but KEEP the key if it exists in the map
+            dbItems.forEach(item => {
+              const existing = mergedMap.get(item.href);
+              if (existing) {
+                mergedMap.set(item.href, { ...item, key: existing.key });
+              } else {
+                mergedMap.set(item.href, item);
+              }
+            });
             
             setNavigationItems(Array.from(mergedMap.values()));
           }
@@ -85,7 +89,7 @@ export default function SmartNavigation() {
     setIsMounted(true);
   }, []);
 
-  if (pathname?.startsWith("/admin") || pathname?.includes("/mock-tests/paper/")) return null;
+  if (!isMounted || pathname?.startsWith("/admin") || pathname?.includes("/mock-tests/paper/") || isFullscreen) return null;
 
   return (
     <>
@@ -100,8 +104,8 @@ export default function SmartNavigation() {
               "itemListElement": navigationItems.map((item, index) => ({
                 "@type": "ListItem",
                 "position": index + 1,
-                "name": item.name,
-                "description": item.description,
+                "name": item.key ? t(`nav.${item.key}`) : item.name,
+                "description": item.key ? t(`nav.descriptions.${item.key}`) : item.description,
                 "item": `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}${item.href}`
               }))
             })
@@ -126,7 +130,7 @@ export default function SmartNavigation() {
                     className={`${styles.navLink} ${isActive ? styles.active : ''} ${item.isPersonalized ? styles.personalizedLink : ''}`}
                     role="menuitem"
                     aria-current={isActive ? "page" : undefined}
-                    title={item.description}
+                    title={mounted ? (item.key ? t(`nav.descriptions.${item.key}`) : item.description) : (item.description || item.name)}
                     onClick={(e) => {
                       if (item.isPersonalized) {
                         e.preventDefault();
@@ -147,7 +151,7 @@ export default function SmartNavigation() {
                       />
                     )}
                     <span className={styles.navIcon}>{item.icon}</span>
-                    <span className={styles.navText}>{item.name}</span>
+                    <span className={styles.navText}>{mounted ? (item.key ? t(`nav.${item.key}`) : item.name) : (item.name || item.key)}</span>
                   </Link>
                 </li>
               );
@@ -294,9 +298,9 @@ export default function SmartNavigation() {
                         >
                           <div className={styles.mobileNavIcon}>{item.icon}</div>
                           <div className={styles.mobileNavInfo}>
-                            <span className={styles.mobileNavText}>{item.name}</span>
+                            <span className={styles.mobileNavText}>{mounted ? (item.key ? t(`nav.${item.key}`) : item.name) : (item.name || item.key)}</span>
                             <span className={styles.mobileNavDescription}>
-                              {item.description}
+                              {mounted ? (item.key ? t(`nav.descriptions.${item.key}`) : item.description) : (item.description || item.name)}
                             </span>
                           </div>
                           {isActive && (

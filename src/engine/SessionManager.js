@@ -549,7 +549,13 @@ export default function SessionManager({ sessionId }) {
                         {pendingParticipants.map((guest) => (
                             <div key={guest.userId} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow animate-in slide-in-from-bottom-4 duration-500">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center font-black text-slate-400 text-sm shadow-inner">{guest.userName[0]}</div>
+                                    <div className="w-10 h-10 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center font-black text-slate-400 text-sm shadow-inner overflow-hidden">
+                                        {guest.userImage ? (
+                                            <img src={guest.userImage} alt={guest.userName} className="w-full h-full object-cover" />
+                                        ) : (
+                                            guest.userName[0]
+                                        )}
+                                    </div>
                                     <div className="text-left font-black text-slate-900 uppercase tracking-tight text-sm">{guest.userName}</div>
                                 </div>
                                 <div className="flex gap-2">
@@ -621,7 +627,13 @@ export default function SessionManager({ sessionId }) {
                     {pendingParticipants.map((guest) => (
                         <div key={guest.userId} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm animate-in slide-in-from-bottom-4 duration-500">
                             <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center font-black text-slate-400">{guest.userName[0]}</div>
+                                <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center font-black text-slate-400 overflow-hidden">
+                                    {guest.userImage ? (
+                                        <img src={guest.userImage} alt={guest.userName} className="w-full h-full object-cover" />
+                                    ) : (
+                                        guest.userName[0]
+                                    )}
+                                </div>
                                 <div className="text-left font-black text-slate-900 uppercase tracking-tight text-sm">{guest.userName}</div>
                             </div>
                             <div className="flex gap-2">

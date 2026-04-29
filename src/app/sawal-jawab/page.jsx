@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useLanguage } from '@/context/LanguageContext';
 import { Brain, Sparkles, HelpCircle } from 'lucide-react';
 import SawalJawabCard from '@/components/SawalJawabCard';
 import styles from '@/styles/SawalJawab.module.css';
@@ -17,10 +18,11 @@ const LanguageToggle = ({ lang, onChange }) => (
 );
 
 export default function SawalJawabPage() {
+  const { t, language: globalAppLang } = useLanguage();
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [lang, setLang] = useState('HI');
+  const [lang, setLang] = useState(globalAppLang.toUpperCase());
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
@@ -30,6 +32,11 @@ export default function SawalJawabPage() {
   useEffect(() => {
     setHasMounted(true);
   }, []);
+
+  // Sync with global app language
+  useEffect(() => {
+    setLang(globalAppLang.toUpperCase());
+  }, [globalAppLang]);
 
   // Fetch Categories
   useEffect(() => {
@@ -88,7 +95,7 @@ export default function SawalJawabPage() {
         {!hasMounted ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-            <p className="text-slate-500 font-bold">Unlocking Mysteries...</p>
+            <p className="text-slate-500 font-bold">{t('sj.loading')}</p>
           </div>
         ) : (
           <>
@@ -98,7 +105,7 @@ export default function SawalJawabPage() {
                     className={`${styles.filterChip} ${selectedCategory === 'all' ? styles.filterChipActive : ''}`}
                     onClick={() => setSelectedCategory('all')}
                   >
-                    All Mysteries
+                    {t('sj.all')}
                   </div>
                   {categories.map(cat => (
                     <div 
@@ -111,7 +118,7 @@ export default function SawalJawabPage() {
                   ))}
                </div>
                <div className="flex items-center gap-4">
-                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest hidden sm:block">Global Lang:</span>
+                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest hidden sm:block">{t('sj.globalLang')}</span>
                  <LanguageToggle lang={lang} onChange={setLang} />
                </div>
             </div>
@@ -135,7 +142,7 @@ export default function SawalJawabPage() {
                 {items.length === 0 && !loading && (
                   <div className="text-center py-20 bg-slate-900/20 rounded-3xl border border-dashed border-white/10">
                     <HelpCircle className="w-12 h-12 text-slate-700 mx-auto mb-4" />
-                    <p className="text-slate-500 font-bold">No tricky questions found in this category yet.</p>
+                    <p className="text-slate-500 font-bold">{t('sj.empty')}</p>
                   </div>
                 )}
               </>
@@ -150,7 +157,7 @@ export default function SawalJawabPage() {
             {!hasMore && items.length > 0 && (
               <div className="text-center py-10 mt-10 border-t border-white/5">
                  <span className="bg-slate-800/50 px-6 py-2 rounded-full text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">
-                   The End of Mystery
+                   {t('sj.end')}
                  </span>
               </div>
             )}

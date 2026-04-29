@@ -43,6 +43,7 @@ model User {
   funFactComments   FunFactComment[]
   
   interestedCategories String[]    @default([]) // Array of Category IDs/Slugs
+  engineTheme          String      @default("indigo")
 }
 
 model VerificationToken {
@@ -78,9 +79,11 @@ model Account {
 model Category {
   id                      String      @id @default(auto()) @map("_id") @db.ObjectId
   topic                   String
+  topicHi                 String?
   slug                    String?     @unique
   emoji                   String
   description             String      @default("")
+  descriptionHi           String?
   categoryClass           String      @default("")
   hidden                  Boolean     @default(false)
   image                   String?
@@ -107,7 +110,9 @@ model Category {
 model Question {
   id            String      @id @default(auto()) @map("_id") @db.ObjectId
   text          String
+  textHi        String?
   options       String
+  optionsHi     String?
   correctAnswer String
   difficulty    String      @default("easy")
   image         String?
@@ -236,6 +241,7 @@ model DailyQuiz {
 model Section {
   id          String       @id @default(auto()) @map("_id") @db.ObjectId
   name        String
+  nameHi      String?
   isVisible   Boolean      @default(true)
   order       Int          @default(0)
   subSections SubSection[]
@@ -246,6 +252,7 @@ model Section {
 model SubSection {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   name      String
+  nameHi    String?
   isVisible Boolean  @default(true)
   order     Int      @default(0)
   quizIds   String[] // Store category/quiz IDs

@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useQuiz } from "@/context/QuizContext";
 
 export default function PwaInstallPrompt() {
+  const { isFullscreen } = useQuiz();
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [installed, setInstalled] = useState(false);
   const [isIos, setIsIos] = useState(false);
@@ -45,7 +47,7 @@ export default function PwaInstallPrompt() {
     return false;
   }, [installed, isStandalone, deferredPrompt, isIos]);
 
-  if (!showPrompt) return null;
+  if (!showPrompt || isFullscreen) return null;
 
   return (
     <div

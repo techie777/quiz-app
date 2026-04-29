@@ -14,12 +14,20 @@ export default async function Page() {
         hidden: false,
         OR: [
           { parentId: null },
-          { parentId: { isSet: false } }
+          { parentId: { isSet: false } },
+          { showSubCategoriesOnHome: true }
         ]
       },
       include: {
         _count: {
           select: { questions: true }
+        },
+        subCategories: {
+          select: {
+            _count: {
+              select: { questions: true }
+            }
+          }
         },
       },
       orderBy: [{ sortOrder: "asc" }, { topic: "asc" }, { id: "asc" }],
@@ -42,8 +50,10 @@ export default async function Page() {
     const initialCategories = categoriesRaw.map((cat) => ({
       id: cat.id,
       topic: cat.topic,
+      topicHi: cat.topicHi,
       emoji: cat.emoji,
       description: cat.description,
+      descriptionHi: cat.descriptionHi,
       categoryClass: cat.categoryClass,
       hidden: cat.hidden,
       image: cat.image,
@@ -57,7 +67,7 @@ export default async function Page() {
       showSubCategoriesOnHome: cat.showSubCategoriesOnHome,
       createdAt: cat.createdAt.toISOString(),
       updatedAt: cat.updatedAt.toISOString(),
-      questionCount: cat._count?.questions || 0,
+      questionCount: (cat._count?.questions || 0) + (cat.subCategories?.reduce((acc, sub) => acc + (sub._count?.questions || 0), 0) || 0),
        // Provide minimal questions if necessary, though Home usually just needs basic info
       questions: [],
     }));

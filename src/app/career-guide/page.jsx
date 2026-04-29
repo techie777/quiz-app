@@ -2,19 +2,35 @@ import Link from "next/link";
 import styles from "@/styles/CareerGuide.module.css";
 import { prisma } from "@/lib/prisma";
 import CareerGuideDirectoryControls from "@/components/CareerGuideDirectoryControls";
+import { cookies } from "next/headers";
+import { translations } from "@/locales/language_translations";
 
 export const revalidate = 3600;
 
+function getServerT(lang) {
+  return (path) => {
+    const keys = path.split('.');
+    let result = translations[lang] || translations['en'];
+    for (const key of keys) {
+      if (result && result[key]) result = result[key];
+      else return path;
+    }
+    return result;
+  };
+}
+
 export async function generateMetadata({ searchParams }) {
+  const cookieStore = cookies();
+  const lang = cookieStore.get('app-language')?.value || 'en';
+  const t = getServerT(lang);
+
   const q = (searchParams?.q || "").trim();
   const cat = (searchParams?.cat || "").trim();
   const sort = (searchParams?.sort || "").trim();
 
   const hasFilters = Boolean(q || cat || sort);
-  const title = hasFilters ? "Career Guide Search | QuizWeb" : "Career Guide - Explore Your Future | QuizWeb";
-  const description = hasFilters
-    ? "Search and filter career guides with roadmaps, salaries, and preparation strategies."
-    : "Comprehensive step-by-step career guidance, roadmaps, salaries, and preparation strategies for various competitive exams and government jobs.";
+  const title = hasFilters ? `${lang === 'hi' ? 'करियर गाइड खोज' : 'Career Guide Search'} | QuizWeb` : `${t('career.title')} | QuizWeb`;
+  const description = t('career.subtitle');
 
   return {
     title,
@@ -26,6 +42,10 @@ export async function generateMetadata({ searchParams }) {
 }
 
 export default async function CareerGuideIndex({ searchParams }) {
+  const cookieStore = cookies();
+  const lang = cookieStore.get('app-language')?.value || 'en';
+  const t = getServerT(lang);
+
   const q = (searchParams?.q || "").trim();
   const cat = (searchParams?.cat || "").trim(); // category pathKey
   const sort = (searchParams?.sort || "featured").trim();
@@ -88,9 +108,9 @@ export default async function CareerGuideIndex({ searchParams }) {
   return (
     <div className={styles.container}>
       <header className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>Explore Your Dream Career</h1>
+        <h1 className={styles.pageTitle}>{t('career.title')}</h1>
         <p className={styles.pageSubtitle}>
-          Detailed roadmaps, expert tips, real success stories, and step-by-step guidance to help you achieve your ultimate career goals.
+          {t('career.subtitle')}
         </p>
       </header>
 
@@ -105,7 +125,7 @@ export default async function CareerGuideIndex({ searchParams }) {
               <p className={styles.careerDesc}>{career.description}</p>
               
               <Link href={`/career-guide/${career.id}`} className={styles.exploreBtn}>
-                Explore Full Guide <span aria-hidden="true">→</span>
+                {t('career.exploreBtn')} <span aria-hidden="true">→</span>
               </Link>
             </div>
           ))}

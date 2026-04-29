@@ -4,10 +4,12 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useLanguage } from "@/context/LanguageContext";
 import styles from "@/styles/SignIn.module.css";
 
 export default function SignInPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [pin, setPin] = useState("");
   const [step, setStep] = useState("email"); // "email" or "pin"
@@ -20,7 +22,7 @@ export default function SignInPage() {
     e.preventDefault();
     setError("");
     if (!email.trim()) {
-      setError("Email is required");
+      setError(t('auth.emailRequired') || "Email is required");
       return;
     }
     setLoading(true);
@@ -49,7 +51,7 @@ export default function SignInPage() {
     e.preventDefault();
     setError("");
     if (!pin.trim() || pin.length !== 4) {
-      setError("4-digit PIN is required");
+      setError(t('auth.pinRequired') || "4-digit PIN is required");
       return;
     }
     setLoading(true);
@@ -78,8 +80,8 @@ export default function SignInPage() {
       <div className={`${styles.card} glass-card`}>
         <div className={styles.header}>
           <span className={styles.icon}>👋</span>
-          <h1 className={styles.title}>Welcome to QuizWeb</h1>
-          <p className={styles.subtitle}>Sign in with your 4-digit PIN</p>
+          <h1 className={styles.title}>{t('auth.title')}</h1>
+          <p className={styles.subtitle}>{t('auth.subtitle')}</p>
         </div>
 
         {error && <div className={styles.error}>{error}</div>}
@@ -88,7 +90,7 @@ export default function SignInPage() {
           {step === "email" ? (
             <form onSubmit={handleCheckEmail} className={styles.form}>
               <div className={styles.field}>
-                <label className={styles.label}>Email Address</label>
+                <label className={styles.label}>{t('auth.email')}</label>
                 <input
                   type="email"
                   className={styles.input}
@@ -104,14 +106,14 @@ export default function SignInPage() {
                 className={`btn-primary ${styles.submitBtn}`}
                 disabled={loading}
               >
-                {loading ? "Checking..." : "Next"}
+                {loading ? t('auth.checking') : t('auth.next')}
               </button>
             </form>
           ) : (
             <form onSubmit={handleVerifyPin} className={styles.form}>
               <div className={styles.field}>
                 <label className={styles.label}>
-                  {userHasPin ? "Enter your 4-Digit PIN" : "Set your 4-Digit PIN"}
+                  {userHasPin ? t('auth.pinEnter') : t('auth.pinSet')}
                 </label>
                 {!userHasPin && (
                   <p className={styles.otpHint}>
@@ -141,20 +143,20 @@ export default function SignInPage() {
                 className={`btn-primary ${styles.submitBtn}`}
                 disabled={loading}
               >
-                {loading ? "Verifying..." : userHasPin ? "Sign In" : "Set PIN & Enter"}
+                {loading ? t('auth.verifying') : userHasPin ? t('auth.signIn') : t('auth.setAndEnter')}
               </button>
               <button
                 type="button"
                 className={styles.textBtn}
                 onClick={() => setStep("email")}
               >
-                Change Email
+                {t('auth.changeEmail')}
               </button>
             </form>
           )}
 
           <div className={styles.divider}>
-            <span>or</span>
+            <span>{t('auth.or')}</span>
           </div>
 
           <button
@@ -168,16 +170,16 @@ export default function SignInPage() {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1c-2.97 0-5.46.98-7.28 2.66l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
             </svg>
-            Continue with Google
+            {t('auth.google')}
           </button>
         </div>
 
         <p className={styles.hint}>
-          By signing in, you agree to our <Link href="/terms">Terms</Link> and <Link href="/privacy">Privacy Policy</Link>.
+          {t('auth.terms')}
         </p>
 
         <Link href="/" className={styles.backLink}>
-          ← Back to Home
+          ← {t('auth.backHome')}
         </Link>
       </div>
     </main>

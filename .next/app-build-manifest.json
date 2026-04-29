@@ -30,23 +30,23 @@
       "static/css/app/_not-found/page.css",
       "static/chunks/app/_not-found/page.js"
     ],
-    "/sawal-jawab/page": [
+    "/quizzes/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/css/app/sawal-jawab/page.css",
-      "static/chunks/app/sawal-jawab/page.js"
+      "static/css/app/quizzes/page.css",
+      "static/chunks/app/quizzes/page.js"
     ],
-    "/true-false/page": [
+    "/quiz/[id]/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/css/app/true-false/page.css",
-      "static/chunks/app/true-false/page.js"
+      "static/css/app/quiz/[id]/page.css",
+      "static/chunks/app/quiz/[id]/page.js"
     ],
-    "/page": [
+    "/results/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/css/app/page.css",
-      "static/chunks/app/page.js"
+      "static/css/app/results/page.css",
+      "static/chunks/app/results/page.js"
     ]
   }
 }

@@ -6,6 +6,7 @@ import { DataProvider } from "@/context/DataContext";
 import { QuizProvider } from "@/context/QuizContext";
 import { UIProvider } from "@/context/UIContext";
 import { MonetizationProvider } from "@/context/MonetizationContext";
+import { LanguageProvider } from "@/context/LanguageContext";
 import { Toaster } from "react-hot-toast";
 import GlobalModals from "@/components/GlobalModals";
 
@@ -14,14 +15,16 @@ export default function Providers({ children }) {
     <SessionProvider>
       <ThemeProvider attribute="data-theme" defaultTheme="light">
         <Toaster position="top-right" />
-        <UIProvider>
-          <DataProvider>
-            <MonetizationProvider>
-              <QuizProvider>{children}</QuizProvider>
-            </MonetizationProvider>
-          </DataProvider>
-          <GlobalModals />
-        </UIProvider>
+        <LanguageProvider>
+          <UIProvider>
+            <DataProvider>
+              <MonetizationProvider>
+                <QuizProvider>{children}</QuizProvider>
+              </MonetizationProvider>
+            </DataProvider>
+            <GlobalModals />
+          </UIProvider>
+        </LanguageProvider>
       </ThemeProvider>
     </SessionProvider>
   );

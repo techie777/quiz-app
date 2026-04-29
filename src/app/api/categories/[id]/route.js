@@ -34,8 +34,12 @@ export async function GET(request, { params }) {
       ...category,
       questionCount: category.questions.length,
       questions: metaOnly 
-        ? [] // Return empty if metaOnly, we already have the count
-        : category.questions.map((q) => ({ ...q, options: safeJsonParse(q.options) })),
+        ? [] 
+        : category.questions.map((q) => ({ 
+            ...q, 
+            options: safeJsonParse(q.options),
+            optionsHi: safeJsonParse(q.optionsHi) || []
+          })),
       subCategories: subCategories.map(sc => ({
         ...sc,
         chips: safeJsonParse(sc.chips) || []
@@ -246,9 +250,11 @@ export async function PUT(request, { params }) {
     where: { id },
     data: {
       ...(body.topic !== undefined && { topic: body.topic }),
+      ...(body.topicHi !== undefined && { topicHi: body.topicHi }),
       ...(body.slug !== undefined && { slug: body.slug }),
       ...(body.emoji !== undefined && { emoji: body.emoji }),
       ...(body.description !== undefined && { description: body.description }),
+      ...(body.descriptionHi !== undefined && { descriptionHi: body.descriptionHi }),
       ...(body.categoryClass !== undefined && { categoryClass: body.categoryClass }),
       ...(body.hidden !== undefined && { hidden: body.hidden }),
       ...(body.image !== undefined && { image: body.image || null }),

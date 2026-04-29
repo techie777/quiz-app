@@ -4,6 +4,8 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import socketService from '@/engine/lib/socket';
 import toast from 'react-hot-toast';
 
+import { useLanguage } from '@/context/LanguageContext';
+
 const SessionContext = createContext(null);
 
 /**
@@ -12,6 +14,7 @@ const SessionContext = createContext(null);
  */
 
 export function SessionProvider({ children, sessionId: propSessionId }) {
+  const { t } = useLanguage();
   const [session, setSession] = useState(null);
   const [participants, setParticipants] = useState([]);
   const [pendingParticipants, setPendingParticipants] = useState([]);
@@ -101,7 +104,7 @@ export function SessionProvider({ children, sessionId: propSessionId }) {
       setConnectionStatus('error');
       setConnectionError(error.message);
       console.error('???? Session Provider: Connection failed:', error.message);
-      toast.error(`Connection failed: ${error.message}`);
+      toast.error(`${t('live.toasts.connFailed')}: ${error.message}`);
     });
 
     s.on('disconnect', (reason) => {
@@ -174,7 +177,7 @@ export function SessionProvider({ children, sessionId: propSessionId }) {
     });
 
     s.on('PARTICIPANT_JOINED', (data) => {
-      toast.success(`${data.userName} joined the Squadron!`);
+      toast.success(`${data.userName} ${t('live.toasts.joinedSquad')}`);
     });
 
     s.on('SYNC_CHAT', (msgs) => {
@@ -210,7 +213,7 @@ export function SessionProvider({ children, sessionId: propSessionId }) {
       clearInterval(syncInterval);
       socketService.disconnect();
     };
-  }, [propSessionId]);
+  }, [propSessionId, t]);
 
   // STATUS WATCHER - Prevents dual toasts by tracking status/action transitions
   const lastEffectRef = useRef(null);
@@ -222,26 +225,27 @@ export function SessionProvider({ children, sessionId: propSessionId }) {
     lastEffectRef.current = effectKey;
 
     if (lastEvent === 'STATE:TERMINATED') {
-       toast.error("MISSION TERMINATED BY COMMANDER.");
+       toast.error(t('live.toasts.terminated'));
     } else if (lastEvent === 'STATE:START_SESSION') {
-       toast.success("MISSION LAUNCHED! 🚀");
+       toast.success(t('live.toasts.launched'));
     } else if (lastEvent === 'STATE:CLEARANCE_DENIED' || lastEvent === 'STATE:WAITING_FOR_HOST') {
-       toast("Waiting for host to create this session...");
+       toast(t('live.toasts.waitingForHost'));
     } else if (lastEvent === 'STATE:DISCONTINUED') {
-       toast.error("MISSION TERMINATED: YOU HAVE BEEN DISMISSED. 🫡");
+       toast.error(t('live.toasts.dismissed'));
     } else if (lastEvent === 'STATE:PENDING_APPROVAL') {
-       toast("Waiting for host approval...");
+       toast(t('live.toasts.waitingApproval'));
     } else if (lastEvent === 'STATE:APPROVED') {
-       toast.success("You have been approved to join the session!");
+       toast.success(t('live.toasts.approved'));
     } else if (lastEvent === 'STATE:DENIED') {
-       toast.error("Your request to join was denied by the host.");
+       toast.error(t('live.toasts.denied'));
     }
-  }, [session?.sessionId, lastEvent]);
+  }, [session?.sessionId, lastEvent, t]);
 
   const joinSession = useCallback((sessionId, role, user) => {
     if (socket) {
       const finalUserId = user.id || `guest_${Math.random().toString(36).substring(7)}`;
       const finalUserName = user.name || 'Anonymous';
+      const finalUserImage = user.image || user.avatar || null;
       
       console.log('📡 [BRIDGE] JOIN_SESSION Initializing:', { sessionId, role, finalUserId });
       
@@ -254,6 +258,7 @@ export function SessionProvider({ children, sessionId: propSessionId }) {
           return [{
             userId: finalUserId,
             userName: finalUserName,
+            userImage: finalUserImage,
             role: 'HOST',
             isOnline: true
           }, ...prev];
@@ -266,7 +271,8 @@ export function SessionProvider({ children, sessionId: propSessionId }) {
         sessionId,
         role,
         userId: finalUserId,
-        userName: finalUserName
+        userName: finalUserName,
+        userImage: finalUserImage
       });
       console.log('📡 [BRIDGE] JOIN_SESSION Emitted:', sessionId, role);
       
@@ -275,7 +281,8 @@ export function SessionProvider({ children, sessionId: propSessionId }) {
         role, 
         status: 'LOBBY', 
         userId: finalUserId, 
-        userName: finalUserName 
+        userName: finalUserName,
+        userImage: finalUserImage
       });
     }
   }, [socket]);

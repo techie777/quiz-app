@@ -3,20 +3,24 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useData } from "@/context/DataContext";
+import { useLanguage } from "@/context/LanguageContext";
+import { useQuiz } from "@/context/QuizContext";
 import styles from "@/styles/Footer.module.css";
 import { useMemo } from "react";
 
 export default function Footer() {
   const pathname = usePathname();
   const { settings, quizzes } = useData();
+  const { t, isHindi } = useLanguage();
   const currentYear = new Date().getFullYear();
 
-  const shouldHide = pathname?.startsWith("/admin") || pathname?.startsWith("/live/") || pathname?.includes("/mock-tests/paper/") || pathname?.endsWith("/export") || settings?.footerEnabled === false;
+  const { isFullscreen } = useQuiz();
+  const shouldHide = isFullscreen || pathname?.startsWith("/admin") || pathname?.startsWith("/live/") || pathname?.includes("/mock-tests/paper/") || pathname?.endsWith("/export") || settings?.footerEnabled === false;
 
   const brandDesc =
     (typeof settings?.footerBrandDesc === "string" && settings.footerBrandDesc.trim()
       ? settings.footerBrandDesc
-      : "The ultimate global quiz destination. Empowering learners worldwide with thousands of interactive quizzes, daily insights, and academic resources.");
+      : t('footer.brandDesc'));
 
   // --- Dynamic SEO Data Logic ---
   const dynamicSEOData = useMemo(() => {
@@ -28,7 +32,7 @@ export default function Footer() {
     const popular = [...activeQuizzes]
       .sort((a, b) => (b.questions?.length || 0) - (a.questions?.length || 0))
       .slice(0, 10)
-      .map(q => ({ id: q.id, label: `${q.topic} Quiz`, href: `/category/${q.slug || q.id}` }));
+      .map(q => ({ id: q.id, label: `${q.topic} ${isHindi ? 'क्विज़' : 'Quiz'}`, href: `/category/${q.slug || q.id}` }));
 
     // 2. 6 Most Recent Challenges
     const recent = [...activeQuizzes]
@@ -41,10 +45,10 @@ export default function Footer() {
     const tags = Array.from(new Set(allTopics)).sort().slice(0, 20);
 
     return { popular, recent, tags };
-  }, [quizzes]);
+  }, [quizzes, isHindi]);
 
   if (shouldHide) {
-    return <div style={{ display: 'none' }} />;
+    return null;
   }
 
   return (
@@ -59,7 +63,7 @@ export default function Footer() {
             </Link>
             <p className={styles.brandStatement}>{brandDesc}</p>
             <div className={styles.socialFollow}>
-              <span className={styles.socialHint}>Follow Our Journey</span>
+              <span className={styles.socialHint}>{t('footer.follow')}</span>
               <div className={styles.socialRow}>
                 <a href="#" className={styles.socialCircle} aria-label="X">𝕏</a>
                 <a href="#" className={styles.socialCircle} aria-label="Facebook">𝑓</a>
@@ -71,7 +75,7 @@ export default function Footer() {
 
           {/* Column 2: Popular Trending */}
           <div className={styles.footerColumn}>
-            <h3 className={styles.colHeading}>Trending Now</h3>
+            <h3 className={styles.colHeading}>{t('footer.trending')}</h3>
             <ul className={styles.linkList}>
               {dynamicSEOData.popular.map((l) => (
                 <li key={l.id}>
@@ -83,7 +87,7 @@ export default function Footer() {
 
           {/* Column 3: Fresh Additions */}
           <div className={styles.footerColumn}>
-            <h3 className={styles.colHeading}>New Releases</h3>
+            <h3 className={styles.colHeading}>{t('footer.newReleases')}</h3>
             <ul className={styles.linkList}>
               {dynamicSEOData.recent.map((l) => (
                 <li key={l.id}>
@@ -95,25 +99,25 @@ export default function Footer() {
 
           {/* Column 4: Global Services */}
           <div className={styles.footerColumn}>
-            <h3 className={styles.colHeading}>E-Learning Hub</h3>
+            <h3 className={styles.colHeading}>{t('footer.elearning')}</h3>
             <ul className={styles.linkList}>
-              <li><Link href="/daily-quiz" className={styles.navLink}>Daily Quiz Challenge</Link></li>
-              <li><Link href="/current-affairs" className={styles.navLink}>Current Affairs Hub</Link></li>
-              <li><Link href="/govt-alerts" className={styles.navLink}>Job & Career Alerts</Link></li>
-              <li><Link href="/study-material" className={styles.navLink}>Study Resources</Link></li>
-              <li><Link href="/blog" className={styles.navLink}>Knowledge Blog</Link></li>
+              <li><Link href="/daily-quiz" className={styles.navLink}>{t('hub.dailyInsights.links.dailyQuiz')}</Link></li>
+              <li><Link href="/current-affairs" className={styles.navLink}>{t('hub.dailyInsights.links.currentAffairs')}</Link></li>
+              <li><Link href="/govt-alerts" className={styles.navLink}>{t('hub.resources.links.jobAlerts')}</Link></li>
+              <li><Link href="/study-material" className={styles.navLink}>{t('hub.resources.links.schoolStudy')}</Link></li>
+              <li><Link href="/blog" className={styles.navLink}>{isHindi ? 'ज्ञान ब्लॉग' : 'Knowledge Blog'}</Link></li>
             </ul>
           </div>
 
           {/* Column 5: Support & Info */}
           <div className={styles.footerColumn}>
-            <h3 className={styles.colHeading}>Organization</h3>
+            <h3 className={styles.colHeading}>{t('footer.organization')}</h3>
             <ul className={styles.linkList}>
-              <li><Link href="/about" className={styles.navLink}>Our Story</Link></li>
-              <li><Link href="/donate" className={styles.navLink} style={{ color: '#f43f5e', fontWeight: 'bold' }}>Support Us 🧡</Link></li>
-              <li><Link href="/contact" className={styles.navLink}>Get In Touch</Link></li>
-              <li><Link href="/privacy" className={styles.navLink}>Privacy Policy</Link></li>
-              <li><Link href="/terms" className={styles.navLink}>Terms of Service</Link></li>
+              <li><Link href="/about" className={styles.navLink}>{isHindi ? 'हमारी कहानी' : 'Our Story'}</Link></li>
+              <li><Link href="/donate" className={styles.navLink} style={{ color: '#f43f5e', fontWeight: 'bold' }}>{isHindi ? 'हमारा समर्थन करें' : 'Support Us'} 🧡</Link></li>
+              <li><Link href="/contact" className={styles.navLink}>{isHindi ? 'संपर्क करें' : 'Get In Touch'}</Link></li>
+              <li><Link href="/privacy" className={styles.navLink}>{isHindi ? 'गोपनीयता नीति' : 'Privacy Policy'}</Link></li>
+              <li><Link href="/terms" className={styles.navLink}>{isHindi ? 'सेवा की शर्तें' : 'Terms of Service'}</Link></li>
             </ul>
           </div>
         </div>
@@ -122,18 +126,18 @@ export default function Footer() {
         <div className={styles.seoCloudArea}>
           <div className={styles.cloudHeader}>
             <span className={styles.cloudLine}></span>
-            <h4 className={styles.cloudTitle}>Global Topic Explorer</h4>
+            <h4 className={styles.cloudTitle}>{t('footer.explorer')}</h4>
             <span className={styles.cloudLine}></span>
           </div>
           <div className={styles.cloudFlex}>
             {dynamicSEOData.tags.map((tag) => (
               <Link key={tag} href={`/?search=${tag}`} className={styles.cloudTag}>
-                {tag} Quiz
+                {tag} {isHindi ? 'क्विज़' : 'Quiz'}
               </Link>
             ))}
-            <span className={styles.cloudTag}>Free Learning</span>
-            <span className={styles.cloudTag}>Online Assessment</span>
-            <span className={styles.cloudTag}>Daily Trivia</span>
+            <span className={styles.cloudTag}>{isHindi ? 'मुफ्त शिक्षा' : 'Free Learning'}</span>
+            <span className={styles.cloudTag}>{isHindi ? 'ऑनलाइन मूल्यांकन' : 'Online Assessment'}</span>
+            <span className={styles.cloudTag}>{isHindi ? 'दैनिक सामान्य ज्ञान' : 'Daily Trivia'}</span>
           </div>
         </div>
 
@@ -141,18 +145,18 @@ export default function Footer() {
         <div className={styles.footerBottomBar}>
           <div className={styles.bottomMain}>
             <p className={styles.legalNotice}>
-              © {currentYear} <strong>QuizWeb International</strong>. Excellence in digital education.
+              {t('footer.rights')}
             </p>
             <div className={styles.trustSignals}>
-              <span className={styles.signal}>Global Reach</span>
+              <span className={styles.signal}>{t('footer.signals.reach')}</span>
               <span className={styles.signalDivider}>•</span>
-              <span className={styles.signal}>Secure Platform</span>
+              <span className={styles.signal}>{t('footer.signals.secure')}</span>
               <span className={styles.signalDivider}>•</span>
-              <span className={styles.signal}>Verified Content</span>
+              <span className={styles.signal}>{t('footer.signals.verified')}</span>
             </div>
           </div>
           <div className={styles.footerMissionStatement}>
-            Designing a world where knowledge is inclusive, interactive, and entirely accessible to everyone, everywhere.
+            {t('footer.mission')}
           </div>
         </div>
       </div>

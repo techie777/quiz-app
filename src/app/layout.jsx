@@ -139,9 +139,8 @@ export default function RootLayout({ children }) {
             </ErrorBoundary>
           </main>
           <Footer />
+          <PwaInstallPrompt />
         </Providers>
-
-        <PwaInstallPrompt />
         
         <script
           dangerouslySetInnerHTML={{

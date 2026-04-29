@@ -9,14 +9,14 @@
 /* ===== Compact Hero Section ===== */
 .hero {
   position: relative;
-  padding: 40px 24px; /* Reduced from 80px */
+  padding: 16px 24px 24px;
   text-align: center;
-  margin-bottom: 32px;
-  border-radius: 32px;
+  margin-bottom: 12px;
+  border-radius: 0;
   overflow: hidden;
-  background: var(--bg-hero);
-  color: white;
-  box-shadow: 0 20px 40px rgba(79, 70, 229, 0.15);
+  background: transparent;
+  color: var(--text-primary);
+  margin-top: 0;
 }
 
 .heroContent {
@@ -29,65 +29,90 @@
   align-items: center;
 }
 
-.heroBadge {
-  display: inline-block;
-  padding: 4px 12px;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(8px);
-  border-radius: 100px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  margin-bottom: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.heroTitle {
-  font-size: clamp(1.8rem, 4vw, 2.8rem); /* Reduced from 4rem */
-  font-weight: 800;
-  line-height: 1.2;
-  margin-bottom: 24px;
-  letter-spacing: -0.02em;
-}
-
 /* Integrated Search Command Center */
 .heroSearchWrapper {
   width: 100%;
-  max-width: 600px;
-  margin-bottom: 20px;
+  max-width: 540px;
+  margin-bottom: 16px;
   position: relative;
+  z-index: 10;
 }
 
 .searchBox {
   display: flex;
   align-items: center;
-  background: white; /* Bright white for contrast inside colored hero */
-  border-radius: 16px;
+  background: var(--bg-secondary);
+  border-radius: 20px;
   padding: 4px 12px 4px 20px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-  border: 2px solid transparent;
-  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  border: 2px solid var(--card-border);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.searchBox::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  padding: 2px;
+  background: linear-gradient(135deg, var(--accent), #a855f7, var(--accent));
+  -webkit-mask: 
+     linear-gradient(#fff 0 0) content-box, 
+     linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.searchBox:hover {
+  border-color: rgba(99, 102, 241, 0.3);
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.1);
 }
 
 .searchBox:focus-within {
   transform: translateY(-2px);
-  border-color: var(--accent);
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+  background: var(--bg-primary);
+  border-color: transparent;
+  box-shadow: 0 12px 35px rgba(99, 102, 241, 0.15);
+}
+
+.searchBox:focus-within::before {
+  opacity: 1;
+}
+
+.searchBox:focus-within .searchIcon {
+  color: var(--accent);
+  transform: scale(1.1);
 }
 
 .searchInput {
   flex: 1;
   border: none;
   background: transparent;
-  padding: 12px 0;
-  font-size: 1.05rem;
-  font-weight: 500;
-  color: #1e293b;
+  padding: 14px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
   outline: none;
 }
 
-.searchIcon { font-size: 1.1rem; margin-right: 12px; opacity: 0.5; color: #64748b; }
+.searchInput::placeholder {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+.searchBox:focus-within .searchInput::placeholder {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.searchIcon { font-size: 1.2rem; margin-right: 14px; color: var(--text-muted); opacity: 0.8; }
 
 .clearButton {
   background: #f1f5f9;
@@ -111,14 +136,14 @@
   top: calc(100% + 8px);
   left: 0;
   right: 0;
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 16px;
   padding: 8px;
   box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
   z-index: 100;
   max-height: 280px;
   overflow-y: auto;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--card-border);
 }
 
 .suggestionItem {
@@ -140,7 +165,7 @@
 }
 
 .suggestionEmoji { font-size: 1.4rem; }
-.suggestionName { display: block; color: #0f172a; font-weight: 600; font-size: 0.95rem; }
+.suggestionName { display: block; color: var(--text-primary); font-weight: 600; font-size: 0.95rem; }
 .suggestionDescription { font-size: 0.8rem; color: #64748b; margin: 0; }
 
 /* Filters & Chips (Compact) */
@@ -171,7 +196,7 @@
   top: calc(100% + 12px);
   left: 50%;
   transform: translateX(-50%);
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 20px;
   padding: 20px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
@@ -203,41 +228,76 @@
 /* Feed Tabs Section */
 .feedTabs {
   display: flex;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(8px);
-  padding: 4px;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  margin: 0 auto 24px;
+  background: var(--bg-secondary);
+  padding: 8px;
+  border-radius: 24px;
+  border: 2px solid var(--card-border);
+  margin: 0 auto;
   width: fit-content;
   position: relative;
   z-index: 5;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
+  gap: 6px;
+  transition: all 0.4s ease;
+  background: var(--card-bg);
+  backdrop-filter: blur(10px);
+}
+
+.feedTabs:hover {
+  border-color: rgba(99, 102, 241, 0.2);
+  box-shadow: 0 15px 40px -10px rgba(99, 102, 241, 0.15);
 }
 
 .feedTab {
-  padding: 8px 24px;
-  border-radius: 12px;
+  padding: 12px 24px;
+  border-radius: 18px;
   font-size: 0.95rem;
-  font-weight: 700;
-  border: none;
+  font-weight: 800;
+  border: 2px solid transparent;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   background: transparent;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-muted);
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 10px;
+  white-space: nowrap;
 }
 
-.feedTab:hover {
-  color: white;
-  background: rgba(255, 255, 255, 0.05);
+.feedTab:hover:not(.active) {
+  color: var(--text-primary);
+  background: rgba(99, 102, 241, 0.05);
+  transform: translateY(-1px);
 }
 
 .feedTab.active {
-  background: white;
+  background: var(--bg-secondary);
   color: var(--accent);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: rgba(99, 102, 241, 0.1);
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.12);
+  transform: scale(1.05);
+}
+
+.liveDot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
+.tabIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+}
+
+.feedTab.active .tabIcon {
+  opacity: 1;
 }
 
 .feedTab .sparkle {
@@ -273,7 +333,7 @@
 }
 
 .chip:hover { background: rgba(255, 255, 255, 0.2); color: white; }
-.activeChip { background: white; color: var(--accent); border-color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.activeChip { background: var(--bg-secondary); color: var(--accent); border-color: var(--accent); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
 
 /* ===== Orbs ===== */
 .bgOrbs {
@@ -436,6 +496,86 @@
 }
 
 .shareBtn:hover { transform: scale(1.1); color: var(--accent); }
+
+.spotlightGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.spotlightCard {
+  background: var(--bg-secondary);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.spotlightCard:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent);
+  box-shadow: var(--shadow-md);
+}
+
+.spotlightIcon {
+  width: 54px;
+  height: 54px;
+  background: var(--bg-primary);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  flex-shrink: 0;
+  border: 1px solid var(--card-border);
+}
+
+.spotlightInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.spotlightTitle {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.spotlightMeta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.spotlightPlay {
+  width: 36px;
+  height: 36px;
+  background: var(--accent);
+  color: white;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.spotlightCard:hover .spotlightPlay {
+  transform: scale(1.1);
+}
 
 /* ===== All Categories (Search/Filter) Grid ===== */
 .grid {

@@ -69,6 +69,12 @@ const initialState = {
   isMixedMode: false,
   mixedSectionName: null,
   categoryName: null,
+  quizSessionId: null,
+  combo: 0,
+  maxCombo: 0,
+  totalXP: 0,
+  dailyStreak: 0,
+  lastPlayedDate: null,
 };
 
 // Key for storage
@@ -111,6 +117,7 @@ function quizReducer(state, action) {
         translatedStory: null,
         selectedSetIndex: null,
         categoryName: quiz.topic || quiz.name,
+        quizSessionId: Date.now(),
       };
     }
     case "START_QUIZ_SET": {
@@ -141,6 +148,7 @@ function quizReducer(state, action) {
         translatedStory: null,
         selectedSetIndex: setIndex,
         categoryName: categoryName,
+        quizSessionId: Date.now(),
       };
     }
     case "START_MIXED_QUIZ": {
@@ -169,6 +177,7 @@ function quizReducer(state, action) {
         originalLanguage: language || detectQuizLanguage(shuffledQuestions),
         originalQuestions: shuffledQuestions,
         categoryName: sectionName,
+        quizSessionId: Date.now(),
       };
     }
     case "SET_QUESTIONS":
@@ -213,16 +222,60 @@ function quizReducer(state, action) {
         q.id === questionId ? { ...q, userAnswer: selected } : q
       );
 
+      // Gamification: Combo & XP
+      const newCombo = isCorrect ? state.combo + 1 : 0;
+      const newMaxCombo = Math.max(state.maxCombo, newCombo);
+      
+      // Calculate XP for this answer
+      let earnedXP = 0;
+      if (isCorrect) {
+        earnedXP = 100 + (newCombo * 10); // Base 100 + 10 per combo multiplier
+      }
+
       return {
         ...state,
         questions: updatedQuestions,
         answers: newAnswers,
         score: newScore,
+        combo: newCombo,
+        maxCombo: newMaxCombo,
+        totalXP: state.totalXP + earnedXP,
         status: "active",
       };
     }
-    case "FINISH_QUIZ":
-      return { ...state, status: "finished" };
+    case "FINISH_QUIZ": {
+      // Calculate Daily Streak
+      const today = new Date().toDateString();
+      const lastDate = state.lastPlayedDate;
+      let newStreak = state.dailyStreak || 0;
+      
+      if (!lastDate) {
+        newStreak = 1;
+      } else if (lastDate !== today) {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        if (lastDate === yesterday.toDateString()) {
+          newStreak += 1;
+        } else {
+          newStreak = 1;
+        }
+      }
+
+      // Save global stats to localStorage immediately
+      const globalStats = {
+        dailyStreak: newStreak,
+        lastPlayedDate: today,
+        totalXP: state.totalXP
+      };
+      localStorage.setItem('quiz_global_stats', JSON.stringify(globalStats));
+
+      return { 
+        ...state, 
+        status: "finished",
+        dailyStreak: newStreak,
+        lastPlayedDate: today
+      };
+    }
     case "GO_TO_QUESTION":
       return { ...state, currentIndex: action.payload };
     case "UPDATE_SCORE":
@@ -236,7 +289,7 @@ function quizReducer(state, action) {
     case "SET_FULLSCREEN":
       return { ...state, isFullscreen: action.payload };
     case "RESET_QUIZ":
-      return { ...initialState, soundEnabled: state.soundEnabled, isFullscreen: state.isFullscreen };
+      return { ...initialState, soundEnabled: state.soundEnabled, isFullscreen: state.isFullscreen, quizSessionId: Date.now() };
     case "LOAD_STATE":
       return { 
         ...state, 
@@ -269,6 +322,15 @@ export function QuizProvider({ children }) {
 
   // Persistence: Load state
   useEffect(() => {
+    // Load Global Stats
+    const stats = localStorage.getItem('quiz_global_stats');
+    if (stats) {
+      try {
+        const parsed = JSON.parse(stats);
+        dispatch({ type: "LOAD_STATE", payload: parsed });
+      } catch (e) { console.error("Stats load error", e); }
+    }
+
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {

@@ -1,14 +1,15 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useData } from "@/context/DataContext";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, MapPin, Calendar, Clock, BookOpen, User, ArrowRight, Share2, Heart, Filter, SlidersHorizontal, ChevronDown, ChevronUp, Star, LayoutGrid, List, Sparkles } from "lucide-react";
+import { Search, MapPin, Calendar, Clock, BookOpen, User, ArrowRight, Share2, Heart, Filter, SlidersHorizontal, ChevronDown, ChevronUp, Star, LayoutGrid, List, Sparkles, Trophy, Radio } from "lucide-react";
 import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { debounce } from "lodash";
 import { useSession, signIn } from "next-auth/react";
 import { useUI } from "@/context/UIContext";
+import { useLanguage } from "@/context/LanguageContext";
 import toast from "react-hot-toast";
 import styles from "@/styles/LandingPage.module.css";
 import WelcomePromoPopup from "@/components/WelcomePromoPopup";
@@ -191,6 +192,7 @@ const SubSection = React.memo(({ title, quizzes, onViewAll, showMixCard, section
   const [isExpanded, setIsExpanded] = useState(true);
   const [favorites, setFavorites] = useState(new Set());
   const { data: session } = useSession();
+  const { t, isHindi } = useLanguage();
 
   const handleShare = useCallback((e, quiz) => {
     e.preventDefault();
@@ -294,6 +296,33 @@ const SubSection = React.memo(({ title, quizzes, onViewAll, showMixCard, section
   }, [session]);
 
   // Get relevant icon for the sub-section
+  const getTranslatedTopic = useCallback((topic, topicHi) => {
+    if (isHindi && topicHi) return topicHi;
+    if (!isHindi) return topic;
+    
+    // Fallback dictionary for common topics if topicHi is missing
+    const fallbacks = {
+      "General Knowledge": "सामान्य ज्ञान",
+      "GK": "सामान्य ज्ञान",
+      "India": "भारत",
+      "World": "विश्व",
+      "History": "इतिहास",
+      "Sports": "खेल",
+      "Computer": "कंप्यूटर",
+      "Technology": "तकनीक",
+      "Economy": "अर्थव्यवस्था",
+      "Polity": "राजव्यवस्था",
+      "Chemistry": "रसायन विज्ञान",
+      "Physics": "भौतिकी",
+      "Biology": "जीव विज्ञान",
+      "Bollywood": "बॉलीवुड",
+      "Entertainment": "मनोरंजन",
+      "Others": "अन्य"
+    };
+    
+    return fallbacks[topic] || topic;
+  }, [isHindi]);
+
   const getSubSectionIcon = useCallback((title) => {
     const titleLower = title.toLowerCase();
     
@@ -338,21 +367,21 @@ const SubSection = React.memo(({ title, quizzes, onViewAll, showMixCard, section
         <div className={styles.subSectionTitleContainer}>
           <span className={styles.subSectionIcon}>{getSubSectionIcon(title)}</span>
           <h3 className={styles.subSectionTitle}>
-            {title}
-            <span className={styles.subSectionCount}>({quizzes.length} quizzes)</span>
+            {getTranslatedTopic(title, null)}
+            <span className={styles.subSectionCount}>({quizzes.length} {t('quizzes.cards.quizzes') || 'quizzes'})</span>
           </h3>
         </div>
         <button className={styles.viewAllButton} onClick={toggleExpand}>
           {isExpanded ? (
             <>
-              Collapse
+              {t('common.collapse') || 'Collapse'}
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginLeft: '6px'}}>
                 <path d="M5 15l7-7 7 7"/>
               </svg>
             </>
           ) : (
             <>
-              Expand
+              {t('common.expand') || 'Expand'}
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginLeft: '6px'}}>
                 <path d="M19 9l-7 7-7-7"/>
               </svg>
@@ -388,21 +417,21 @@ const SubSection = React.memo(({ title, quizzes, onViewAll, showMixCard, section
                   <button 
                     className={`${styles.favoriteBtn} ${favorites.has(quiz.id) ? styles.isFavorite : ''}`}
                     onClick={(e) => toggleFavorite(e, quiz.id)}
-                    title={favorites.has(quiz.id) ? "Remove from favorites" : "Add to favorites"}
+                    title={favorites.has(quiz.id) ? (t('common.removeFav') || "Remove from favorites") : (t('common.addFav') || "Add to favorites")}
                   >
                     <Heart size={16} fill={favorites.has(quiz.id) ? "currentColor" : "none"} />
                   </button>
                   <button
                     className={styles.shareBtn}
                     onClick={(e) => handleShare(e, quiz)}
-                    title="Share"
+                    title={t('common.share') || "Share"}
                   >
                     <Share2 size={16} />
                   </button>
                 </div>
               </div>
               <div className={styles.subSectionCardContent}>
-                <h4 className={styles.subSectionCardTitle}>{quiz.topic}</h4>
+                <h4 className={styles.subSectionCardTitle}>{getTranslatedTopic(quiz.topic, quiz.topicHi)}</h4>
                 
                 {/* Play Quiz Button */}
                 <div className={styles.setCardActions}>
@@ -413,25 +442,25 @@ const SubSection = React.memo(({ title, quizzes, onViewAll, showMixCard, section
                       e.stopPropagation();
                       window.location.href = `/category/${quiz.slug || quiz.id}`;
                     }}
-                    aria-label={`Play ${quiz.topic} quiz`}
+                    aria-label={`${t('quizzes.cards.playQuiz')} ${quiz.topic}`}
                   >
-                    Play Quiz
+                    {t('quizzes.cards.playQuiz')}
                   </button>
                   <button
                     className={styles.liveButtonStyle}
                     onClick={(e) => handleLivePlay(e, quiz.id)}
                   >
                     <span className={styles.liveDot}></span>
-                    Play Live
+                    {t('quizzes.cards.playLive')}
                   </button>
                 </div>
 
                 <div className={styles.subSectionCardFooter}>
                   <span className={styles.subSectionCardCount}>
-                    {quiz.questionCount || 0} questions
+                    {quiz.questionCount || 0} {t('quizzes.cards.questions')}
                   </span>
                   <span className={styles.subSectionCardTime}>
-                    {Math.max(1, Math.round((quiz.questionCount || 0) / 10))} min per set
+                    {Math.max(1, Math.round((quiz.questionCount || 0) / 10))} {t('quizzes.cards.minPerSet')}
                   </span>
                 </div>
               </div>
@@ -446,49 +475,78 @@ SubSection.displayName = "SubSection";
 
 // Function to categorize quizzes based on sections
 function categorizeQuizzes(quizzes, sections) {
-  const categorized = {};
+  const categorized = [];
+  const matchedQuizIds = new Set();
   
   sections.forEach(section => {
-    categorized[section.name] = [];
+    const sectionData = {
+      id: section.id,
+      name: section.name,
+      nameHi: section.nameHi,
+      subSections: []
+    };
     
     section.subSections.forEach(subSection => {
-      // quizIds is already an array in MongoDB (String[])
       const quizIds = subSection.quizIds || [];
       const subSectionQuizzes = quizzes.filter(quiz => quizIds.includes(quiz.id));
       
       if (subSectionQuizzes.length > 0) {
-        categorized[section.name].push({
+        subSectionQuizzes.forEach(q => matchedQuizIds.add(q.id));
+        sectionData.subSections.push({
           title: subSection.name,
+          titleHi: subSection.nameHi,
           quizzes: subSectionQuizzes,
           order: subSection.order
         });
       }
     });
     
-    // Sort subsections by order
-    categorized[section.name].sort((a, b) => a.order - b.order);
+    if (sectionData.subSections.length > 0) {
+      // Sort subsections by order
+      sectionData.subSections.sort((a, b) => a.order - b.order);
+      categorized.push(sectionData);
+    }
   });
+
+  // Collect quizzes that are not in any section
+  const uncategorized = quizzes.filter(quiz => !matchedQuizIds.has(quiz.id));
+  if (uncategorized.length > 0) {
+    categorized.push({
+      id: "uncategorized",
+      name: "Other Quizzes",
+      nameHi: "अन्य क्विज़",
+      subSections: [{
+        title: "General",
+        titleHi: "सामान्य",
+        quizzes: uncategorized,
+        order: 999
+      }]
+    });
+  }
   
   return categorized;
 }
 
 // Main Category Section component
-const MainCategorySection = React.memo(({ category, categorizedData, sectionIds, onOpenMixModal, isFirstSection }) => {
-  const subSections = categorizedData[category] || [];
+const MainCategorySection = React.memo(({ section, sectionIds, onOpenMixModal, isFirstSection }) => {
+  const { isHindi } = useLanguage();
+  const subSections = section.subSections || [];
   
   if (subSections.length === 0) return null;
   
   return (
-    <div className={styles.mainCategorySection} id={sectionIds?.[category] || undefined}>
-      <h2 className={styles.sectionTitle}>{category}</h2>
+    <div className={styles.mainCategorySection} id={sectionIds?.[section.name] || undefined}>
+      <h2 className={styles.sectionTitle}>
+        {isHindi && section.nameHi ? section.nameHi : section.name}
+      </h2>
       
       {subSections.map((subSection, index) => (
         <SubSection
           key={subSection.title}
-          title={subSection.title}
+          title={isHindi && subSection.titleHi ? subSection.titleHi : subSection.title}
           quizzes={subSection.quizzes}
           showMixCard={isFirstSection && index === 0}
-          sectionName={category}
+          sectionName={section.name}
           onOpenMixModal={onOpenMixModal}
         />
       ))}
@@ -501,11 +559,22 @@ export default function LandingPage({ initialCategories = [] }) {
   const { data: session } = useSession();
   const { settings, loaded, quizzes } = useData();
   const { openOnboarding } = useUI();
+  const { t } = useLanguage();
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [sections, setSections] = useState([]);
   const [sectionsLoaded, setSectionsLoaded] = useState(false);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const quizSectionRef = useRef(null);
+
+  const scrollToQuizzes = () => {
+    quizSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   // New state for paginated data
   const [visibleCategories, setVisibleCategories] = useState(initialCategories);
@@ -848,8 +917,8 @@ export default function LandingPage({ initialCategories = [] }) {
     if (isPersonalized && userInterests.length > 0) {
       list = list.filter(c => userInterests.includes(c.id));
     } else {
-      // If not personalized, only show top-level categories to keep the UI clean
-      list = list.filter(c => !c.parentId);
+      // If not personalized, only show top-level categories or those marked for home
+      list = list.filter(c => !c.parentId || c.showSubCategoriesOnHome);
     }
 
     // Apply Advanced Filters to the main view as well
@@ -884,11 +953,8 @@ export default function LandingPage({ initialCategories = [] }) {
 
   return (
     <main className={styles.page}>
-      {/* Search Orbs & Hero Section */}
-      <div className={styles.bgOrbs} aria-hidden="true">
-        <div className={`${styles.orb} ${styles.orb1}`} />
-        <div className={`${styles.orb} ${styles.orb2}`} />
-      </div>
+      {/* Search Orbs & Hero Section - Removed for cleaner look */}
+
 
       <motion.section 
         className={styles.hero}
@@ -897,30 +963,57 @@ export default function LandingPage({ initialCategories = [] }) {
         transition={{ duration: 0.6 }}
       >
         <div className={styles.heroContent}>
-          <span className={styles.heroBadge}>#1 Interactive Learning Platform</span>
-          <h1 className={styles.heroTitle}>Level Up Your Knowledge Today</h1>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-14">
-            <LiveStudyButton />
-            <Link 
-              href="/fun-facts"
-              className="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white px-6 py-3 rounded-2xl flex items-center gap-2 border border-white/20 transition-all font-bold"
-            >
-              <Sparkles size={18} className="text-yellow-400" /> Factify (Zero-G)
-            </Link>
+          <div className="mb-6">
+            <div className={styles.feedTabs}>
+              <button 
+                className={`${styles.feedTab} ${!isPersonalized ? styles.active : ''}`}
+                onClick={() => {
+                  setIsPersonalized(false);
+                  scrollToQuizzes();
+                }}
+              >
+                <span className={styles.tabIcon}><LayoutGrid size={18} /></span>
+                {t('quizzes.tabs.all')}
+              </button>
+              <button 
+                className={`${styles.feedTab} ${isPersonalized ? styles.active : ''}`}
+                onClick={() => {
+                  if (userInterestsCount === 0) {
+                    openOnboarding();
+                  } else {
+                    setIsPersonalized(true);
+                    scrollToQuizzes();
+                  }
+                }}
+              >
+                <span className={styles.tabIcon}><Star size={18} /></span>
+                {t('quizzes.tabs.forYou')} {mounted && userInterestsCount > 0 && <span className={styles.sparkle}>👤</span>}
+              </button>
+              <button 
+                className={styles.feedTab}
+                onClick={() => {
+                  const sessionId = Math.random().toString(36).substring(2, 10).toUpperCase();
+                  toast.success(t('common.creatingRoom') || "Creating live room...");
+                  router.push(`/live/${sessionId}?is_host=true`);
+                }}
+              >
+                <span className={styles.tabIcon}><Radio size={18} /></span>
+                {t('quizzes.tabs.playLive')} <span className={`${styles.liveDot} animate-pulse`} />
+              </button>
+            </div>
           </div>
-          
+
           {/* Integrated Search Command Center */}
           <div className={styles.heroSearchWrapper}>
             <div className={styles.searchBox}>
               <span className={styles.searchIcon}>
-                {loading ? "⏳" : "🔍"}
+                {mounted ? (loading ? "⏳" : <Search size={20} />) : null}
               </span>
               <input
                 id="search-box"
                 type="text"
                 className={styles.searchInput}
-                placeholder={loading ? "Searching..." : "Search for any topic..."}
+                placeholder={loading ? (t('common.searching') || "Searching...") : (t('quizzes.search.placeholder') || 'Search for quizzes...')}
                 value={search}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
@@ -938,8 +1031,8 @@ export default function LandingPage({ initialCategories = [] }) {
             {showSuggestions && searchSuggestions.length > 0 && (
               <div className={styles.suggestionsDropdown}>
                 <div className={styles.suggestionsHeader}>
-                  <span>Search Results</span>
-                  <span className={styles.suggestionCount}>{searchSuggestions.length} found</span>
+                  <span>{t('quizzes.search.results')}</span>
+                  <span className={styles.suggestionCount}>{searchSuggestions.length} {t('quizzes.search.found')}</span>
                 </div>
                 {searchSuggestions.map((suggestion, index) => (
                   <button
@@ -951,11 +1044,15 @@ export default function LandingPage({ initialCategories = [] }) {
                   >
                     <span className={styles.suggestionEmoji}>{suggestion.emoji || "📝"}</span>
                     <div className={styles.suggestionContent}>
-                      <strong className={styles.suggestionName}>{suggestion.topic}</strong>
+                      <strong className={styles.suggestionName}>
+                        {isHindi && suggestion.topicHi ? suggestion.topicHi : suggestion.topic}
+                      </strong>
                       <p className={styles.suggestionDescription}>
-                        {suggestion.description?.length > 70 
-                          ? suggestion.description.substring(0, 70) + "..." 
-                          : suggestion.description || "Interactive quiz category"}
+                        {(() => {
+                          const desc = (isHindi && suggestion.descriptionHi) ? suggestion.descriptionHi : suggestion.description;
+                          if (!desc) return t('quizzes.search.defaultDesc');
+                          return desc.length > 70 ? desc.substring(0, 70) + "..." : desc;
+                        })()}
                       </p>
                     </div>
                   </button>
@@ -964,120 +1061,12 @@ export default function LandingPage({ initialCategories = [] }) {
             )}
           </div>
 
-          {/* Feed Mode Tabs - Promoted for Visibility */}
-          <div className={styles.feedTabs}>
-            <button 
-              className={`${styles.feedTab} ${!isPersonalized ? styles.active : ''}`}
-              onClick={() => setIsPersonalized(false)}
-            >
-              All Quizzes
-            </button>
-            <button 
-              className={`${styles.feedTab} ${isPersonalized ? styles.active : ''}`}
-              onClick={() => {
-                if (userInterestsCount === 0) {
-                  openOnboarding();
-                } else {
-                  setIsPersonalized(true);
-                }
-              }}
-            >
-              For You {userInterestsCount > 0 && <span className={styles.sparkle}>✨</span>}
-            </button>
-          </div>
 
-          {/* Advanced Filters Nested in Hero */}
-          {settings?.showAdvancedFilters !== false && (
-            <div className={styles.heroFiltersWrapper}>
-              <button 
-                className={styles.advancedFiltersToggle}
-                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-              >
-                <span>Advanced Filters</span>
-                <span className={`${styles.filterArrow} ${showAdvancedFilters ? styles.filterArrowUp : ''}`}>
-                  ▼
-                </span>
-              </button>
 
-              {showAdvancedFilters && (
-                <div className={styles.advancedFiltersPanel}>
-                  <div className={styles.filterGroup}>
-                    <span className={styles.filterLabel}>Sort By</span>
-                    <div className={styles.filterOptions}>
-                      {[
-                        { id: 'default', label: 'Default' },
-                        { id: 'alphabetical', label: 'A-Z' },
-                        { id: 'newest', label: 'Newest' },
-                        { id: 'popular', label: 'Popular' }
-                      ].map(opt => (
-                        <button
-                          key={opt.id}
-                          className={`${styles.filterOption} ${sortBy === opt.id ? styles.filterOptionActive : ''}`}
-                          onClick={() => setSortBy(opt.id)}
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
 
-                  <div className={styles.filterGroup}>
-                    <span className={styles.filterLabel}>Difficulty</span>
-                    <div className={styles.filterOptions}>
-                      {[
-                        { id: 'all', label: 'All' },
-                        { id: 'easy', label: 'Easy' },
-                        { id: 'medium', label: 'Medium' },
-                        { id: 'hard', label: 'Hard' }
-                      ].map(opt => (
-                        <button
-                          key={opt.id}
-                          className={`${styles.filterOption} ${difficultyFilter === opt.id ? styles.filterOptionActive : ''}`}
-                          onClick={() => setDifficultyFilter(opt.id)}
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
 
-                  <div className={styles.filterGroup}>
-                    <span className={styles.filterLabel}>Questions</span>
-                    <div className={styles.filterOptions}>
-                      {[
-                        { id: 'all', label: 'Any' },
-                        { id: 'small', label: '1-10' },
-                        { id: 'medium', label: '11-25' },
-                        { id: 'large', label: '25+' }
-                      ].map(opt => (
-                        <button
-                          key={opt.id}
-                          className={`${styles.filterOption} ${questionCountFilter === opt.id ? styles.filterOptionActive : ''}`}
-                          onClick={() => setQuestionCountFilter(opt.id)}
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
 
-          {/* Filter Chips Nested in Hero */}
-          <div className={styles.heroChipsWrapper}>
-            {chips.map((filter) => (
-              <button 
-                key={filter}
-                className={styles.chip}
-                onClick={() => handleHomeChipClick(filter)}
-                disabled={loading}
-              >
-                {filter}
-              </button>
-            ))}
-          </div>
+
         </div>
       </motion.section>
 
@@ -1086,77 +1075,61 @@ export default function LandingPage({ initialCategories = [] }) {
         <div className={styles.allSubSections}>
           {/* Daily Spotlight Section */}
           <div className={styles.mainCategorySection}>
-            <h2 className={styles.sectionTitle}>Daily Spotlight</h2>
-            <div className={styles.subSectionGrid}>
+            <h2 className={styles.sectionTitle}>{t('quizzes.spotlight.title')}</h2>
+            <div className={styles.spotlightGrid}>
               {/* Quiz of the Day Card */}
               <motion.div
-                className={styles.subSectionCard}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <Link href="/category/quiz-of-the-day" className={styles.subSectionCardLink}>
-                  <div className={styles.subSectionCardImage}>
-                    <span className={styles.subSectionCardEmoji}>🌟</span>
-                  </div>
-                  <div className={styles.subSectionCardContent}>
-                    <h4 className={styles.subSectionCardTitle}>Quiz of the day</h4>
-                    <button
-                      className={styles.playQuizButton}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        window.location.href = "/category/quiz-of-the-day";
-                      }}
-                    >
-                      Play Quiz
-                    </button>
-                    <div className={styles.subSectionCardFooter}>
-                      <span className={styles.subSectionCardCount}>Daily Curated</span>
-                      <span className={styles.subSectionCardTime}>~5 mins</span>
+                <Link href="/category/quiz-of-the-day" className={styles.spotlightCard}>
+                  <div className={styles.spotlightIcon}>🌟</div>
+                  <div className={styles.spotlightInfo}>
+                    <h4 className={styles.spotlightTitle}>{t('quizzes.spotlight.qotd')}</h4>
+                    <div className={styles.spotlightMeta}>
+                      <span>{t('quizzes.spotlight.curated')}</span>
+                      <span>•</span>
+                      <span>5 {t('common.mins') || 'mins'}</span>
                     </div>
+                  </div>
+                  <div className={styles.spotlightPlay}>
+                    <ArrowRight size={18} />
                   </div>
                 </Link>
               </motion.div>
 
               {/* Daily Current Affairs Card */}
               <motion.div
-                className={styles.subSectionCard}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: 0.1 }}
               >
-                <Link href="/current-affairs" className={styles.subSectionCardLink}>
-                  <div className={styles.subSectionCardImage}>
-                    <span className={styles.subSectionCardEmoji}>🗞️</span>
-                  </div>
-                  <div className={styles.subSectionCardContent}>
-                    <h4 className={styles.subSectionCardTitle}>Daily Current Affairs</h4>
-                    <button
-                      className={styles.playQuizButton}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        window.location.href = "/current-affairs";
-                      }}
-                    >
-                      View Updates
-                    </button>
-                    <div className={styles.subSectionCardFooter}>
-                      <span className={styles.subSectionCardCount}>Daily News</span>
-                      <span className={styles.subSectionCardTime}>New Today</span>
+                <Link href="/current-affairs" className={styles.spotlightCard}>
+                  <div className={styles.spotlightIcon}>🗞️</div>
+                  <div className={styles.spotlightInfo}>
+                    <h4 className={styles.spotlightTitle}>{t('quizzes.spotlight.dailyCa')}</h4>
+                    <div className={styles.spotlightMeta}>
+                      <span>{t('quizzes.spotlight.latest')}</span>
+                      <span>•</span>
+                      <span>{t('quizzes.spotlight.newToday')}</span>
                     </div>
+                  </div>
+                  <div className={styles.spotlightPlay}>
+                    <ArrowRight size={18} />
                   </div>
                 </Link>
               </motion.div>
             </div>
           </div>
 
-          {Object.keys(categorizedQuizzes).map((categoryName) => (
+          {/* Scroll Anchor for Main Quizzes (e.g., General Knowledge) */}
+          <div ref={quizSectionRef} className="h-0 w-0 pointer-events-none -mt-8" />
+
+          {categorizedQuizzes.map((section) => (
             <MainCategorySection 
-              key={categoryName}
-              category={categoryName} 
-              categorizedData={categorizedQuizzes} 
+              key={section.id}
+              section={section} 
               sectionIds={sectionIds}
               onOpenMixModal={handleOpenMixModal}
               isFirstSection={true}
@@ -1174,8 +1147,8 @@ export default function LandingPage({ initialCategories = [] }) {
       {/* All Categories Section (shown when searching or filtering) */}
       {(search || activeFilters.length > 0) && (
         <>
-          <h2 className={styles.sectionTitle}>All Categories</h2>
-            {loading && visibleCategories.length === 0 && <div className={styles.loadingHint}>Loading categories...</div>}
+          <h2 className={styles.sectionTitle}>{t('quizzes.sections.all')}</h2>
+            {loading && visibleCategories.length === 0 && <div className={styles.loadingHint}>{t('quizzes.sections.loading')}</div>}
           <motion.div 
             className={styles.subSectionGrid}
             variants={{ 
@@ -1192,17 +1165,17 @@ export default function LandingPage({ initialCategories = [] }) {
       {isPersonalized && userInterestsCount > 0 && (
         <div className="max-w-6xl mx-auto mb-10 p-6 rounded-3xl bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-cyan-500 flex items-center justify-center text-2xl shadow-lg shadow-cyan-500/20">✨</div>
+            <div className="w-12 h-12 rounded-2xl bg-cyan-500 flex items-center justify-center text-2xl shadow-lg shadow-cyan-500/20">👤</div>
             <div>
-              <h3 className="text-xl font-black text-slate-800 dark:text-white">Your Personalized Feed is Ready!</h3>
-              <p className="text-slate-500 dark:text-slate-400 text-sm">We&apos;ve curated these quizzes based on the {userInterestsCount} interests you selected.</p>
+              <h3 className="text-xl font-black text-slate-800 dark:text-white">{t('banners.personalized.title')}</h3>
+              <p className="text-slate-500 dark:text-slate-400 text-sm">{t('banners.personalized.subtitle').replace('{count}', userInterestsCount)}</p>
             </div>
           </div>
           <button 
             onClick={openOnboarding}
             className="px-6 py-2 bg-slate-800 dark:bg-white dark:text-slate-900 text-white rounded-xl font-bold text-sm hover:scale-105 transition-transform"
           >
-            Manage Interests
+            {t('banners.personalized.btn')}
           </button>
         </div>
       )}
@@ -1266,7 +1239,9 @@ export default function LandingPage({ initialCategories = [] }) {
                           )}
                         </div>
                         <div className={styles.subSectionCardContent}>
-                          <h4 className={styles.subSectionCardTitle}>{cat.topic}</h4>
+                          <h4 className={styles.subSectionCardTitle}>
+                            {isHindi && cat.topicHi ? cat.topicHi : cat.topic}
+                          </h4>
                           <button
                             className={styles.playQuizButton}
                             onClick={(e) => {
@@ -1274,13 +1249,13 @@ export default function LandingPage({ initialCategories = [] }) {
                               e.stopPropagation();
                               window.location.href = `/category/${cat.slug || cat.id}`;
                             }}
-                            aria-label={`Play ${cat.topic} quiz`}
+                            aria-label={`${t('quizzes.cards.playQuiz')} ${cat.topic}`}
                           >
-                            Play Quiz
+                            {t('quizzes.cards.playQuiz')}
                           </button>
                           <div className={styles.subSectionCardFooter}>
                             <span className={styles.subSectionCardCount}>
-                              {cat.questions.length} questions
+                              {cat.questions.length} {t('quizzes.cards.questions')}
                             </span>
                             <span className={styles.subSectionCardTime}>
                               {estimateTime(cat.questions.length)}
@@ -1304,10 +1279,10 @@ export default function LandingPage({ initialCategories = [] }) {
                 {loadingMore ? (
                   <>
                     <span className={styles.loader}></span>
-                    Loading...
+                    {t('common.loading') || 'Loading...'}
                   </>
                 ) : (
-                  'Load More Quizzes'
+                  t('quizzes.sections.loadMore')
                 )}
               </button>
             </div>
@@ -1317,7 +1292,7 @@ export default function LandingPage({ initialCategories = [] }) {
 
       {!loading && visibleCategories.length === 0 && (search || activeFilters.length > 0) && (
         <p className={styles.empty}>
-          No categories match your criteria.
+          {t('quizzes.sections.noMatch')}
         </p>
       )}
 
@@ -1328,7 +1303,7 @@ export default function LandingPage({ initialCategories = [] }) {
             <div className={styles.modalHeader}>
               <h3 className={styles.modalTitle}>
                 <span className={styles.modalEmoji}>{previewCategory.emoji || '📝'}</span>
-                {previewCategory.topic || 'Category Preview'}
+                {isHindi && previewCategory.topicHi ? previewCategory.topicHi : previewCategory.topic}
               </h3>
               <button 
                 className={styles.modalClose}
@@ -1341,7 +1316,7 @@ export default function LandingPage({ initialCategories = [] }) {
             
             <div className={styles.modalContent}>
               <div className={styles.modalSection}>
-                <h4 className={styles.modalSectionTitle}>📊 Quick Stats</h4>
+                <h4 className={styles.modalSectionTitle}>📊 {t('modals.preview.stats')}</h4>
                 <div className={styles.statsGrid}>
                   <div className={styles.statItem}>
                     <span className={styles.statLabel}>Questions</span>
@@ -1361,9 +1336,9 @@ export default function LandingPage({ initialCategories = [] }) {
               </div>
               
               <div className={styles.modalSection}>
-                <h4 className={styles.modalSectionTitle}>📝 Description</h4>
+                <h4 className={styles.modalSectionTitle}>📝 {t('modals.preview.description') || 'Description'}</h4>
                 <p className={styles.modalDescription}>
-                  {previewCategory.description || 'No description available for this category.'}
+                  {(isHindi && previewCategory.descriptionHi) ? previewCategory.descriptionHi : (previewCategory.description || t('modals.preview.noDesc') || 'No description available for this category.')}
                 </p>
               </div>
               
@@ -1408,19 +1383,19 @@ export default function LandingPage({ initialCategories = [] }) {
         <div className={styles.modalOverlay} onClick={() => setShowSignInModal(false)}>
           <div className={styles.signInModal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>Sign In Required</h3>
+              <h3 className={styles.modalTitle}>{t('modals.signin.title')}</h3>
               <button className={styles.modalClose} onClick={() => setShowSignInModal(false)}>✕</button>
             </div>
             <div className={styles.modalContent}>
               <p className={styles.modalDescription}>
-                Please sign in to your account to save your favorite quizzes and track your learning progress.
+                {t('modals.signin.desc')}
               </p>
               <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl mb-6 text-sm text-indigo-700 dark:text-indigo-300">
-                <strong>Why Sign In?</strong>
+                <strong>{t('modals.signin.why')}</strong>
                 <ul className="list-disc ml-4 mt-2 space-y-1">
-                  <li>Sync favorites across devices</li>
-                  <li>Unlock personalized learning paths</li>
-                  <li>Track detailed performance analytics</li>
+                  {(t('modals.signin.benefits') || []).map((benefit, bIdx) => (
+                    <li key={bIdx}>{benefit}</li>
+                  ))}
                 </ul>
               </div>
             </div>
@@ -1429,13 +1404,13 @@ export default function LandingPage({ initialCategories = [] }) {
                 className={styles.modalPrimaryButton}
                 onClick={() => signIn(undefined, { callbackUrl: window.location.pathname })}
               >
-                Sign In Now
+                {t('modals.signin.btn')}
               </button>
               <button 
                 className={styles.modalSecondaryButton}
                 onClick={() => setShowSignInModal(false)}
               >
-                Maybe Later
+                {t('modals.signin.later')}
               </button>
             </div>
           </div>

@@ -2,17 +2,19 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
+import { useLanguage } from "@/context/LanguageContext";
 import { Sparkles, ArrowRight, Rocket, LayoutGrid, List } from "lucide-react";
 import { highlightFactText } from "@/lib/textUtils";
 import styles from "@/styles/FunFacts.module.css";
 
 export default function FunFactsHub() {
+  const { t, language: globalAppLang } = useLanguage();
   const [categories, setCategories] = useState([]);
   const [loadingCats, setLoadingCats] = useState(true);
   
   // Navigation & Preferences
   const [activeTab, setActiveTab] = useState("all"); // all, trending, daily, favorites
-  const [globalLang, setGlobalLang] = useState("HI");
+  const [globalLang, setGlobalLang] = useState(globalAppLang.toUpperCase());
   const [readMode, setReadMode] = useState("image"); // image, text
   const [searchQuery, setSearchQuery] = useState("");
   const [searchInput, setSearchInput] = useState("");
@@ -32,7 +34,7 @@ export default function FunFactsHub() {
 
   // Initialization
   useEffect(() => {
-    const savedLang = localStorage.getItem("factLang") || "HI";
+    const savedLang = localStorage.getItem("factLang") || globalAppLang.toUpperCase();
     const savedMode = localStorage.getItem("factReadMode") || "image";
     setGlobalLang(savedLang);
     setReadMode(savedMode);
@@ -44,6 +46,11 @@ export default function FunFactsHub() {
         setLoadingCats(false);
       });
   }, []);
+
+  // Sync with app-wide language if it changes
+  useEffect(() => {
+     setGlobalLang(globalAppLang.toUpperCase());
+  }, [globalAppLang]);
 
   // Update URL preferences
   const updatePref = (key, val, setter) => {
@@ -124,7 +131,7 @@ export default function FunFactsHub() {
                 onClick={() => handleTabSwitch(tab)}
                 className={`px-4 py-2 rounded-lg text-sm font-bold capitalize whitespace-nowrap transition-all ${activeTab === tab ? 'bg-indigo-600 text-white shadow-md' : 'text-indigo-600 hover:bg-indigo-100'}`}
               >
-                {tab}
+                {t(`facts.tabs.${tab}`)}
               </button>
             ))}
           </div>
@@ -133,7 +140,7 @@ export default function FunFactsHub() {
             <form onSubmit={handleSearch} className="flex-grow">
               <input 
                 type="text" 
-                placeholder="Search facts..." 
+                placeholder={t('facts.search')} 
                 value={searchInput}
                 onChange={e => setSearchInput(e.target.value)}
                 className="w-full px-4 py-2 border border-indigo-200 rounded-xl outline-none focus:border-indigo-500 text-sm focus:ring-2 focus:ring-indigo-200 transition-all"
@@ -144,8 +151,8 @@ export default function FunFactsHub() {
               <button onClick={() => updatePref('factLang', 'HI', setGlobalLang)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${globalLang === 'HI' ? 'bg-white text-indigo-700 shadow flex items-center justify-center' : 'text-slate-500'}`}>HI</button>
             </div>
             <div className="flex gap-1 p-1 bg-indigo-50 border border-indigo-100 rounded-xl shadow-inner hidden md:flex">
-                <button onClick={() => updatePref('factReadMode', 'image', setReadMode)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${readMode === 'image' ? 'bg-white text-indigo-700 shadow' : 'text-slate-500'}`}>Image</button>
-                <button onClick={() => updatePref('factReadMode', 'text', setReadMode)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${readMode === 'text' ? 'bg-white text-indigo-700 shadow' : 'text-slate-500'}`}>Text</button>
+                <button onClick={() => updatePref('factReadMode', 'image', setReadMode)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${readMode === 'image' ? 'bg-white text-indigo-700 shadow' : 'text-slate-500'}`}>{t('facts.view.image')}</button>
+                <button onClick={() => updatePref('factReadMode', 'text', setReadMode)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${readMode === 'text' ? 'bg-white text-indigo-700 shadow' : 'text-slate-500'}`}>{t('facts.view.text')}</button>
             </div>
           </div>
         </div>
@@ -156,7 +163,7 @@ export default function FunFactsHub() {
               onClick={() => { setSelectedCats([]); setPage(1); setFacts([]); setHasMore(true); }}
               className={`${styles.filterChip} ${selectedCats.length === 0 ? styles.filterChipActive : ''}`}
             >
-              All Categories
+              {t('facts.categories')}
             </div>
             {categories.map(cat => (
               <div 
@@ -164,7 +171,7 @@ export default function FunFactsHub() {
                 onClick={() => toggleCategory(cat.id)}
                 className={`${styles.filterChip} ${selectedCats.includes(cat.id) ? styles.filterChipActive : ''}`}
               >
-                {cat.name}
+                {globalAppLang === 'hi' && cat.nameHi ? cat.nameHi : cat.name}
               </div>
             ))}
           </div>
@@ -192,7 +199,7 @@ export default function FunFactsHub() {
              
              {!loadingFacts && facts.length === 0 && (
                <div className="text-center py-12 text-slate-500 font-medium">
-                 No facts found for the selected categories.
+                 {t('facts.empty')}
                </div>
              )}
         </div>

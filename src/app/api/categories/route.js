@@ -63,7 +63,8 @@ export async function GET(request) {
         andConditions.push({
           OR: [
             { parentId: null },
-            { parentId: { isSet: false } }
+            { parentId: { isSet: false } },
+            { showSubCategoriesOnHome: true }
           ]
         });
       }
@@ -137,6 +138,13 @@ export async function GET(request) {
         _count: {
           select: { questions: true }
         },
+        subCategories: {
+          select: {
+            _count: {
+              select: { questions: true }
+            }
+          }
+        },
         ...(includeQuestions ? { questions: true } : {})
       },
       orderBy,
@@ -202,9 +210,11 @@ export async function GET(request) {
     const result = paginatedCategories.map((cat) => ({
       id: cat.id,
       topic: cat.topic,
+      topicHi: cat.topicHi,
       slug: cat.slug,
       emoji: cat.emoji,
       description: cat.description,
+      descriptionHi: cat.descriptionHi,
       categoryClass: cat.categoryClass,
       hidden: cat.hidden,
       image: cat.image,
@@ -218,7 +228,7 @@ export async function GET(request) {
       showSubCategoriesOnHome: cat.showSubCategoriesOnHome,
       createdAt: cat.createdAt,
       updatedAt: cat.updatedAt,
-      questionCount: cat._count?.questions || 0,
+      questionCount: (cat._count?.questions || 0) + (cat.subCategories?.reduce((acc, sub) => acc + (sub._count?.questions || 0), 0) || 0),
       difficultyStats: difficultyMap[cat.id] || { easy: 0, medium: 0, hard: 0 },
       questions: includeQuestions ? (cat.questions || []).map(q => ({
         ...q,

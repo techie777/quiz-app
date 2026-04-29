@@ -47,11 +47,28 @@ export async function GET(request) {
       whereClause.difficulty = difficulty.toLowerCase();
     }
 
-    // 4. Fetch questions
-    // Note: Due to Prisma's MongoDB driver limitations for large random sampling,
-    // we fetch a larger pool then shuffle in-memory for accuracy and performance.
-    const questionPool = await prisma.question.findMany({
+    // 4. Fetch all matching IDs to ensure a truly random selection from the entire pool
+    const allMatchingQuestions = await prisma.question.findMany({
       where: whereClause,
+      select: { id: true }
+    });
+
+    if (allMatchingQuestions.length === 0) {
+      return NextResponse.json({ questions: [] });
+    }
+
+    // 5. Randomly select unique IDs from the pool
+    // We shuffle the entire ID list and take the requested limit
+    const shuffledIds = allMatchingQuestions
+      .map(q => q.id)
+      .sort(() => Math.random() - 0.5)
+      .slice(0, limit);
+
+    // 6. Fetch full data for the selected random IDs
+    const questionPool = await prisma.question.findMany({
+      where: {
+        id: { in: shuffledIds }
+      },
       select: {
         id: true,
         text: true,
@@ -65,26 +82,21 @@ export async function GET(request) {
             topic: true
           }
         }
-      },
-      take: Math.max(limit * 3, 100) // Get a decent pool to randomize from
+      }
     });
 
-    // 5. Shuffle and limit
-    const shuffled = questionPool
+    // 7. Map and ensure final shuffle (since findMany with 'in' might return them in ID order)
+    const finalQuestions = questionPool
       .map(q => ({
         ...q,
-        // Ensure options are parsed if they are stored as JSON strings
         options: typeof q.options === 'string' ? JSON.parse(q.options) : q.options,
-        // Add a sort key for shuffling
-        sort: Math.random()
       }))
-      .sort((a, b) => a.sort - b.sort)
-      .slice(0, limit);
+      .sort(() => Math.random() - 0.5);
 
     return NextResponse.json({
       sectionName: section.name,
-      totalAvailable: questionPool.length,
-      questions: shuffled
+      totalAvailable: allMatchingQuestions.length,
+      questions: finalQuestions
     });
 
   } catch (error) {

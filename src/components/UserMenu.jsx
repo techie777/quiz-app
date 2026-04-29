@@ -6,11 +6,13 @@ import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUI } from "@/context/UIContext";
+import { useLanguage } from "@/context/LanguageContext";
 import styles from "@/styles/Header.module.css";
 
 export default function UserMenu() {
   const { data: session } = useSession();
   const { openOnboarding } = useUI();
+  const { t, mounted } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [avatar, setAvatar] = useState("");
@@ -86,7 +88,7 @@ export default function UserMenu() {
               {session.user.isAdmin && (
                 <li>
                   <Link href="/admin" className={styles.dropdownLink} onClick={() => setIsOpen(false)}>
-                    <span className={styles.menuIcon}>🛠️</span> Admin Dashboard
+                    <span className={styles.menuIcon}>🛠️</span> {mounted ? t('nav.userMenu.admin') : 'Admin Dashboard'}
                   </Link>
                 </li>
               )}
@@ -95,22 +97,22 @@ export default function UserMenu() {
                 <>
                   <li>
                     <Link href="/profile" className={styles.dropdownLink} onClick={() => setIsOpen(false)}>
-                      <span className={styles.menuIcon}>👤</span> My Profile
+                      <span className={styles.menuIcon}>👤</span> {mounted ? t('nav.userMenu.profile') : 'My Profile'}
                     </Link>
                   </li>
                   <li>
                     <Link href="/my-favourites" className={styles.dropdownLink} onClick={() => setIsOpen(false)}>
-                      <span className={styles.menuIcon}>❤️</span> My Favourites
+                      <span className={styles.menuIcon}>❤️</span> {mounted ? t('nav.userMenu.favorites') : 'My Favourites'}
                     </Link>
                   </li>
                   <li>
                     <Link href="/school-study/dashboard" className={styles.dropdownLink} onClick={() => setIsOpen(false)}>
-                      <span className={styles.menuIcon}>📊</span> Learning Progress
+                      <span className={styles.menuIcon}>📊</span> {mounted ? t('nav.userMenu.learning') : 'Learning Progress'}
                     </Link>
                   </li>
                   <li>
                     <Link href="/leaderboard" className={styles.dropdownLink} onClick={() => setIsOpen(false)}>
-                      <span className={styles.menuIcon}>🏆</span> Global Leaderboard
+                      <span className={styles.menuIcon}>🏆</span> {mounted ? t('nav.userMenu.leaderboard') : 'Global Leaderboard'}
                     </Link>
                   </li>
                   <li>
@@ -121,7 +123,7 @@ export default function UserMenu() {
                         openOnboarding();
                       }}
                     >
-                      <span className={styles.menuIcon}>🎯</span> Manage Interests
+                      <span className={styles.menuIcon}>🎯</span> {mounted ? t('nav.userMenu.interests') : 'Manage Interests'}
                     </button>
                   </li>
                 </>
@@ -136,7 +138,7 @@ export default function UserMenu() {
                   className={styles.dropdownSignOut}
                   onClick={() => setShowSignOutConfirm(true)}
                 >
-                  <span className={styles.menuIcon}>🚪</span> Sign Out
+                  <span className={styles.menuIcon}>🚪</span> {mounted ? t('nav.userMenu.signOut') : 'Sign Out'}
                 </button>
               ) : (
                 <motion.div 
@@ -144,19 +146,19 @@ export default function UserMenu() {
                   animate={{ opacity: 1, x: 0 }}
                   className={styles.confirmSection}
                 >
-                  <p className={styles.confirmText}>Are you sure?</p>
+                  <p className={styles.confirmText}>{mounted ? t('nav.userMenu.confirmSignOut') : 'Are you sure?'}</p>
                   <div className={styles.confirmButtons}>
                     <button 
                       className={styles.confirmBtn}
                       onClick={() => signOut({ callbackUrl: '/' })}
                     >
-                      Yes, Sign Out
+                      {mounted ? t('nav.userMenu.yes') : 'Yes, Sign Out'}
                     </button>
                     <button 
                       className={styles.cancelBtn}
                       onClick={() => setShowSignOutConfirm(false)}
                     >
-                      Cancel
+                      {mounted ? t('nav.userMenu.cancel') : 'Cancel'}
                     </button>
                   </div>
                 </motion.div>

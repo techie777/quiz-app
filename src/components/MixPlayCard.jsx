@@ -3,9 +3,12 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Sparkles, PlayCircle } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
 import styles from "@/styles/LandingPage.module.css";
 
 const MixPlayCard = ({ sectionName, onOpenModal }) => {
+  const { t, isHindi } = useLanguage();
+  
   return (
     <motion.div
       className={`${styles.subSectionCard} ${styles.mixPlayCard}`}
@@ -21,15 +24,21 @@ const MixPlayCard = ({ sectionName, onOpenModal }) => {
            <Sparkles className={styles.mixIcon} size={28} />
         </div>
         
-        <h4 className={styles.mixCardTitle}>Mega Mix Challenge</h4>
+        <h4 className={styles.mixCardTitle}>
+          {t('quizzes.mix.title') || "Mega Mix Challenge"}
+        </h4>
         <p className={styles.mixCardDescription}>
-          Mix questions from all categories in <strong>{sectionName}</strong>
+          {isHindi ? (
+            <><strong>{sectionName}</strong> की सभी श्रेणियों के मिश्रित प्रश्न</>
+          ) : (
+            <>Mix questions from all categories in <strong>{sectionName}</strong></>
+          )}
         </p>
         
         <div className={styles.mixCardFooter}>
           <button className={styles.mixPlayBtn}>
             <PlayCircle size={20} />
-            Configure & Play
+            {t('quizzes.mix.play') || "Configure & Play"}
           </button>
         </div>
       </div>
