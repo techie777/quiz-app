@@ -26,6 +26,39 @@
   gap: 2.5rem;
 }
 
+.heroHeader {
+  text-align: center;
+  margin-bottom: 3.5rem;
+}
+
+.heroTitle {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, #1e293b, #334155);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 1rem;
+}
+
+[data-theme='dark'] .heroTitle {
+  background: linear-gradient(135deg, #f8fafc, #94a3b8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.heroSubtitle {
+  font-size: 1.25rem;
+  color: #64748b;
+  max-width: 600px;
+  margin: 0 auto;
+  font-weight: 500;
+}
+
+[data-theme='dark'] .heroSubtitle {
+  color: #94a3b8;
+}
+
 @media (max-width: 1024px) {
   .grid {
     grid-template-columns: 1fr;
@@ -425,26 +458,48 @@
 .mainAction {
   margin-top: auto;
   padding-top: 2rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: block;
   position: relative;
   z-index: 2;
+  text-decoration: none;
 }
 
 .viewAll {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
   font-weight: 800;
-  color: #1e293b;
-  transition: gap 0.3s ease;
-}
-
-[data-theme='dark'] .viewAll {
-  color: #e2e8f0;
+  color: white;
+  padding: 1.1rem 1.5rem;
+  border-radius: 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 100%;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  font-size: 1.05rem;
 }
 
 .card:hover .viewAll {
   gap: 1rem;
+  transform: translateY(-2px);
 }
+
+/* Card Quiz CTA */
+.cardQuiz .viewAll { background: #4f46e5; }
+[data-theme='dark'] .cardQuiz .viewAll { background: #6366f1; }
+.cardQuiz:hover .viewAll { box-shadow: 0 12px 24px -8px rgba(79, 70, 229, 0.5); }
+
+/* Card Govt CTA */
+.cardGovt .viewAll { background: #d97706; }
+[data-theme='dark'] .cardGovt .viewAll { background: #f59e0b; }
+.cardGovt:hover .viewAll { box-shadow: 0 12px 24px -8px rgba(217, 119, 6, 0.5); }
+
+/* Card Info CTA */
+.cardInfo .viewAll { background: #059669; }
+[data-theme='dark'] .cardInfo .viewAll { background: #10b981; }
+.cardInfo:hover .viewAll { box-shadow: 0 12px 24px -8px rgba(5, 150, 105, 0.5); }
+
+/* Card Others CTA */
+.cardOthers .viewAll { background: #2563eb; }
+[data-theme='dark'] .cardOthers .viewAll { background: #3b82f6; }
+.cardOthers:hover .viewAll { box-shadow: 0 12px 24px -8px rgba(37, 99, 235, 0.5); }

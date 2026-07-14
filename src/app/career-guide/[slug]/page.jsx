@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { safeJsonParse } from "@/lib/utils";
 import CareerGuideTOC from "@/components/CareerGuideTOC";
 import LanguageToggle from "@/components/LanguageToggle";
+import FAQAccordion from "@/components/FAQAccordion";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -84,24 +85,15 @@ export default async function DynamicCareerGuide({ params, searchParams }) {
 
     if (type === "FAQS") {
       const items = safeJsonParse(content, []);
-      if (!Array.isArray(items) || items.length === 0) {
+      const mappedItems = Array.isArray(items) ? items.map(it => ({
+        question: it?.question || it?.q || "",
+        answer: it?.answer || it?.a || ""
+      })) : [];
+
+      if (mappedItems.length === 0) {
         return <div className={styles.careerDesc} style={{ whiteSpace: "pre-wrap" }}>{String(content || "")}</div>;
       }
-      return (
-        <div className={styles.faqSection}>
-          {items.map((it, idx) => (
-            <details key={idx} className={styles.faqItem}>
-              <summary className={styles.faqQuestion}>
-                <span>{String(it?.question || `FAQ ${idx + 1}`)}</span>
-                <span className={styles.faqIcon}>▾</span>
-              </summary>
-              <div className={styles.faqAnswer} style={{ whiteSpace: "pre-wrap" }}>
-                {String(it?.answer || "")}
-              </div>
-            </details>
-          ))}
-        </div>
-      );
+      return <FAQAccordion faqs={mappedItems} />;
     }
 
     return (

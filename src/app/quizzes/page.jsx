@@ -22,6 +22,16 @@ export default async function Page() {
         _count: {
           select: { questions: true }
         },
+        questions: {
+          take: 1,
+          select: {
+            id: true,
+            text: true,
+            textHi: true,
+            options: true,
+            optionsHi: true,
+          }
+        },
         subCategories: {
           select: {
             _count: {
@@ -68,8 +78,11 @@ export default async function Page() {
       createdAt: cat.createdAt.toISOString(),
       updatedAt: cat.updatedAt.toISOString(),
       questionCount: (cat._count?.questions || 0) + (cat.subCategories?.reduce((acc, sub) => acc + (sub._count?.questions || 0), 0) || 0),
-       // Provide minimal questions if necessary, though Home usually just needs basic info
-      questions: [],
+      questions: (cat.questions || []).map(q => ({
+        ...q,
+        options: safeJsonParse(q.options) || [],
+        optionsHi: safeJsonParse(q.optionsHi) || []
+      })),
     }));
 
     return <LandingPageClient initialCategories={initialCategories} />;

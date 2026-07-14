@@ -58,7 +58,24 @@ export function LanguageProvider({ children }) {
 export function useLanguage() {
   const context = useContext(LanguageContext);
   if (context === undefined) {
-    throw new Error('useLanguage must be used within a LanguageProvider');
+    return {
+      language: 'en',
+      toggleLanguage: () => {},
+      t: (path) => {
+        const keys = path.split('.');
+        let result = translations['en'];
+        for (const key of keys) {
+          if (result && result[key]) {
+            result = result[key];
+          } else {
+            return path;
+          }
+        }
+        return result;
+      },
+      isHindi: false,
+      mounted: false
+    };
   }
   return context;
 }

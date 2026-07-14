@@ -21,6 +21,15 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
 
+  const defaultAvatars = [
+    `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%236366f1"/><text x="50" y="50" font-family="Arial" font-size="40" fill="white" text-anchor="middle" dy=".3em">🦊</text></svg>`,
+    `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%23f43f5e"/><text x="50" y="50" font-family="Arial" font-size="40" fill="white" text-anchor="middle" dy=".3em">🐼</text></svg>`,
+    `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%2310b981"/><text x="50" y="50" font-family="Arial" font-size="40" fill="white" text-anchor="middle" dy=".3em">🐸</text></svg>`,
+    `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%23f59e0b"/><text x="50" y="50" font-family="Arial" font-size="40" fill="white" text-anchor="middle" dy=".3em">🦁</text></svg>`,
+    `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%238b5cf6"/><text x="50" y="50" font-family="Arial" font-size="40" fill="white" text-anchor="middle" dy=".3em">🦉</text></svg>`,
+    `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%23ec4899"/><text x="50" y="50" font-family="Arial" font-size="40" fill="white" text-anchor="middle" dy=".3em">🦄</text></svg>`
+  ];
+
   const patternClasses = {
     indigo: "theme-pattern-indigo",
     midnight: "theme-pattern-midnight",
@@ -80,14 +89,14 @@ export default function ProfilePage() {
       const data = await res.json();
       
       if (res.ok) {
-        setMsg(t('profile.toasts.updated') || "Profile updated!");
+        setMsg(t('quizzes.profile.toasts.updated') || "Profile updated!");
         setProfile(data); 
         updateEngineTheme(selectedTheme);
       } else {
-        setMsg(data.error || t('profile.toasts.failed') || "Failed to update profile");
+        setMsg(data.error || t('quizzes.profile.toasts.failed') || "Failed to update profile");
       }
     } catch (error) {
-      setMsg(t('profile.toasts.error') || "Connection error. Please try again.");
+      setMsg(t('quizzes.profile.toasts.error') || "Connection error. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -104,7 +113,7 @@ export default function ProfilePage() {
   return (
     <div className={styles.page}>
       <div className={`${styles.card} glass-card`}>
-        <h1 className={styles.title}>{t('profile.title')}</h1>
+        <h1 className={styles.title}>{t('quizzes.profile.title')}</h1>
         <div className={styles.avatarSection}>
           <img
             src={avatarPreview || "/default-avatar.svg"}
@@ -112,9 +121,29 @@ export default function ProfilePage() {
             className={styles.avatar}
           />
           <label className={styles.uploadBtn}>
-            {t('profile.changePhoto')}
+            {t('quizzes.profile.changePhoto')}
             <input type="file" accept="image/*" onChange={handleAvatarChange} hidden />
           </label>
+        </div>
+
+        <div className={styles.defaultAvatarsSection} style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '20px' }}>
+          <p style={{ width: '100%', textAlign: 'center', fontSize: '12px', color: '#64748b', fontWeight: 'bold' }}>OR CHOOSE A COOL DEFAULT AVATAR</p>
+          {defaultAvatars.map((url, idx) => (
+            <img 
+              key={idx}
+              src={url} 
+              alt="Default Avatar"
+              onClick={() => setAvatarPreview(url)}
+              style={{
+                width: '40px', 
+                height: '40px', 
+                cursor: 'pointer',
+                borderRadius: '50%',
+                border: avatarPreview === url ? '2px solid #6366f1' : '2px solid transparent',
+                transition: 'all 0.2s'
+              }}
+            />
+          ))}
         </div>
 
         <div className={styles.field}>
@@ -122,20 +151,20 @@ export default function ProfilePage() {
           <input value={profile.email} disabled className={styles.input} />
         </div>
         <div className={styles.field}>
-          <label>{t('profile.nickname')}</label>
+          <label>{t('quizzes.profile.nickname')}</label>
           <input
             value={nickname}
             onChange={(e) => setNickname(e.target.value)}
             className={styles.input}
-            placeholder={t('profile.nicknamePlaceholder')}
+            placeholder={t('quizzes.profile.nicknamePlaceholder')}
           />
         </div>
 
         <div className={styles.themeSection}>
-          <label>{t('profile.theme')}</label>
+          <label>{t('quizzes.profile.theme')}</label>
           <div className="flex items-center gap-2 mb-3">
-             <span className="text-[10px] font-bold bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full uppercase tracking-wider">{t('profile.livePreview')}</span>
-             <p className="text-[10px] text-slate-400 font-medium">{t('profile.themeDesc')}</p>
+             <span className="text-[10px] font-bold bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full uppercase tracking-wider">{t('quizzes.profile.livePreview')}</span>
+             <p className="text-[10px] text-slate-400 font-medium">{t('quizzes.profile.themeDesc')}</p>
           </div>
 
           {/* Theme Preview Mockup */}
@@ -179,7 +208,7 @@ export default function ProfilePage() {
 
         <div className={styles.quickLinks}>
           <Link href="/my-favourites" className={styles.quickLink}>
-            ❤️ {t('profile.favourites')}
+            ❤️ {t('quizzes.profile.favourites')}
           </Link>
         </div>
       </div>

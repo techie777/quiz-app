@@ -381,6 +381,14 @@ export default function GovtExamManagement() {
                     </div>
                   </div>
                   <div className={styles.examActions}>
+                    <Link
+                      href={`/govt-exams/${exam.slug || 'ssc-cgl'}`}
+                      target="_blank"
+                      className="text-xs bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 font-extrabold px-2.5 py-1 rounded-lg flex items-center gap-1 transition"
+                      title="View Student Portal & 7-Tab Digital FlexBook"
+                    >
+                      👁️ Student View
+                    </Link>
                     <button 
                       className={styles.editButton}
                       onClick={() => handleEdit(exam)}

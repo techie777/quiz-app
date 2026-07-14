@@ -480,9 +480,8 @@ export default function AdminCategoriesPage() {
                   {cat.showSubCategoriesOnHome && (
                     <span className={styles.homeBadge} title="Sub-categories shown on home page">🏠</span>
                   )}
-                  {cat.hidden && <span className={styles.hiddenBadge}>Hidden</span>}
                   {cat.isTrending && <span className={styles.trendingBadge}>🔥 Trending</span>}
-                  <span className={styles.count}>{cat.questions?.length || 0} Q</span>
+                  <span className={styles.count}>{cat.questionCount || 0} Q</span>
                   <div className={styles.actions}>
                     <button
                       className={styles.visibilityBtn}
@@ -563,7 +562,7 @@ export default function AdminCategoriesPage() {
                         {sub.hidden && (
                           <span className={styles.hiddenBadge}>Hidden</span>
                         )}
-                        <span className={styles.count}>{sub.questions?.length || 0} Q</span>
+                        <span className={styles.count}>{sub.questionCount || 0} Q</span>
                         <div className={styles.actions}>
                           <button
                             className={styles.visibilityBtn}

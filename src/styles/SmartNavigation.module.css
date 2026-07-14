@@ -5,7 +5,7 @@
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--navbar-border);
-  z-index: 1000;
+  z-index: 1050;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -24,33 +24,74 @@
   height: 48px;
 }
 
-/* Enable Horizontal Scroll on Desktop if items exceed width */
+/* Priority+ Desktop Pattern */
 @media (min-width: 769px) {
   .container {
-    overflow-x: auto;
-    overflow-y: hidden;
-    justify-content: flex-start; /* Better for scrolling containers */
-    scrollbar-width: thin;
-    scrollbar-color: var(--navbar-border) transparent;
+    overflow: visible;
+    justify-content: center;
   }
-  
-  /* Custom Scrollbar for Desktop Navigation */
-  .container::-webkit-scrollbar {
-    height: 4px;
-  }
-  
-  .container::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  
-  .container::-webkit-scrollbar-thumb {
-    background: var(--navbar-border);
-    border-radius: 10px;
-  }
-  
-  .container::-webkit-scrollbar-thumb:hover {
-    background: var(--accent);
-  }
+}
+
+.moreDropdownContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.moreDropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: var(--bg-primary);
+  border: 1px solid var(--navbar-border);
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  z-index: 9999;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Invisible bridge to prevent hover flickering when moving cursor from trigger to dropdown */
+.moreDropdown::before {
+  content: '';
+  position: absolute;
+  top: -24px;
+  left: 0;
+  right: 0;
+  height: 24px;
+  background: transparent;
+}
+
+.dropdownLink {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.dropdownLink:hover {
+  background: rgba(var(--accent-rgb), 0.05);
+  color: var(--text-primary);
+}
+
+.dropdownLink.active {
+  color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.08);
+}
+
+.dropdownIcon {
+  font-size: 1.1rem;
 }
 
 

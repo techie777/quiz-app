@@ -31,9 +31,24 @@ export default function Header() {
 
   const isFullscreen = isBrowserFullscreen || quizFullscreen;
 
-  if (!isMounted || isFullscreen) return null;
+  // Hydration fix: Always render the header on the server and initial client render
+  if (isMounted && isFullscreen) return null;
 
   if (pathname?.startsWith("/admin") || pathname?.includes("/mock-tests/paper/")) return null;
+
+  if (!isMounted) {
+    return (
+      <header className={styles.header}>
+        <div className={styles.container}>
+          <Link href="/" className={styles.logo}>
+            <span className={styles.logoEmoji}>🧠</span>
+            <span className={styles.logoText}>QuizWeb</span>
+          </Link>
+          <div className={styles.headerActions}></div>
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header className={styles.header}>

@@ -129,7 +129,7 @@ export async function GET(request) {
     const needsInMemoryFilteringOrSorting = qCount !== "all" || sortBy === "popular";
     const limit = limitRaw > 0 ? Math.min(limitRaw, 60) : 0;
 
-    const includeQuestions = searchParams.get("full") === "true";
+    const includeQuestions = searchParams.get("full") === "true" || isAdmin;
 
     // Fetch categories
     const categories = await prisma.category.findMany({
@@ -145,7 +145,16 @@ export async function GET(request) {
             }
           }
         },
-        ...(includeQuestions ? { questions: true } : {})
+        questions: includeQuestions ? true : {
+          take: 1,
+          select: {
+            id: true,
+            text: true,
+            textHi: true,
+            options: true,
+            optionsHi: true,
+          }
+        }
       },
       orderBy,
       ...(needsInMemoryFilteringOrSorting || limit === 0 ? {} : (limit > 0 ? { take: limit } : {})),

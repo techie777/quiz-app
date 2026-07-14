@@ -101,10 +101,10 @@ export default function Footer() {
           <div className={styles.footerColumn}>
             <h3 className={styles.colHeading}>{t('footer.elearning')}</h3>
             <ul className={styles.linkList}>
-              <li><Link href="/daily-quiz" className={styles.navLink}>{t('hub.dailyInsights.links.dailyQuiz')}</Link></li>
+              <li><Link href="/daily-current-affairs" className={styles.navLink}>{t('hub.dailyInsights.links.dailyQuiz')}</Link></li>
               <li><Link href="/current-affairs" className={styles.navLink}>{t('hub.dailyInsights.links.currentAffairs')}</Link></li>
-              <li><Link href="/govt-alerts" className={styles.navLink}>{t('hub.resources.links.jobAlerts')}</Link></li>
-              <li><Link href="/study-material" className={styles.navLink}>{t('hub.resources.links.schoolStudy')}</Link></li>
+              <li><Link href="/govt-jobs-alerts" className={styles.navLink}>{t('hub.resources.links.jobAlerts')}</Link></li>
+              <li><Link href="/school-study" className={styles.navLink}>{t('hub.resources.links.schoolStudy')}</Link></li>
               <li><Link href="/blog" className={styles.navLink}>{isHindi ? 'ज्ञान ब्लॉग' : 'Knowledge Blog'}</Link></li>
             </ul>
           </div>

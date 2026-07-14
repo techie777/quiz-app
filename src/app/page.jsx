@@ -43,6 +43,12 @@ export default function MasterHubPage() {
   return (
     <div className={styles.container}>
       <main className={styles.heroContent}>
+        
+        {/* Hero Headline */}
+        <div className={styles.heroHeader}>
+          <h1 className={styles.heroTitle}>{mounted ? t('hub.hero.title') : 'Master Your Exams & Trivia'}</h1>
+          <p className={styles.heroSubtitle}>{mounted ? t('hub.hero.subtitle') : 'Choose your path to get started.'}</p>
+        </div>
 
         <div className={styles.grid}>
           {/* Section 1: Quizzes */}
@@ -58,33 +64,15 @@ export default function MasterHubPage() {
               <p className={styles.cardDescription}>
                 {t('hub.quizHub.desc')}
               </p>
-              <div className={styles.linksGrid}>
-                <Link href="/quizzes" className={styles.linkItem}>
-                  <span className={styles.linkIcon}>🏆</span>
-                  <span>{t('hub.quizHub.links.quiz')}</span>
-                </Link>
-                <Link href="/fun-facts" className={styles.linkItem}>
-                  <span className={styles.linkIcon}>💡</span>
-                  <span>{t('hub.quizHub.links.funFacts')}</span>
-                </Link>
-                <Link href="/true-false" className={styles.linkItem}>
-                  <span className={styles.linkIcon}>✅</span>
-                  <span>{t('hub.quizHub.links.trueFalse')}</span>
-                </Link>
-                <Link href="/sawal-jawab" className={styles.linkItem}>
-                  <span className={styles.linkIcon}>❓</span>
-                  <span>{t('hub.quizHub.links.sawalJawab')}</span>
-                </Link>
-              </div>
             </div>
             <Link href="/quizzes" className={styles.mainAction}>
-              <span className={styles.viewAll}>{t('hub.quizHub.links.action')} <ArrowRight size={20} /></span>
+              <span className={styles.viewAll}>{mounted ? t('hub.quizHub.links.action') : 'Start Playing Trivia'} <ArrowRight size={20} /></span>
             </Link>
           </div>
 
           {/* Section 2: Govt Exams */}
           <div className={`${styles.card} ${styles.cardGovt}`}>
-            <Link href="/mock-tests" className={styles.cardBadge}>{t('hub.newExams')}</Link>
+            <Link href="/govt-exams" className={styles.cardBadge}>{t('hub.newExams')}</Link>
             <div className={styles.cardBody}>
               <div className={styles.cardIcon}>🏛️</div>
               <div className={styles.previewWrapper}>
@@ -95,27 +83,9 @@ export default function MasterHubPage() {
               <p className={styles.cardDescription}>
                 {t('hub.govtExams.desc')}
               </p>
-              <div className={styles.linksGrid}>
-                <Link href="/mock-tests" className={styles.linkItem}>
-                  <span className={styles.linkIcon}>✍️</span>
-                  <span>{t('hub.govtExams.links.mockTests')}</span>
-                </Link>
-                <Link href="/mock-tests" className={styles.linkItem}>
-                  <span className={styles.linkIcon}>📜</span>
-                  <span>{t('hub.govtExams.links.pypPapers')}</span>
-                </Link>
-                <Link href="/govt-study" className={styles.linkItem}>
-                  <span className={styles.linkIcon}>📚</span>
-                  <span>{t('hub.govtExams.links.studyMaterial')}</span>
-                </Link>
-                <Link href="/career-guide" className={styles.linkItem}>
-                  <span className={styles.linkIcon}>🧭</span>
-                  <span>{t('hub.govtExams.links.careerGuide')}</span>
-                </Link>
-              </div>
             </div>
-            <Link href="/mock-tests" className={styles.mainAction}>
-              <span className={styles.viewAll}>{t('hub.govtExams.links.action')} <ArrowRight size={20} /></span>
+            <Link href="/govt-exams" className={styles.mainAction}>
+              <span className={styles.viewAll}>{mounted ? t('hub.govtExams.links.action') : 'Explore Exam Prep'} <ArrowRight size={20} /></span>
             </Link>
           </div>
 
@@ -132,27 +102,9 @@ export default function MasterHubPage() {
               <p className={styles.cardDescription}>
                 {t('hub.dailyInsights.desc')}
               </p>
-              <div className={styles.linksGrid}>
-                <Link href="/current-affairs" className={styles.linkItem}>
-                  <span className={styles.linkIcon}>📰</span>
-                  <span>{t('hub.dailyInsights.links.currentAffairs')}</span>
-                </Link>
-                <Link href="/quizzes" className={styles.linkItem}>
-                  <span className={styles.linkIcon}>🕙</span>
-                  <span>{t('hub.dailyInsights.links.dailyQuiz')}</span>
-                </Link>
-                <Link href="/fun-facts" className={styles.linkItem}>
-                  <span className={styles.linkIcon}>💡</span>
-                  <span>{t('hub.dailyInsights.links.funFacts')}</span>
-                </Link>
-                <Link href="/sawal-jawab" className={styles.linkItem}>
-                  <span className={styles.linkIcon}>❓</span>
-                  <span>{t('hub.dailyInsights.links.sawalJawab')}</span>
-                </Link>
-              </div>
             </div>
             <Link href="/fun-facts" className={styles.mainAction}>
-              <span className={styles.viewAll}>{t('hub.dailyInsights.links.action')} <ArrowRight size={20} /></span>
+              <span className={styles.viewAll}>{mounted ? t('hub.dailyInsights.links.action') : 'Explore Facts'} <ArrowRight size={20} /></span>
             </Link>
           </div>
 
@@ -169,23 +121,9 @@ export default function MasterHubPage() {
               <p className={styles.cardDescription}>
                 {t('hub.resources.desc')}
               </p>
-              <div className={styles.linksGrid}>
-                <Link href="/govt-jobs-alerts" className={styles.linkItem}>
-                  <span className={styles.linkIcon}>💼</span>
-                  <span>{t('hub.resources.links.jobAlerts')}</span>
-                </Link>
-                <Link href="/book-my-course" className={styles.linkItem}>
-                  <span className={styles.linkIcon}>🎒</span>
-                  <span>{t('hub.resources.links.bookCourses')}</span>
-                </Link>
-                <Link href="/school-study" className={styles.linkItem}>
-                  <span className={styles.linkIcon}>📖</span>
-                  <span>{t('hub.resources.links.schoolStudy')}</span>
-                </Link>
-              </div>
             </div>
             <Link href="/book-my-course" className={styles.mainAction}>
-              <span className={styles.viewAll}>{t('hub.resources.links.action')} <ArrowRight size={20} /></span>
+              <span className={styles.viewAll}>{mounted ? t('hub.resources.links.action') : 'View Resources'} <ArrowRight size={20} /></span>
             </Link>
           </div>
         </div>

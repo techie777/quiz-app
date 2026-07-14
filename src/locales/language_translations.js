@@ -11,7 +11,10 @@ export const translations = {
       saving: "Saving...",
       saveChanges: "Save Changes",
       back: "Back",
-      mins: "mins"
+      mins: "mins",
+      hideTopics: "Hide Topics",
+      showTopics: "Show Topics",
+      quizzesAvailable: "Quizzes Available"
     },
     // Navigation
     nav: {
@@ -78,6 +81,10 @@ export const translations = {
       backHome: "Back to Home",
     },
     hub: {
+      hero: {
+        title: "Master Your Exams & Trivia",
+        subtitle: "Choose your path to get started."
+      },
       liveNow: "LIVE NOW",
       newExams: "NEW EXAMS",
       factsRevealed: "FACTS REVEALED",
@@ -90,7 +97,7 @@ export const translations = {
           funFacts: "Fun facts",
           trueFalse: "True & False",
           sawalJawab: "Sawal Jawab",
-          action: "Enter the Quiz Hub"
+          action: "Start Playing Trivia"
         }
       },
       govtExams: {
@@ -101,7 +108,7 @@ export const translations = {
           pypPapers: "PYP Papers",
           studyMaterial: "Study Material",
           careerGuide: "Career Guide",
-          action: "Start Preparing"
+          action: "Explore Exam Prep"
         }
       },
       dailyInsights: {
@@ -147,10 +154,33 @@ export const translations = {
         waiting: "Waiting for Host to start...",
         startBtn: "Initiate Mission",
         copyLink: "Copy Invite Link",
+        status: {
+          liveRoom: "Live Room",
+          uptime: "Uptime",
+          players: "Players"
+        },
+        invite: {
+          title: "Invite Friends",
+          subtitle: "Share the link below to invite players",
+          shareTitle: "Join my Quiz!",
+          whatsappText: "Join my live quiz room here:",
+          whatsappBtn: "Invite via WhatsApp",
+          whatsappFooter: "Send directly to your friends",
+          desc: "Copy the link and send it to anyone you want to challenge.",
+          syncing: "Syncing..."
+        },
         players: {
-          awaiting: "Awaiting reinforcements...",
-          kick: "Dismiss",
-          commander: "COMMANDER"
+          title: "Active Players",
+          ready: "Players Ready",
+          host: "Host",
+          inControl: "In Control",
+          leader: "Leader",
+          commander: "Admin",
+          left: "Left",
+          idle: "Idle",
+          active: "Active",
+          awaiting: "Awaiting players...",
+          kick: "Dismiss"
         },
         selection: {
           title: "Mission Configuration",
@@ -161,11 +191,48 @@ export const translations = {
           viewQs: "View Intel",
           noQs: "No intel data found.",
           back: "Return to Sectors",
-          mixed: "Mega Mix Protocol"
+          mixed: "Mega Mix Protocol",
+          searchPlaceholder: "Search Topics...",
+          altInt: "Select Topic",
+          selectTopic: "Select Topic",
+          reset: "Reset",
+          scanning: "Scanning...",
+          assessments: "Questions",
+          backToTopics: "Back to Topics",
+          selectPkg: "Select Package",
+          package: "Set",
+          decrypting: "Loading questions...",
+          pkgIntel: "Package Preview",
+          statement: "Question",
+          diff: "Difficulty",
+          timer: "Timer",
+          timerSub: "Set question time limit"
+        },
+        controls: {
+          exit: "Exit",
+          sync: "Sync",
+          terminate: "Terminate",
+          terminateConfirm: "Are you sure you want to terminate the room?",
+          initiate: "Start Quiz"
+        },
+        ready: {
+          title: "Ready to Play",
+          subtitle: "Waiting for host",
+          desc: "{host} is preparing the quiz."
+        },
+        pending: {
+          title: "Waiting",
+          desc: "Waiting for {host} to approve your request."
         },
         toasts: {
           left: "An operative has left the mission.",
-          copied: "Invite link copied to uplink!"
+          copied: "Invite link copied to uplink!",
+          desync: "Category sync failed",
+          noTopic: "Please select a topic",
+          noTimer: "Please select a time limit",
+          linkCopied: "Link copied!",
+          syncComplete: "Room synced!",
+          decryptFail: "Failed to load questions"
         }
       },
       quiz: {
@@ -413,12 +480,15 @@ export const translations = {
     quizzes: {
       mix: {
         title: "Mega Mix Challenge",
-        play: "Configure & Play"
+        play: "Configure & Play",
+        desc: "Mix questions from all sets and create your own customized quiz experience."
       },
       tabs: {
         all: "All Quizzes",
         forYou: "For You",
-        playLive: "Play Live"
+        playLive: "Play Live",
+        regular: "Regular Quizzes",
+        govtExams: "Govt Exam Preparation"
       },
       search: {
         placeholder: "Search for a quiz topic...",
@@ -442,6 +512,7 @@ export const translations = {
       cards: {
         playQuiz: "Play Quiz",
         playLive: "Play Live",
+        playWithFriends: "Play with friends",
         questions: "questions",
         minPerSet: "min per set"
       },
@@ -525,7 +596,10 @@ export const translations = {
         saving: "सहेज रहा है...",
         saveChanges: "बदलाव सहेजें",
         back: "पीछे",
-        mins: "मिनट"
+        mins: "मिनट",
+        hideTopics: "विषय छिपाएं",
+        showTopics: "विषय दिखाएं",
+        quizzesAvailable: "क्विज़ उपलब्ध"
       },
       // Navigation
       nav: {
@@ -592,6 +666,10 @@ export const translations = {
       backHome: "होम पर वापस जाएं",
     },
       hub: {
+        hero: {
+          title: "अपनी परीक्षाओं और क्विज़ में महारत हासिल करें",
+          subtitle: "शुरू करने के लिए अपना रास्ता चुनें।"
+        },
         liveNow: "लाइव",
         newExams: "नई परीक्षा",
         factsRevealed: "रोचक तथ्य",
@@ -604,7 +682,7 @@ export const translations = {
             funFacts: "रोचक तथ्य",
             trueFalse: "सही या गलत",
             sawalJawab: "सवाल जवाब",
-            action: "क्विज़ हब में प्रवेश करें"
+            action: "क्विज़ खेलना शुरू करें"
           }
         },
         govtExams: {
@@ -615,7 +693,7 @@ export const translations = {
             pypPapers: "पुराने पेपर",
             studyMaterial: "अध्ययन सामग्री",
             careerGuide: "करियर गाइड",
-            action: "तैयारी शुरू करें"
+            action: "परीक्षा की तैयारी करें"
           }
         },
       dailyInsights: {
@@ -626,7 +704,7 @@ export const translations = {
           dailyQuiz: "दैनिक क्विज़",
           funFacts: "रोचक तथ्य",
           sawalJawab: "सवाल और जवाब",
-          action: "तथ्यों को जानें"
+          action: "तथ्यों को एक्सप्लोर करें"
         }
       },
       resources: {
@@ -684,7 +762,8 @@ export const translations = {
           questions: "प्रश्न",
           minPerSet: "मिनट प्रति सेट",
           playQuiz: "क्विज़ खेलें",
-          playLive: "लाइव खेलें"
+          playLive: "लाइव खेलें",
+          playWithFriends: "दोस्तों के साथ खेलें"
         },
         category: {
           sets: "इंटरएक्टिव प्रैक्टिस सेट्स",
@@ -977,10 +1056,17 @@ export const translations = {
         }
       },
       quizzes: {
+        mix: {
+          title: "मेगा मिक्स चैलेंज",
+          play: "कन्फ़िगर करें और खेलें",
+          desc: "सभी सेट्स के प्रश्नों को मिलाकर अपनी पसंद का कस्टमाइज़्ड क्विज़ खेलें।"
+        },
         tabs: {
           all: "सभी क्विज़",
           forYou: "आपके लिए",
-          playLive: "लाइव खेलें"
+          playLive: "लाइव खेलें",
+          regular: "सामान्य क्विज़",
+          govtExams: "सरकारी परीक्षा तैयारी"
         },
         search: {
           placeholder: "क्विज़ विषय खोजें...",

@@ -176,7 +176,7 @@
 /* Main Content Wrapper */
 .contentWrap {
   max-width: 1100px;
-  margin: -30px auto 0;
+  margin: 40px auto 0;
   padding: 0 24px;
   position: relative;
   z-index: 10;
@@ -209,6 +209,7 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 24px;
+  align-items: start;
 }
 
 @media (max-width: 950px) {
@@ -543,17 +544,23 @@
 }
 
 /* Custom Scrollbar for Accordion */
-.accordionList::-webkit-scrollbar {
-  width: 4px;
+.accordionList {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99, 102, 241, 0.4) transparent;
 }
-
+.accordionList::-webkit-scrollbar {
+  width: 6px;
+}
 .accordionList::-webkit-scrollbar-track {
   background: transparent;
-}
-
-.accordionList::-webkit-scrollbar-thumb {
-  background: #e2e8f0;
   border-radius: 10px;
+}
+.accordionList::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.3);
+  border-radius: 10px;
+}
+.accordionList::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.6);
 }
 
 .accordionItem {

@@ -47,16 +47,36 @@ export async function POST(request) {
     }
     
     if (action === 'saveChapter') {
-      const { id, title, slug, content, videoId, sortOrder, subjectId, practiceId } = payload;
+      const { id, title, slug, content, videoId, sortOrder, subjectId, practiceId, readTime, endQuiz } = payload;
       let chapter;
       if (id) {
         chapter = await prisma.studyChapter.update({
           where: { id },
-          data: { title, slug, content, videoId, sortOrder: Number(sortOrder), subjectId, practiceId: practiceId || null }
+          data: { 
+            title, 
+            slug, 
+            content, 
+            videoId, 
+            sortOrder: Number(sortOrder), 
+            subjectId, 
+            practiceId: practiceId || null,
+            readTime: readTime || "10 Mins",
+            endQuiz: typeof endQuiz === 'string' ? endQuiz : JSON.stringify(endQuiz || [])
+          }
         });
       } else {
         chapter = await prisma.studyChapter.create({
-          data: { title, slug, content, videoId, sortOrder: Number(sortOrder), subjectId, practiceId: practiceId || null }
+          data: { 
+            title, 
+            slug, 
+            content, 
+            videoId, 
+            sortOrder: Number(sortOrder), 
+            subjectId, 
+            practiceId: practiceId || null,
+            readTime: readTime || "10 Mins",
+            endQuiz: typeof endQuiz === 'string' ? endQuiz : JSON.stringify(endQuiz || [])
+          }
         });
       }
       return NextResponse.json(chapter);

@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { AdminProvider, useAdmin } from "@/context/AdminContext";
+import { useData } from "@/context/DataContext";
 import ThemeToggle from "@/components/ThemeToggle";
 import styles from "@/styles/Admin.module.css";
 import "./globals.css"; // Import admin-specific globals
@@ -25,6 +26,7 @@ const JR_NAV = [
   { href: "/admin/true-false", label: "True/False", icon: "✅", perm: "trueFalse" },
   { href: "/admin/book-my-course", label: "Book My Course", icon: "📚", perm: "bookMyCourse" },
   { href: "/admin/career-guides", label: "Career Guides", icon: "🧭", perm: "careerGuides" },
+  { href: "/admin/forum", label: "Community Forum", icon: "💬", perm: "forum" },
   { href: "/admin/school-study", label: "School Study", icon: "🏫", perm: "schoolStudy" },
   { href: "/admin/settings", label: "Settings", icon: "⚙️", perm: "settings" },
 ];
@@ -50,6 +52,7 @@ const MASTER_NAV = [
   { href: "/admin/true-false", label: "True/False", icon: "✅", perm: "trueFalse" },
   { href: "/admin/book-my-course", label: "Book My Course", icon: "📚", perm: "bookMyCourse" },
   { href: "/admin/career-guides", label: "Career Guides", icon: "🧭", perm: "careerGuides" },
+  { href: "/admin/forum", label: "Community Forum", icon: "💬", perm: "forum" },
   { href: "/admin/school-study", label: "School Study", icon: "🏫", perm: "schoolStudy" },
   { href: "/admin/settings", label: "Settings", icon: "⚙️", perm: "settings" },
 ];
@@ -59,7 +62,9 @@ function AdminShell({ children }) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { isAuthenticated, loaded, logout, adminUser, status } = useAdmin();
+  const { refreshQuizzes } = useData();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [hasRefreshedForAdmin, setHasRefreshedForAdmin] = useState(false);
 
   const isLogin = pathname === "/admin/login";
   const isMaster = adminUser?.role === "master";
@@ -90,6 +95,13 @@ function AdminShell({ children }) {
       clearInterval(t);
     };
   }, [adminUser?.id, isLogin]);
+
+  useEffect(() => {
+    if (status === "authenticated" && isAuthenticated && !hasRefreshedForAdmin) {
+      setHasRefreshedForAdmin(true);
+      refreshQuizzes();
+    }
+  }, [status, isAuthenticated, hasRefreshedForAdmin, refreshQuizzes]);
 
   if (isLogin) return children;
 

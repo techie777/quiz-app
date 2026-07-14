@@ -99,13 +99,14 @@ export default function SessionManager({ sessionId }) {
         return;
     }
 
-    // 1. If hitting Host URL, unconditionally join as generic Commander
+    // 1. If hitting Host URL, unconditionally join as Host
     if (hostParam) {
         lastJoinedRef.current = socket.id;
         console.log(`📡 [MANAGER] Host is joining mission area: ${sessionId}`);
         joinSession(sessionId, 'HOST', {
-            id: `host_base_operator`,
-            name: 'Commander'
+            id: authSession?.user?.id || `host_base_operator`,
+            name: authSession?.user?.name || 'Quiz Master',
+            image: authSession?.user?.image
         });
     }
     // 2. Otherwise it is a Guest flow. Check for NextAuth.
@@ -285,7 +286,7 @@ export default function SessionManager({ sessionId }) {
       const isDismissed = session?.status === 'DISCONTINUED';
 
       return (
-          <div className="flex flex-col items-center justify-center p-8 bg-white/80 backdrop-blur-xl rounded-[3rem] shadow-2xl border border-white text-center space-y-8 animate-in zoom-in duration-500 max-w-xl mx-auto mt-24">
+          <div className="flex flex-col items-center justify-center p-8 bg-white/80 backdrop-blur-xl rounded-[3rem] shadow-2xl border border-white text-center space-y-8 animate-in zoom-in duration-500 max-w-xl mx-auto mt-10">
               <div className={`w-20 h-20 rounded-full flex items-center justify-center text-3xl text-white shadow-xl animate-pulse ${isDismissed ? 'bg-orange-500 shadow-orange-200' : 'bg-red-500 shadow-red-200'}`}>
                 {isExpired ? '📡' : isDismissed ? '🫡' : '🛑'}
               </div>
@@ -309,7 +310,7 @@ export default function SessionManager({ sessionId }) {
 
   if (session?.status === 'DENIED') {
       return (
-          <div className="w-full max-w-xl bg-white/90 backdrop-blur-2xl rounded-[3rem] shadow-2xl p-12 text-center space-y-10 animate-in zoom-in duration-500 border border-white mx-auto mt-24">
+          <div className="w-full max-w-xl bg-white/90 backdrop-blur-2xl rounded-[3rem] shadow-2xl p-12 text-center space-y-10 animate-in zoom-in duration-500 border border-white mx-auto mt-10">
               <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center text-5xl mx-auto shadow-inner">🚫</div>
               <div className="space-y-4">
                   <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter">Access Declined</h2>
@@ -319,7 +320,12 @@ export default function SessionManager({ sessionId }) {
               </div>
               <div className="grid grid-cols-2 gap-4">
                   <button 
-                      onClick={() => { localStorage.removeItem(`quiz_callsign_${sessionId}`); window.location.reload(); }}
+                      onClick={() => { 
+                          localStorage.removeItem(`quiz_callsign_${sessionId}`); 
+                          localStorage.removeItem(`quiz_uid_${sessionId}`);
+                          sessionStorage.removeItem('active_quiz_session');
+                          window.location.reload(); 
+                      }}
                       className="bg-slate-900 text-white py-5 rounded-2xl font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl"
                   >
                       Retry 🔄
@@ -341,23 +347,34 @@ export default function SessionManager({ sessionId }) {
   if (isPendingApproval) {
     const isActive = session?.status === 'ACTIVE';
     return (
-        <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl p-12 text-center space-y-8 animate-in zoom-in duration-500 border border-slate-100 mx-auto mt-20">
-            <div className="text-6xl animate-bounce">💂</div>
+        <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl p-12 text-center space-y-8 animate-in zoom-in duration-500 border border-slate-100 mx-auto mt-10">
+            <div className="text-6xl animate-bounce">⏳</div>
             <div className="space-y-4">
                 <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">
-                    {isActive ? 'Mission in Progress' : 'Waiting for Approval'}
+                    {isActive ? 'Quiz in Progress' : 'Waiting to Join'}
                 </h2>
                 <p className="text-lg font-bold text-slate-400 leading-relaxed uppercase">
                     {isActive 
-                        ? 'The session has already started. You are in the recruitment queue. Stand by for Commander approval.' 
-                        : 'Entry request broadcasted. Stand by for host authorization.'}
+                        ? "The quiz has already started. You're in the waiting room. Please wait for the host to let you in." 
+                        : "You're in the waiting room! Please wait for the host to approve your entry."}
                 </p>
             </div>
             <button 
-                onClick={() => { localStorage.removeItem(`quiz_callsign_${sessionId}`); window.location.reload(); }}
-                className="text-xs font-black text-slate-400 uppercase tracking-widest hover:text-red-500 transition-all"
+                onClick={() => { 
+                    if (socket && session?.userId) {
+                        socket.emit('LEAVE_SESSION', { 
+                            sessionId: session.sessionId, 
+                            userId: session.userId 
+                        });
+                    }
+                    localStorage.removeItem(`quiz_callsign_${sessionId}`); 
+                    localStorage.removeItem(`quiz_uid_${sessionId}`);
+                    sessionStorage.removeItem('active_quiz_session');
+                    setTimeout(() => window.location.reload(), 100);
+                }}
+                className="bg-slate-100 text-slate-500 py-3 px-8 rounded-2xl font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
             >
-                Edit Callsign
+                Cancel 🛑
             </button>
         </div>
     );
@@ -365,21 +382,21 @@ export default function SessionManager({ sessionId }) {
 
   if (!session && !isHost && !authSession?.user && !joining) {
     return (
-        <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl p-10 text-center space-y-8 animate-in zoom-in duration-500 border border-slate-100 mx-auto mt-20">
-            <div className="text-6xl">💂</div>
+        <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl p-10 text-center space-y-8 animate-in zoom-in duration-500 border border-slate-100 mx-auto mt-8">
+            <div className="text-6xl">👋</div>
             <div className="space-y-4">
-                <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">Squadron Entry</h2>
-                <p className="text-base font-bold text-slate-400 uppercase tracking-widest">Set your mission callsign</p>
+                <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">Join Live Quiz</h2>
+                <p className="text-base font-bold text-slate-400 uppercase tracking-widest">Enter your name to join the game</p>
             </div>
             <form onSubmit={handleGuestJoin} className="space-y-6">
                 <input 
-                    placeholder="CALLSIGN (e.g. Maverick)"
+                    placeholder="Enter your name (e.g. Alex)"
                     value={guestName}
                     onChange={(e) => setGuestName(e.target.value)}
                     className="w-full bg-slate-50 border-4 border-slate-100 rounded-2xl px-8 py-4 text-base font-black uppercase tracking-widest focus:border-indigo-600 outline-none transition-all"
                 />
                 <button type="submit" className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-base uppercase tracking-[0.3em] hover:scale-105 active:scale-95 transition-all shadow-2xl">
-                    Join Session 📡
+                    Join Quiz ✨
                 </button>
             </form>
         </div>

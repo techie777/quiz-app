@@ -123,7 +123,7 @@ export default function UserMenu() {
                         openOnboarding();
                       }}
                     >
-                      <span className={styles.menuIcon}>🎯</span> {mounted ? t('nav.userMenu.interests') : 'Manage Interests'}
+                      <span className={styles.menuIcon}>✨</span> {mounted ? t('nav.userMenu.personalized') || 'Personalized Quiz' : 'Personalized Quiz'}
                     </button>
                   </li>
                 </>
@@ -150,7 +150,10 @@ export default function UserMenu() {
                   <div className={styles.confirmButtons}>
                     <button 
                       className={styles.confirmBtn}
-                      onClick={() => signOut({ callbackUrl: '/' })}
+                      onClick={() => {
+                        if (typeof window !== "undefined") sessionStorage.setItem("auth_toast", "logout");
+                        signOut({ callbackUrl: '/' });
+                      }}
                     >
                       {mounted ? t('nav.userMenu.yes') : 'Yes, Sign Out'}
                     </button>

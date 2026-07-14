@@ -310,17 +310,33 @@ export default function SessionLobby({ sessionId, isHost, onApproveGuest, onDeny
                     <div className="md:col-span-7 space-y-4">
                         <div className="flex bg-slate-50/50 p-1.5 rounded-2xl border border-slate-100 focus-within:border-indigo-300 transition-all shadow-inner">
                             <input readOnly value={inviteUrl} className="flex-1 bg-transparent px-4 text-xs font-bold text-slate-500 outline-none truncate" />
-                            <button 
-                                onClick={() => {
-                                    playSessionSound('click');
-                                    navigator.clipboard.writeText(inviteUrl);
-                                    toast.success(t('live.lobby.toasts.linkCopied'));
-                                    if (navigator.share) {
-                                        setTimeout(() => { navigator.share({ title: t('live.lobby.invite.shareTitle'), url: inviteUrl }).catch(() => {}); }, 100);
-                                    }
-                                }}
-                                className="w-12 h-12 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-xl shadow-indigo-100 flex items-center justify-center transition-transform active:scale-90"
-                            >🔗</button>
+                            <div className="flex gap-1.5">
+                                <button 
+                                    onClick={() => {
+                                        playSessionSound('click');
+                                        navigator.clipboard.writeText(inviteUrl);
+                                        toast.success(t('live.lobby.toasts.linkCopied'));
+                                    }}
+                                    className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-xl hover:bg-indigo-200 shadow-sm flex items-center justify-center transition-transform active:scale-90"
+                                    title="Copy Link"
+                                >📋</button>
+                                <button 
+                                    onClick={() => {
+                                        playSessionSound('click');
+                                        if (navigator.share) {
+                                            navigator.share({
+                                                title: t('live.lobby.invite.shareTitle'),
+                                                url: inviteUrl
+                                            }).catch((err) => console.log('Share dismissed', err));
+                                        } else {
+                                            navigator.clipboard.writeText(inviteUrl);
+                                            toast.success(t('live.lobby.toasts.linkCopied'));
+                                        }
+                                    }}
+                                    className="w-12 h-12 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-xl shadow-indigo-100 flex items-center justify-center transition-transform active:scale-90"
+                                    title="Share Link"
+                                >🔗</button>
+                            </div>
                         </div>
                         <p className="hidden sm:block text-[11px] font-bold text-slate-400 leading-relaxed">{t('live.lobby.invite.desc')}</p>
                     </div>

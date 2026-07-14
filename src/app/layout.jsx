@@ -1,14 +1,17 @@
+import dynamic from 'next/dynamic';
 import Providers from "@/components/Providers";
-import Header from "@/components/Header";
-import SmartNavigation from "@/components/SmartNavigation";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import Footer from "@/components/Footer";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 import SecurityGuards from "@/components/SecurityGuards";
+import ScrollToTop from "@/components/ScrollToTop";
 import "./globals.css";
 import { Inter } from 'next/font/google';
 import { generateWebsiteStructuredData, generateOrganizationStructuredData } from '@/lib/seo';
+
+const Header = dynamic(() => import('@/components/Header'), { ssr: false });
+const SmartNavigation = dynamic(() => import('@/components/SmartNavigation'), { ssr: false });
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -126,6 +129,7 @@ export default function RootLayout({ children }) {
         <link rel="preload" href="/fonts/inter-var.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
       </head>
       <body style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }} className="antialiased">
+        <ScrollToTop />
         <SecurityGuards />
         <Providers>
           <Header />

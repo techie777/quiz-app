@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition, useEffect } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 export default function CareerGuideDirectoryControls({ categories = [] }) {
@@ -16,6 +16,16 @@ export default function CareerGuideDirectoryControls({ categories = [] }) {
   const [q, setQ] = useState(initialQ);
   const [sort, setSort] = useState(initialSort);
   const [cat, setCat] = useState(initialCat);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const urlQ = sp.get("q") || "";
+      if (q !== urlQ) {
+        apply({ q: q.trim() });
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [q, sp]);
 
   const catOptions = useMemo(() => {
     return (categories || [])

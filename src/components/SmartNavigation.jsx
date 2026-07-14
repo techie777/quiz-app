@@ -12,24 +12,24 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useQuiz } from "@/context/QuizContext";
 
 const fallbackNavigationItems = [
-  { key: "personalized", href: "/#personalized", icon: "✨", isPersonalized: true },
   { key: "home", href: "/", icon: "🏠" },
-  { key: "leaderboard", href: "/leaderboard", icon: "🏆" },
-  { key: "pro", href: "/pro", icon: "👑" },
   { key: "quizzes", href: "/quizzes", icon: "🧠" },
-  { key: "currentAffairs", href: "/daily-current-affairs", icon: "📰" },
-  { key: "mockTests", href: "/mock-tests", icon: "✍️" },
   { key: "careerGuide", href: "/career-guide", icon: "🧭" },
   { key: "funFacts", href: "/fun-facts", icon: "💡" },
   { key: "sawalJawab", href: "/sawal-jawab", icon: "❓" },
-  { key: "trueFalse", href: "/true-false", icon: "✅" }
+  { key: "trueFalse", href: "/true-false", icon: "✅" },
+  { key: "pro", href: "/pro", icon: "👑" },
+  { key: "govtExams", href: "/govt-exams", icon: "🏛️" },
+  { key: "mockTests", href: "/mock-tests", icon: "✍️" },
+  { key: "currentAffairs", href: "/daily-current-affairs", icon: "📰" },
+  { key: "leaderboard", href: "/leaderboard", icon: "🏆" }
 ];
 
 const HIDDEN_PATHS = ["/daily", "/govt-jobs-alerts", "/govt-study", "/book-my-course", "/school-study"];
 
 export default function SmartNavigation() {
   const { isMobileMenuOpen, closeMobileMenu, openOnboarding } = useUI();
-  const { t, mounted } = useLanguage();
+  const { t, mounted, isHindi } = useLanguage();
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
   const { data: session, status } = useSession();
@@ -39,6 +39,8 @@ export default function SmartNavigation() {
   const [navigationItems, setNavigationItems] = useState(fallbackNavigationItems);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSignOutConfirm, setIsSignOutConfirm] = useState(false);
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const [isQuizzesOpen, setIsQuizzesOpen] = useState(false);
 
   useEffect(() => {
     const fetchNav = async () => {
@@ -89,7 +91,7 @@ export default function SmartNavigation() {
     setIsMounted(true);
   }, []);
 
-  if (!isMounted || pathname?.startsWith("/admin") || pathname?.includes("/mock-tests/paper/") || isFullscreen) return null;
+  if (pathname?.startsWith("/admin") || pathname?.includes("/mock-tests/paper/") || isFullscreen) return null;
 
   return (
     <>
@@ -121,8 +123,61 @@ export default function SmartNavigation() {
         <div className={`${styles.container} ${isFullscreen ? 'hidden' : ''}`}>
           {/* Desktop Navigation */}
           <ul className={styles.navList} role="menubar">
-            {navigationItems.map((item, index) => {
+            {navigationItems.filter(item => ['home', 'quizzes', 'careerGuide', 'funFacts', 'sawalJawab', 'trueFalse'].includes(item.key)).map((item, index) => {
               const isActive = pathname === item.href;
+              if (item.key === 'quizzes') {
+                return (
+                  <li 
+                    key={item.href} 
+                    className={styles.moreDropdownContainer} 
+                    role="none"
+                    onMouseEnter={() => setIsQuizzesOpen(true)}
+                    onMouseLeave={() => setIsQuizzesOpen(false)}
+                  >
+                    <Link
+                      href={item.href}
+                      className={`${styles.navLink} ${isActive || pathname.startsWith('/category/') ? styles.active : ''}`}
+                      role="menuitem"
+                      aria-haspopup="true" 
+                      aria-expanded={isQuizzesOpen}
+                    >
+                      {(isActive || pathname.startsWith('/category/')) && (
+                        <motion.div
+                          className={styles.activePill}
+                          layoutId="activePill"
+                          initial={false}
+                          transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                        />
+                      )}
+                      <span className={styles.navIcon}>{item.icon}</span>
+                      <span className={styles.navText} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        {mounted ? (item.key ? t(`nav.${item.key}`) : item.name) : (item.name || item.key)} <ChevronDown size={14} style={{ pointerEvents: 'none' }} />
+                      </span>
+                    </Link>
+                    <AnimatePresence>
+                      {isQuizzesOpen && (
+                        <motion.div
+                          className={styles.moreDropdown}
+                          initial={{ opacity: 0, y: 10, pointerEvents: 'none' }}
+                          animate={{ opacity: 1, y: 0, pointerEvents: 'auto' }}
+                          exit={{ opacity: 0, y: 10, pointerEvents: 'none' }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <Link href="/quizzes" className={`${styles.dropdownLink} ${pathname === '/quizzes' ? styles.active : ''}`} onClick={() => setIsQuizzesOpen(false)}>
+                            <span className={styles.dropdownIcon}>🧠</span>
+                            <span>{mounted && t('quizzes.tabs.all') ? t('quizzes.tabs.all') : 'All Quizzes'}</span>
+                          </Link>
+                          <Link href="/daily/quiz-of-the-day" className={`${styles.dropdownLink} ${pathname === '/daily/quiz-of-the-day' ? styles.active : ''}`} onClick={() => setIsQuizzesOpen(false)}>
+                            <span className={styles.dropdownIcon}>🌟</span>
+                            <span>{mounted && t('quizzes.spotlight.qotd') ? t('quizzes.spotlight.qotd') : 'Quiz of the Day'}</span>
+                          </Link>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </li>
+                );
+              }
+
               return (
                 <li key={item.href} role="none">
                   <Link
@@ -156,6 +211,47 @@ export default function SmartNavigation() {
                 </li>
               );
             })}
+            
+            {navigationItems.filter(item => !['home', 'quizzes', 'careerGuide', 'funFacts', 'sawalJawab', 'trueFalse'].includes(item.key)).length > 0 && (
+              <li 
+                className={styles.moreDropdownContainer} 
+                role="none"
+                onMouseEnter={() => setIsMoreOpen(true)}
+                onMouseLeave={() => setIsMoreOpen(false)}
+              >
+                <div className={styles.navLink} role="button" aria-haspopup="true" aria-expanded={isMoreOpen}>
+                  <span className={styles.navText} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    More <ChevronDown size={14} style={{ pointerEvents: 'none' }} />
+                  </span>
+                </div>
+                <AnimatePresence>
+                  {isMoreOpen && (
+                    <motion.div
+                      className={styles.moreDropdown}
+                      initial={{ opacity: 0, y: 10, pointerEvents: 'none' }}
+                      animate={{ opacity: 1, y: 0, pointerEvents: 'auto' }}
+                      exit={{ opacity: 0, y: 10, pointerEvents: 'none' }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {navigationItems.filter(item => !['home', 'quizzes', 'careerGuide', 'funFacts', 'sawalJawab', 'trueFalse'].includes(item.key)).map((item) => {
+                        const isActive = pathname === item.href;
+                        return (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            className={`${styles.dropdownLink} ${isActive ? styles.active : ''}`}
+                            onClick={() => setIsMoreOpen(false)}
+                          >
+                            <span className={styles.dropdownIcon}>{item.icon}</span>
+                            <span>{mounted ? (item.key ? t(`nav.${item.key}`) : item.name) : (item.name || item.key)}</span>
+                          </Link>
+                        );
+                      })}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </li>
+            )}
           </ul>
         </div>
 
@@ -216,6 +312,16 @@ export default function SmartNavigation() {
                                 <Link href="/leaderboard" className={styles.mobileUserLink} onClick={closeMobileMenu}>
                                   <span className={styles.userMenuIcon}>🏆</span> Global Leaderboard
                                 </Link>
+                                <button 
+                                  className={styles.mobileUserLink} 
+                                  style={{ textAlign: 'left', width: '100%' }}
+                                  onClick={() => {
+                                    closeMobileMenu();
+                                    openOnboarding();
+                                  }}
+                                >
+                                  <span className={styles.userMenuIcon}>✨</span> Personalized Quiz
+                                </button>
                                 
                                 <div className={styles.mobileSignOutSection}>
                                   {!isSignOutConfirm ? (
@@ -235,6 +341,7 @@ export default function SmartNavigation() {
                                         <button 
                                           className={styles.confirmBtn}
                                           onClick={() => {
+                                            if (typeof window !== "undefined") sessionStorage.setItem("auth_toast", "logout");
                                             signOut({ callbackUrl: '/' });
                                             closeMobileMenu();
                                           }}
@@ -261,7 +368,10 @@ export default function SmartNavigation() {
                     <div className={styles.mobileAuthActions}>
                       <button
                         className={styles.mobileGoogleBtn}
-                        onClick={() => signIn("google", { callbackUrl: "/" })}
+                        onClick={() => {
+                          if (typeof window !== "undefined") sessionStorage.setItem("auth_toast", "login");
+                          signIn("google", { callbackUrl: "/" });
+                        }}
                       >
                          <svg className={styles.googleIcon} viewBox="0 0 24 24" width="20" height="20">
                             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
@@ -281,6 +391,56 @@ export default function SmartNavigation() {
                 <ul className={styles.mobileNavList} role="menu">
                   {navigationItems.map((item, index) => {
                     const isActive = pathname === item.href;
+                    if (item.key === 'quizzes') {
+                      return (
+                        <li key={item.href} role="none" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <Link
+                            href={item.href}
+                            className={`${styles.mobileNavLink} ${isActive ? styles.active : ''} ${item.isPersonalized ? styles.personalizedLink : ''}`}
+                            role="menuitem"
+                            aria-current={isActive ? "page" : undefined}
+                            onClick={(e) => {
+                              if (item.isPersonalized) {
+                                e.preventDefault();
+                                openOnboarding();
+                              }
+                              closeMobileMenu();
+                            }}
+                          >
+                            <div className={styles.mobileNavIcon}>{item.icon}</div>
+                            <div className={styles.mobileNavInfo}>
+                              <span className={styles.mobileNavText}>{mounted ? (item.key ? t(`nav.${item.key}`) : item.name) : (item.name || item.key)}</span>
+                              <span className={styles.mobileNavDescription}>
+                                {mounted ? (item.key ? t(`nav.descriptions.${item.key}`) : item.description) : (item.description || item.name)}
+                              </span>
+                            </div>
+                            {isActive && (
+                              <span className={styles.mobileActiveIndicator}>✓</span>
+                            )}
+                          </Link>
+                          <div style={{ paddingLeft: '32px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <Link 
+                              href="/quizzes" 
+                              className={styles.mobileNavLink} 
+                              style={{ padding: '10px 14px', fontSize: '0.9rem', background: 'rgba(255,255,255,0.02)' }}
+                              onClick={closeMobileMenu}
+                            >
+                              <span style={{ marginRight: '8px' }}>🧠</span>
+                              {isHindi ? 'सभी क्विज़' : 'All Quizzes'}
+                            </Link>
+                            <Link 
+                              href="/daily/quiz-of-the-day" 
+                              className={styles.mobileNavLink} 
+                              style={{ padding: '10px 14px', fontSize: '0.9rem', background: 'rgba(255,255,255,0.02)' }}
+                              onClick={closeMobileMenu}
+                            >
+                              <span style={{ marginRight: '8px' }}>🌟</span>
+                              {isHindi ? 'आज का क्विज़' : 'Quiz of the Day'}
+                            </Link>
+                          </div>
+                        </li>
+                      );
+                    }
                     return (
                       <li key={item.href} role="none">
                         <Link

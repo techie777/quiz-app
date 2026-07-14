@@ -17,63 +17,6 @@ export const authOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       allowDangerousEmailAccountLinking: true,
     }),
-    // User login with Email PIN
-    CredentialsProvider({
-      id: "email-pin",
-      name: "Email PIN",
-      credentials: {
-        email: { label: "Email", type: "email" },
-        pin: { label: "PIN", type: "text" },
-        isNewUser: { label: "Is New User", type: "text" }, // "true" or "false"
-      },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.pin) return null;
-        
-        const email = credentials.email.trim().toLowerCase();
-        const pin = credentials.pin.trim();
-
-        // Find user
-        let user = await prisma.user.findUnique({ where: { email } });
-
-        if (!user) {
-           console.log(`✨ [AUTH] Creating new user via PIN: ${email}`);
-           try {
-             user = await prisma.user.create({
-               data: {
-                 email,
-                 pin,
-                 name: email.split('@')[0],
-                 sessionVersion: 1,
-                 lastLoginAt: new Date()
-               }
-             });
-           } catch (createError) {
-             console.error("❌ [AUTH] User creation failed:", createError);
-             throw new Error("Failed to create account. Please try again.");
-           }
-        } else if (!user.pin) {
-            console.log(`🔐 [AUTH] Setting initial PIN for Google user: ${email}`);
-            user = await prisma.user.update({
-                where: { id: user.id },
-                data: { pin }
-            });
-        } else {
-            // Existing user with a PIN - standard verification
-            if (user.pin !== pin) {
-                console.warn(`🚫 [AUTH] Invalid PIN attempt for: ${email}`);
-                throw new Error("Invalid PIN. Please try again.");
-            }
-        }
-
-        return {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          image: user.image || user.avatar,
-          pin: user.pin, // Include PIN for admin view if needed in session
-        };
-      },
-    }),
   ],
   callbacks: {
     async jwt({ token, user, account }) {

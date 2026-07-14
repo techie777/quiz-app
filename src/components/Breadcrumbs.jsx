@@ -27,8 +27,13 @@ const Breadcrumbs = () => {
 
   const isFullscreen = isBrowserFullscreen || quizFullscreen;
 
-  // Don't show breadcrumbs on the home page, admin routes, or when fullscreen/mobile menu is open
-  if (pathname === '/' || pathname?.startsWith('/admin') || pathname?.includes('/mock-tests/paper/') || isMobileMenuOpen || isFullscreen) return null;
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Don't show breadcrumbs on the home page, admin routes, or when fullscreen/mobile menu is open or before mounting
+  if (!isMounted || pathname === '/' || pathname?.startsWith('/admin') || pathname?.includes('/mock-tests/paper/') || isMobileMenuOpen || isFullscreen) return null;
 
   const pathSegments = pathname.split('/').filter((segment) => segment !== '');
 

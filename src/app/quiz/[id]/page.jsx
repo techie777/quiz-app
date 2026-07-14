@@ -291,7 +291,7 @@ const QuizEngineTimer = QuizTimerComponent;
       goToQuestion(currentIndex + 1);
     } else {
       finishQuiz();
-      router.push("/results"); // Redirect immediately
+      router.replace("/results"); // Replace to prevent back button returning here
     }
   }, [currentIndex, questions?.length, goToQuestion, finishQuiz, router]);
 
@@ -411,11 +411,11 @@ const QuizEngineTimer = QuizTimerComponent;
     
     if (attemptedCount > 0) {
       finishQuiz();
-      router.push("/results"); // Redirect immediately
+      router.replace("/results"); // Replace to prevent back button returning here
     } else {
       // If no questions attempted, just exit to home
       resetQuiz();
-      router.push("/");
+      router.replace("/");
     }
   };
 

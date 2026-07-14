@@ -42,6 +42,13 @@ model User {
   funFactFavorites  FunFactFavorite[]
   funFactComments   FunFactComment[]
   
+  // Forum Features
+  forumBanUntil     DateTime?
+  forumTopics       ForumTopic[]
+  forumComments     ForumComment[]
+  forumLikes        ForumLike[]
+  forumReports      ForumReport[]
+
   interestedCategories String[]    @default([]) // Array of Category IDs/Slugs
   engineTheme          String      @default("indigo")
 }
@@ -700,6 +707,9 @@ model StudyChapter {
   videoId     String?       // Optional youtube video ID
   sortOrder   Int           @default(0)
   
+  readTime    String?       // e.g. "15 Mins"
+  endQuiz     String?       // JSON stringified array of interactive quiz questions
+
   practiceId  String?       @db.ObjectId
   practice    MockPaper?    @relation(fields: [practiceId], references: [id], onDelete: SetNull)
   
@@ -833,4 +843,92 @@ model SawalJawab {
   hidden        Boolean   @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+}
+
+// ── Dedicated Forum Module ──
+
+model ForumGroup {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  slug        String   @unique
+  description String?
+  icon        String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  topics      ForumTopic[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ForumTopic {
+  id          String         @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  content     String
+  authorId    String         @db.ObjectId
+  author      User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  groupId     String?        @db.ObjectId
+  group       ForumGroup?    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  viewCount   Int            @default(0)
+  isPinned    Boolean        @default(false)
+  isHidden    Boolean        @default(false)
+  status      String         @default("PENDING") // PENDING, APPROVED, REJECTED
+  rejectReason String?
+  isDeleted   Boolean        @default(false)
+  comments    ForumComment[]
+  likes       ForumLike[]
+  reports     ForumReport[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model ForumComment {
+  id          String         @id @default(auto()) @map("_id") @db.ObjectId
+  content     String
+  authorId    String         @db.ObjectId
+  author      User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  topicId     String         @db.ObjectId
+  topic       ForumTopic     @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  
+  parentId    String?        @db.ObjectId
+  parent      ForumComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies     ForumComment[] @relation("CommentReplies")
+
+  isHidden    Boolean        @default(false)
+  likes       ForumLike[]
+  reports     ForumReport[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model ForumLike {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String        @db.ObjectId
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  topicId     String?       @db.ObjectId
+  topic       ForumTopic?   @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  
+  commentId   String?       @db.ObjectId
+  comment     ForumComment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime      @default(now())
+
+  @@unique([userId, topicId, commentId])
+}
+
+model ForumReport {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  reporterId  String        @db.ObjectId
+  reporter    User          @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  
+  topicId     String?       @db.ObjectId
+  topic       ForumTopic?   @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  
+  commentId   String?       @db.ObjectId
+  comment     ForumComment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  
+  reason      String
+  status      String        @default("PENDING") // PENDING, RESOLVED, DISMISSED
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 }
