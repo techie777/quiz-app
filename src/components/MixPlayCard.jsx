@@ -129,16 +129,15 @@ const MixPlayCard = ({ sectionName, quizzes, onOpenModal }) => {
               transition={{ duration: 0.35 }}
             >
               <p style={{
-                fontSize: '0.82rem',
-                color: 'var(--text-secondary)',
-                margin: '0 0 6px 0',
+                fontSize: '0.95rem',
+                color: 'var(--text-primary)',
+                margin: '0 0 10px 0',
                 display: '-webkit-box',
                 WebkitLineClamp: 2,
                 WebkitBoxOrient: 'vertical',
                 overflow: 'hidden',
-                minHeight: '34px',
                 lineHeight: '1.45',
-                fontWeight: '500'
+                fontWeight: '600'
               }}>
                 {currentQ.text}
               </p>
@@ -146,17 +145,17 @@ const MixPlayCard = ({ sectionName, quizzes, onOpenModal }) => {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
                   {currentQ.options.slice(0, 4).map((opt, i) => (
                     <div key={i} style={{
-                      fontSize: '0.75rem',
-                      padding: '5px 6px',
+                      fontSize: '0.85rem',
+                      padding: '8px 10px',
                       background: 'rgba(168, 85, 247, 0.08)',
                       border: '1px solid rgba(168, 85, 247, 0.2)',
-                      borderRadius: '8px',
+                      borderRadius: '10px',
                       color: 'var(--text-primary)',
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       textAlign: 'center',
-                      fontWeight: '500'
+                      fontWeight: '600'
                     }}>
                       {opt}
                     </div>

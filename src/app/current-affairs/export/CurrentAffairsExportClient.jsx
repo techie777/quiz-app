@@ -26,6 +26,7 @@ export default function CurrentAffairsExportClient() {
   const category = searchParams.get("category") || "";
 
   const [items, setItems] = useState([]);
+  const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const query = useMemo(() => {
@@ -43,11 +44,14 @@ export default function CurrentAffairsExportClient() {
     async function load() {
       setLoading(true);
       try {
-        const res = await fetch(`/api/current-affairs?${query}`, { cache: "no-store" });
-        if (!res.ok) return;
-        const data = await res.json();
+        const p1 = fetch(`/api/current-affairs?${query}`, { cache: "no-store" }).then(r => r.ok ? r.json() : null);
+        const p2 = date ? fetch(`/api/daily-quizzes?type=daily-current-affairs&date=${date}`).then(r => r.ok ? r.json() : null) : Promise.resolve(null);
+        
+        const [caData, dqData] = await Promise.all([p1, p2]);
         if (cancelled) return;
-        setItems(Array.isArray(data.items) ? data.items : []);
+        
+        setItems(caData && Array.isArray(caData.items) ? caData.items : []);
+        setQuestions(dqData && Array.isArray(dqData.questions) ? dqData.questions : []);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -56,7 +60,7 @@ export default function CurrentAffairsExportClient() {
     return () => {
       cancelled = true;
     };
-  }, [query]);
+  }, [query, date]);
 
   const title = date ? `Current Affairs — ${date}` : month ? `Current Affairs — ${month}` : "Current Affairs";
 
@@ -90,30 +94,67 @@ export default function CurrentAffairsExportClient() {
         </button>
       </div>
 
-      <div className={styles.sheet}>
-        <h1 className={styles.title}>{title}</h1>
-        {category ? <p className={styles.subTitle}>Category: {category}</p> : null}
-
-        {loading ? (
-          <p className={styles.muted}>Loading…</p>
-        ) : items.length === 0 ? (
-          <p className={styles.muted}>No items.</p>
-        ) : (
-          <div className={styles.list}>
-            {items.map((it) => (
-              <div key={it.id} className={styles.item}>
-                <div className={styles.left}>
-                  <div className={styles.date}>{formatDate(it.date)}</div>
-                  {it.category ? <div className={styles.category}>{it.category}</div> : null}
-                </div>
-                <div className={styles.right}>
-                  <div className={styles.heading}>{it.heading}</div>
-                  <div className={styles.desc}>{it.description}</div>
-                </div>
-              </div>
-            ))}
+      <div className={styles.sheetWrapper}>
+        <div className={styles.watermark}>QUIZWEB</div>
+        <div className={styles.sheet}>
+          <div className={styles.sheetHeader}>
+            <div className={styles.siteInfo}>
+              <strong>QuizWeb Education</strong>
+              <span>www.quizweb.com</span>
+            </div>
+            <h1 className={styles.title}>{title}</h1>
+            {category ? <p className={styles.subTitle}>Category: {category}</p> : null}
           </div>
-        )}
+
+          {loading ? (
+            <p className={styles.muted}>Decrypting Intelligence Briefing...</p>
+          ) : items.length === 0 ? (
+            <p className={styles.muted}>No data available for this report.</p>
+          ) : (
+            <div className={styles.reportContent}>
+              <h2 className={styles.sectionHeader}>Daily Briefing & One-Liners</h2>
+              <div className={styles.list}>
+                {items.map((it) => (
+                  <div key={it.id} className={styles.item}>
+                    <div className={styles.left}>
+                      <div className={styles.date}>{formatDate(it.date)}</div>
+                      {it.category ? <div className={styles.category}>{it.category}</div> : null}
+                    </div>
+                    <div className={styles.right}>
+                      <div className={styles.heading}>{it.heading}</div>
+                      {it.oneLiner && <div className={styles.oneLiner}>💡 {it.oneLiner}</div>}
+                      <div className={styles.desc}>{it.description}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {questions && questions.length > 0 && (
+                <>
+                  <h2 className={styles.sectionHeader} style={{ marginTop: '3rem' }}>MCQ Practice Questions</h2>
+                  <div className={styles.mcqList}>
+                    {questions.map((q, idx) => (
+                      <div key={q.id} className={styles.mcqItem}>
+                        <div className={styles.mcqText}><strong>Q{idx + 1}.</strong> {q.text}</div>
+                        <ol className={styles.mcqOptions}>
+                          {q.options && q.options.map((opt, oIdx) => (
+                            <li key={oIdx} className={q.correctAnswer === String(oIdx) ? styles.correctOption : ""}>
+                              {String.fromCharCode(65 + oIdx)}. {opt}
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+          
+          <div className={styles.sheetFooter}>
+            Generated by QuizWeb Premium Report System • For Educational Purposes Only
+          </div>
+        </div>
       </div>
     </main>
   );

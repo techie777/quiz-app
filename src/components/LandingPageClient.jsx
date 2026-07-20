@@ -301,12 +301,48 @@ export function getCardQuestionsList(quiz, isHindi) {
     ];
   }
 
+  if (topicLower.includes('india') || topicLower.includes('bharat') || topicLower.includes('empire') || topicLower.includes('साम्राज्य') || topicLower.includes('भारत')) {
+    return isHindi ? [
+      { text: "मौर्य साम्राज्य की स्थापना किसने की थी?", options: ["चंद्रगुप्त मौर्य", "अशोक महान", "बिंदुसार", "चाणक्य"] },
+      { text: "भारत का राष्ट्रीय प्रतीक कहाँ से लिया गया है?", options: ["सारनाथ", "सांची", "अजंता", "एलोरा"] },
+      { text: "भारत में प्रथम जनगणना किस वर्ष हुई थी?", options: ["1872", "1901", "1947", "1951"] }
+    ] : [
+      { text: "Who founded the Mauryan Empire?", options: ["Chandragupta Maurya", "Ashoka", "Bindusara", "Chanakya"] },
+      { text: "Where was the National Emblem of India adopted from?", options: ["Sarnath", "Sanchi", "Ajanta", "Ellora"] },
+      { text: "In which year was the first Census conducted in India?", options: ["1872", "1901", "1947", "1951"] }
+    ];
+  }
+
+  if (topicLower.includes('madhya pradesh') || topicLower.includes('mp gk') || topicLower.includes('state') || topicLower.includes('rajasthan') || topicLower.includes('up gk')) {
+    return isHindi ? [
+      { text: "मध्य प्रदेश की राजधानी क्या है?", options: ["भोपाल", "इंदौर", "ग्वालियर", "जबलपुर"] },
+      { text: "सांची का स्तूप किस राज्य में स्थित है?", options: ["मध्य प्रदेश", "उत्तर प्रदेश", "बिहार", "गुजरात"] },
+      { text: "खजुराहो के मंदिर किस वंश के शासकों ने बनवाए थे?", options: ["चंदेल वंश", "गुप्त वंश", "मौर्य वंश", "परमार वंश"] }
+    ] : [
+      { text: "What is the capital city of Madhya Pradesh?", options: ["Bhopal", "Indore", "Gwalior", "Jabalpur"] },
+      { text: "In which state is the famous Sanchi Stupa located?", options: ["Madhya Pradesh", "Uttar Pradesh", "Bihar", "Gujarat"] },
+      { text: "Which dynasty built the famous Khajuraho temples?", options: ["Chandela Dynasty", "Gupta Dynasty", "Mauryan Dynasty", "Paramara Dynasty"] }
+    ];
+  }
+
+  if (topicLower.includes('mahabharat') || topicLower.includes('ramayan') || topicLower.includes('mythology') || topicLower.includes('वेद') || topicLower.includes('महाभारत')) {
+    return isHindi ? [
+      { text: "महाभारत का युद्ध कुरुक्षेत्र में कितने दिनों तक चला था?", options: ["18 दिन", "14 दिन", "21 दिन", "10 दिन"] },
+      { text: "भगवद्गीता महाभारत के किस पर्व का अंश है?", options: ["भीष्म पर्व", "द्रोण पर्व", "कर्ण पर्व", "शांति पर्व"] },
+      { text: "महाभारत के रचयिता कौन माने जाते हैं?", options: ["महर्षि वेदव्यास", "महर्षि वाल्मीकि", "तुलसीदास", "कालिदास"] }
+    ] : [
+      { text: "For how many days was the Kurukshetra War fought in Mahabharata?", options: ["18 Days", "14 Days", "21 Days", "10 Days"] },
+      { text: "Bhagavad Gita is a part of which Parva of Mahabharata?", options: ["Bhishma Parva", "Drona Parva", "Karna Parva", "Shanti Parva"] },
+      { text: "Who is considered the author of the great epic Mahabharata?", options: ["Sage Ved Vyasa", "Sage Valmiki", "Tulsidas", "Kalidasa"] }
+    ];
+  }
+
   return isHindi ? [
-    { text: `${quiz?.topicHi || quiz?.topic || 'सामान्य ज्ञान'} का मुख्य सवाल?`, options: ["विकल्प A", "विकल्प B", "विकल्प C", "विकल्प D"] },
-    { text: `${quiz?.topicHi || quiz?.topic || 'विषय'} से संबंधित दूसरा महत्वपूर्ण प्रश्न?`, options: ["उत्तर 1", "उत्तर 2", "उत्तर 3", "उत्तर 4"] }
+    { text: `${quiz?.topicHi || quiz?.topic || 'सामान्य ज्ञान'} से संबंधित महत्वपूर्ण प्रश्न: सही उत्तर क्या है?`, options: ["सत्य (True)", "असत्य (False)", "दोनों (Both)", "इनमें से कोई नहीं"] },
+    { text: `${quiz?.topicHi || quiz?.topic || 'विषय'} का मुख्य और सबसे प्रसिद्ध तथ्य क्या है?`, options: ["तथ्य 1", "तथ्य 2", "तथ्य 3", "तथ्य 4"] }
   ] : [
-    { text: `Sample question from ${quiz?.topic || 'General Knowledge'}?`, options: ["Option A", "Option B", "Option C", "Option D"] },
-    { text: `Second key question from ${quiz?.topic || 'this topic'}?`, options: ["Ans 1", "Ans 2", "Ans 3", "Ans 4"] }
+    { text: `Key knowledge question from ${quiz?.topic || 'General Knowledge'}: Which statement is accurate?`, options: ["True", "False", "Both A & B", "None of these"] },
+    { text: `Essential fact regarding ${quiz?.topic || 'this topic'}: Identify the correct option.`, options: ["Fact 1", "Fact 2", "Fact 3", "Fact 4"] }
   ];
 }
 
@@ -356,16 +392,15 @@ const CardQuestionPreview = React.memo(({ quiz, isHindi }) => {
           transition={{ duration: 0.35 }}
         >
           <p style={{
-            fontSize: '0.82rem',
-            color: 'var(--text-secondary)',
-            margin: '0 0 6px 0',
+            fontSize: '0.95rem',
+            color: 'var(--text-primary)',
+            margin: '0 0 10px 0',
             display: '-webkit-box',
             WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical',
             overflow: 'hidden',
-            minHeight: '34px',
             lineHeight: '1.45',
-            fontWeight: '500'
+            fontWeight: '600'
           }}>
             {currentQ.text}
           </p>
@@ -373,17 +408,17 @@ const CardQuestionPreview = React.memo(({ quiz, isHindi }) => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
               {currentQ.options.slice(0, 4).map((opt, i) => (
                 <div key={i} style={{
-                  fontSize: '0.75rem',
-                  padding: '5px 6px',
+                  fontSize: '0.85rem',
+                  padding: '8px 10px',
                   background: 'rgba(99, 102, 241, 0.05)',
                   border: '1px solid rgba(99, 102, 241, 0.12)',
-                  borderRadius: '8px',
+                  borderRadius: '10px',
                   color: 'var(--text-primary)',
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   textAlign: 'center',
-                  fontWeight: '500'
+                  fontWeight: '600'
                 }}>
                   {opt}
                 </div>
@@ -627,6 +662,36 @@ const SubSection = React.memo(({ title, quizzes, onViewAll, showMixCard, section
           </div>
         </div>
 
+        {/* Stats Summary */}
+        {quizzes && quizzes.length > 0 && (
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+            <div style={{ 
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              gap: '12px', 
+              background: 'var(--bg-secondary)', 
+              border: '1px solid var(--card-border)',
+              padding: '6px 20px', 
+              borderRadius: '100px',
+              boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '1.1rem' }}>📚</span>
+                <span style={{ fontSize: '0.85rem', fontWeight: '800', color: 'var(--brand-primary, #4f46e5)' }}>
+                  {quizzes.length} <span style={{ color: 'var(--text-secondary)', fontWeight: '600' }}>{isHindi ? 'श्रेणियां' : 'Categories'}</span>
+                </span>
+              </div>
+              <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--card-border)' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '1.1rem' }}>📝</span>
+                <span style={{ fontSize: '0.85rem', fontWeight: '800', color: 'var(--success, #10b981)' }}>
+                  {quizzes.reduce((acc, q) => acc + (q.questionCount || 0), 0)} <span style={{ color: 'var(--text-secondary)', fontWeight: '600' }}>{isHindi ? 'प्रश्न' : 'Questions'}</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Quick Access Chips */}
         {quizzes && quizzes.length > 0 && (
           <div style={{ 
@@ -638,9 +703,19 @@ const SubSection = React.memo(({ title, quizzes, onViewAll, showMixCard, section
             padding: '4px'
           }}>
             {quizzes.slice(0, showAllChips ? quizzes.length : 5).map((quiz) => (
-              <Link
+              <button
                 key={quiz.id}
-                href={`/category/${quiz.slug || quiz.id}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  const el = document.getElementById(`quiz-card-${quiz.id}`);
+                  if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // Optional: add a temporary highlight effect
+                    el.style.transition = 'box-shadow 0.3s ease';
+                    el.style.boxShadow = '0 0 0 4px rgba(99, 102, 241, 0.5)';
+                    setTimeout(() => { el.style.boxShadow = ''; }, 1500);
+                  }
+                }}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -673,7 +748,7 @@ const SubSection = React.memo(({ title, quizzes, onViewAll, showMixCard, section
               >
                 <span style={{ fontSize: '1rem' }}>{quiz.emoji || "📝"}</span>
                 <span>{isHindi && quiz.topicHi ? quiz.topicHi : quiz.topic}</span>
-              </Link>
+              </button>
             ))}
             {quizzes.length > 5 && (
               <button
@@ -713,6 +788,7 @@ const SubSection = React.memo(({ title, quizzes, onViewAll, showMixCard, section
           {(filteredQuizzes || []).map((quiz) => (
             <motion.div
               key={quiz.id}
+              id={`quiz-card-${quiz.id}`}
               className={styles.subSectionCard}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -846,17 +922,51 @@ function categorizeQuizzes(quizzes, sections) {
   // Collect quizzes that are not in any section
   const uncategorized = quizzes.filter(quiz => !matchedQuizIds.has(quiz.id));
   if (uncategorized.length > 0) {
-    categorized.push({
-      id: "uncategorized",
-      name: "State GK Quizzes",
-      nameHi: "स्टेट जीके क्विज़",
-      subSections: [{
-        title: "State GK",
-        titleHi: "स्टेट जीके",
-        quizzes: uncategorized,
-        order: 999
-      }]
-    });
+    const imageQuizzes = uncategorized.filter(q => q.categoryClass?.includes("image-quiz"));
+    const govtQuizzes = uncategorized.filter(q => q.categoryClass?.includes("govt-exam"));
+    const others = uncategorized.filter(q => !q.categoryClass?.includes("image-quiz") && !q.categoryClass?.includes("govt-exam"));
+
+    if (imageQuizzes.length > 0) {
+      categorized.push({
+        id: "uncategorized_image",
+        name: "Image Quizzes",
+        nameHi: "चित्र क्विज़",
+        subSections: [{
+          title: "Image Categories",
+          titleHi: "चित्र श्रेणियां",
+          quizzes: imageQuizzes,
+          order: 998
+        }]
+      });
+    }
+
+    if (govtQuizzes.length > 0) {
+      categorized.push({
+        id: "uncategorized_govt",
+        name: "Govt Exam Preparation",
+        nameHi: "सरकारी परीक्षा की तैयारी",
+        subSections: [{
+          title: "Govt Exams",
+          titleHi: "सरकारी परीक्षा",
+          quizzes: govtQuizzes,
+          order: 999
+        }]
+      });
+    }
+
+    if (others.length > 0) {
+      categorized.push({
+        id: "uncategorized_others",
+        name: "Others",
+        nameHi: "अन्य",
+        subSections: [{
+          title: "General Categories",
+          titleHi: "सामान्य श्रेणियां",
+          quizzes: others,
+          order: 1000
+        }]
+      });
+    }
   }
   
   return categorized;
@@ -1295,8 +1405,12 @@ export default function LandingPage({ initialCategories = [] }) {
     if (isPersonalized && userInterests.length > 0) {
       list = list.filter(c => userInterests.includes(c.id));
     } else {
-      // If not personalized, only show top-level categories or those marked for home
-      list = list.filter(c => !c.parentId || c.showSubCategoriesOnHome);
+      // First, find all parent IDs that have showSubCategoriesOnHome set to true
+      const parentIdsShowingSubCategories = new Set(
+        quizzes.filter(q => q.showSubCategoriesOnHome).map(q => q.id)
+      );
+      // If not personalized, only show top-level categories, those marked for home, OR subcategories whose parent is marked
+      list = list.filter(c => !c.parentId || c.showSubCategoriesOnHome || parentIdsShowingSubCategories.has(c.parentId));
     }
 
     // Apply Advanced Filters to the main view as well
@@ -1331,6 +1445,12 @@ export default function LandingPage({ initialCategories = [] }) {
     return name.includes("govt") || name.includes("exam") || name.includes("सरकारी") || name.includes("परीक्षा");
   }, []);
 
+  const isImageSection = useCallback((sectionName) => {
+    if (!sectionName) return false;
+    const name = String(sectionName).toLowerCase();
+    return name.includes("image") || name.includes("चित्र");
+  }, []);
+
   const allCategorizedQuizzes = useMemo(() => {
     const list = categorizeQuizzes(baseFilteredCategories, sections);
     const othersIndex = list.findIndex(s => 
@@ -1351,21 +1471,29 @@ export default function LandingPage({ initialCategories = [] }) {
     if (audienceTab === "govt") {
       return allCategorizedQuizzes.filter(s => isGovtSection(s.name));
     }
-    return allCategorizedQuizzes.filter(s => !isGovtSection(s.name));
-  }, [allCategorizedQuizzes, audienceTab, isGovtSection]);
+    if (audienceTab === "image") {
+      return allCategorizedQuizzes.filter(s => isImageSection(s.name));
+    }
+    return allCategorizedQuizzes.filter(s => !isGovtSection(s.name) && !isImageSection(s.name));
+  }, [allCategorizedQuizzes, audienceTab, isGovtSection, isImageSection]);
 
   const regularCount = useMemo(() => {
-    const regularSections = allCategorizedQuizzes.filter(s => !isGovtSection(s.name));
+    const regularSections = allCategorizedQuizzes.filter(s => !isGovtSection(s.name) && !isImageSection(s.name));
     return regularSections.reduce((acc, sec) => acc + sec.subSections.reduce((sAcc, sub) => sAcc + (sub.quizzes?.length || 0), 0), 0);
-  }, [allCategorizedQuizzes, isGovtSection]);
+  }, [allCategorizedQuizzes, isGovtSection, isImageSection]);
 
   const govtCount = useMemo(() => {
     const govtSections = allCategorizedQuizzes.filter(s => isGovtSection(s.name));
     return govtSections.reduce((acc, sec) => acc + sec.subSections.reduce((sAcc, sub) => sAcc + (sub.quizzes?.length || 0), 0), 0);
   }, [allCategorizedQuizzes, isGovtSection]);
 
+  const imageCount = useMemo(() => {
+    const imageSections = allCategorizedQuizzes.filter(s => isImageSection(s.name));
+    return imageSections.reduce((acc, sec) => acc + sec.subSections.reduce((sAcc, sub) => sAcc + (sub.quizzes?.length || 0), 0), 0);
+  }, [allCategorizedQuizzes, isImageSection]);
+
   const sectionChipsData = useMemo(() => {
-    if (audienceTab === "govt") {
+    if (audienceTab === "govt" || audienceTab === "image") {
       const chips = [];
       categorizedQuizzes.forEach(section => {
         (section.subSections || []).forEach(sub => {
@@ -1395,6 +1523,14 @@ export default function LandingPage({ initialCategories = [] }) {
 
   return (
     <main className={styles.page}>
+      {/* Background Glowing Ambient Light Orbs */}
+      <div className={styles.bgOrbs}>
+        <div className={`${styles.orb} ${styles.orb1}`} />
+        <div className={`${styles.orb} ${styles.orb2}`} />
+        <div className={`${styles.orb} ${styles.orb3}`} />
+        <div className={`${styles.orb} ${styles.orb4}`} />
+      </div>
+
       {/* Search Orbs & Hero Section */}
       <motion.section 
         className={styles.hero}
@@ -1466,6 +1602,37 @@ export default function LandingPage({ initialCategories = [] }) {
                   color: audienceTab === "govt" ? '#ffffff' : 'var(--accent)',
                 }}>
                   {govtCount}
+                </span>
+              </button>
+
+              <button
+                onClick={() => setAudienceTab("image")}
+                className={styles.audienceTabBtn}
+                style={{
+                  color: audienceTab === "image" ? '#ffffff' : 'var(--text-secondary)',
+                }}
+              >
+                {audienceTab === "image" && (
+                  <motion.div
+                    layoutId="audienceTabIndicator"
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      borderRadius: '18px',
+                      background: 'var(--brand-gradient)',
+                      boxShadow: '0 6px 20px rgba(99, 102, 241, 0.35)',
+                      zIndex: -1
+                    }}
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+                <span style={{ fontSize: '1.1rem' }}>🖼️</span>
+                <span>{isHindi ? 'चित्र क्विज़' : 'Image Quizzes'}</span>
+                <span className={styles.audienceTabBadge} style={{
+                  background: audienceTab === "image" ? 'rgba(255, 255, 255, 0.25)' : 'rgba(99, 102, 241, 0.1)',
+                  color: audienceTab === "image" ? '#ffffff' : 'var(--accent)',
+                }}>
+                  {imageCount}
                 </span>
               </button>
             </div>

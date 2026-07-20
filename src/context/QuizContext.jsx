@@ -111,7 +111,7 @@ function quizReducer(state, action) {
         soundEnabled: state.soundEnabled,
         isFullscreen: state.isFullscreen,
         language: language || detectQuizLanguage(shuffledQuestions),
-        originalLanguage: language || detectQuizLanguage(shuffledQuestions),
+        originalLanguage: detectQuizLanguage(shuffledQuestions),
         originalQuestions: shuffledQuestions,
         originalStory: quiz.storyText || null,
         translatedStory: null,
@@ -142,7 +142,7 @@ function quizReducer(state, action) {
         soundEnabled: state.soundEnabled,
         isFullscreen: state.isFullscreen,
         language: language || detectQuizLanguage(shuffledQuestions),
-        originalLanguage: language || detectQuizLanguage(shuffledQuestions),
+        originalLanguage: detectQuizLanguage(shuffledQuestions),
         originalQuestions: shuffledQuestions,
         originalStory: null,
         translatedStory: null,
@@ -174,7 +174,7 @@ function quizReducer(state, action) {
         soundEnabled: state.soundEnabled,
         isFullscreen: state.isFullscreen,
         language: language || detectQuizLanguage(shuffledQuestions),
-        originalLanguage: language || detectQuizLanguage(shuffledQuestions),
+        originalLanguage: detectQuizLanguage(shuffledQuestions),
         originalQuestions: shuffledQuestions,
         categoryName: sectionName,
         quizSessionId: Date.now(),
@@ -273,7 +273,8 @@ function quizReducer(state, action) {
         ...state, 
         status: "finished",
         dailyStreak: newStreak,
-        lastPlayedDate: today
+        lastPlayedDate: today,
+        isFullscreen: false
       };
     }
     case "GO_TO_QUESTION":
@@ -289,7 +290,7 @@ function quizReducer(state, action) {
     case "SET_FULLSCREEN":
       return { ...state, isFullscreen: action.payload };
     case "RESET_QUIZ":
-      return { ...initialState, soundEnabled: state.soundEnabled, isFullscreen: state.isFullscreen, quizSessionId: Date.now() };
+      return { ...initialState, soundEnabled: state.soundEnabled, isFullscreen: false, quizSessionId: Date.now() };
     case "LOAD_STATE":
       return { 
         ...state, 
@@ -369,7 +370,7 @@ export function QuizProvider({ children }) {
       
       if (forceComplete) progress = 100;
 
-      await fetch("/api/progress", {
+      const res = await fetch("/api/progress", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -381,6 +382,15 @@ export function QuizProvider({ children }) {
           answers: activeAnswers
         }),
       });
+
+      const data = await res.json();
+      
+      // Dispatch coin balance update event if coins were earned
+      if (data.coinBalance !== undefined && data.coinBalance !== null) {
+        window.dispatchEvent(new CustomEvent('coinBalanceUpdate', {
+          detail: { coinBalance: data.coinBalance, coinsEarned: data.coinsEarned }
+        }));
+      }
     } catch (e) {
       console.warn("[QuizContext] Failed to sync progress to DB", e);
     }
@@ -461,10 +471,12 @@ export function QuizProvider({ children }) {
       });
 
       if (res.ok) {
-        const { translations } = await res.json();
+        const data = await res.json();
+        const { translations, error } = data;
         
-        if (!translations || translations.length === 0) {
-           console.error("[Quiz/Translate] Empty translations received.");
+        if (error || !translations || translations.length === 0) {
+           console.error("[Quiz/Translate] Error or empty translations received:", error);
+           toast.error(error || "Translation was unsuccessful. Please try again.");
            dispatch({ type: "SET_TRANSLATING", payload: false });
            return null;
         }
@@ -490,9 +502,7 @@ export function QuizProvider({ children }) {
              if (correctIdx !== -1 && newQ.options[correctIdx]) {
                 newQ.correctAnswer = newQ.options[correctIdx];
              } else if (correctIdx === -1 && q.correctAnswer) {
-                // Fallback: If index search fails, translate it as a separate item if we had one? 
-                // But we don't send correctAnswer separately in current implementation.
-                // We assume correctAnswer is always one of the options.
+                // Fallback: If index search fails, assume correctAnswer is always one of the options.
              }
           }
 
@@ -516,7 +526,7 @@ export function QuizProvider({ children }) {
         const errorData = await res.json().catch(() => ({}));
         console.error("Translation API error response:", errorData);
         dispatch({ type: "SET_TRANSLATING", payload: false });
-        toast.error("Translation service is currently unavailable");
+        toast.error(errorData.error || "Translation service is currently unavailable");
       }
     } catch (error) {
       console.error("Translation error:", error);
@@ -552,8 +562,10 @@ export function QuizProvider({ children }) {
            dispatch({ type: "SET_LANGUAGE", payload: target });
            toast.success(`Switched to ${target === 'hi' ? 'Hindi' : 'English'}`);
         } else {
-           await translateQuiz(state.questions, state.language, target, storyText);
-           dispatch({ type: "SET_LANGUAGE", payload: target });
+           const result = await translateQuiz(state.questions, state.language, target, storyText);
+           if (result) {
+             dispatch({ type: "SET_LANGUAGE", payload: target });
+           }
         }
       } finally {
         dispatch({ type: "SET_TRANSLATE_TARGET", payload: null });

@@ -21,6 +21,8 @@ export async function PUT(request, { params }) {
   if (body.correctAnswer !== undefined) data.correctAnswer = body.correctAnswer;
   if (body.difficulty !== undefined) data.difficulty = body.difficulty;
   if (body.image !== undefined) data.image = body.image || null;
+  if (body.explanation !== undefined) data.explanation = body.explanation || null;
+  if (body.explanationHi !== undefined) data.explanationHi = body.explanationHi || null;
 
   const question = await prisma.question.update({ where: { id }, data });
   return NextResponse.json({ 

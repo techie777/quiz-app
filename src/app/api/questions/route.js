@@ -40,7 +40,7 @@ export async function POST(request) {
   try {
     const body = await request.json();
     console.log("[API/Questions] Request body:", JSON.stringify(body, null, 2));
-    const { text, options, correctAnswer, difficulty, image, categoryId } = body;
+    const { text, options, correctAnswer, difficulty, image, categoryId, explanation, explanationHi } = body;
     
     if (!text || !options || !correctAnswer || !categoryId) {
       console.error("[API/Questions] Validation failed: missing required fields", { text: !!text, options: !!options, correctAnswer: !!correctAnswer, categoryId: !!categoryId });
@@ -60,6 +60,8 @@ export async function POST(request) {
         correctAnswer,
         difficulty: difficulty || "easy",
         image: image || null,
+        explanation: explanation || null,
+        explanationHi: explanationHi || null,
         categoryId,
       },
     });

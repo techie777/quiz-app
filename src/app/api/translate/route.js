@@ -1,6 +1,18 @@
 import { NextResponse } from "next/server";
 import translate from "translate-google-api";
 
+async function translateChunked(strings, { from, to, chunkSize = 15 }) {
+  const results = [];
+  for (let i = 0; i < strings.length; i += chunkSize) {
+    const chunk = strings.slice(i, i + chunkSize);
+    console.log(`[Translate API] Translating chunk ${Math.floor(i / chunkSize) + 1}/${Math.ceil(strings.length / chunkSize)} (${chunk.length} items)...`);
+    const chunkRes = await translate(chunk, { from, to });
+    const arr = Array.isArray(chunkRes) ? chunkRes : [chunkRes];
+    results.push(...arr);
+  }
+  return results;
+}
+
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -22,7 +34,7 @@ export async function POST(request) {
     console.log(`[Translate API] Translating from: ${sourceLang} to: ${to}. Input size: ${Array.isArray(text) ? text.length : 1}`);
 
     const texts = Array.isArray(text) ? text : [text];
-    const validTexts = texts.map(t => (t && t.trim() !== "") ? t.trim() : "");
+    const validTexts = texts.map(t => (t && typeof t === 'string' && t.trim() !== "") ? t.trim() : "");
     
     // Find non-empty strings to translate
     const translationMap = [];
@@ -40,20 +52,17 @@ export async function POST(request) {
     }
 
     try {
-      const results = await translate(stringsToTranslate, { from: sourceLang, to });
+      const results = await translateChunked(stringsToTranslate, { from: sourceLang, to, chunkSize: 15 });
       
-      // ENSURE ARRAY: If single string returned, wrap it to maintain index alignment
       const translations = Array.isArray(results) ? results : [results];
-      
       console.log(`[Translate API] Received ${translations.length} translated items from external provider.`);
 
       if (translations.length !== stringsToTranslate.length) {
         console.error(`[Translate API] LENGTH MISMATCH! Input: ${stringsToTranslate.length}, Output: ${translations.length}`);
-        // Fallback to original text if API returns inconsistent count
         return NextResponse.json({ 
-          translations: texts,
-          warning: "Translation count mismatch, using original text"
-        });
+          error: "Translation count mismatch",
+          translations: texts
+        }, { status: 502 });
       }
       
       const finalTranslations = [...texts];
@@ -66,11 +75,10 @@ export async function POST(request) {
       });
     } catch (apiError) {
       console.error("External Translation API error:", apiError);
-      // If API fails, return original text as fallback so the quiz can still be played
       return NextResponse.json({ 
-        translations: text,
-        warning: "Translation failed, using original text"
-      });
+        error: "External translation provider error: " + (apiError?.message || "unknown"),
+        translations: text
+      }, { status: 502 });
     }
   } catch (error) {
     console.error("Translation route error:", error);

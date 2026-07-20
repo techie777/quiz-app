@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useQuiz } from "@/context/QuizContext";
 import { playCorrectSound, playWrongSound } from "@/lib/sounds";
 import { shareQuestion } from "@/lib/shareImage";
-import { Share2, Heart } from "lucide-react";
+import { Share2, Heart, X } from "lucide-react";
 import Image from "next/image";
 import styles from "@/styles/QuizEngine.module.css";
+import { getDynamicExplanation } from "@/lib/explanationGenerator";
+import CoinAnimation from "@/components/CoinAnimation";
 
 export default function QuestionCard({
   question,
@@ -16,6 +18,7 @@ export default function QuestionCard({
   onAnswer,
   userAnswer,
   showExplanation,
+  onCloseExplanation,
   explanation,
   language = "en",
   disabled,
@@ -36,6 +39,7 @@ export default function QuestionCard({
   const [loginPrompt, setLoginPrompt] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [shakingType, setShakingType] = useState(""); // "", "shake", "megaShake"
+  const [showCoinAnim, setShowCoinAnim] = useState(false);
 
   const isUser = session?.user && !session.user.isAdmin;
 
@@ -46,6 +50,17 @@ export default function QuestionCard({
       setRevealed(true);
     }
   }, [userAnswer]);
+
+  // Reset selected & revealed when question or userAnswer changes
+  useEffect(() => {
+    if (userAnswer !== undefined) {
+      setSelected(userAnswer);
+      setRevealed(true);
+    } else {
+      setSelected(null);
+      setRevealed(false);
+    }
+  }, [question?.id, userAnswer]);
 
   // 1. Sync fav state when favouriteIds or question.id changes
   useEffect(() => {
@@ -59,11 +74,15 @@ export default function QuestionCard({
     if (!question || !Array.isArray(question.options)) return [0, 1, 2, 3];
     
     const indices = question.options.map((_, i) => i);
-    // Fisher-Yates shuffle with fixed seed (question id + session id)
-    // We'll use a simple deterministic shuffle based on the IDs
-    const seed = (question.id || 0) + (quizSessionId || 0);
+    const seedStr = String(question.id || question.text || '') + String(quizSessionId || '');
+    let hash = 0;
+    for (let k = 0; k < seedStr.length; k++) {
+      hash = ((hash << 5) - hash) + seedStr.charCodeAt(k);
+      hash |= 0;
+    }
+    let seedNum = Math.abs(hash) || 1;
     const seededRandom = () => {
-      const x = Math.sin(seed) * 10000;
+      const x = Math.sin(seedNum++) * 10000;
       return x - Math.floor(x);
     };
 
@@ -73,7 +92,7 @@ export default function QuestionCard({
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
     return shuffled;
-  }, [question?.id, quizSessionId]);
+  }, [question?.id, question?.text, quizSessionId]);
 
   // 3. Map current language options to the stable shuffled order
   const shuffledOptions = useMemo(() => {
@@ -152,6 +171,11 @@ export default function QuestionCard({
     if (isCorrect) {
       if (combo >= 20) setShakingType("megaShake");
       else if (combo >= 10) setShakingType("shake");
+      
+      // Show coin animation for correct answers
+      const coinsEarned = session?.user?.isPro ? 4 : 1;
+      setShowCoinAnim(true);
+      setTimeout(() => setShowCoinAnim(false), 1500);
     }
 
     onAnswer(originalIndex);
@@ -167,6 +191,12 @@ export default function QuestionCard({
           {isHindi ? (question.category?.nameHi || question.category?.name) : question.category?.name}
         </span>
         <div className={styles.actionBtns}>
+          <VoiceAnswerControl 
+            onSelectOption={(idx) => handleSelect(shuffledOptions[idx]?.index)} 
+            optionsCount={shuffledOptions.length}
+            options={shuffledOptions.map(o => o.text)}
+            isHindi={isHindi}
+          />
           <button 
             onClick={handleShare} 
             disabled={sharing}
@@ -187,9 +217,11 @@ export default function QuestionCard({
 
       {/* Question Text */}
       <div className={styles.questionSection}>
-        <h2 className={styles.questionText}>
-          {isHindi ? (question.textHi || question.text) : question.text}
-        </h2>
+        {!!(isHindi ? (question.textHi || question.text) : question.text) && (
+          <h2 className={styles.questionText}>
+            {isHindi ? (question.textHi || question.text) : question.text}
+          </h2>
+        )}
         {question.image && (
           <div className={styles.questionImageWrapper}>
             <Image 
@@ -242,13 +274,27 @@ export default function QuestionCard({
         })}
       </div>
 
-      {/* Explanation Footer */}
-      {revealed && showExplanation && explanation && (
-        <div className={styles.explanationBox}>
-          <h4 className={styles.explanationTitle}>
-            {isHindi ? "स्पष्टीकरण" : "Explanation"}
-          </h4>
-          <p className={styles.explanationText}>{explanation}</p>
+      {/* Explanation Card + Source Link */}
+      {showExplanation && (
+        <div className={styles.explanationOverlay} onClick={() => onCloseExplanation?.()}>
+          <div className={styles.centeredExplanationCard} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+              <h4 className={styles.explanationTitle}>
+                💡 {isHindi ? "स्पष्टीकरण" : "Explanation"}
+              </h4>
+              <button
+                onClick={() => onCloseExplanation?.()}
+                className={styles.explanationCloseBtn}
+                title={isHindi ? "बंद करें" : "Close"}
+                aria-label="Close"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <p className={styles.explanationText} style={{ margin: 0, fontSize: "0.9rem", lineHeight: "1.4" }}>
+              {getDynamicExplanation(question, isHindi)}
+            </p>
+          </div>
         </div>
       )}
 
@@ -269,6 +315,13 @@ export default function QuestionCard({
           </div>
         </div>
       )}
+
+      {/* Coin Animation */}
+      <CoinAnimation 
+        show={showCoinAnim} 
+        amount={session?.user?.isPro ? 4 : 1} 
+        isPro={session?.user?.isPro} 
+      />
     </div>
   );
 }

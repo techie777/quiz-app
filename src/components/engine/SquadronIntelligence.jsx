@@ -22,7 +22,7 @@ export default function SquadronIntelligence() {
     lastEvent,
     pulse
   } = useSessionEngine();
-  const { t } = useLanguage();
+  const { t, isHindi } = useLanguage();
   
   const [msg, setMsg] = useState('');
   const [broadcastText, setBroadcastText] = useState('');
@@ -44,8 +44,27 @@ export default function SquadronIntelligence() {
     }
   }, [chatMessages]);
 
+  const isHost = session?.role === 'HOST' || (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('is_host') === 'true');
+
   const sortedSquad = useMemo(() => {
-    return [...(participants || [])].sort((a, b) => (b.score || 0) - (a.score || 0));
+    const list = [...(participants || [])];
+    const seen = new Set();
+    let hostSeen = false;
+    const unique = [];
+
+    for (const p of list) {
+      if (!p || p.isOnline === false || p.status === 'offline' || p.status === 'LEFT' || p.status === 'KICKED' || p.status === 'AWAY') continue;
+      const key = p.userId || p.userName;
+      if (p.role === 'HOST') {
+        if (hostSeen) continue;
+        hostSeen = true;
+      }
+      if (seen.has(key)) continue;
+      seen.add(key);
+      unique.push(p);
+    }
+
+    return unique.sort((a, b) => (b.score || 0) - (a.score || 0));
   }, [participants]);
 
   const handleSend = (e) => {
@@ -82,8 +101,8 @@ export default function SquadronIntelligence() {
       {/* 🏆 STRATEGIC STANDINGS */}
       <div className="bg-white rounded-[2rem] shadow-lg border border-slate-100 p-6 space-y-4">
           <div className="flex items-center justify-between px-2">
-              <h3 className="text-[10px] md:text-xs font-black text-slate-900 uppercase tracking-[0.3em]">{t('live.quiz.intel.standings')}</h3>
-              <span className="text-[9px] font-black text-indigo-500 bg-indigo-50 px-3 py-1 rounded-lg uppercase">{participants.length} {t('live.quiz.intel.ops')}</span>
+              <h3 className={`text-[10px] md:text-xs font-black text-slate-900 uppercase ${isHindi ? '' : 'tracking-[0.3em]'}`}>{t('live.quiz.intel.standings')}</h3>
+              <span className="text-[9px] font-black text-indigo-500 bg-indigo-50 px-3 py-1 rounded-lg uppercase">{sortedSquad.length} {t('live.quiz.intel.ops')}</span>
           </div>
           
           <div className="overflow-x-auto rounded-2xl border border-slate-50 custom-scrollbar">
@@ -93,7 +112,7 @@ export default function SquadronIntelligence() {
                           <th className="px-3 py-3 text-[10px] font-black text-slate-400 border-b border-slate-100 uppercase w-12">#</th>
                           <th className="px-3 py-3 text-[10px] font-black text-slate-400 border-b border-slate-100 uppercase">{t('live.quiz.intel.operator')}</th>
                           <th className="px-3 py-3 text-[10px] font-black text-slate-400 border-b border-slate-100 uppercase text-right w-20">{t('live.quiz.intel.score')}</th>
-                          {session?.role === 'HOST' && <th className="px-3 py-3 text-[10px] font-black text-slate-400 border-b border-slate-100 uppercase text-center w-12"></th>}
+                          {isHost && <th className="px-3 py-3 text-[10px] font-black text-slate-400 border-b border-slate-100 uppercase text-center w-12">Action</th>}
                       </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
@@ -104,7 +123,7 @@ export default function SquadronIntelligence() {
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.9 }}
-                                key={p.userId} 
+                                key={p.userId || p.userName} 
                                 className={`transition-all h-20 ${p.userId === session?.userId ? 'bg-indigo-50/30' : 'hover:bg-slate-50/50'}`}
                            >
                                <td className="px-4 py-2">
@@ -130,7 +149,7 @@ export default function SquadronIntelligence() {
                                            </span>
                                            <div className="flex items-center gap-1">
                                                <StatusDot status={p.status || (p.isOnline === false ? 'LEFT' : 'ACTIVE')} />
-                                               <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">
+                                               <span className={`text-[8px] font-black text-slate-400 uppercase leading-none ${isHindi ? '' : 'tracking-widest'}`}>
                                                    {getStatusLabel(p.status, p.isOnline)}
                                                </span>
                                            </div>
@@ -140,20 +159,22 @@ export default function SquadronIntelligence() {
                                 <td className="px-3 py-2 text-right">
                                    <span className="text-base font-black text-slate-900 tabular-nums">{p.score || 0}</span>
                                </td>
-                               {session?.role === 'HOST' && (
+                               {isHost && (
                                    <td className="px-4 py-2 text-center">
-                                       {p.role !== 'HOST' && (
+                                       {p.role !== 'HOST' && p.userId !== session?.userId && (
                                            <button 
                                              onClick={() => {
-                                                 if (window.confirm(`${t('live.lobby.players.kick')} ${p.userName}?`)) {
+                                                 const actionLabel = (p.isOnline === false || p.status === 'LEFT' || p.status === 'AWAY') ? 'Remove' : 'Kick';
+                                                 if (window.confirm(`${actionLabel} ${p.userName}?`)) {
                                                      socketService.getSocket()?.emit('HOST_ACTION', {
                                                          sessionId: session.sessionId,
                                                          action: 'KICK_PARTICIPANT',
-                                                         payload: { userId: p.userId }
+                                                         payload: { userId: p.userId, purge: true }
                                                      });
                                                  }
                                              }}
                                              className="w-8 h-8 flex items-center justify-center rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all text-xs font-black shadow-sm"
+                                             title="Remove or kick participant"
                                            >
                                                ✖
                                            </button>
@@ -164,7 +185,7 @@ export default function SquadronIntelligence() {
                        ))}
                        {sortedSquad.length === 0 && (
                            <motion.tr initial={{ opacity: 0 }} animate={{ opacity: 1 }} key="loading">
-                             <td colSpan="4" className="py-20 text-center text-sm font-black text-slate-300 uppercase tracking-[0.5em] animate-pulse">{t('live.quiz.intel.scanning')}</td>
+                             <td colSpan="4" className={`py-20 text-center text-sm font-black text-slate-300 uppercase animate-pulse ${isHindi ? '' : 'tracking-[0.5em]'}`}>{t('live.quiz.intel.scanning')}</td>
                            </motion.tr>
                        )}
                     </AnimatePresence>
@@ -191,7 +212,7 @@ export default function SquadronIntelligence() {
           <div className="bg-slate-900 rounded-2xl p-5 border-t-4 border-indigo-600 space-y-4 shadow-lg">
                <div className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-ping"></span>
-                  <h3 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em]">{t('live.quiz.intel.broadcast')}</h3>
+                  <h3 className={`text-[10px] font-black text-indigo-400 uppercase ${isHindi ? '' : 'tracking-[0.3em]'}`}>{t('live.quiz.intel.broadcast')}</h3>
                </div>
                <div className="flex gap-1.5">
                    <input 
@@ -221,15 +242,15 @@ export default function SquadronIntelligence() {
           <div className="px-6 md:px-8 py-5 md:py-7 border-b border-white/5 flex items-center justify-between bg-black/40 backdrop-blur-md">
               <div className="flex items-center gap-4">
                   <div className={`w-2.5 h-2.5 rounded-full ${pulse ? 'bg-indigo-400 scale-150' : 'bg-green-500'} shadow-[0_0_15px_rgba(34,197,94,0.8)] animate-pulse transition-all`}></div>
-                  <h3 className="text-xs md:text-sm font-black text-slate-400 uppercase tracking-[0.4em]">{t('live.quiz.intel.comms')}</h3>
+                  <h3 className={`text-xs md:text-sm font-black text-slate-400 uppercase ${isHindi ? '' : 'tracking-[0.4em]'}`}>{t('live.quiz.intel.comms')}</h3>
               </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 custom-scrollbar">
               {chatMessages.length === 0 && (
                   <div className="flex flex-col items-center justify-center h-full opacity-40 text-center space-y-6">
                       <div className="text-7xl drop-shadow-[0_0_20px_rgba(99,102,241,0.4)]">📡</div>
-                      <p className="text-sm font-black text-slate-300 uppercase tracking-[0.5em]">{t('live.quiz.intel.uplink')}</p>
+                      <p className={`text-sm font-black text-slate-300 uppercase ${isHindi ? '' : 'tracking-[0.5em]'}`}>{t('live.quiz.intel.uplink')}</p>
                   </div>
               )}
               {chatMessages.map((m) => (
@@ -239,7 +260,7 @@ export default function SquadronIntelligence() {
                                {m.role === 'HOST' ? `👑 ${t('live.lobby.players.commander')}` : `💂 ${m.userName}`}
                           </span>
                       </div>
-                      <div className={`max-w-[85%] px-7 py-4.5 rounded-[1.5rem] text-base font-bold leading-relaxed shadow-xl ${
+                      <div className={`max-w-[85%] px-5 py-3 md:px-7 md:py-4.5 rounded-[1.5rem] text-sm md:text-base font-bold leading-relaxed shadow-xl ${
                           m.userId === session?.userId 
                             ? 'bg-indigo-600 text-white rounded-tr-none' 
                             : 'bg-white/5 text-slate-100 rounded-tl-none border border-white/10 backdrop-blur-md shadow-[inset_0_0_20px_rgba(255,255,255,0.02)]'
@@ -257,11 +278,11 @@ export default function SquadronIntelligence() {
                       placeholder={t('live.quiz.intel.transmit')}
                       value={msg}
                       onChange={(e) => setMsg(e.target.value)}
-                      className="flex-1 bg-transparent border-none outline-none text-white px-6 text-sm font-black uppercase tracking-[0.2em] py-4 placeholder:text-slate-700 min-w-0"
+                      className={`flex-1 bg-transparent border-none outline-none text-white px-4 md:px-6 text-sm font-black uppercase ${isHindi ? '' : 'tracking-[0.2em]'} py-3 md:py-4 placeholder:text-slate-700 min-w-0`}
                   />
                   <button 
                     type="submit"
-                    className="w-12 h-12 bg-indigo-600 text-white rounded-full hover:bg-indigo-500 hover:scale-105 transition-all flex items-center justify-center text-xl shadow-[0_0_15px_rgba(79,70,229,0.4)] active:scale-90 flex-shrink-0"
+                    className="w-10 h-10 md:w-12 md:h-12 bg-indigo-600 text-white rounded-full hover:bg-indigo-500 hover:scale-105 transition-all flex items-center justify-center text-lg md:text-xl shadow-[0_0_15px_rgba(79,70,229,0.4)] active:scale-90 flex-shrink-0"
                   >
                     🚀
                   </button>

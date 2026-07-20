@@ -41,21 +41,23 @@ export default function QuizSuggestions({ currentCategory }) {
   // Check if quiz is currently active
   const isQuizActive = status === 'active';
 
-  // Get random suggested categories (exclude current category)
-  const suggestedCategories = useMemo(() => {
-    if (!quizzes.length || !currentCategory) return [];
+  const [visibleCount, setVisibleCount] = useState(4);
+
+  // Get available categories excluding current
+  const availableQuizzes = useMemo(() => {
+    if (!quizzes || !quizzes.length) return [];
     
-    const availableQuizzes = quizzes.filter(q => 
-      q.id !== currentCategory.id && 
+    return quizzes.filter(q => 
+      (!currentCategory || q.id !== currentCategory.id) && 
       !q.hidden && 
       q.questions && 
       q.questions.length > 0
     );
-    
-    // Shuffle and take 4 random categories for better coverage
-    const shuffled = [...availableQuizzes].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, 4);
   }, [quizzes, currentCategory]);
+
+  const displayedCategories = useMemo(() => {
+    return availableQuizzes.slice(0, visibleCount);
+  }, [availableQuizzes, visibleCount]);
 
   const handleQuizClick = (e, quiz) => {
     e.preventDefault();
@@ -78,19 +80,13 @@ export default function QuizSuggestions({ currentCategory }) {
     }
   };
 
-  const getQuizProgress = () => {
-    // This would need to be passed as props or accessed from context
-    // For now, we'll use a placeholder
-    return 0;
+  const handleLoadMore = () => {
+    setVisibleCount(prev => Math.min(prev + 4, availableQuizzes.length));
   };
 
-  const getQuizScore = () => {
-    // This would need to be passed as props or accessed from context
-    // For now, we'll use a placeholder
-    return 0;
-  };
+  if (availableQuizzes.length === 0) return null;
 
-  if (suggestedCategories.length === 0) return null;
+  const hasMore = visibleCount < availableQuizzes.length;
 
   return (
     <>
@@ -105,7 +101,7 @@ export default function QuizSuggestions({ currentCategory }) {
         </div>
         
         <div className={styles.suggestionsGrid}>
-          {suggestedCategories.map((quiz) => (
+          {displayedCategories.map((quiz) => (
             <div
               key={quiz.id}
               className={styles.suggestionCard}
@@ -169,9 +165,19 @@ export default function QuizSuggestions({ currentCategory }) {
         </div>
         
         <div className={styles.suggestionsFooter}>
-          <a href="/" className={styles.browseAllLink}>
-            🗺️ Browse All Categories
-          </a>
+          {hasMore ? (
+            <button 
+              type="button" 
+              onClick={handleLoadMore} 
+              className={styles.browseAllLink}
+            >
+              🗺️ Browse All Categories ({availableQuizzes.length - visibleCount} more)
+            </button>
+          ) : (
+            <div className={styles.allLoadedBadge}>
+              ✨ All {availableQuizzes.length} categories loaded
+            </div>
+          )}
         </div>
       </div>
 
@@ -180,8 +186,8 @@ export default function QuizSuggestions({ currentCategory }) {
         isOpen={showWarningModal}
         onClose={() => setShowWarningModal(false)}
         onConfirm={handleConfirmSwitch}
-        progress={getQuizProgress()}
-        score={getQuizScore()}
+        progress={0}
+        score={0}
         totalQuestions={currentCategory?.questions?.length || 0}
         customTitle="Switch Quiz?"
         customMessage="Are you sure you want to switch to another quiz? Your current progress will be lost."

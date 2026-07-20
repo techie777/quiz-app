@@ -146,13 +146,15 @@ export async function GET(request) {
           }
         },
         questions: includeQuestions ? true : {
-          take: 1,
+          take: 3,
           select: {
             id: true,
             text: true,
             textHi: true,
             options: true,
             optionsHi: true,
+            explanation: true,
+            explanationHi: true,
           }
         }
       },
@@ -239,10 +241,11 @@ export async function GET(request) {
       updatedAt: cat.updatedAt,
       questionCount: (cat._count?.questions || 0) + (cat.subCategories?.reduce((acc, sub) => acc + (sub._count?.questions || 0), 0) || 0),
       difficultyStats: difficultyMap[cat.id] || { easy: 0, medium: 0, hard: 0 },
-      questions: includeQuestions ? (cat.questions || []).map(q => ({
+      questions: (cat.questions || []).map(q => ({
         ...q,
-        options: safeJsonParse(q.options) || []
-      })) : [],
+        options: safeJsonParse(q.options) || [],
+        optionsHi: safeJsonParse(q.optionsHi) || []
+      })),
     }));
     
     return NextResponse.json({ categories: result, total });

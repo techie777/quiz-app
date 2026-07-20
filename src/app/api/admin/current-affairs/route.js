@@ -105,6 +105,7 @@ export async function POST(request) {
   const date = normalizeString(body?.date);
   const heading = normalizeString(body?.heading);
   const description = normalizeString(body?.description);
+  const oneLiner = normalizeString(body?.oneLiner);
   const category = normalizeString(body?.category) || "General";
   const image = typeof body?.image === "string" ? body.image : "";
   const hidden = !!body?.hidden;
@@ -116,7 +117,7 @@ export async function POST(request) {
   if (!description) return NextResponse.json({ error: "Description is required" }, { status: 400 });
 
   const item = await prisma.currentAffair.create({
-    data: { date, category, heading, description, image, hidden },
+    data: { date, category, heading, description, oneLiner, image, hidden },
   });
 
   await prisma.adminActivityLog.create({

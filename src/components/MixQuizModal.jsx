@@ -68,96 +68,119 @@ const MixQuizModal = ({ isOpen, onClose, sectionName }) => {
              <button className={styles.closeBtn} onClick={onClose}><X size={20} /></button>
           </div>
 
-          <div className={styles.modalBody}>
-             <p className={styles.modalSubtitle}>Configure your custom round for <strong>{sectionName}</strong></p>
+          <div className={`${styles.modalBody} custom-scrollbar`}>
+             {loading ? (
+               <div className="py-12 flex flex-col items-center justify-center text-center space-y-6 animate-in fade-in duration-300">
+                 <div className="relative w-20 h-20 flex items-center justify-center">
+                   <div className="absolute inset-0 rounded-full border-4 border-cyan-500/20 border-t-cyan-400 animate-spin" />
+                   <div className="absolute inset-2 rounded-full border-4 border-indigo-500/20 border-b-indigo-400 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }} />
+                   <span className="text-3xl animate-bounce">🧠</span>
+                 </div>
+                 <div className="space-y-2">
+                   <h4 className="text-lg font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">
+                     Crafting Custom Rumble...
+                   </h4>
+                   <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 max-w-xs mx-auto">
+                     Scouring questions across 17+ topics to build your balanced {qCount}-question challenge arena.
+                   </p>
+                 </div>
+                 <div className="flex items-center gap-1.5 pt-2">
+                   <div className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+                   <div className="w-2 h-2 rounded-full bg-indigo-500 animate-ping" style={{ animationDelay: '0.2s' }} />
+                   <div className="w-2 h-2 rounded-full bg-purple-500 animate-ping" style={{ animationDelay: '0.4s' }} />
+                 </div>
+               </div>
+             ) : (
+               <>
+                 <p className={styles.modalSubtitle}>Configure your custom round for <strong>{sectionName}</strong></p>
 
-             {/* Question Count */}
-             <div className={styles.settingGroup}>
-                <label className={styles.settingLabel}>
-                   <ClipboardList size={18} />
-                   Number of Questions
-                </label>
-                <div className={styles.presetGrid}>
-                   {presets.map(num => (
-                      <button 
-                         key={num}
-                         className={`${styles.presetBtn} ${qCount === num ? styles.active : ""}`}
-                         onClick={() => setQCount(num)}
-                      >
-                         {num}
-                      </button>
-                   ))}
-                </div>
-                <div className={styles.sliderContainer}>
-                   <input 
-                      type="range" 
-                      min="10" 
-                      max="100" 
-                      step="5"
-                      value={qCount}
-                      onChange={(e) => setQCount(parseInt(e.target.value))}
-                      className={styles.rangeSlider}
-                   />
-                   <span className={styles.sliderValue}>{qCount} Questions</span>
-                </div>
-             </div>
+                 {/* Question Count */}
+                 <div className={styles.settingGroup}>
+                    <label className={styles.settingLabel}>
+                       <ClipboardList size={18} />
+                       Number of Questions
+                    </label>
+                    <div className={styles.presetGrid}>
+                       {presets.map(num => (
+                          <button 
+                             key={num}
+                             className={`${styles.presetBtn} ${qCount === num ? styles.active : ""}`}
+                             onClick={() => setQCount(num)}
+                          >
+                             {num}
+                          </button>
+                       ))}
+                    </div>
+                    <div className={styles.sliderContainer}>
+                       <input 
+                          type="range" 
+                          min="10" 
+                          max="100" 
+                          step="5"
+                          value={qCount}
+                          onChange={(e) => setQCount(parseInt(e.target.value))}
+                          className={styles.rangeSlider}
+                       />
+                       <span className={styles.sliderValue}>{qCount} Questions</span>
+                    </div>
+                 </div>
 
-             {/* Difficulty */}
-             <div className={styles.settingGroup}>
-                <label className={styles.settingLabel}>
-                   <BarChart size={18} />
-                   Difficulty Level
-                </label>
-                <div className={styles.difficultyTabs}>
-                   {["all", "easy", "medium", "hard"].map(level => (
-                      <button 
-                         key={level}
-                         className={`${styles.diffTab} ${difficulty === level ? styles.active : ""}`}
-                         onClick={() => setDifficulty(level)}
-                      >
-                         {level.toUpperCase()}
-                      </button>
-                   ))}
-                </div>
-             </div>
+                 {/* Difficulty */}
+                 <div className={styles.settingGroup}>
+                    <label className={styles.settingLabel}>
+                       <BarChart size={18} />
+                       Difficulty Level
+                    </label>
+                    <div className={styles.difficultyTabs}>
+                       {["all", "easy", "medium", "hard"].map(level => (
+                          <button 
+                             key={level}
+                             className={`${styles.diffTab} ${difficulty === level ? styles.active : ""}`}
+                             onClick={() => setDifficulty(level)}
+                          >
+                             {level.toUpperCase()}
+                          </button>
+                       ))}
+                    </div>
+                 </div>
 
-             {/* Timer */}
-             <div className={styles.settingGroup}>
-                <label className={styles.settingLabel}>
-                   <Clock size={18} />
-                   Time Per Question
-                </label>
-                <div className={styles.sliderContainer}>
-                   <input 
-                      type="range" 
-                      min="0" 
-                      max="60" 
-                      step="5"
-                      value={timer}
-                      onChange={(e) => setTimer(parseInt(e.target.value))}
-                      className={styles.rangeSlider}
-                   />
-                   <span className={styles.sliderValue}>
-                      {timer === 0 ? "Unlimited Time (No Timer)" : `${timer} Seconds`}
-                   </span>
-                </div>
-             </div>
+                 {/* Timer */}
+                 <div className={styles.settingGroup}>
+                    <label className={styles.settingLabel}>
+                       <Clock size={18} />
+                       Time Per Question
+                    </label>
+                    <div className={styles.sliderContainer}>
+                       <input 
+                          type="range" 
+                          min="0" 
+                          max="60" 
+                          step="5"
+                          value={timer}
+                          onChange={(e) => setTimer(parseInt(e.target.value))}
+                          className={styles.rangeSlider}
+                       />
+                       <span className={styles.sliderValue}>
+                          {timer === 0 ? "Unlimited Time (No Timer)" : `${timer} Seconds`}
+                       </span>
+                    </div>
+                 </div>
+               </>
+             )}
           </div>
 
-          <div className={styles.modalFooter}>
-             <button 
-                className={`${styles.playBtn} ${loading ? styles.loading : ""}`}
-                onClick={handlePlay}
-                disabled={loading}
-             >
-                {loading ? "Preparing..." : (
-                   <>
-                      <Play size={20} />
-                      Start Challenge
-                   </>
-                )}
-             </button>
-          </div>
+          {!loading && (
+             <div className={styles.modalFooter}>
+                <button 
+                   className={`${styles.playBtn} ${loading ? styles.loading : ""}`}
+                   onClick={handlePlay}
+                   disabled={loading}
+                >
+                   <Play size={20} />
+                   Start Challenge
+                </button>
+             </div>
+          )}
         </motion.div>
       </div>
     </AnimatePresence>

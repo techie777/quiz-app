@@ -135,6 +135,31 @@ export default function QuizPlayer({ state, onLeave }) {
      if (state.timeLimit > 0) setTimeLeft(state.timeLimit);
   }, [currentIndex, state.timeLimit]);
 
+  const currentQuestion = questions[currentIndex];
+  const shuffledCurrentOptions = useMemo(() => {
+    if (!currentQuestion || !Array.isArray(currentQuestion.options)) return [];
+    const opts = [...currentQuestion.options];
+    const seedStr = String(currentQuestion.id || currentQuestion.text || '') + String(engineSession?.sessionId || '');
+    let hash = 0;
+    for (let k = 0; k < seedStr.length; k++) {
+      hash = ((hash << 5) - hash) + seedStr.charCodeAt(k);
+      hash |= 0;
+    }
+    let seedNum = Math.abs(hash) || 1;
+    const seededRandom = () => {
+      const x = Math.sin(seedNum++) * 10000;
+      return x - Math.floor(x);
+    };
+
+    const indices = opts.map((_, i) => i);
+    const shuffled = [...indices];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(seededRandom() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled.map(idx => opts[idx]);
+  }, [currentQuestion, engineSession?.sessionId]);
+
   const handleAnswer = (option) => {
     if (selectedOption || engineSession?.isPaused) return;
     const currentQuestion = questions[currentIndex];
@@ -170,7 +195,6 @@ export default function QuizPlayer({ state, onLeave }) {
   // 🎉 CELEBRATION PROTOCOL
   useEffect(() => {
     if (finished) {
-        // playTuckSound(); // Replaced by session success sound
         playSessionSound('success');
         const duration = 3 * 1000;
         const end = Date.now() + duration;
@@ -200,7 +224,7 @@ export default function QuizPlayer({ state, onLeave }) {
   }, [finished]);
 
   const scoreboard = useMemo(() => {
-     const list = (participants || []).map(p => {
+     const rawList = (participants || []).map(p => {
         // HARDWIRE: Prevent UI identity bleeding
         const isActuallyYou = engineSession?.role === 'HOST' ? p?.role === 'HOST' : p?.userId === engineSession?.userId;
         const isOffline = p?.isOnline === false || p?.status === 'offline';
@@ -214,15 +238,32 @@ export default function QuizPlayer({ state, onLeave }) {
         };
      });
      
-     if (!list.find(p => p.isYou)) {
-        list.push({ 
+     if (!rawList.find(p => p.isYou)) {
+        rawList.push({ 
             userId: engineSession?.userId || 'temp',
-            userName: engineSession?.userName || 'You', 
-            displayName: `${engineSession?.userName || 'You'} (You)`,
+            userName: engineSession?.userName || 'Quiz Master', 
+            displayName: `${engineSession?.userName || 'Quiz Master'} (You)`,
             score, progress: currentIndex, role: engineSession?.role, isYou: true, isOnline: true,
             status: finished ? 'DONE' : 'ACTIVE'
         });
      }
+
+     const seen = new Set();
+     let hostSeen = false;
+     const list = [];
+
+     for (const item of rawList) {
+        if (!item || item.isOnline === false || item.status === 'offline' || item.status === 'LEFT' || item.status === 'KICKED' || item.status === 'AWAY') continue;
+        const key = item.userId || item.userName;
+        if (item.role === 'HOST') {
+           if (hostSeen) continue;
+           hostSeen = true;
+        }
+        if (seen.has(key)) continue;
+        seen.add(key);
+        list.push(item);
+     }
+
      return list.sort((a,b) => (b.score || 0) - (a.score || 0));
   }, [participants, engineSession, score, currentIndex, questionLimit, finished]);
 
@@ -276,34 +317,34 @@ export default function QuizPlayer({ state, onLeave }) {
       
       {/* 📡 HUD: Mobile Only */}
       {!finished && (
-          <div className="flex lg:hidden bg-slate-900 rounded-3xl p-3 shadow-xl border border-slate-800 items-center gap-4 overflow-x-auto custom-scrollbar-hide h-[80px] w-full max-w-full">
-             <div className="flex-shrink-0 bg-indigo-600 p-3 rounded-2xl flex flex-col items-center justify-center min-w-[80px]">
+          <div className="flex lg:hidden bg-slate-900 rounded-3xl p-3 shadow-xl border border-slate-800 items-center gap-3 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden h-[80px] w-full max-w-full">
+             <div className="flex-shrink-0 bg-indigo-600 p-2.5 rounded-2xl flex flex-col items-center justify-center min-w-[76px]">
                 <p className="text-[7px] font-black text-indigo-200 uppercase tracking-widest">Squadron</p>
                 <div className="flex items-baseline gap-1">
-                   <span className="text-xl font-black text-white">{scoreboard.length}</span>
+                   <span className="text-lg font-black text-white">{scoreboard.length}</span>
                    <span className="text-[8px] text-indigo-300 font-bold uppercase">Ops</span>
                 </div>
              </div>
              {engineSession?.role !== 'HOST' && (
                  <button 
                     onClick={onLeave}
-                    className="flex-shrink-0 bg-red-600/10 text-red-500 border border-red-500/20 px-4 py-3 rounded-xl flex flex-col items-center justify-center min-w-[70px] hover:bg-red-600 hover:text-white transition-all group"
+                    className="flex-shrink-0 bg-red-600/10 text-red-500 border border-red-500/20 px-3 py-2.5 rounded-xl flex flex-col items-center justify-center min-w-[64px] hover:bg-red-600 hover:text-white transition-all group"
                  >
-                    <span className="text-sm group-hover:scale-110 transition-transform">🛫</span>
-                    <span className="text-[7px] font-black uppercase mt-1">Leave</span>
+                    <span className="text-xs group-hover:scale-110 transition-transform">🛫</span>
+                    <span className="text-[7px] font-black uppercase mt-0.5">Leave</span>
                  </button>
              )}
-             <div className="flex items-center gap-3 pr-4">
+             <div className="flex items-center gap-2.5 pr-2">
                 {scoreboard.map(p => (
-                   <div key={p.userId || p.userName} className={`flex-shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/5 ${p.isYou ? 'bg-indigo-500/10 border-indigo-500/20' : ''}`}>
-                      <div className={`relative w-8 h-8 rounded-lg flex items-center justify-center font-black text-[10px] ${
+                   <div key={p.userId || p.userName} className={`flex-shrink-0 flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-white/5 border border-white/5 ${p.isYou ? 'bg-indigo-500/10 border-indigo-500/20' : ''}`}>
+                      <div className={`relative w-7 h-7 rounded-lg flex items-center justify-center font-black text-[10px] ${
                          p.role === 'HOST' ? 'bg-indigo-600 text-white' : 'bg-slate-700 text-slate-300'
                       }`}>
                          {p.userName?.[0] || '?'}
                          {p.status === 'LEFT' && <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 border-2 border-slate-900 rounded-full" />}
                       </div>
-                      <div className="min-w-[60px]">
-                         <p className={`text-[9px] font-black uppercase tracking-widest truncate max-w-[60px] ${p.isYou ? 'text-indigo-400' : 'text-white'}`}>
+                      <div className="min-w-[55px]">
+                         <p className={`text-[9px] font-black uppercase tracking-widest truncate max-w-[55px] ${p.isYou ? 'text-indigo-400' : 'text-white'}`}>
                             {(p.userName || 'Operator').split('_')[0]}
                          </p>
                          <StatusBadge status={p.status} />
@@ -333,7 +374,7 @@ export default function QuizPlayer({ state, onLeave }) {
                      <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-center md:text-left">Squadron Standings</h3>
                      <div className="bg-slate-50 rounded-2xl border border-slate-100 p-3 space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar">
                          {scoreboard.map((p, i) => (
-                             <div key={i} className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all ${
+                             <div key={p.userId || i} className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all ${
                                  p.isYou ? 'bg-white border-indigo-600 shadow-md' : 'bg-white border-slate-100'
                              }`}>
                                  <div className="flex items-center gap-3">
@@ -347,9 +388,29 @@ export default function QuizPlayer({ state, onLeave }) {
                                          </div>
                                      </div>
                                  </div>
-                                 <div className="text-right">
-                                     <p className="text-lg font-black text-indigo-700">{p.score}</p>
-                                     <p className="text-[8px] font-black text-slate-300 uppercase">PTS</p>
+                                 <div className="flex items-center gap-3">
+                                     <div className="text-right">
+                                         <p className="text-lg font-black text-indigo-700">{p.score}</p>
+                                         <p className="text-[8px] font-black text-slate-300 uppercase">PTS</p>
+                                     </div>
+                                     {engineSession?.role === 'HOST' && !p.isYou && p.role !== 'HOST' && (
+                                         <button 
+                                             onClick={() => {
+                                                 const actionLabel = (p.status === 'LEFT' || p.isOnline === false) ? 'Remove' : 'Kick';
+                                                 if (window.confirm(`${actionLabel} ${p.userName || 'player'}?`)) {
+                                                     socketService.getSocket()?.emit('HOST_ACTION', {
+                                                         sessionId: engineSession.sessionId,
+                                                         action: 'KICK_PARTICIPANT',
+                                                         payload: { userId: p.userId, purge: true }
+                                                     });
+                                                 }
+                                             }}
+                                             className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all text-xs font-black shadow-sm"
+                                             title="Remove or kick participant"
+                                         >
+                                             ✖
+                                         </button>
+                                     )}
                                  </div>
                              </div>
                          ))}
@@ -368,16 +429,16 @@ export default function QuizPlayer({ state, onLeave }) {
               )}
           </div>
       ) : (
-         <div className="space-y-12">
+         <div className="space-y-6 sm:space-y-12">
             {state.timeLimit > 0 && (
                 <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
                     <div className={`h-full transition-all duration-1000 ${timeLeft < 5 ? 'bg-red-500 animate-pulse' : 'bg-indigo-600'}`} style={{ width: `${(timeLeft / state.timeLimit) * 100}%` }} />
                 </div>
             )}
-            <div className="flex items-center justify-between gap-6 px-2">
-               <div className="space-y-2">
-                  <div className="flex items-center gap-4">
-                      <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase">{state.missionName}</h2>
+            <div className="flex items-center justify-between gap-4 px-2">
+               <div className="space-y-1">
+                  <div className="flex items-center gap-3">
+                      <h2 className="text-xl sm:text-3xl font-black text-slate-900 tracking-tighter uppercase">{state.missionName}</h2>
                       {engineSession?.role !== 'HOST' && (
                           <button 
                             onClick={onLeave}
@@ -389,9 +450,9 @@ export default function QuizPlayer({ state, onLeave }) {
                       )}
                   </div>
                   <div className="flex items-center gap-3">
-                     <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Tactical Assessment</p>
+                     <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Tactical Assessment</p>
                      {state.timeLimit > 0 && (
-                        <div className={`px-3 py-1 rounded-lg text-[10px] font-black flex items-center gap-2 ${timeLeft < 5 ? 'bg-red-600 text-white' : 'bg-slate-900 text-slate-300'}`}>
+                        <div className={`px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-lg text-[10px] font-black flex items-center gap-2 ${timeLeft < 5 ? 'bg-red-600 text-white' : 'bg-slate-900 text-slate-300'}`}>
                            <span className={timeLeft < 5 ? 'animate-bounce' : ''}>⏳</span>
                            {timeLeft}s REMAINING
                         </div>
@@ -399,15 +460,15 @@ export default function QuizPlayer({ state, onLeave }) {
                   </div>
                </div>
                <div className="text-right">
-                  <p className="text-2xl font-black text-indigo-700 tabular-nums">{currentIndex + 1} <span className="text-slate-200 text-lg">/ {questionLimit}</span></p>
+                  <p className="text-xl sm:text-2xl font-black text-indigo-700 tabular-nums">{currentIndex + 1} <span className="text-slate-200 text-base sm:text-lg">/ {questionLimit}</span></p>
                </div>
             </div>
-            <div className="bg-slate-50 rounded-[2.5rem] border border-slate-200 p-8 md:p-14 text-center space-y-10">
+            <div className="bg-slate-50 rounded-2xl sm:rounded-[2.5rem] border border-slate-200 p-4 sm:p-8 md:p-14 text-center space-y-6 sm:space-y-10">
                <h3 className="text-xl md:text-3xl font-black text-slate-900 leading-[1.4] tracking-tight max-w-4xl mx-auto">
                   {questions[currentIndex]?.text}
                </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-5xl mx-auto">
-                   {(questions[currentIndex]?.options || []).map((opt, i) => {
+                   {shuffledCurrentOptions.map((opt, i) => {
                       const isSelected = selectedOption === opt;
                       const isCorrectAnswer = opt === questions[currentIndex]?.correctAnswer;
                       

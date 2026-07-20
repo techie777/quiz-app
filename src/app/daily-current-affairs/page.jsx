@@ -115,6 +115,7 @@ export default function DailyCurrentAffairsPage() {
   const [hasMore, setHasMore] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [hasMounted, setHasMounted] = useState(false);
+  const [showPdfPreview, setShowPdfPreview] = useState(false);
 
   // Group items by date uniquely
   const groupedItems = useMemo(() => {
@@ -341,103 +342,112 @@ export default function DailyCurrentAffairsPage() {
       const ctx = canvas.getContext('2d');
       
       // Set canvas size
-      canvas.width = 800;
-      canvas.height = 800;
+      canvas.width = 1080;
+      canvas.height = 1080;
       
-      // Background gradient
-      const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      gradient.addColorStop(0, '#f8fafc');
-      gradient.addColorStop(1, '#e2e8f0');
-      ctx.fillStyle = gradient;
+      // Create premium gradient background (like the card)
+      const grd = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+      grd.addColorStop(0, '#f0f9ff'); // soft light blue
+      grd.addColorStop(1, '#e0f2fe'); // deeper light blue
+      ctx.fillStyle = grd;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      // Website header
+
+      // Top banner with Hindi/English title
       ctx.fillStyle = '#3b82f6';
-      ctx.fillRect(0, 0, canvas.width, 100);
-      
-      // Tagline
-      ctx.font = '16px Arial';
-      ctx.fillText(t('ca.shareTagline'), 40, 75);
-      
-      // Current affairs badge
+      ctx.fillRect(0, 0, canvas.width, 160);
       ctx.fillStyle = '#1e40af';
-      ctx.fillRect(canvas.width - 200, 20, 160, 60);
+      ctx.fillRect(canvas.width - 200, 50, 160, 60);
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 18px Arial';
-      ctx.fillText(isHindi ? "दैनिक" : 'Daily Current', canvas.width - 180, 45);
-      ctx.fillText(isHindi ? "जानकारी" : 'Affairs', canvas.width - 180, 65);
+      ctx.font = 'bold 36px "Outfit", sans-serif';
+      ctx.fillText(isHindi ? "दैनिक" : "Daily", canvas.width - 170, 80);
+      ctx.fillText(isHindi ? "जानकारी" : "Briefing", canvas.width - 170, 100);
+
+      // Draw Main White Card Content Box
+      ctx.shadowColor = 'rgba(15, 23, 42, 0.08)';
+      ctx.shadowBlur = 40;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 20;
       
-      // Main card area
       ctx.fillStyle = '#ffffff';
-      ctx.strokeStyle = '#e2e8f0';
-      ctx.lineWidth = 2;
-      roundRect(ctx, 40, 130, canvas.width - 80, 400, 16);
+      roundRect(ctx, 80, 220, canvas.width - 160, canvas.height - 380, 30);
       ctx.fill();
-      ctx.stroke();
       
-      // Date in card
-      ctx.fillStyle = '#64748b';
-      ctx.font = 'bold 18px Arial';
-      ctx.fillText(formatDate(item.date), 60, 165);
-      
-      // Category badge if exists
-      if (item.category) {
-        ctx.fillStyle = chipStyle(item.category).background;
-        ctx.fillRect(60, 180, 120, 30);
-        ctx.fillStyle = chipStyle(item.category).color;
-        ctx.font = '14px Arial';
-        ctx.fillText(item.category, 70, 200);
-      }
-      
-      // Title in card
+      // Top blue border on the card
+      const accentGrd = ctx.createLinearGradient(80, 220, canvas.width - 80, 220);
+      accentGrd.addColorStop(0, '#38bdf8');
+      accentGrd.addColorStop(1, '#3b82f6');
+      ctx.fillStyle = accentGrd;
+      roundRect(ctx, 80, 220, canvas.width - 160, 16, 30);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(80, 236, canvas.width - 160, 20); // Cover bottom curve of the top border
+
+      // Reset shadow for text
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+
+      // Draw Date Pill
+      ctx.fillStyle = '#e0f2fe'; // var(--bg-secondary)
+      roundRect(ctx, 140, 280, 240, 50, 12);
+      ctx.fill();
       ctx.fillStyle = '#1e293b';
-      ctx.font = 'bold 26px Arial';
-      const titleLines = wrapText(ctx, item.heading, canvas.width - 120);
-      let yPos = 250;
-      titleLines.slice(0, 3).forEach(line => {
-        ctx.fillText(line, 60, yPos);
-        yPos += 35;
-      });
+      ctx.font = 'bold 24px "Outfit", sans-serif';
+      ctx.fillText(`📅 ${formatDate(item.date)}`, 160, 314);
       
-      // Description in card
-      ctx.fillStyle = '#475569';
-      ctx.font = '18px Arial';
-      const descLines = item.description.split('\n').slice(0, 3);
-      yPos += 20;
-      descLines.forEach(line => {
-        const wrappedLines = wrapText(ctx, line, canvas.width - 120);
-        wrappedLines.slice(0, 2).forEach(wrappedLine => {
-          ctx.fillText(wrappedLine, 60, yPos);
-          yPos += 28;
-        });
-      });
-      
-      // Bottom info section
-      ctx.fillStyle = '#ffffff';
-      ctx.strokeStyle = '#e2e8f0';
-      ctx.lineWidth = 2;
-      roundRect(ctx, 40, 550, canvas.width - 80, 120, 16);
+      // Draw Category Pill (next to Date)
+      ctx.fillStyle = '#e0f2fe';
+      roundRect(ctx, 400, 280, 300, 50, 12);
       ctx.fill();
-      ctx.stroke();
+      ctx.fillStyle = '#0284c7';
+      ctx.font = 'bold 22px "Outfit", sans-serif';
+      ctx.fillText(`${getCategoryIcon(item.category)} ${item.category.toUpperCase()}`, 420, 314);
+
+      // Draw Quote mark
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.15)';
+      ctx.font = 'bold 160px "Georgia", serif';
+      ctx.fillText('“', 140, 420);
+
+      // Draw Heading
+      ctx.fillStyle = '#0f172a';
+      ctx.font = 'bold 44px "Outfit", sans-serif';
+      const headingText = isHindi && item.headingHi ? item.headingHi : item.heading;
+      const headingLines = wrapText(ctx, headingText, canvas.width - 280);
+      let yPos = 460;
+      headingLines.slice(0, 3).forEach(line => {
+        ctx.fillText(line, 140, yPos);
+        yPos += 60;
+      });
+
+      // Draw Description
+      ctx.fillStyle = '#475569';
+      ctx.font = '28px "Inter", sans-serif';
+      const descText = isHindi && item.descriptionHi ? item.descriptionHi : item.description;
+      const descLines = wrapText(ctx, descText.substring(0, 300) + '...', canvas.width - 280);
+      yPos += 30;
+      descLines.slice(0, 5).forEach(line => {
+        ctx.fillText(line, 140, yPos);
+        yPos += 45;
+      });
+
+      // Bottom info section (Footer)
+      ctx.fillStyle = '#ffffff';
+      roundRect(ctx, 80, canvas.height - 140, canvas.width - 160, 100, 20);
+      ctx.fill();
       
-      // Website info
+      // Website info text
       ctx.fillStyle = '#3b82f6';
-      ctx.font = 'bold 20px Arial';
-      ctx.fillText(t('ca.readMore'), 60, 590);
+      ctx.font = 'bold 28px "Outfit", sans-serif';
+      ctx.fillText(isHindi ? 'क्विज़वेब पर अधिक दैनिक समसामयिकी पढ़ें' : 'Read more Daily Current Affairs on QuizWeb', 120, canvas.height - 90);
       
       ctx.fillStyle = '#64748b';
-      ctx.font = '16px Arial';
-      ctx.fillText(t('ca.subtitle'), 60, 615);
+      ctx.font = '20px "Inter", sans-serif';
+      ctx.fillText(isHindi ? 'नवीनतम राष्ट्रीय और अंतर्राष्ट्रीय विकास के साथ अपडेट रहें।' : 'Stay updated with the latest national and international developments.', 120, canvas.height - 60);
       
-      // Website URL
+      // Website URL link
       ctx.fillStyle = '#1e40af';
-      ctx.font = 'bold 18px Arial';
-      ctx.fillText(`🌐 ${window.location.host}`, 60, 645);
-      
-      // Footer
-      ctx.fillStyle = '#94a3b8';
-      ctx.font = '14px Arial';
-      ctx.fillText(`Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`, 60, 780);
+      ctx.font = 'bold 24px "Outfit", sans-serif';
+      ctx.fillText(`🌐 ${window.location.host}`, canvas.width - 340, canvas.height - 75);
       
       // Convert to blob and share
       canvas.toBlob(async (blob) => {
@@ -531,11 +541,9 @@ export default function DailyCurrentAffairsPage() {
     };
   };
 
-  const WallCurrentAffairCard = ({ item, isRead, isFav, toggleFav, handleReadMore, handleShare, isPro, caCount, maxFree }) => {
-    const [localLang, setLocalLang] = useState("EN");
-    
-    const displayHeading = localLang === "HI" && item.headingHi ? item.headingHi : item.heading;
-    const displayDesc = localLang === "HI" && item.descriptionHi ? item.descriptionHi : item.description;
+  const WallCurrentAffairCard = ({ item, isRead, isFav, toggleFav, handleReadMore, handleShare, isPro, caCount, maxFree, isHindi }) => {
+    const displayHeading = isHindi && item.headingHi ? item.headingHi : item.heading;
+    const displayDesc = isHindi && item.descriptionHi ? item.descriptionHi : item.description;
 
     return (
       <motion.div 
@@ -543,40 +551,42 @@ export default function DailyCurrentAffairsPage() {
         className={styles.wallCard}
         layout
       >
-        <div className={styles.actionBadge}>
-          <button 
-             onClick={(e) => { e.stopPropagation(); setLocalLang(localLang === "EN" ? "HI" : "EN"); }} 
-             className={styles.badgeBtn}
-          >
-            {localLang}
-          </button>
-          <button 
-             onClick={(e) => { e.stopPropagation(); toggleFav(item.id); }} 
-             className={styles.badgeBtn}
-          >
-            {isFav ? "❤️" : "🤍"}
-          </button>
-        </div>
-
-        <div 
-          className={`${styles.wallCardContent} ${item.image ? styles.wallCardContentWithImg : ''}`}
-          style={item.image ? { backgroundImage: `linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 100%), url('${item.image}')` } : {}}
-          onClick={() => handleReadMore(item)}
-        >
+        <div className={styles.wallCardContent} style={item.image ? { backgroundImage: `linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 100%), url('${item.image}')` } : {}} onClick={() => handleReadMore(item)}>
+           <div className={styles.actionBadge}>
+             <button onClick={(e) => { e.stopPropagation(); toggleFav(item.id); }} className={styles.badgeBtn} title="Favourite">{isFav ? "❤️" : "🤍"}</button>
+             <button onClick={(e) => { e.stopPropagation(); handleShare(item); }} className={styles.badgeBtn} title="Share" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--text-secondary)' }}><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+             </button>
+           </div>
+           
            <div className={styles.quoteWrapper}>
              <span className={styles.quoteMark}>“</span>
              <h3 className={styles.bigCardText}>{displayHeading}</h3>
+             <div className={styles.cardDatePill}>
+               <span className={styles.calendarIcon}>📅</span> {formatDate(item.date)}
+             </div>
            </div>
+           
+           <p className={styles.cardSummary}>{displayDesc}</p>
+
+           {item.oneLiner && (
+             <div style={{ padding: '8px 12px', background: 'var(--accent-light)', borderLeft: '3px solid var(--accent)', borderRadius: '4px', fontSize: '0.85rem', marginBottom: '1rem', color: 'var(--accent-dark)', fontWeight: '500' }}>
+               <strong>💡 One-Liner:</strong> {item.oneLiner}
+             </div>
+           )}
            
            <div className={styles.cardFooter}>
              <span className={styles.cardCategory}>{getCategoryIcon(item.category)} {item.category}</span>
              <div className="flex gap-2 items-center">
                 {isRead && <span className="text-[10px] bg-emerald-500/80 text-white px-2 py-0.5 rounded-full font-bold">READ</span>}
                 <button 
-                  onClick={(e) => { e.stopPropagation(); handleShare(item); }}
-                  className="p-1.5 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+                  className={styles.playQuizBtnSmall}
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    router.push(`/daily/daily-current-affairs?date=${item.date}`);
+                  }}
                 >
-                  📤
+                  ▶ Play Quiz
                 </button>
              </div>
            </div>
@@ -665,6 +675,7 @@ export default function DailyCurrentAffairsPage() {
               <span className={styles.sideText}>{c}</span>
             </button>
           ))}
+          
         </aside>
 
         <section className={styles.content}>
@@ -695,7 +706,7 @@ export default function DailyCurrentAffairsPage() {
                   >
                     <div className={styles.dateHeader}>
                       <span className={styles.dateHeaderIcon}>📅</span>
-                      <span className={styles.dateHeaderText}>{t('ca.dateHeader').replace('{date}', formatDate(date))}</span>
+                      <span className={styles.dateHeaderText}>Current affairs / One liner / MCQ + Play Quiz</span>
                       <div className={styles.dateHeaderLine}></div>
                     </div>
                     
@@ -712,6 +723,7 @@ export default function DailyCurrentAffairsPage() {
                           isPro={isPro}
                           caCount={useCounts.ca}
                           maxFree={maxFreeReads}
+                          isHindi={isHindi}
                         />
                       ))}
                     </motion.div>
@@ -735,6 +747,79 @@ export default function DailyCurrentAffairsPage() {
             </div>
           )}
         </section>
+
+        {/* Right Sidebar for Archives */}
+        <aside className={styles.rightSidebar}>
+          <div className={styles.sidebarTitle}>{isHindi ? "पुराने अपडेट्स (Archives)" : "Archives"}</div>
+          
+          <button
+            className={`${styles.sideItem} ${!selectedMonth && selectedDate === getTodayDateString() ? styles.sideActive : ""}`}
+            onClick={() => {
+              setSelectedMonth("");
+              setSelectedDate(getTodayDateString());
+            }}
+          >
+            <span className={styles.sideIcon}>📅</span>
+            <span className={styles.sideText}>{isHindi ? "आज के अपडेट्स" : "Today's Updates"}</span>
+          </button>
+
+          <div style={{ marginTop: '1.5rem', marginBottom: '0.75rem' }} className={styles.sidebarTitle}>
+            {isHindi ? "महीने के अनुसार" : "Month-Wise"}
+          </div>
+
+          {months.length > 0 ? months.map((m) => {
+            const [y, mo] = m.split("-");
+            const dateObj = new Date(Number(y), Number(mo) - 1, 1);
+            const label = dateObj.toLocaleDateString(isHindi ? 'hi-IN' : 'en-US', { month: 'long', year: 'numeric' });
+            
+            return (
+              <button
+                key={m}
+                className={`${styles.sideItem} ${selectedMonth === m ? styles.sideActive : ""}`}
+                onClick={() => {
+                  setSelectedDate("");
+                  setSelectedMonth(m);
+                }}
+              >
+                <span className={styles.sideIcon}>📁</span>
+                <span className={styles.sideText}>{label}</span>
+              </button>
+            );
+          }) : (
+            <div className={styles.empty} style={{ fontSize: '0.85rem', padding: '1rem', textAlign: 'center' }}>
+              {isHindi ? "कोई पुराना डेटा नहीं" : "No archives found"}
+            </div>
+          )}
+
+          {/* Monthly Archive Section / PDF Generation */}
+          <div className={styles.monthlyArchive}>
+            <div className={styles.monthlyArchiveTitle}>
+              <span>📊</span>
+              <span>{isHindi ? "मंथली इनसाइट्स" : "Monthly Insights"}</span>
+            </div>
+            
+            <div className={styles.progressIndicator}>
+              <div className={styles.progressLabel}>
+                <span>{isHindi ? "डेटा संग्रहण" : "Data Accumulation"}</span>
+                <span>{Math.round((items.length / 100) * 100)}%</span>
+              </div>
+              <div className={styles.progressBar}>
+                <div 
+                  className={styles.progressFill} 
+                  style={{ width: `${Math.min((items.length / 100) * 100, 100)}%` }}
+                ></div>
+              </div>
+            </div>
+            
+            <button 
+              className={styles.generatePdfBtn}
+              onClick={() => setShowPdfPreview(true)}
+            >
+              <span>📄</span>
+              <span>{isHindi ? "PDF रिपोर्ट जनरेट करें" : "Generate PDF Report"}</span>
+            </button>
+          </div>
+        </aside>
       </div>
 
       {reading && (
@@ -747,73 +832,47 @@ export default function DailyCurrentAffairsPage() {
                 onClick={navigateToPrevious}
                 disabled={items.findIndex(item => item.id === reading?.id) === 0}
               >
-                ← {t('ca.prev')}
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                {t('ca.prev')}
               </button>
               
               <div className={styles.navInfo}>
                 <span>{items.findIndex(item => item.id === reading?.id) + 1} / {items.length}</span>
               </div>
               
-              <button 
-                className={styles.navButton}
-                onClick={navigateToNext}
-                disabled={items.findIndex(item => item.id === reading?.id) === items.length - 1}
-              >
-                {t('ca.next')} →
-              </button>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button 
+                  className={styles.navButton}
+                  onClick={navigateToNext}
+                  disabled={items.findIndex(item => item.id === reading?.id) === items.length - 1}
+                >
+                  {t('ca.next')}
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                  </svg>
+                </button>
+                <button className={styles.navCloseBtn} onClick={() => setReading(null)} title="Close">
+                  ✕
+                </button>
+              </div>
             </div>
 
-            {/* Top Row */}
-            <div className={styles.modalTopRow}>
-              <div className={styles.modalDateTime}>
-                <span className={styles.day}>
-                  {new Date(reading.date).toLocaleDateString('en-US', { weekday: 'long' })}
-                </span>
-                <span className={styles.date}>
-                  {formatDate(reading.date)}
-                </span>
-                <span className={styles.time}>
-                  {new Date(reading.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                </span>
-              </div>
-              
-              <div className={styles.modalMetaWithActions}>
-                <div className={styles.modalMetaLeft}>
-                  <span className={styles.postedBy}>{t('ca.postedBy')}: Admin</span>
-                  <span className={styles.metaSeparator}>•</span>
-                  {reading.category && (
-                    <>
-                      <span className={styles.chip} style={chipStyle(reading.category)}>
-                        {reading.category}
-                      </span>
-                      <span className={styles.metaSeparator}>•</span>
-                    </>
-                  )}
-                  {readItems.has(reading.id) && (
-                    <>
-                      <span className={styles.readIndicator}>✓ {t('ca.read')}</span>
-                      <span className={styles.metaSeparator}>•</span>
-                    </>
-                  )}
-                  {!isPro && useCounts.ca < maxFreeReads && (
-                    <span className={styles.freeReadsBadge}>
-                      {maxFreeReads - useCounts.ca} free left
-                    </span>
-                  )}
-                </div>
-                <div className={styles.modalActions}>
-                  <button className={styles.actionButton} onClick={() => handleShare(reading)} title="Share">
-                    📤
-                  </button>
-                  <button className={styles.actionButton} onClick={() => toggleFav(reading.id)} title="Favourite">
-                    {favIds.has(reading.id) ? "❤️" : "🤍"}
-                  </button>
-                  <button className={styles.actionButton} onClick={() => setReading(null)} title="Close">
-                    ✕
-                  </button>
-                </div>
+            {/* Desktop Absolute Close Button */}
+            <button className={`${styles.absoluteCloseBtn} ${styles.desktopOnly}`} onClick={() => setReading(null)} title="Close">
+              ✕
+            </button>
+
+            {/* Top Row: Compact Date */}
+            <div className={styles.modalHeaderCompact}>
+              <div className={styles.compactDate}>
+                <span className={styles.compactDateIcon}>📅</span>
+                {formatDate(reading.date)}
               </div>
             </div>
+
+
 
             {/* Content Area */}
             <div className={styles.modalContent}>
@@ -844,7 +903,10 @@ export default function DailyCurrentAffairsPage() {
                 onClick={navigateToPrevious}
                 disabled={items.findIndex(item => item.id === reading?.id) === 0}
               >
-                ← Previous
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                Previous
               </button>
               
               <div className={styles.navInfo}>
@@ -856,7 +918,10 @@ export default function DailyCurrentAffairsPage() {
                 onClick={navigateToNext}
                 disabled={items.findIndex(item => item.id === reading?.id) === items.length - 1}
               >
-                Next →
+                Next
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
               </button>
             </div>
           </div>
@@ -877,6 +942,59 @@ export default function DailyCurrentAffairsPage() {
                 Dismiss
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* PDF Preview Mockup */}
+      {showPdfPreview && (
+        <div className={styles.pdfPreviewWrapper}>
+          <div className={styles.pdfPreview}>
+            <button 
+              className={styles.pdfPreviewClose}
+              onClick={() => setShowPdfPreview(false)}
+            >
+              ✕
+            </button>
+            
+            <div className={styles.pdfPreviewHeader}>
+              <div className={styles.pdfPreviewIcon}>📄</div>
+              <div className={styles.pdfPreviewTitle}>Monthly Report Preview</div>
+            </div>
+            
+            <div className={styles.pdfPreviewContent}>
+              <div className={styles.pdfPreviewSection}>
+                <div className={styles.pdfPreviewSectionTitle}>Daily News</div>
+                <div className={styles.pdfPreviewSectionText}>
+                  Curated headlines and summaries from {formatDate(selectedDate || getTodayDateString())}
+                </div>
+              </div>
+              
+              <div className={styles.pdfPreviewSection}>
+                <div className={styles.pdfPreviewSectionTitle}>Quick One-Liners</div>
+                <div className={styles.pdfPreviewSectionText}>
+                  Bite-sized facts for rapid revision and memorization
+                </div>
+              </div>
+              
+              <div className={styles.pdfPreviewSection}>
+                <div className={styles.pdfPreviewSectionTitle}>MCQ Practice</div>
+                <div className={styles.pdfPreviewSectionText}>
+                  Interactive quiz questions to test your knowledge
+                </div>
+              </div>
+            </div>
+            
+            <a 
+              href={exportHref} 
+              target="_blank" 
+              rel="noreferrer"
+              className={styles.generatePdfBtn}
+              style={{ marginTop: '1rem' }}
+            >
+              <span>⬇️</span>
+              <span>Download Full PDF</span>
+            </a>
           </div>
         </div>
       )}

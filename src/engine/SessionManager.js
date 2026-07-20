@@ -20,6 +20,16 @@ export default function SessionManager({ sessionId }) {
   const adminContext = useAdmin();
   const adminUser = adminContext?.adminUser;
   const { data: authSession, status: authStatus } = useSession();
+  const [authReady, setAuthReady] = useState(false);
+
+  useEffect(() => {
+    if (authStatus !== 'loading') {
+      setAuthReady(true);
+    } else {
+      const timer = setTimeout(() => setAuthReady(true), 800);
+      return () => clearTimeout(timer);
+    }
+  }, [authStatus]);
 
   // STABLE STATE DECLARATIONS
   const [mounted, setMounted] = useState(false);
@@ -55,13 +65,14 @@ export default function SessionManager({ sessionId }) {
     console.log(`[MANAGER HOOK] Connection Check:`, {
         mounted,
         authStatus,
+        authReady,
         connectionStatus,
         socketId: socket?.id,
         hasSession: !!session
     });
     // -----------------------
 
-    if (!mounted || authStatus === 'loading' || connectionStatus !== 'connected' || !socket?.id) {
+    if (!mounted || (!authReady && authStatus === 'loading') || connectionStatus !== 'connected' || !socket?.id) {
         console.log(`[MANAGER HOOK] Aborting early setup.`);
         return;
     }
@@ -88,7 +99,7 @@ export default function SessionManager({ sessionId }) {
     if (!isReadyToJoin && !hostParam) {
         // Just checking if we need to show the entry form or wait for NextAuth
         const savedName = localStorage.getItem(`quiz_callsign_${sessionId}`);
-        if (!savedName && authStatus === 'loading') {
+        if (!savedName && !authReady && authStatus === 'loading') {
              return; // Wait for NextAuth
         }
     }
@@ -173,7 +184,6 @@ export default function SessionManager({ sessionId }) {
           participants.forEach(p => {
               const prevP = prev.find(item => item.userId === p.userId);
               if (prevP && prevP.status !== p.status && p.status === 'LEFT') {
-                  toast(`${p.userName} has left the mission area.`, { icon: '🏃' });
                   playSessionSound('leave');
               }
           });
@@ -230,7 +240,9 @@ export default function SessionManager({ sessionId }) {
 
   const leadingPlayer = useMemo(() => {
     if (!participants || participants.length === 0) return null;
-    return [...participants].sort((a, b) => (b.score || 0) - (a.score || 0))[0];
+    const active = participants.filter(p => p.isOnline !== false && p.status !== 'offline' && p.status !== 'LEFT' && p.status !== 'KICKED' && p.status !== 'AWAY');
+    if (active.length === 0) return null;
+    return [...active].sort((a, b) => (b.score || 0) - (a.score || 0))[0];
   }, [participants]);
 
   const formatDuration = (seconds) => {
@@ -271,7 +283,7 @@ export default function SessionManager({ sessionId }) {
     });
   };
 
-  if (!mounted || authStatus === 'loading') {
+  if (!mounted || (!authReady && authStatus === 'loading')) {
       return (
           <div className="flex flex-col items-center justify-center p-40 animate-pulse text-slate-300">
               <span className="text-6xl">📡</span>
@@ -281,9 +293,9 @@ export default function SessionManager({ sessionId }) {
   }
 
   // 5. Termination UI with Countdown
-  if (session?.status === 'TERMINATED' || session?.status === 'EXPIRED' || session?.status === 'DISCONTINUED') {
+  if (session?.status === 'TERMINATED' || session?.status === 'EXPIRED' || session?.status === 'DISCONTINUED' || session?.status === 'KICKED') {
       const isExpired = session?.status === 'EXPIRED';
-      const isDismissed = session?.status === 'DISCONTINUED';
+      const isDismissed = session?.status === 'DISCONTINUED' || session?.status === 'KICKED';
 
       return (
           <div className="flex flex-col items-center justify-center p-8 bg-white/80 backdrop-blur-xl rounded-[3rem] shadow-2xl border border-white text-center space-y-8 animate-in zoom-in duration-500 max-w-xl mx-auto mt-10">

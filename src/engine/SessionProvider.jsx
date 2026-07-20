@@ -139,7 +139,13 @@ export function SessionProvider({ children, sessionId: propSessionId }) {
          };
 
          if (typeof window !== 'undefined' && newState.sessionId) {
-            sessionStorage.setItem('active_quiz_session', JSON.stringify(newState));
+            if (data.action === 'DISCONTINUED' || newState.status === 'DISCONTINUED' || newState.status === 'KICKED') {
+               localStorage.removeItem(`quiz_callsign_${newState.sessionId}`);
+               localStorage.removeItem(`quiz_uid_${newState.sessionId}`);
+               sessionStorage.removeItem('active_quiz_session');
+            } else {
+               sessionStorage.setItem('active_quiz_session', JSON.stringify(newState));
+            }
          }
          return newState;
       });
@@ -161,6 +167,11 @@ export function SessionProvider({ children, sessionId: propSessionId }) {
               console.warn('📡 [SECURITY] Identity missing from mission authorization. Evicting...');
               setSession(prev => ({ ...prev, status: 'DISCONTINUED' }));
               setLastEvent('STATE:DISCONTINUED');
+              if (typeof window !== 'undefined' && current.sessionId) {
+                  localStorage.removeItem(`quiz_callsign_${current.sessionId}`);
+                  localStorage.removeItem(`quiz_uid_${current.sessionId}`);
+                  sessionStorage.removeItem('active_quiz_session');
+              }
           }
       }
     });
@@ -177,7 +188,21 @@ export function SessionProvider({ children, sessionId: propSessionId }) {
     });
 
     s.on('PARTICIPANT_JOINED', (data) => {
-      toast.success(`${data.userName} ${t('live.toasts.joinedSquad')}`);
+      if (data?.userName) {
+        toast.success(`Guest ${data.userName} joined the room ✨`);
+      }
+    });
+
+    s.on('PARTICIPANT_LEFT', (data) => {
+      if (data?.userName) {
+        toast(`Guest ${data.userName} left the room 👋`, { icon: '🚪' });
+      }
+    });
+
+    s.on('PARTICIPANT_KICKED', (data) => {
+      if (data?.userName) {
+        toast.error(`Guest ${data.userName} was kicked out from the quiz room 🚫`);
+      }
     });
 
     s.on('SYNC_CHAT', (msgs) => {
@@ -230,8 +255,8 @@ export function SessionProvider({ children, sessionId: propSessionId }) {
        toast.success(t('live.toasts.launched'));
     } else if (lastEvent === 'STATE:CLEARANCE_DENIED' || lastEvent === 'STATE:WAITING_FOR_HOST') {
        toast(t('live.toasts.waitingForHost'));
-    } else if (lastEvent === 'STATE:DISCONTINUED') {
-       toast.error(t('live.toasts.dismissed'));
+    } else if (lastEvent === 'STATE:DISCONTINUED' || lastEvent === 'STATE:KICKED') {
+       toast.error("You have been kicked out from the quiz room by admin. 🚫", { duration: 5000 });
     } else if (lastEvent === 'STATE:PENDING_APPROVAL') {
        toast(t('live.toasts.waitingApproval'));
     } else if (lastEvent === 'STATE:APPROVED') {

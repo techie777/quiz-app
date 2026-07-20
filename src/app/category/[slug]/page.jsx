@@ -8,6 +8,7 @@ import { useData } from "@/context/DataContext";
 import { useQuiz } from "@/context/QuizContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { motion, AnimatePresence } from "framer-motion";
+import { Users } from "lucide-react";
 import toast from "react-hot-toast";
 import styles from "@/styles/CategorySets.module.css";
 import ResumeBanner from "@/components/ResumeBanner";
@@ -269,8 +270,8 @@ const SetCard = ({ set, t, isHindi, handlePlay, handleLivePlay, styles, isMix = 
           <span className={styles.playArrow}>&gt;</span>
         </button>
         <button className={styles.liveButtonStyle} onClick={() => handleLivePlay(set)}>
-          <span className={styles.liveDot}></span>
-          {t('quizzes.cards.playLive')}
+          <Users size={18} />
+          <span>{t('quizzes.cards.playLive')}</span>
         </button>
       </div>
 
@@ -353,11 +354,11 @@ export default function CategorySetsPage() {
   const { translateQuiz } = useQuiz();
 
   const TIMER_OPTIONS = useMemo(() => [
-    { label: t('quizzes.category.noTimer'), value: 0 },
+    { label: "No Timer", value: 0 },
     { label: "30s", value: 30 },
     { label: "60s", value: 60 },
     { label: "90s", value: 90 },
-  ], [isHindi]);
+  ], []);
 
   // Update document title dynamically
   useEffect(() => {
@@ -877,10 +878,24 @@ export default function CategorySetsPage() {
             {isMixMode && (
               <>
                 <div className={styles.settingGroup}>
-                  <label>📈 {isHindi ? 'प्रश्नों की संख्या' : 'Number of Questions'}</label>
+                  <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <span>📈 {isHindi ? 'प्रश्नों की संख्या' : 'Number of Questions'}</span>
+                    <span className={styles.sliderBadge}>⚡ {numQuestions} {isHindi ? 'प्रश्न' : 'Questions'}</span>
+                  </label>
+                  <div className={styles.sliderBox}>
+                    <input 
+                      type="range" 
+                      min="5" 
+                      max="100" 
+                      step="5" 
+                      value={numQuestions} 
+                      onChange={(e) => setNumQuestions(parseInt(e.target.value) || 10)} 
+                      className={styles.rangeSlider}
+                    />
+                  </div>
                   <div className={styles.tabRow}>
                     {[10, 20, 30, 50].map(n => (
-                      <button key={n} className={numQuestions === n ? styles.tabActive : ""} onClick={() => setNumQuestions(n)}>{n}</button>
+                      <button key={n} className={numQuestions === n ? styles.tabActiveEmerald : ""} onClick={() => setNumQuestions(n)}><span className={styles.tabIcon}>⚡</span> {n}</button>
                     ))}
                   </div>
                 </div>
@@ -889,7 +904,7 @@ export default function CategorySetsPage() {
                   <label>📊 {isHindi ? 'कठिनाई स्तर' : 'Difficulty Level'}</label>
                   <div className={styles.tabRow}>
                     {["ALL", "EASY", "MEDIUM", "HARD"].map(d => (
-                      <button key={d} className={difficulty === d ? styles.tabActive : ""} onClick={() => setDifficulty(d)}>{isHindi ? (d === 'ALL' ? 'सभी' : (d === 'EASY' ? 'आसान' : (d === 'MEDIUM' ? 'मध्यम' : 'कठिन'))) : d}</button>
+                      <button key={d} className={difficulty === d ? styles.tabActiveAmber : ""} onClick={() => setDifficulty(d)}><span className={styles.tabIcon}>{d === 'ALL' ? '🌟' : (d === 'EASY' ? '🟢' : (d === 'MEDIUM' ? '🟡' : '🔴'))}</span> {isHindi ? (d === 'ALL' ? 'सभी' : (d === 'EASY' ? 'आसान' : (d === 'MEDIUM' ? 'मध्यम' : 'कठिन'))) : d}</button>
                     ))}
                   </div>
                 </div>
@@ -897,17 +912,17 @@ export default function CategorySetsPage() {
             )}
 
             <div className={styles.settingGroup}>
-              <label>{isHindi ? 'अंग्रेजी या हिंदी पसंद करेंगे?' : 'Prefer English or Hindi?'}</label>
+              <label>🌐 {isHindi ? 'अंग्रेजी या हिंदी पसंद करेंगे?' : 'Prefer English or Hindi?'}</label>
               <div className={styles.tabRow}>
-                <button className={language === "en" ? styles.tabActive : ""} onClick={() => setLanguage("en")}>English</button>
-                <button className={language === "hi" ? styles.tabActive : ""} onClick={() => setLanguage("hi")}>Hindi</button>
+                <button className={language === "en" ? styles.tabActiveCyan : ""} onClick={() => setLanguage("en")}><span className={styles.tabIcon}>🇬🇧</span> English</button>
+                <button className={language === "hi" ? styles.tabActiveCyan : ""} onClick={() => setLanguage("hi")}><span className={styles.tabIcon}>🇮🇳</span> Hindi</button>
               </div>
             </div>
 
             <div className={styles.settingGroup}>
-              <label>{isHindi ? 'अपनी गति निर्धारित करें (प्रति प्रश्न समय)' : 'Set your pace (Time per question)'}</label>
+              <label>⏱️ {isHindi ? 'अपनी गति निर्धारित करें (प्रति प्रश्न समय)' : 'Set your pace (Time per question)'}</label>
               <div className={styles.tabRow}>
-                {TIMER_OPTIONS.map(o => <button key={o.value} className={timer === o.value ? styles.tabActive : ""} onClick={() => setTimer(o.value)}>{o.label}</button>)}
+                {TIMER_OPTIONS.map(o => <button key={o.value} className={timer === o.value ? styles.tabActiveRuby : ""} onClick={() => setTimer(o.value)}><span className={styles.tabIcon}>{o.value === 0 ? '♾️' : '⌛'}</span> {o.label}</button>)}
               </div>
             </div>
 

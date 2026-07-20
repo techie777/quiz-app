@@ -1,12 +1,132 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useData } from "@/context/DataContext";
 import { useAdmin } from "@/context/AdminContext";
 import styles from "@/styles/AdminQuestions.module.css";
 import toast from "react-hot-toast";
+import Select from "react-select";
 
-const EMPTY_Q = { text: "", options: ["", "", "", ""], correctAnswer: "", difficulty: "easy", image: "" };
+// Pexels Image Picker Component
+function PexelsImagePicker({ onSelect, onClose }) {
+  const [query, setQuery] = useState("");
+  const [photos, setPhotos] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [searched, setSearched] = useState(false);
+
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    if (!query.trim()) return;
+    setLoading(true);
+    setSearched(true);
+    try {
+      const res = await fetch(`/api/admin/pexels?query=${encodeURIComponent(query.trim())}`);
+      const data = await res.json();
+      if (data.error) {
+        toast.error(data.error);
+        setPhotos([]);
+      } else {
+        setPhotos(data.photos || []);
+      }
+    } catch {
+      toast.error("Failed to fetch images from Pexels");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+      zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center'
+    }} onClick={onClose}>
+      <div style={{
+        background: 'var(--bg-primary, #fff)', borderRadius: '16px',
+        padding: '24px', width: '90%', maxWidth: '800px', maxHeight: '85vh',
+        overflow: 'auto', boxShadow: '0 25px 50px rgba(0,0,0,0.4)'
+      }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700 }}>🔍 Search Pexels Images</h3>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.4rem', cursor: 'pointer', color: 'var(--text-muted)' }}>✕</button>
+        </div>
+
+        <form onSubmit={handleSearch} style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+          <input
+            type="text"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="e.g. Eiffel Tower, Taj Mahal, Amazon logo..."
+            style={{
+              flex: 1, padding: '10px 16px', borderRadius: '10px',
+              border: '1.5px solid var(--card-border)', fontSize: '0.95rem',
+              background: 'var(--bg-secondary)', color: 'var(--text-primary)'
+            }}
+            autoFocus
+          />
+          <button type="submit" style={{
+            padding: '10px 22px', borderRadius: '10px', border: 'none',
+            background: 'var(--accent, #4f46e5)', color: 'white',
+            fontWeight: '700', cursor: 'pointer', fontSize: '0.95rem'
+          }} disabled={loading}>
+            {loading ? 'Searching...' : 'Search'}
+          </button>
+        </form>
+
+        {loading && (
+          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
+            ⏳ Fetching images from Pexels...
+          </div>
+        )}
+
+        {!loading && searched && photos.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
+            No images found. Try a different search term.
+          </div>
+        )}
+
+        {!loading && photos.length > 0 && (
+          <>
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px'
+            }}>
+              {photos.map(photo => (
+                <div
+                  key={photo.id}
+                  onClick={() => { onSelect(photo.url); onClose(); }}
+                  style={{
+                    cursor: 'pointer', borderRadius: '10px', overflow: 'hidden',
+                    border: '2px solid transparent', transition: 'all 0.2s',
+                    position: 'relative'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent, #4f46e5)'}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = 'transparent'}
+                >
+                  <img
+                    src={photo.thumb}
+                    alt={photo.alt || photo.photographer}
+                    style={{ width: '100%', height: '130px', objectFit: 'cover', display: 'block' }}
+                    loading="lazy"
+                  />
+                  <div style={{
+                    padding: '6px 8px', fontSize: '0.7rem',
+                    color: 'var(--text-muted)', background: 'var(--bg-secondary)'
+                  }}>
+                    📷 {photo.photographer}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '12px' }}>
+              Photos provided by <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>Pexels</a>
+            </p>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const EMPTY_Q = { text: "", options: ["", "", "", ""], correctAnswer: "", difficulty: "easy", image: "", explanation: "" };
 
 async function submitPending(type, payload) {
   const res = await fetch("/api/admin/pending", {
@@ -22,7 +142,7 @@ async function submitPending(type, payload) {
 }
 
 export default function AdminQuestionsPage() {
-  const { quizzes, addQuestion, updateQuestion, deleteQuestion, bulkDeleteQuestions } = useData();
+  const { quizzes, addQuestion, updateQuestion, deleteQuestion, bulkDeleteQuestions, refreshQuizzes } = useData();
   const { adminUser } = useAdmin();
   const isJr = adminUser?.role === "jr";
   const allowed = adminUser?.role === "master" || adminUser?.permissions?.questions !== false;
@@ -39,6 +159,9 @@ export default function AdminQuestionsPage() {
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
   const [showOnlyDupes, setShowOnlyDupes] = useState(false);
+  const [showPexelsPicker, setShowPexelsPicker] = useState(false);
+  const [catTab, setCatTab] = useState("quizzes");
+  const [catSearch, setCatSearch] = useState("");
 
   // Build flat list
   const allQuestions = useMemo(() => {
@@ -141,6 +264,7 @@ export default function AdminQuestionsPage() {
       correctAnswer: q.correctAnswer,
       difficulty: q.difficulty,
       image: q.image || "",
+      explanation: q.explanation || "",
     });
     setModalOpen(true);
   };
@@ -148,8 +272,8 @@ export default function AdminQuestionsPage() {
   const handleSave = async () => {
     console.log("[AdminQuestions] handleSave called", { editingQ: !!editingQ, formCatId });
     try {
-      if (!form.text.trim() || !form.correctAnswer || !formCatId) {
-        toast.error("Please fill in all required fields.");
+      if ((!form.text.trim() && !form.image) || !form.correctAnswer || !formCatId) {
+        toast.error("Please provide either question text or an image, along with category and answer.");
         return;
       }
       if (form.options.some((o) => !o.trim())) {
@@ -163,7 +287,8 @@ export default function AdminQuestionsPage() {
           options: form.options, 
           correctAnswer: form.correctAnswer, 
           difficulty: form.difficulty, 
-          image: form.image || null 
+          image: form.image || null,
+          explanation: form.explanation || null
         };
         if (isJr) {
           console.log("[AdminQuestions] Submitting pending update");
@@ -185,7 +310,8 @@ export default function AdminQuestionsPage() {
           options: form.options, 
           correctAnswer: form.correctAnswer, 
           difficulty: form.difficulty, 
-          image: form.image || null 
+          image: form.image || null,
+          explanation: form.explanation || null
         };
         if (isJr) {
           console.log("[AdminQuestions] Submitting pending creation");
@@ -266,9 +392,18 @@ export default function AdminQuestionsPage() {
           <h1 className={styles.title}>Questions</h1>
           <p className={styles.subtitle}>{filtered.length} of {allQuestions.length} questions</p>
         </div>
-        <button className="btn-primary" onClick={openAdd}>
-          + Add Question
-        </button>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <button
+            style={{ padding: '8px 14px', borderRadius: '8px', border: '1.5px solid var(--card-border)', background: 'transparent', color: 'var(--text-secondary)', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}
+            onClick={async () => { await refreshQuizzes(); }}
+            title="Refresh question list"
+          >
+            🔄 Refresh
+          </button>
+          <button className="btn-primary" onClick={openAdd}>
+            + Add Question
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -279,18 +414,42 @@ export default function AdminQuestionsPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <select
-          className={styles.select}
-          value={filterCat}
-          onChange={(e) => setFilterCat(e.target.value)}
-        >
-          <option value="all">All Categories</option>
-          {quizzes.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.emoji} {c.topic}
-            </option>
-          ))}
-        </select>
+        <div style={{ flex: 1, minWidth: '250px' }}>
+          <Select
+            options={[
+              { value: "all", label: "All Categories" },
+              ...quizzes.map((c) => ({ value: c.id, label: `${c.emoji} ${c.topic}` }))
+            ]}
+            value={{ 
+              value: filterCat, 
+              label: filterCat === "all" ? "All Categories" : (quizzes.find(c => c.id === filterCat) ? `${quizzes.find(c => c.id === filterCat).emoji} ${quizzes.find(c => c.id === filterCat).topic}` : "All Categories") 
+            }}
+            onChange={(selected) => setFilterCat(selected.value)}
+            className="react-select-container"
+            classNamePrefix="react-select"
+            styles={{
+              control: (base) => ({
+                ...base,
+                borderRadius: '8px',
+                borderColor: 'var(--card-border)',
+                minHeight: '42px',
+                background: 'var(--bg-secondary)',
+              }),
+              menu: (base) => ({
+                ...base,
+                zIndex: 9999
+              }),
+              singleValue: (base) => ({
+                ...base,
+                color: 'var(--text-primary)',
+              }),
+              input: (base) => ({
+                ...base,
+                color: 'var(--text-primary)',
+              })
+            }}
+          />
+        </div>
         <select
           className={styles.select}
           value={filterDiff}
@@ -421,18 +580,77 @@ export default function AdminQuestionsPage() {
 
             <div className={styles.field}>
               <label>Category</label>
-              <select
-                className={styles.select}
-                value={formCatId}
-                onChange={(e) => setFormCatId(e.target.value)}
-                disabled={!!editingQ}
-              >
-                {quizzes.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.emoji} {c.topic}
-                  </option>
-                ))}
-              </select>
+              {editingQ ? (
+                <input
+                  className={styles.input}
+                  value={quizzes.find(c => c.id === formCatId)?.topic || formCatId}
+                  disabled
+                />
+              ) : (
+                <div style={{ border: '1.5px solid var(--card-border)', borderRadius: '12px', overflow: 'hidden' }}>
+                  {/* Tabs */}
+                  <div style={{ display: 'flex', borderBottom: '1.5px solid var(--card-border)', background: 'var(--bg-secondary)' }}>
+                    {[
+                      { key: 'quizzes', label: '📝 Quizzes' },
+                      { key: 'govt', label: '🏛️ Govt' },
+                      { key: 'image', label: '🖼️ Image' },
+                    ].map(tab => (
+                      <button
+                        key={tab.key}
+                        type="button"
+                        onClick={() => { setCatTab(tab.key); setCatSearch(''); }}
+                        style={{
+                          flex: 1, padding: '8px 4px', border: 'none', fontSize: '0.78rem', fontWeight: 700,
+                          background: catTab === tab.key ? 'var(--accent, #4f46e5)' : 'transparent',
+                          color: catTab === tab.key ? 'white' : 'var(--text-secondary)',
+                          cursor: 'pointer', transition: 'all 0.2s'
+                        }}
+                      >{tab.label}</button>
+                    ))}
+                  </div>
+                  {/* Search */}
+                  <div style={{ padding: '8px', borderBottom: '1px solid var(--card-border)' }}>
+                    <input
+                      type="text"
+                      value={catSearch}
+                      onChange={e => setCatSearch(e.target.value)}
+                      placeholder="Search category..."
+                      style={{
+                        width: '100%', padding: '6px 10px', borderRadius: '8px',
+                        border: '1px solid var(--card-border)', fontSize: '0.85rem',
+                        background: 'var(--bg-primary)', color: 'var(--text-primary)', boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+                  {/* Category List */}
+                  <div style={{ maxHeight: '180px', overflowY: 'auto', padding: '4px' }}>
+                    {quizzes
+                      .filter(c => {
+                        const cls = c.categoryClass || '';
+                        if (catTab === 'govt') return cls.includes('govt-exam');
+                        if (catTab === 'image') return cls.includes('image-quiz');
+                        return !cls.includes('govt-exam') && !cls.includes('image-quiz');
+                      })
+                      .filter(c => !catSearch || c.topic.toLowerCase().includes(catSearch.toLowerCase()))
+                      .map(c => (
+                        <div
+                          key={c.id}
+                          onClick={() => setFormCatId(c.id)}
+                          style={{
+                            padding: '7px 10px', borderRadius: '8px', cursor: 'pointer',
+                            fontSize: '0.87rem', fontWeight: formCatId === c.id ? 700 : 400,
+                            background: formCatId === c.id ? 'var(--accent, #4f46e5)' : 'transparent',
+                            color: formCatId === c.id ? 'white' : 'var(--text-primary)',
+                            transition: 'all 0.15s', marginBottom: '2px'
+                          }}
+                        >
+                          {c.emoji} {c.topic}
+                          {c.parentId && <span style={{ fontSize: '0.72rem', opacity: 0.7, marginLeft: 4 }}>↳ sub</span>}
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className={styles.field}>
@@ -490,8 +708,33 @@ export default function AdminQuestionsPage() {
             </div>
 
             <div className={styles.field}>
+              <label>Explanation</label>
+              <textarea
+                className={styles.textarea}
+                value={form.explanation || ""}
+                onChange={(e) => setForm({ ...form, explanation: e.target.value })}
+                placeholder="Enter explanation for the correct answer..."
+                rows={3}
+              />
+            </div>
+
+            <div className={styles.field}>
               <label>Question Image (optional)</label>
-              <input type="file" accept="image/*" onChange={handleQImageUpload} className={styles.fileInput} />
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '8px' }}>
+                <input type="file" accept="image/*" onChange={handleQImageUpload} className={styles.fileInput} style={{ flex: 1 }} />
+                <button
+                  type="button"
+                  onClick={() => setShowPexelsPicker(true)}
+                  style={{
+                    padding: '8px 14px', borderRadius: '8px', border: '1.5px solid var(--accent, #4f46e5)',
+                    background: 'transparent', color: 'var(--accent, #4f46e5)',
+                    fontWeight: '700', cursor: 'pointer', fontSize: '0.85rem',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  🖼️ Pexels
+                </button>
+              </div>
               {form.image && (
                 <div className={styles.imgPreviewWrap}>
                   <img src={form.image} alt="Preview" className={styles.imgPreview} />
@@ -508,8 +751,16 @@ export default function AdminQuestionsPage() {
                 {editingQ ? "Save Changes" : "Add Question"}
               </button>
             </div>
-          </div>
+           </div>
         </div>
+      )}
+
+      {/* Pexels Image Picker */}
+      {showPexelsPicker && (
+        <PexelsImagePicker
+          onSelect={(url) => setForm({ ...form, image: url })}
+          onClose={() => setShowPexelsPicker(false)}
+        />
       )}
     </div>
   );

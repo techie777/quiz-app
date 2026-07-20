@@ -10,28 +10,7 @@ const DEFAULT_CHIPS = ["Science", "History", "GK", "Quick 5 Min"];
 const DEFAULT_NAV_ITEMS = [
   { id: "daily-quiz", label: "Daily quiz", href: "/daily/quiz-of-the-day", children: [] },
   { id: "daily-current-affairs", label: "Daily current affairs", href: "/daily/daily-current-affairs", children: [] },
-  {
-    id: "school-study",
-    label: "School study",
-    href: "/school-study",
-    children: [
-      { id: "mp-board", label: "Madhya Pradesh", href: "/school-study/madhya-pradesh" },
-      { id: "cbse", label: "CBSE", href: "/school-study/cbse" },
-      { id: "cisce", label: "CISCE", href: "/school-study/cisce" },
-    ],
-  },
-  { id: "previous-years-papers", label: "Previous years papers", href: "/previous-years-papers", children: [] },
-  {
-    id: "govt-exams",
-    label: "Govt exams",
-    href: "/govt-exams",
-    children: [
-      { id: "upsc", label: "UPSC", href: "/govt-exams/upsc" },
-      { id: "ssc", label: "SSC", href: "/govt-exams/ssc" },
-      { id: "rrb", label: "RRB", href: "/govt-exams/rrb" },
-      { id: "ibp", label: "IBP", href: "/govt-exams/ibp" },
-    ],
-  },
+  { id: "quiz-hub", label: "Quiz Hub", href: "/quizzes", children: [] },
 ];
 
 const DEFAULT_FOOTER_SECTIONS = [
@@ -420,6 +399,50 @@ export default function AdminSettingsPage() {
               const success = await updateSettings({ showAdvancedFilters: !current });
               if (success) toast.success(`Advanced filters ${!current ? "enabled" : "disabled"}`);
               else toast.error("Failed to update filter setting.");
+            }}
+          >
+            <span className={styles.toggleKnob} />
+          </button>
+        </div>
+      </section>
+
+      {/* Feature Modules Toggles (Beta Launch) */}
+      <section className={`${styles.section} glass-card`}>
+        <h2 className={styles.sectionTitle}>🚀 Feature Modules</h2>
+        <p className={styles.sectionDesc}>Toggle major features on the home page (for beta launch phasing).</p>
+        
+        <div className={styles.toggleRow}>
+          <div>
+            <span className={styles.toggleLabel}>Govt Exams Module</span>
+            <p className={styles.toggleDesc}>
+              Show or hide the Government Exams preparation card on the home page.
+            </p>
+          </div>
+          <button
+            className={`${styles.toggleSwitch} ${settings.showGovtExams ? styles.toggleOn : ""}`}
+            onClick={async () => {
+              const success = await updateSettings({ showGovtExams: !settings.showGovtExams });
+              if (success) toast.success(`Govt Exams ${!settings.showGovtExams ? "enabled" : "disabled"}`);
+              else toast.error("Failed to update setting.");
+            }}
+          >
+            <span className={styles.toggleKnob} />
+          </button>
+        </div>
+
+        <div className={styles.toggleRow}>
+          <div>
+            <span className={styles.toggleLabel}>Other Modules (Insights & Resources)</span>
+            <p className={styles.toggleDesc}>
+              Show or hide the Daily Insights (Fun Facts) and Resources cards.
+            </p>
+          </div>
+          <button
+            className={`${styles.toggleSwitch} ${settings.showOtherOptions ? styles.toggleOn : ""}`}
+            onClick={async () => {
+              const success = await updateSettings({ showOtherOptions: !settings.showOtherOptions });
+              if (success) toast.success(`Other Modules ${!settings.showOtherOptions ? "enabled" : "disabled"}`);
+              else toast.error("Failed to update setting.");
             }}
           >
             <span className={styles.toggleKnob} />

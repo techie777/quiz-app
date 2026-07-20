@@ -78,21 +78,19 @@ app.prepare()
         }
 
         if (role === 'HOST') {
-            const existingIdx = room.participants.findIndex(p => p.userId === userId);
+            // Remove any existing host entries to ensure strictly ONE host in room participants
+            room.participants = room.participants.filter(p => p.role !== 'HOST' && p.userId !== userId);
+            
             const hostData = { 
                 userId, 
-                userName: userName || 'Commander', 
+                userName: userName || 'Quiz Master', 
                 role: 'HOST', 
                 socketId: socket.id, 
                 isOnline: true, 
                 status: 'ACTIVE' 
             };
 
-            if (existingIdx !== -1) {
-                room.participants[existingIdx] = hostData;
-            } else {
-                room.participants.unshift(hostData);
-            }
+            room.participants.unshift(hostData);
             console.log(`📡 [HOST] Commander ${userName} uplifted at ${socket.id}`);
             
             // Critical rehydration
@@ -102,14 +100,23 @@ app.prepare()
             });
         } else {
             // GUEST LOGIC
+            room.kickedUsers = room.kickedUsers || [];
+            const isKicked = room.kickedUsers.includes(userId);
             const existingInSquad = room.participants.find(p => p.userId === userId);
-            if (existingInSquad) {
+
+            // If user was ever kicked OR not currently in participants squad, they MUST wait for clearance!
+            if (existingInSquad && !isKicked) {
                 existingInSquad.socketId = socket.id;
                 existingInSquad.isOnline = true;
                 existingInSquad.status = 'ACTIVE';
                 socket.emit('STATE_UPDATE', { action: 'APPROVED', payload: { ...room.state, status: 'APPROVED' } });
                 console.log(`📡 [GUEST] Member ${userName} reconnected at ${socket.id}`);
             } else {
+                // If they were kicked earlier or somehow in participants, remove them from participants list
+                if (isKicked) {
+                    room.participants = room.participants.filter(p => p.userId !== userId);
+                }
+
                 // Refresh pending
                 room.pendingParticipants = room.pendingParticipants.filter(p => p.userId !== userId);
                 room.pendingParticipants.push({ 
@@ -149,8 +156,36 @@ app.prepare()
         
         // Detailed room debug
         const roomSockets = await io.in(sessionId).fetchSockets();
-        console.log(`📡 [DEBUG] Room: ${sessionId} | Active Sockets IN ROOM: ${roomSockets.length} | Host Socket: ${room.participants.find(p => p.role === 'HOST')?.socketId}`);
       });
+
+        socket.on('LEAVE_SESSION', async (data) => {
+            const { sessionId: rawSid, userId } = data;
+            const sessionId = typeof rawSid === 'string' ? rawSid.trim() : rawSid;
+            if (!sessionId || !userId) return;
+
+            const room = await redisStore.getRoom(sessionId);
+            if (room && room.participants) {
+                const pIdx = room.participants.findIndex(p => p.userId === userId);
+                if (pIdx !== -1) {
+                    const userName = room.participants[pIdx].userName;
+                    room.participants.splice(pIdx, 1);
+                    await redisStore.setRoom(sessionId, room);
+                    io.in(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
+                    io.in(sessionId).emit('PARTICIPANT_LEFT', { userName, userId });
+                    console.log(`📡 [LEAVE_SESSION] Participant ${userName} left and removed from room ${sessionId}`);
+                } else if (room.pendingParticipants) {
+                    const pendIdx = room.pendingParticipants.findIndex(p => p.userId === userId);
+                    if (pendIdx !== -1) {
+                        const userName = room.pendingParticipants[pendIdx].userName;
+                        room.pendingParticipants.splice(pendIdx, 1);
+                        await redisStore.setRoom(sessionId, room);
+                        io.in(sessionId).emit('SYNC_PENDING', room.pendingParticipants);
+                        console.log(`📡 [LEAVE_SESSION] Pending guest ${userName} left room ${sessionId}`);
+                    }
+                }
+            }
+            await socket.leave(sessionId);
+        });
 
         socket.on('SQUAD_SYNC_REQUEST', async ({ sessionId: rawSid }) => {
             const sessionId = typeof rawSid === 'string' ? rawSid.trim() : rawSid;
@@ -180,6 +215,9 @@ app.prepare()
         if (!room) return;
 
         if (action === 'APPROVE_GUEST') {
+            room.kickedUsers = room.kickedUsers || [];
+            room.kickedUsers = room.kickedUsers.filter(id => id !== payload.userId);
+
             const guestIdx = room.pendingParticipants.findIndex(p => p.userId === payload.userId);
             if (guestIdx !== -1) {
                 const guest = room.pendingParticipants[guestIdx];
@@ -208,6 +246,7 @@ app.prepare()
                 // Update all participants
                 io.in(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
                 io.in(sessionId).emit('SYNC_PENDING', room.pendingParticipants);
+                io.in(sessionId).emit('PARTICIPANT_JOINED', { userName: guest.userName, role: 'GUEST' });
             }
         }
         
@@ -248,21 +287,31 @@ app.prepare()
             return;
         }
 
-        if (action === 'KICK_PARTICIPANT') {
+        if (action === 'KICK_PARTICIPANT' || action === 'REMOVE_PARTICIPANT') {
+            room.kickedUsers = room.kickedUsers || [];
+            if (!room.kickedUsers.includes(payload.userId)) {
+                room.kickedUsers.push(payload.userId);
+            }
+
             const pIdx = room.participants.findIndex(p => p.userId === payload.userId);
             if (pIdx !== -1) {
                 const p = room.participants[pIdx];
-                p.status = 'KICKED';
-                p.isOnline = false;
-                // Save to Redis
-                await redisStore.setRoom(sessionId, room);
-                
-                io.to(p.socketId).emit('STATE_UPDATE', { action: 'DISCONTINUED', payload: { status: 'KICKED' } });
-                const pSocket = io.sockets.sockets.get(p.socketId);
-                if (pSocket) pSocket.leave(sessionId);
-                io.in(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
-                console.log(`???? KICKED OFF: ${p.userName}`);
+                if (p.socketId) {
+                    io.to(p.socketId).emit('STATE_UPDATE', { action: 'DISCONTINUED', payload: { status: 'DISCONTINUED', message: 'You have been professionally dismissed from this session by the Host.' } });
+                    const pSocket = io.sockets.sockets.get(p.socketId);
+                    if (pSocket) pSocket.leave(sessionId);
+                }
+                io.in(sessionId).emit('PARTICIPANT_KICKED', { userName: p.userName, userId: p.userId });
             }
+
+            // Completely remove from both lists
+            room.participants = room.participants.filter(p => p.userId !== payload.userId);
+            room.pendingParticipants = room.pendingParticipants.filter(p => p.userId !== payload.userId);
+
+            await redisStore.setRoom(sessionId, room);
+            io.in(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
+            io.in(sessionId).emit('SYNC_PENDING', room.pendingParticipants);
+            console.log(`📡 [SERVER] KICKED/REMOVED AND BLACKLISTED: ${payload.userId}`);
             return;
         }
         
@@ -385,11 +434,14 @@ app.prepare()
           
           const idx = room.participants.findIndex(p => p.socketId === socket.id);
           if (idx !== -1) {
+            const userName = room.participants[idx].userName;
+            const userId = room.participants[idx].userId;
             room.participants[idx].isOnline = false;
             room.participants[idx].status = 'AWAY';
             updated = true;
             io.in(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
-            console.log(`📡 Participant ${room.participants[idx].userName} went offline (Room: ${sessionId})`);
+            io.in(sessionId).emit('PARTICIPANT_LEFT', { userName, userId });
+            console.log(`📡 Participant ${userName} went offline (Room: ${sessionId})`);
           }
           
           const pIdx = room.pendingParticipants.findIndex(p => p.socketId === socket.id);

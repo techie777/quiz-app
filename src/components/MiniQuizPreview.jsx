@@ -5,22 +5,15 @@ import React, { useState, useEffect } from "react";
 // Content for the mini-quiz
 const CONTENT = {
   quiz: [
-    { label: "QUIZ", q: "Largest planet in our solar system?", options: ["Earth", "Jupiter", "Mars"], correct: 1 },
-    { label: "FUN FACT", q: "How many hearts does an octopus have?", options: ["One", "Two", "Three"], correct: 2 },
-    { label: "TRUE/FALSE", q: "Water boils at 100°C?", options: ["True", "False"], correct: 0 },
-    { label: "SAWAL JAWAB", q: "20 फीट सीढ़ी से गिरी पर चोट नहीं आई?", options: ["सबसे नीचे थी", "जादू था", "सपना था"], correct: 0 },
+    { label: "सवाल जवाब", q: "पत्तियों का हरा रंग किसके कारण होता है?", options: ["हीमोग्लोबिन", "लाइकोपीन", "क्लोरोफिल", "कैरोटीन"], correct: 2 },
+    { label: "सवाल जवाब", q: "20 फीट सीढ़ी से गिरी पर चोट नहीं आई?", options: ["सबसे नीचे थी", "जादू था", "सपना था", "हवा में थी"], correct: 0 },
+    { label: "सवाल जवाब", q: "भारत का राष्ट्रीय पक्षी कौन सा है?", options: ["मोर", "कबूतर", "तोता", "हंस"], correct: 0 },
+    { label: "सवाल जवाब", q: "सौर मंडल का सबसे बड़ा ग्रह कौन सा है?", options: ["पृथ्वी", "बृहस्पति", "मंगल", "शनि"], correct: 1 },
   ],
   govt: [
-    { q: "First PM of India?", options: ["Nehru", "Gandhi", "Patel"], correct: 0 },
-    { q: "Article 21 is...?", options: ["Privacy", "Life", "Speech"], correct: 1 },
-  ],
-  facts: [
-    { q: "Hearts in an octopus?", options: ["One", "Two", "Three"], correct: 2 },
-    { q: "Is a banana a berry?", options: ["Yes", "No", "Maybe"], correct: 0 },
-  ],
-  resources: [
-    { q: "Latest job alerts?", options: ["SSC", "UPSC", "Both"], correct: 2 },
-    { q: "Need study kits?", options: ["Yes", "No", "Later"], correct: 0 },
+    { label: "सरकारी परीक्षा", q: "भारत के पहले प्रधानमंत्री कौन थे?", options: ["नेहरू", "गांधी", "पटेल", "बोस"], correct: 0 },
+    { label: "सरकारी परीक्षा", q: "अनुच्छेद 21 किससे संबंधित है?", options: ["निजता", "जीवन", "भाषण", "समानता"], correct: 1 },
+    { label: "सरकारी परीक्षा", q: "रिजर्व बैंक ऑफ इंडिया की स्थापना कब हुई?", options: ["1935", "1947", "1950", "1920"], correct: 0 },
   ]
 };
 
@@ -62,7 +55,7 @@ export default function MiniQuizPreview({ type = "quiz" }) {
       height: '100%',
       backgroundColor: 'var(--bg-primary)',
       borderRadius: '20px',
-      padding: '12px',
+      padding: '12px 16px',
       fontSize: '11px',
       display: 'flex',
       flexDirection: 'column',
@@ -76,36 +69,36 @@ export default function MiniQuizPreview({ type = "quiz" }) {
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px' }}>
           <div style={{ fontSize: '24px' }}>🏆</div>
           <div style={{ textAlign: 'left' }}>
-            <b style={{ fontSize: '12px', display: 'block' }}>Quiz Done!</b>
-            <span style={{ fontSize: '10px', color: '#059669', fontWeight: 'bold' }}>SCORE: 100%</span>
+            <b style={{ fontSize: '14px', display: 'block' }}>क्विज़ पूरा हुआ!</b>
+            <span style={{ fontSize: '12px', color: '#059669', fontWeight: 'bold' }}>स्कोर: 100%</span>
           </div>
         </div>
       ) : (
-        <div style={{ flex: 1, display: 'flex', gap: '12px' }}>
-          {/* Left: Question */}
-          <div style={{ flex: '1.2', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px', justifyContent: 'center' }}>
+          {/* Top: Question */}
+          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
             <div style={{ 
               color: '#6366f1', 
               fontWeight: '900', 
-              marginBottom: '4px', 
+              marginBottom: '6px', 
               textTransform: 'uppercase', 
-              fontSize: '8px',
+              fontSize: '10px',
               letterSpacing: '0.05em'
             }}>
-              {current.label || `Q${index + 1}`}
+              {`Q${index + 1}`}
             </div>
             <div style={{ 
               fontWeight: '800', 
-              lineHeight: '1.2',
-              fontSize: '12px',
+              lineHeight: '1.3',
+              fontSize: '15px',
               color: 'var(--text-primary)'
             }}>
               {current.q}
             </div>
           </div>
 
-          {/* Right: Options */}
-          <div style={{ flex: '1.5', display: 'flex', flexDirection: 'column', gap: '4px', justifyContent: 'center' }}>
+          {/* Bottom: Options in 2x2 Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
             {current.options.map((opt, i) => {
               const isSelected = selected === i;
               const isCorrect = current.correct === i;
@@ -124,21 +117,23 @@ export default function MiniQuizPreview({ type = "quiz" }) {
 
               return (
                 <div key={i} style={{
-                  padding: '6px 8px',
-                  borderRadius: '10px',
+                  padding: '8px 10px',
+                  borderRadius: '12px',
                   border: `1.5px solid ${border}`,
                   backgroundColor: bg,
                   color: color,
                   transition: 'all 0.3s ease',
                   display: 'flex',
-                  justifyContent: 'space-between',
+                  justifyContent: 'center',
                   alignItems: 'center',
                   fontWeight: '700',
-                  fontSize: '9px'
+                  fontSize: '12px',
+                  textAlign: 'center',
+                  minHeight: '36px'
                 }}>
                   {opt}
                   {step >= 2 && isSelected && (
-                    <span>{isCorrect ? '✓' : '✕'}</span>
+                    <span style={{ marginLeft: '6px' }}>{isCorrect ? '✓' : '✕'}</span>
                   )}
                 </div>
               );
@@ -150,14 +145,14 @@ export default function MiniQuizPreview({ type = "quiz" }) {
       {/* Mini Progress Dots */}
       <div style={{ 
         display: 'flex', 
-        gap: '3px', 
+        gap: '4px', 
         justifyContent: 'center', 
-        marginTop: '8px' 
+        marginTop: '10px' 
       }}>
         {questions.map((_, i) => (
           <div key={i} style={{
-            width: '3px',
-            height: '3px',
+            width: '4px',
+            height: '4px',
             borderRadius: '50%',
             backgroundColor: i === index ? '#6366f1' : 'var(--card-border)'
           }} />

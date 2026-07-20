@@ -305,6 +305,7 @@ export default function AdminCategoriesPage() {
   const allowed = adminUser?.role === "master" || adminUser?.permissions?.categories !== false;
   const [editingId, setEditingId] = useState(null);
   const [confirm, setConfirm] = useState(null);
+  const [activeTab, setActiveTab] = useState("quizzes");
   const dragItem = useRef(null);
   const dragOver = useRef(null);
 
@@ -432,6 +433,21 @@ export default function AdminCategoriesPage() {
         </button>
       </div>
 
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', borderBottom: '2px solid var(--card-border)', paddingBottom: '12px' }}>
+        <button 
+          onClick={() => setActiveTab("quizzes")}
+          style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: activeTab === 'quizzes' ? 'var(--accent)' : 'transparent', color: activeTab === 'quizzes' ? 'white' : 'var(--text-secondary)', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}
+        >📝 Quizzes</button>
+        <button 
+          onClick={() => setActiveTab("govt-exams")}
+          style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: activeTab === 'govt-exams' ? 'var(--accent)' : 'transparent', color: activeTab === 'govt-exams' ? 'white' : 'var(--text-secondary)', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}
+        >🏛️ Govt Exams</button>
+        <button 
+          onClick={() => setActiveTab("image-quizzes")}
+          style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: activeTab === 'image-quizzes' ? 'var(--accent)' : 'transparent', color: activeTab === 'image-quizzes' ? 'white' : 'var(--text-secondary)', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}
+        >🖼️ Image Quizzes</button>
+      </div>
+
       <div className={styles.list}>
         {editingId === "new" && (
           <EditForm 
@@ -447,6 +463,12 @@ export default function AdminCategoriesPage() {
         
         {quizzes
           .filter((c) => !c.parentId)
+          .filter((cat) => {
+            const cls = cat.categoryClass || "";
+            if (activeTab === "govt-exams") return cls.includes("govt-exam");
+            if (activeTab === "image-quizzes") return cls.includes("image-quiz");
+            return !cls.includes("govt-exam") && !cls.includes("image-quiz");
+          })
           .map((cat, idx) => (
             <div key={cat.id}>
               <div

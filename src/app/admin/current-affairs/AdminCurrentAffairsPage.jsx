@@ -37,7 +37,7 @@ function formatDate(d) {
   }
 }
 
-const EMPTY = { id: "", date: "", category: "", heading: "", description: "", image: "", hidden: false };
+const EMPTY = { id: "", date: "", category: "", heading: "", description: "", oneLiner: "", image: "", hidden: false };
 
 export default function AdminCurrentAffairsPage() {
   const { adminUser } = useAdmin();
@@ -111,6 +111,7 @@ export default function AdminCurrentAffairsPage() {
     const date = normalizeString(form.date);
     const heading = normalizeString(form.heading);
     const description = normalizeString(form.description);
+    const oneLiner = normalizeString(form.oneLiner);
     const category = normalizeString(form.category) || "General";
 
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { setMsg("Invalid date"); return; }
@@ -123,7 +124,7 @@ export default function AdminCurrentAffairsPage() {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, category, date, heading, description }),
+        body: JSON.stringify({ ...form, category, date, heading, description, oneLiner }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -138,7 +139,7 @@ export default function AdminCurrentAffairsPage() {
       const ok = await submitPending(type, {
         entityType: "currentAffair",
         entityId: editing === "new" ? "" : form.id,
-        ...form, date, category, heading, description
+        ...form, date, category, heading, description, oneLiner
       });
       setEditing(null);
       if (ok) toast.success("Submitted for approval");
@@ -317,6 +318,7 @@ export default function AdminCurrentAffairsPage() {
                 <div className={styles.field}><label>Date</label><input type="date" value={form.date} max={getTodayDateString()} onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))} /></div>
                 <div className={styles.field}><label>Category</label><input value={form.category} onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))} placeholder="e.g. Science & Technology" /></div>
                 <div className={styles.fieldFull}><label>Heading</label><input value={form.heading} onChange={(e) => setForm((p) => ({ ...p, heading: e.target.value }))} /></div>
+                <div className={styles.fieldFull}><label>One Liner (Optional)</label><input value={form.oneLiner} onChange={(e) => setForm((p) => ({ ...p, oneLiner: e.target.value }))} placeholder="Brief one-liner summary..." /></div>
                 <div className={styles.fieldFull}><label>Description</label><textarea rows={5} value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} /></div>
                 <label className={styles.toggle}><input type="checkbox" checked={!!form.hidden} onChange={(e) => setForm((p) => ({ ...p, hidden: e.target.checked }))} /><span>Hidden</span></label>
               </div>

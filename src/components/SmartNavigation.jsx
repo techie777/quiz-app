@@ -10,6 +10,7 @@ import { ChevronDown, ChevronUp, Heart } from "lucide-react";
 import styles from "@/styles/SmartNavigation.module.css";
 import { useLanguage } from "@/context/LanguageContext";
 import { useQuiz } from "@/context/QuizContext";
+import { useData } from "@/context/DataContext";
 
 const fallbackNavigationItems = [
   { key: "home", href: "/", icon: "🏠" },
@@ -41,6 +42,17 @@ export default function SmartNavigation() {
   const [isSignOutConfirm, setIsSignOutConfirm] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [isQuizzesOpen, setIsQuizzesOpen] = useState(false);
+  const { settings } = useData();
+
+  const visibleNavItems = navigationItems.filter(item => {
+    if (['govtExams', 'mockTests'].includes(item.key)) {
+      return !!settings?.showGovtExams;
+    }
+    if (!['home', 'quizzes', 'currentAffairs'].includes(item.key)) {
+      return !!settings?.showOtherOptions;
+    }
+    return true;
+  });
 
   useEffect(() => {
     const fetchNav = async () => {
@@ -91,7 +103,10 @@ export default function SmartNavigation() {
     setIsMounted(true);
   }, []);
 
-  if (pathname?.startsWith("/admin") || pathname?.includes("/mock-tests/paper/") || isFullscreen) return null;
+  const isQuizOrExamRoute = pathname?.startsWith("/quiz/") || pathname?.includes("/mock-tests/paper/") || pathname?.startsWith("/live/");
+  const isCurrentlyFullscreen = isFullscreen && isQuizOrExamRoute;
+
+  if (pathname?.startsWith("/admin") || pathname?.includes("/mock-tests/paper/") || isCurrentlyFullscreen) return null;
 
   return (
     <>
@@ -103,7 +118,7 @@ export default function SmartNavigation() {
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "BreadcrumbList",
-              "itemListElement": navigationItems.map((item, index) => ({
+              "itemListElement": visibleNavItems.map((item, index) => ({
                 "@type": "ListItem",
                 "position": index + 1,
                 "name": item.key ? t(`nav.${item.key}`) : item.name,
@@ -120,10 +135,10 @@ export default function SmartNavigation() {
         role="navigation"
         aria-label="Main navigation"
       >
-        <div className={`${styles.container} ${isFullscreen ? 'hidden' : ''}`}>
+        <div className={`${styles.container} ${isCurrentlyFullscreen ? 'hidden' : ''}`}>
           {/* Desktop Navigation */}
           <ul className={styles.navList} role="menubar">
-            {navigationItems.filter(item => ['home', 'quizzes', 'careerGuide', 'funFacts', 'sawalJawab', 'trueFalse'].includes(item.key)).map((item, index) => {
+            {visibleNavItems.filter(item => ['home', 'quizzes', 'careerGuide', 'funFacts', 'sawalJawab', 'trueFalse', 'currentAffairs'].includes(item.key)).map((item, index) => {
               const isActive = pathname === item.href;
               if (item.key === 'quizzes') {
                 return (
@@ -212,7 +227,7 @@ export default function SmartNavigation() {
               );
             })}
             
-            {navigationItems.filter(item => !['home', 'quizzes', 'careerGuide', 'funFacts', 'sawalJawab', 'trueFalse'].includes(item.key)).length > 0 && (
+            {visibleNavItems.filter(item => !['home', 'quizzes', 'careerGuide', 'funFacts', 'sawalJawab', 'trueFalse', 'currentAffairs'].includes(item.key)).length > 0 && (
               <li 
                 className={styles.moreDropdownContainer} 
                 role="none"
@@ -233,7 +248,7 @@ export default function SmartNavigation() {
                       exit={{ opacity: 0, y: 10, pointerEvents: 'none' }}
                       transition={{ duration: 0.2 }}
                     >
-                      {navigationItems.filter(item => !['home', 'quizzes', 'careerGuide', 'funFacts', 'sawalJawab', 'trueFalse'].includes(item.key)).map((item) => {
+                      {visibleNavItems.filter(item => !['home', 'quizzes', 'careerGuide', 'funFacts', 'sawalJawab', 'trueFalse', 'currentAffairs'].includes(item.key)).map((item) => {
                         const isActive = pathname === item.href;
                         return (
                           <Link
@@ -381,15 +396,12 @@ export default function SmartNavigation() {
                          </svg>
                         Continue with Google
                       </button>
-                      <Link href="/signin" className={styles.mobileSignInBtn} onClick={closeMobileMenu}>
-                        Sign In with PIN
-                      </Link>
                     </div>
                   )}
                 </div>
 
                 <ul className={styles.mobileNavList} role="menu">
-                  {navigationItems.map((item, index) => {
+                  {visibleNavItems.map((item, index) => {
                     const isActive = pathname === item.href;
                     if (item.key === 'quizzes') {
                       return (
@@ -470,6 +482,31 @@ export default function SmartNavigation() {
                       </li>
                     );
                   })}
+                  
+                  {/* Download Mobile App Option */}
+                  <li role="none">
+                    <button
+                      className={styles.mobileNavLink}
+                      style={{ textAlign: 'left', width: '100%', border: 'none', background: 'transparent' }}
+                      role="menuitem"
+                      onClick={() => {
+                        closeMobileMenu();
+                        if (window.deferredPrompt) {
+                          window.deferredPrompt.prompt();
+                        } else {
+                          alert(isHindi ? "ऐप पहले से इंस्टॉल है या ब्राउज़र सपोर्ट नहीं करता।" : "App is already installed or your browser doesn't support this feature.");
+                        }
+                      }}
+                    >
+                      <div className={styles.mobileNavIcon}>📱</div>
+                      <div className={styles.mobileNavInfo}>
+                        <span className={styles.mobileNavText}>{isHindi ? 'मोबाइल ऐप डाउनलोड करें' : 'Download Mobile App'}</span>
+                        <span className={styles.mobileNavDescription}>
+                          {isHindi ? 'तेज़ अनुभव के लिए ऐप इंस्टॉल करें' : 'Install our app for a faster experience'}
+                        </span>
+                      </div>
+                    </button>
+                  </li>
                 </ul>
 
                 {/* Footer centered with badge */}

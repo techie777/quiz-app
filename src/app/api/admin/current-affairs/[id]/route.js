@@ -34,6 +34,7 @@ export async function PUT(request, { params }) {
     data.description = desc;
   }
   if (body.category !== undefined) data.category = normalizeString(body.category) || "General";
+  if (body.oneLiner !== undefined) data.oneLiner = normalizeString(body.oneLiner);
   if (body.image !== undefined) data.image = typeof body.image === "string" ? body.image : "";
   if (body.hidden !== undefined) data.hidden = !!body.hidden;
 

@@ -6,12 +6,14 @@ import styles from "@/styles/HubPage.module.css";
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useUI } from "@/context/UIContext";
+import { useData } from "@/context/DataContext";
 import { useLanguage } from "@/context/LanguageContext";
 import MiniQuizPreview from "@/components/MiniQuizPreview";
 
 export default function MasterHubPage() {
   const { data: session } = useSession();
   const { openOnboarding } = useUI();
+  const { settings } = useData();
   const { t } = useLanguage();
   const [mounted, setMounted] = useState(false);
   const [interests, setInterests] = useState([]);
@@ -40,6 +42,10 @@ export default function MasterHubPage() {
     }
   };
 
+  let visibleCardsCount = 1;
+  if (settings?.showGovtExams) visibleCardsCount += 1;
+  if (settings?.showOtherOptions) visibleCardsCount += 2;
+
   return (
     <div className={styles.container}>
       <main className={styles.heroContent}>
@@ -50,20 +56,20 @@ export default function MasterHubPage() {
           <p className={styles.heroSubtitle}>{mounted ? t('hub.hero.subtitle') : 'Choose your path to get started.'}</p>
         </div>
 
-        <div className={styles.grid}>
+        <div className={visibleCardsCount === 1 ? styles.singleCardGrid : styles.grid}>
           {/* Section 1: Quizzes */}
           <div className={`${styles.card} ${styles.cardQuiz}`}>
-            <Link href="/quizzes" className={styles.cardBadge}>{t('hub.liveNow')}</Link>
             <div className={styles.cardBody}>
               <div className={styles.cardIcon}>🧠</div>
-              <div className={styles.previewWrapper}>
-                {mounted ? <MiniQuizPreview type="quiz" /> : <div className="animate-pulse bg-slate-100 rounded-2xl w-full h-full" />}
-              </div>
               <h2 className={styles.cardTitle}>{t('hub.quizHub.title')}</h2>
 
               <p className={styles.cardDescription}>
                 {t('hub.quizHub.desc')}
               </p>
+              
+              <div className={styles.previewWrapperInline}>
+                {mounted ? <MiniQuizPreview type="quiz" /> : <div className="animate-pulse bg-slate-100 rounded-2xl w-full h-full" />}
+              </div>
             </div>
             <Link href="/quizzes" className={styles.mainAction}>
               <span className={styles.viewAll}>{mounted ? t('hub.quizHub.links.action') : 'Start Playing Trivia'} <ArrowRight size={20} /></span>
@@ -71,61 +77,62 @@ export default function MasterHubPage() {
           </div>
 
           {/* Section 2: Govt Exams */}
-          <div className={`${styles.card} ${styles.cardGovt}`}>
-            <Link href="/govt-exams" className={styles.cardBadge}>{t('hub.newExams')}</Link>
-            <div className={styles.cardBody}>
-              <div className={styles.cardIcon}>🏛️</div>
-              <div className={styles.previewWrapper}>
-                {mounted ? <MiniQuizPreview type="govt" /> : <div className="animate-pulse bg-slate-100 dark:bg-slate-800 rounded-2xl w-full h-full" />}
-              </div>
-              <h2 className={styles.cardTitle}>{t('hub.govtExams.title')}</h2>
+          {settings?.showGovtExams === true && (
+            <div className={`${styles.card} ${styles.cardGovt}`}>
+              <Link href="/govt-exams" className={styles.cardBadge}>{t('hub.newExams')}</Link>
+              <div className={styles.cardBody}>
+                <div className={styles.cardIcon}>🏛️</div>
+                <h2 className={styles.cardTitle}>{t('hub.govtExams.title')}</h2>
 
-              <p className={styles.cardDescription}>
-                {t('hub.govtExams.desc')}
-              </p>
+                <p className={styles.cardDescription}>
+                  {t('hub.govtExams.desc')}
+                </p>
+                
+                <div className={styles.previewWrapperInline}>
+                  {mounted ? <MiniQuizPreview type="govt" /> : <div className="animate-pulse bg-slate-100 dark:bg-slate-800 rounded-2xl w-full h-full" />}
+                </div>
+              </div>
+              <Link href="/govt-exams" className={styles.mainAction}>
+                <span className={styles.viewAll}>{mounted ? t('hub.govtExams.links.action') : 'Explore Exam Prep'} <ArrowRight size={20} /></span>
+              </Link>
             </div>
-            <Link href="/govt-exams" className={styles.mainAction}>
-              <span className={styles.viewAll}>{mounted ? t('hub.govtExams.links.action') : 'Explore Exam Prep'} <ArrowRight size={20} /></span>
-            </Link>
-          </div>
+          )}
 
           {/* Section 3: Modern Info */}
-          <div className={`${styles.card} ${styles.cardInfo}`}>
-            <Link href="/fun-facts" className={styles.cardBadge}>{t('hub.factsRevealed')}</Link>
-            <div className={styles.cardBody}>
-            <div className={styles.cardIcon}>💡</div>
-              <div className={styles.previewWrapper}>
-                {mounted ? <MiniQuizPreview type="facts" /> : <div className="animate-pulse bg-slate-100 rounded-2xl w-full h-full" />}
-              </div>
-              <h2 className={styles.cardTitle}>{t('hub.dailyInsights.title')}</h2>
+          {settings?.showOtherOptions === true && (
+            <div className={`${styles.card} ${styles.cardInfo}`}>
+              <Link href="/fun-facts" className={styles.cardBadge}>{t('hub.factsRevealed')}</Link>
+              <div className={styles.cardBody}>
+              <div className={styles.cardIcon}>💡</div>
+                <h2 className={styles.cardTitle}>{t('hub.dailyInsights.title')}</h2>
 
-              <p className={styles.cardDescription}>
-                {t('hub.dailyInsights.desc')}
-              </p>
+                <p className={styles.cardDescription}>
+                  {t('hub.dailyInsights.desc')}
+                </p>
+              </div>
+              <Link href="/fun-facts" className={styles.mainAction}>
+                <span className={styles.viewAll}>{mounted ? t('hub.dailyInsights.links.action') : 'Explore Facts'} <ArrowRight size={20} /></span>
+              </Link>
             </div>
-            <Link href="/fun-facts" className={styles.mainAction}>
-              <span className={styles.viewAll}>{mounted ? t('hub.dailyInsights.links.action') : 'Explore Facts'} <ArrowRight size={20} /></span>
-            </Link>
-          </div>
+          )}
 
           {/* Section 4: Others */}
-          <div className={`${styles.card} ${styles.cardOthers}`}>
-            <Link href="/book-my-course" className={styles.cardBadge}>{t('hub.utilities')}</Link>
-            <div className={styles.cardBody}>
-              <div className={styles.cardIcon}>🎓</div>
-              <div className={styles.previewWrapper}>
-                {mounted ? <MiniQuizPreview type="resources" /> : <div className="animate-pulse bg-slate-100 rounded-2xl w-full h-full" />}
-              </div>
-              <h2 className={styles.cardTitle}>{t('hub.resources.title')}</h2>
+          {settings?.showOtherOptions === true && (
+            <div className={`${styles.card} ${styles.cardOthers}`}>
+              <Link href="/book-my-course" className={styles.cardBadge}>{t('hub.utilities')}</Link>
+              <div className={styles.cardBody}>
+                <div className={styles.cardIcon}>🎓</div>
+                <h2 className={styles.cardTitle}>{t('hub.resources.title')}</h2>
 
-              <p className={styles.cardDescription}>
-                {t('hub.resources.desc')}
-              </p>
+                <p className={styles.cardDescription}>
+                  {t('hub.resources.desc')}
+                </p>
+              </div>
+              <Link href="/book-my-course" className={styles.mainAction}>
+                <span className={styles.viewAll}>{mounted ? t('hub.resources.links.action') : 'View Resources'} <ArrowRight size={20} /></span>
+              </Link>
             </div>
-            <Link href="/book-my-course" className={styles.mainAction}>
-              <span className={styles.viewAll}>{mounted ? t('hub.resources.links.action') : 'View Resources'} <ArrowRight size={20} /></span>
-            </Link>
-          </div>
+          )}
         </div>
 
         {/* Optional Personalization Prompt */}

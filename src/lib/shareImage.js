@@ -1,11 +1,13 @@
+import toast from "react-hot-toast";
+
 /**
  * Generate a branded share image for a quiz question using Canvas API.
  * Returns a Blob (image/png).
  */
 export async function generateShareImage(question, quizUrl) {
-  const W = 1080; // Higher resolution for modern sharing
-  const H = 1350; // Instagram Portrait aspect ratio
-  const PAD = 60;
+  const W = 1080; // Square for better sharing
+  const H = 1080; 
+  const PAD = 50;
   const canvas = document.createElement("canvas");
   canvas.width = W;
   canvas.height = H;
@@ -30,30 +32,30 @@ export async function generateShareImage(question, quizUrl) {
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fill();
   };
-  drawLight(W * 0.2, H * 0.2, 600, 'rgba(99, 102, 241, 0.4)');
-  drawLight(W * 0.8, H * 0.7, 700, 'rgba(232, 121, 249, 0.3)');
+  drawLight(W * 0.2, H * 0.2, 500, 'rgba(99, 102, 241, 0.4)');
+  drawLight(W * 0.8, H * 0.7, 600, 'rgba(232, 121, 249, 0.3)');
   ctx.globalCompositeOperation = 'source-over';
 
   // === Header / Branding ===
   ctx.fillStyle = "#fff";
-  ctx.font = "bold 48px 'Outfit', 'Inter', sans-serif";
+  ctx.font = "bold 42px 'Outfit', 'Inter', sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("🧠 QuizWeb", W / 2, 100);
+  ctx.fillText("🧠 QuizWeb", W / 2, 70);
 
-  ctx.font = "300 24px 'Inter', sans-serif";
+  ctx.font = "300 22px 'Inter', sans-serif";
   ctx.fillStyle = "rgba(255,255,255,0.8)";
-  ctx.fillText("CHALLENGE OF THE DAY", W / 2, 140);
+  ctx.fillText("CHALLENGE OF THE DAY", W / 2, 105);
 
   // === Question Card: Glassmorphism Effect ===
   const cardX = PAD;
-  const cardY = 220;
+  const cardY = 140;
   const cardW = W - PAD * 2;
-  const cardH = 380;
+  const cardH = 320;
 
   // Outer Glow
-  ctx.shadowColor = "rgba(0,0,0,0.3)";
-  ctx.shadowBlur = 40;
-  ctx.shadowOffsetY = 20;
+  ctx.shadowColor = "rgba(0,0,0,0.2)";
+  ctx.shadowBlur = 30;
+  ctx.shadowOffsetY = 15;
 
   // Card Body (White with slight transparency)
   ctx.fillStyle = "rgba(255, 255, 255, 0.98)";
@@ -65,24 +67,24 @@ export async function generateShareImage(question, quizUrl) {
 
   // Title in Card
   ctx.fillStyle = "#4f46e5";
-  ctx.font = "800 20px 'Inter', sans-serif";
+  ctx.font = "800 18px 'Inter', sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("QUESTION", W / 2, cardY + 50);
+  ctx.fillText("QUESTION", W / 2, cardY + 45);
 
   // Question text (wrapped)
   ctx.fillStyle = "#111827";
-  ctx.font = "bold 36px 'Inter', sans-serif";
+  ctx.font = "bold 32px 'Inter', sans-serif";
   ctx.textAlign = "center";
-  wrapText(ctx, question.text, W / 2, cardY + 120, cardW - 100, 52);
+  wrapText(ctx, question.text, W / 2, cardY + 110, cardW - 80, 48);
 
   // === Options ===
   const labels = ["A", "B", "C", "D"];
-  const optStartY = cardY + cardH + 60;
-  const optW = (cardW - 40) / 2;
-  const optH = 100;
-  const gap = 40;
+  const optStartY = cardY + cardH + 40;
+  const optW = (cardW - 30) / 2;
+  const optH = 90;
+  const gap = 30;
 
-  question.options.forEach((opt, i) => {
+  (question.options || []).forEach((opt, i) => {
     const col = i % 2;
     const row = Math.floor(i / 2);
     const x = cardX + col * (optW + gap);
@@ -102,40 +104,40 @@ export async function generateShareImage(question, quizUrl) {
     // Label Indicator
     ctx.fillStyle = "rgba(255,255,255,1)";
     ctx.beginPath();
-    ctx.arc(x + 40, y + optH / 2, 22, 0, Math.PI * 2);
+    ctx.arc(x + 35, y + optH / 2, 20, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.fillStyle = "#4f46e5";
-    ctx.font = "bold 20px 'Inter', sans-serif";
+    ctx.font = "bold 18px 'Inter', sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText(labels[i], x + 40, y + optH / 2 + 7);
+    ctx.fillText(labels[i] || "", x + 35, y + optH / 2 + 6);
 
     // Option text
-    ctx.font = "600 22px 'Inter', sans-serif";
+    ctx.font = "600 20px 'Inter', sans-serif";
     ctx.fillStyle = "#fff";
     ctx.textAlign = "left";
-    const maxTextW = optW - 100;
+    const maxTextW = optW - 90;
     const truncated = truncateText(ctx, opt, maxTextW);
-    ctx.fillText(truncated, x + 80, y + optH / 2 + 8);
+    ctx.fillText(truncated, x + 70, y + optH / 2 + 7);
   });
 
   // === Footer / CTA ===
-  const footerY = H - 160;
+  const footerY = H - 150;
 
   ctx.fillStyle = "#fff";
-  ctx.font = "800 32px 'Inter', sans-serif";
+  ctx.font = "800 28px 'Inter', sans-serif";
   ctx.textAlign = "center";
   ctx.fillText("Think you can beat this?", W / 2, footerY);
 
-  ctx.font = "500 24px 'Inter', sans-serif";
+  ctx.font = "500 20px 'Inter', sans-serif";
   ctx.fillStyle = "rgba(255,255,255,0.7)";
-  ctx.fillText("Join thousands playing now at:", W / 2, footerY + 45);
+  ctx.fillText("Join thousands playing now at:", W / 2, footerY + 35);
 
   // Branded URL area
-  const urlH = 80;
+  const urlH = 70;
   const urlW = ctx.measureText(quizUrl).width + 80;
   ctx.fillStyle = "rgba(0,0,0,0.2)";
-  roundRect(ctx, (W - urlW) / 2, footerY + 70, urlW, urlH, 16);
+  roundRect(ctx, (W - urlW) / 2, footerY + 55, urlW, urlH, 16);
   ctx.fill();
 
   ctx.font = "bold 28px 'monospace'";
@@ -152,33 +154,37 @@ export async function generateShareImage(question, quizUrl) {
  * Share a question using Web Share API or download fallback.
  */
 export async function shareQuestion(question, quizId) {
+  if (!question) return;
+
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-  const quizUrl = `${baseUrl}/category/${quizId}`;
+  const quizUrl = `${baseUrl}${quizId ? `/category/${quizId}` : '/'}`;
+  
+  const optionsText = Array.isArray(question.options)
+    ? question.options.map((o, idx) => `${String.fromCharCode(65 + idx)}) ${o}`).join("\n")
+    : "";
+
+  const shareMessage = `❓ *Quiz Question*:\n"${question.text}"\n\nOptions:\n${optionsText}\n\nCan you solve this? Try now: ${quizUrl}`;
+
+  toast.success("Opening WhatsApp share...", { icon: '📲' });
+
+  // Open WhatsApp Web/Mobile directly
+  const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareMessage)}`;
+  if (typeof window !== "undefined") {
+    window.open(waUrl, "_blank");
+  }
 
   try {
     const blob = await generateShareImage(question, quizUrl);
     const file = new File([blob], "quiz-question.png", { type: "image/png" });
 
-    // Try Web Share API first (mobile + modern browsers)
+    // Web Share API fallback if supported
     if (navigator.share && navigator.canShare?.({ files: [file] })) {
       await navigator.share({
-        title: "QuizWeb Challenge",
-        text: `Can you answer this? "${question.text}" — Play now!`,
-        url: quizUrl,
+        title: "QuizWeb Question Challenge",
+        text: shareMessage,
         files: [file],
       });
-      return;
     }
-
-    // Fallback: download the image
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "quiz-question.png";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   } catch (err) {
     if (err.name !== "AbortError") {
       console.error("Share failed:", err);

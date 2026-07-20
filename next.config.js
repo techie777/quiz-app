@@ -27,6 +27,14 @@ const nextConfig = {
         hostname: 'lh3.googleusercontent.com', // For Google Auth avatars
       },
       {
+        protocol: 'https',
+        hostname: 'images.pexels.com', // For Pexels images
+      },
+      {
+        protocol: 'https',
+        hostname: '**.pexels.com', // For all Pexels CDN subdomains
+      },
+      {
         protocol: 'http',
         hostname: 'localhost',
       },
@@ -75,7 +83,7 @@ const nextConfig = {
       "object-src 'none'",
       "frame-ancestors 'none'",
       "form-action 'self'",
-      "img-src 'self' data: blob: https://lh3.googleusercontent.com https://image.pollinations.ai",
+      "img-src 'self' data: blob: https://lh3.googleusercontent.com https://image.pollinations.ai https://images.pexels.com https://*.pexels.com",
       "font-src 'self' data: https://fonts.gstatic.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",

@@ -12,6 +12,7 @@ import QuizSidebar from "@/components/QuizSidebar";
 import QuizSuggestions from "@/components/QuizSuggestions";
 import ExitConfirmModal from "@/components/ExitConfirmModal";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { Languages } from "lucide-react";
 import styles from "@/styles/QuizEngine.module.css";
 import { initSounds, playCorrectSound, playWrongSound, playTickerSound } from "@/lib/sounds";
 import timerStyles from "@/styles/Timer.module.css";
@@ -179,6 +180,7 @@ function QuizEngineContent() {
   const [questionTransition, setQuestionTransition] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showEndConfirmModal, setShowEndConfirmModal] = useState(false);
+  const [isEnding, setIsEnding] = useState(false);
   const [questionStartTime, setQuestionStartTime] = useState(Date.now());
   const [searchQuestion, setSearchQuestion] = useState("");
   const [showingAd, setShowingAd] = useState(false);
@@ -404,7 +406,7 @@ const QuizEngineTimer = QuizTimerComponent;
   };
 
   const confirmEndQuiz = () => {
-    setShowEndConfirmModal(false);
+    setIsEnding(true);
     
     // Check if user has answered at least one question
     const attemptedCount = (answers || []).length;
@@ -525,6 +527,29 @@ const QuizEngineTimer = QuizTimerComponent;
     setTimeout(() => setQuestionTransition(false), 200); 
   };
 
+  const explanationTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (explanationTimerRef.current) clearTimeout(explanationTimerRef.current);
+    };
+  }, []);
+
+  const handleCloseExplanation = useCallback(() => {
+    if (explanationTimerRef.current) {
+      clearTimeout(explanationTimerRef.current);
+      explanationTimerRef.current = null;
+    }
+    setShowHint(false);
+    setUsed5050(false);
+    setUsedAskAudience(false);
+    setShowExplanation(false);
+    setAudienceStats(null);
+    setRemovedOptions([]);
+    triggerQuestionTransition();
+    moveToNextQuestion();
+  }, [moveToNextQuestion]);
+
   const handleSubmitAnswer = useCallback((answerIndex) => {
     if (isSubmitting) return;
     setIsSubmitting(true);
@@ -552,17 +577,23 @@ const QuizEngineTimer = QuizTimerComponent;
       }
     }
 
-    setTimeout(() => {
-      setShowHint(false);
-      setUsed5050(false);
-      setUsedAskAudience(false);
-      setShowExplanation(false);
-      setAudienceStats(null);
-      setRemovedOptions([]);
-      triggerQuestionTransition();
-      moveToNextQuestion();
-    }, 2000);
-  }, [currentIndex, questions, submitAnswer, soundEnabled, moveToNextQuestion, showExplanation, isSubmitting]);
+    const isLastQuestion = currentIndex >= (questions?.length || 0) - 1;
+
+    if (isLastQuestion) {
+      toast.success(
+        language === "hi" 
+          ? "🎉 दौर समाप्त! आपके परिणाम अनलॉक किए जा रहे हैं..." 
+          : "🎉 Challenge Complete! Unlocking your results...", 
+        { icon: "🏁", duration: 2500 }
+      );
+    }
+
+    // Auto skip dialogue after 2.7 seconds if not closed manually earlier
+    if (explanationTimerRef.current) clearTimeout(explanationTimerRef.current);
+    explanationTimerRef.current = setTimeout(() => {
+      handleCloseExplanation();
+    }, 2700);
+  }, [currentIndex, questions, submitAnswer, soundEnabled, isSubmitting, language, handleCloseExplanation]);
 
   const handleToggleStory = () => {
     if (!showStory) {
@@ -683,7 +714,7 @@ const QuizEngineTimer = QuizTimerComponent;
                   seconds={timerSetting}
                   onExpire={handleTimerExpire}
                   questionKey={currentQuestion.id}
-                  isPaused={isPaused || showStory}
+                  isPaused={isPaused || showStory || showExplanation}
                 />
               )}
             </div>
@@ -728,10 +759,13 @@ const QuizEngineTimer = QuizTimerComponent;
                  className={`${styles.controlBtn} ${styles.langToggle} ${isTranslating ? styles.loading : ""}`}
                  onClick={() => toggleLanguage(category?.storyText)}
                  title={language === "hi" ? "Switch to English" : "Switch to Hindi"}
-                 data-icon={language === "hi" ? "EN" : "HI"}
                  disabled={isTranslating}
+                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
-                 <span className={styles.langLabel}>{language === "hi" ? "A" : "अ"}</span>
+                 <div style={{ position: 'relative', width: '22px', height: '22px', color: '#6366f1' }}>
+                   <span style={{ position: 'absolute', top: '-1px', left: 0, fontSize: '12px', fontWeight: '900', fontFamily: 'Inter, sans-serif' }}>A</span>
+                   <span style={{ position: 'absolute', bottom: '-3px', right: 0, fontSize: '15px', fontWeight: '700' }}>अ</span>
+                 </div>
               </button>
               
               <button 
@@ -768,6 +802,7 @@ const QuizEngineTimer = QuizTimerComponent;
                 removedOptions={removedOptions}
                 audienceStats={audienceStats}
                 showExplanation={showExplanation}
+                onCloseExplanation={handleCloseExplanation}
                 explanation={currentQuestion.explanation}
                 language={language}
               />
@@ -848,16 +883,11 @@ const QuizEngineTimer = QuizTimerComponent;
 
       {/* End Quiz Confirmation Modal */}
       {showEndConfirmModal && (
-        <div className={styles.modalOverlay}>
-          <div className={`${styles.exitModal} glass-card`}>
-            <h2 className={styles.exitModalTitle}>⚠️ End Quiz?</h2>
+        <div className={styles.modalOverlay} style={{ zIndex: 10000 }}>
+          <div className={styles.exitModal}>
+            <h2 className={styles.exitModalTitle}>End Quiz Early?</h2>
             <p className={styles.exitModalText}>
-              Are you sure you want to end the quiz now? 
-              <br />
-              { (answers || []).length > 0 
-                ? `You have answered ${answers.length} question${answers.length === 1 ? '' : 's'}. Your results will be calculated.`
-                : "You haven&apos;t answered any questions yet. Ending now will return you to the home page."
-              }
+              You haven't finished all questions. Are you sure you want to end the quiz and see your results?
             </p>
             <div className={styles.exitModalActions}>
               <button className={styles.exitModalCancel} onClick={() => setShowEndConfirmModal(false)}>
@@ -868,6 +898,15 @@ const QuizEngineTimer = QuizTimerComponent;
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {isEnding && (
+        <div className={styles.modalOverlay} style={{ zIndex: 10005, flexDirection: 'column', gap: '16px' }}>
+          <div className={styles.spinner}></div>
+          <p style={{ fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--text-primary)' }}>
+            Processing results...
+          </p>
         </div>
       )}
 

@@ -37,6 +37,12 @@ model User {
   tfAnsweredCount Int         @default(0)
   proBadge        String?     // Custom badge name if any
   
+  // Coin Economy System
+  coinBalance     Int         @default(0) // Current coin balance
+  totalCoinsEarned Int        @default(0) // Lifetime coins earned
+  coinTransactions CoinTransaction[]
+  dailyStreaks    DailyStreak[]
+  
   // Fun Fact Social Models
   funFactLikes      FunFactLike[]
   funFactFavorites  FunFactFavorite[]
@@ -81,6 +87,35 @@ model Account {
   @@unique([provider, providerAccountId])
 }
 
+// ── Coin Economy Models ──
+
+model CoinTransaction {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  type        String   // "CORRECT_ANSWER", "DAILY_LOGIN", "REDEMPTION", "BONUS"
+  amount      Int      // Positive for earning, negative for spending
+  description String?  // Human-readable description
+  metadata    String?  @default("{}") // JSON for additional context
+  
+  createdAt   DateTime @default(now())
+}
+
+model DailyStreak {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  streakCount Int      @default(0) // Current consecutive days
+  lastClaimAt DateTime?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([userId])
+}
+
 // ── Quiz Data ──
 
 model Category {
@@ -123,6 +158,8 @@ model Question {
   correctAnswer String
   difficulty    String      @default("easy")
   image         String?
+  explanation   String?
+  explanationHi String?
 
   categoryId String   @db.ObjectId
   category Category @relation(fields: [categoryId], references: [id])
@@ -358,6 +395,7 @@ model CurrentAffair {
   category    String   @default("General")
   heading     String
   description String
+  oneLiner    String?
   image       String?
   hidden      Boolean  @default(false)
   createdAt   DateTime @default(now())

@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useLanguage } from "@/context/LanguageContext";
+import { Crown } from "lucide-react";
 import styles from "@/styles/Profile.module.css";
 
 import { useUI } from "@/context/UIContext";
@@ -113,7 +114,15 @@ export default function ProfilePage() {
   return (
     <div className={styles.page}>
       <div className={`${styles.card} glass-card`}>
-        <h1 className={styles.title}>{t('quizzes.profile.title')}</h1>
+        <div className="flex items-center gap-3 mb-4">
+          <h1 className={styles.title}>{t('quizzes.profile.title')}</h1>
+          {session?.user?.isPro && (
+            <div className="flex items-center gap-2 bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest">
+              <Crown size={14} className="text-amber-500" />
+              Pro Member
+            </div>
+          )}
+        </div>
         <div className={styles.avatarSection}>
           <img
             src={avatarPreview || "/default-avatar.svg"}

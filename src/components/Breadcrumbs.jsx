@@ -32,8 +32,11 @@ const Breadcrumbs = () => {
     setIsMounted(true);
   }, []);
 
+  const isQuizOrExamRoute = pathname?.startsWith("/quiz/") || pathname?.includes("/mock-tests/paper/") || pathname?.startsWith("/live/");
+  const isCurrentlyFullscreen = isFullscreen && isQuizOrExamRoute;
+
   // Don't show breadcrumbs on the home page, admin routes, or when fullscreen/mobile menu is open or before mounting
-  if (!isMounted || pathname === '/' || pathname?.startsWith('/admin') || pathname?.includes('/mock-tests/paper/') || isMobileMenuOpen || isFullscreen) return null;
+  if (!isMounted || pathname === '/' || pathname?.startsWith('/admin') || pathname?.includes('/mock-tests/paper/') || isMobileMenuOpen || isCurrentlyFullscreen) return null;
 
   const pathSegments = pathname.split('/').filter((segment) => segment !== '');
 

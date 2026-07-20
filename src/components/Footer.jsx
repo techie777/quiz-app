@@ -15,7 +15,9 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   const { isFullscreen } = useQuiz();
-  const shouldHide = isFullscreen || pathname?.startsWith("/admin") || pathname?.startsWith("/live/") || pathname?.includes("/mock-tests/paper/") || pathname?.endsWith("/export") || settings?.footerEnabled === false;
+  const isQuizOrExamRoute = pathname?.startsWith("/quiz/") || pathname?.includes("/mock-tests/paper/") || pathname?.startsWith("/live/");
+  const isCurrentlyFullscreen = isFullscreen && isQuizOrExamRoute;
+  const shouldHide = isCurrentlyFullscreen || pathname?.startsWith("/admin") || pathname?.startsWith("/live/") || pathname?.includes("/mock-tests/paper/") || pathname?.endsWith("/export") || settings?.footerEnabled === false;
 
   const brandDesc =
     (typeof settings?.footerBrandDesc === "string" && settings.footerBrandDesc.trim()

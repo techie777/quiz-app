@@ -64,7 +64,7 @@ export default function UserMenu() {
             </span>
           )}
         </div>
-        <span className={styles.desktopName}>{session.user.name}</span>
+        <span className={styles.desktopName}>{session.user.name} 🏆</span>
         <span className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ""}`}>▾</span>
       </button>
 
@@ -78,7 +78,7 @@ export default function UserMenu() {
             transition={{ duration: 0.2 }}
           >
             <div className={styles.dropdownHeader}>
-              <p className={styles.dropdownName}>{session.user.name}</p>
+              <p className={styles.dropdownName}>{session.user.name} 🏆</p>
               <p className={styles.dropdownEmail}>{session.user.email}</p>
             </div>
 
@@ -98,6 +98,11 @@ export default function UserMenu() {
                   <li>
                     <Link href="/profile" className={styles.dropdownLink} onClick={() => setIsOpen(false)}>
                       <span className={styles.menuIcon}>👤</span> {mounted ? t('nav.userMenu.profile') : 'My Profile'}
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/wallet" className={styles.dropdownLink} onClick={() => setIsOpen(false)}>
+                      <span className={styles.menuIcon}>💰</span> {mounted ? t('nav.userMenu.wallet') || 'My Wallet' : 'My Wallet'}
                     </Link>
                   </li>
                   <li>

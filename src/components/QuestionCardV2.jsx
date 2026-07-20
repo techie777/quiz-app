@@ -1,20 +1,22 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useQuiz } from "@/context/QuizContext";
 import { playCorrectSound, playWrongSound } from "@/lib/sounds";
 import { shareQuestion } from "@/lib/shareImage";
-import { Share2, Heart } from "lucide-react";
+import { Share2, Heart, X } from "lucide-react";
 import Image from "next/image";
 import styles from "@/styles/QuizEngine.module.css";
+import { getDynamicExplanation } from "@/lib/explanationGenerator";
 
 export default function QuestionCardV2({
   question,
   onAnswer,
   userAnswer,
   showExplanation,
+  onCloseExplanation,
   explanation,
   language = "en",
   disabled,
@@ -35,16 +37,23 @@ export default function QuestionCardV2({
   const [loginPrompt, setLoginPrompt] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [shakingType, setShakingType] = useState("");
+  // Smooth explanation centered display without layout shifts or screen scrolling
+  useEffect(() => {
+    // ScrollIntoView removed to prevent unwanted screen jump on answer selection
+  }, [showExplanation]);
 
   const isUser = session?.user && !session.user.isAdmin;
 
-  // Update selected when userAnswer changes (navigation)
+  // Update selected & revealed when question or userAnswer changes (navigation)
   useEffect(() => {
     if (userAnswer !== undefined) {
       setSelected(userAnswer);
       setRevealed(true);
+    } else {
+      setSelected(null);
+      setRevealed(false);
     }
-  }, [userAnswer]);
+  }, [question?.id, userAnswer]);
 
   // Sync fav state
   useEffect(() => {
@@ -154,16 +163,20 @@ export default function QuestionCardV2({
     <div className={`${styles.questionSection} ${shakingType ? styles[shakingType] || shakingType : ""}`}>
       <div className={styles.questionCard}>
         <div className={styles.questionHeader}>
-          <p className={styles.questionText}>
-            {isHindi ? (question.textHi || question.text) : question.text}
-          </p>
+          {!!(isHindi ? (question.textHi || question.text) : question.text) ? (
+            <p className={styles.questionText}>
+              {isHindi ? (question.textHi || question.text) : question.text}
+            </p>
+          ) : (
+            <div style={{ flex: 1 }} />
+          )}
           <div className={styles.actionBtns}>
             <button
               className={styles.favBtn}
               onClick={handleFavClick}
               title="Favourite"
             >
-              <Heart size={18} fill={fav ? "currentColor" : "none"} color={fav ? "#ef4444" : "currentColor"} />
+              <Heart size={18} fill={fav ? "#ef4444" : "none"} color={fav ? "#ef4444" : "currentColor"} />
             </button>
             <button
               className={styles.shareBtn}
@@ -190,7 +203,6 @@ export default function QuestionCardV2({
         )}
       </div>
 
-      {/* Login Prompt Overlay */}
       {loginPrompt && (
         <div className={styles.loginPrompt}>
           <p>{isHindi ? "पसंदीदा में जोड़ने के लिए कृपया लॉगिन करें।" : "Sign in to save favourites"}</p>
@@ -205,7 +217,6 @@ export default function QuestionCardV2({
         </div>
       )}
 
-      {/* Hint Display */}
       {showHint && (
         <div className={styles.hintBox}>
           <div className={styles.hintHeader}>
@@ -218,7 +229,6 @@ export default function QuestionCardV2({
         </div>
       )}
 
-      {/* Ask Audience Results */}
       {audienceStats && (
         <div className={styles.audienceBox}>
           <div className={styles.audienceHeader}>
@@ -243,25 +253,16 @@ export default function QuestionCardV2({
           const originalIndex = opt.originalIndex;
           const isRemoved = removedOptions.includes(originalIndex);
           const hotkeys = ['A', 'B', 'C', 'D'];
-          
           if (isRemoved) return null;
-          
-          // Class calculation exactly matching old file
           let className = styles.option;
           let isCorrect = false;
-          
           if (revealed) {
             const selectedOptionText = String(question.options[originalIndex] || "").trim();
             const correctAnswerText = String(question.correctAnswer || "").trim();
             isCorrect = selectedOptionText === correctAnswerText;
-            
-            if (isCorrect) {
-              className += ` ${styles.correct} correct-answer`;
-            } else if (originalIndex === selected && !isCorrect) {
-              className += ` ${styles.wrong} wrong-answer`;
-            }
+            if (isCorrect) className += ` ${styles.correct} correct-answer`;
+            else if (originalIndex === selected && !isCorrect) className += ` ${styles.wrong} wrong-answer`;
           }
-          
           return (
             <button
               key={displayIdx}
@@ -273,7 +274,6 @@ export default function QuestionCardV2({
                 <span className={styles.hotkey}>{hotkeys[displayIdx]}</span>
                 <p className={styles.optionText}>{opt.text}</p>
               </div>
-              
               {revealed && (
                 <div className={styles.optionIndicator}>
                   {isCorrect ? '✓' : (selected === originalIndex ? '✗' : null)}
@@ -287,13 +287,26 @@ export default function QuestionCardV2({
         })}
       </div>
 
-      {/* Explanation Display */}
-      {showExplanation && explanation && (
-        <div className={styles.explanationBox}>
-          <div className={styles.explanationHeader}>
-            <span>📚 {isHindi ? "स्पष्टीकरण" : "Explanation"}</span>
+      {showExplanation && (
+        <div className={styles.explanationOverlay} onClick={() => onCloseExplanation?.()}>
+          <div className={styles.centeredExplanationCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.explanationHeader} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+              <span className={styles.explanationTitle}>
+                💡 {isHindi ? "स्पष्टीकरण" : "Explanation"}
+              </span>
+              <button
+                onClick={() => onCloseExplanation?.()}
+                className={styles.explanationCloseBtn}
+                title={isHindi ? "बंद करें" : "Close"}
+                aria-label="Close"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <p className={styles.explanationText} style={{ margin: 0, fontSize: "0.9rem", lineHeight: "1.4" }}>
+              {getDynamicExplanation(question, isHindi)}
+            </p>
           </div>
-          <p className={styles.explanationText}>{explanation}</p>
         </div>
       )}
     </div>

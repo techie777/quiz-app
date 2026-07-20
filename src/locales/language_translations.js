@@ -17,6 +17,25 @@ export const translations = {
       quizzesAvailable: "Quizzes Available"
     },
     // Navigation
+    ca: {
+      title: "Intelligence Briefing",
+      subtitle: "Stay updated with the latest national and international developments.",
+      today: "Today",
+      categories: "Categories",
+      all: "All Intelligence",
+      dateHeader: "{date} Intelligence",
+      loading: "Decrypting more briefings...",
+      end: "Complete Mission History Decrypted",
+      prev: "Previous",
+      next: "Next",
+      postedBy: "Posted by",
+      read: "Read",
+      sidebarTitle: "Current Affairs Category",
+      noResults: "No intelligence found for the selected parameters.",
+      shareTitle: "Daily Current Affairs",
+      shareTagline: "Education & Exam Preparation Platform",
+      readMore: "Read more Daily Current Affairs on QuizWeb"
+    },
     nav: {
       home: "Home",
       quizzes: "Quizzes",
@@ -50,9 +69,11 @@ export const translations = {
       userMenu: {
         admin: "Admin Dashboard",
         profile: "My Profile",
+        wallet: "My Wallet",
         favorites: "My Favourites",
         learning: "Learning Progress",
         leaderboard: "Global Leaderboard",
+        personalized: "Personalized Quiz",
         interests: "Manage Interests",
         signOut: "Sign Out",
         confirmSignOut: "Are you sure?",
@@ -276,6 +297,12 @@ export const translations = {
       analyzing: "Analyzing your performance...",
       accuracy: "Accuracy",
       status: "Status",
+      challenge: {
+        title: "Challenge a Friend",
+        subtitle: "Prove you are the smartest in your group!",
+        btn: "Send on WhatsApp",
+        shareBtn: "Share on WhatsApp"
+      },
       motivation: {
         perfect: "Perfect Score!",
         great: "Great Job!",
@@ -602,6 +629,25 @@ export const translations = {
         quizzesAvailable: "क्विज़ उपलब्ध"
       },
       // Navigation
+      ca: {
+        title: "इंटेलिजेंस ब्रीफिंग",
+        subtitle: "नवीनतम राष्ट्रीय और अंतर्राष्ट्रीय विकास के साथ अपडेट रहें।",
+        today: "आज",
+        categories: "श्रेणियां",
+        all: "सभी समाचार",
+        dateHeader: "{date} समाचार",
+        loading: "अधिक समाचार डिक्रिप्ट कर रहे हैं...",
+        end: "पूरा मिशन इतिहास डिक्रिप्ट हो गया",
+        prev: "पिछला",
+        next: "अगला",
+        postedBy: "द्वारा पोस्ट किया गया",
+        read: "पढ़ें",
+        sidebarTitle: "करेंट अफेयर्स श्रेणी",
+        noResults: "चयनित मापदंडों के लिए कोई जानकारी नहीं मिली।",
+        shareTitle: "करेंट अफेयर्स",
+        shareTagline: "शिक्षा और परीक्षा तैयारी मंच",
+        readMore: "क्विज़वेब पर अधिक करेंट अफेयर्स पढ़ें"
+      },
       nav: {
         home: "होम",
         quizzes: "क्विज़",
@@ -615,7 +661,7 @@ export const translations = {
       personalized: "व्यक्तिगत क्विज़",
       leaderboard: "ग्लोबल लीडरबोर्ड",
       pro: "क्विज़वेब प्रो",
-      currentAffairs: "दैनिक समसामयिकी",
+      currentAffairs: "करेंट अफेयर्स",
       funFacts: "रोचक तथ्य",
       sawalJawab: "सवाल/जवाब",
       trueFalse: "सही/गलत",
@@ -635,9 +681,11 @@ export const translations = {
         userMenu: {
           admin: "एडमिन डैशबोर्ड",
           profile: "मेरी प्रोफ़ाइल",
+          wallet: "मेरा वॉलेट",
           favorites: "मेरी पसंद",
           learning: "सीखने की प्रगति",
           leaderboard: "ग्लोबल लीडरबोर्ड",
+          personalized: "व्यक्तिगत क्विज़",
           interests: "रुचियां प्रबंधित करें",
           signOut: "साइन आउट",
           confirmSignOut: "क्या आप वाकई साइन आउट करना चाहते हैं?",
@@ -792,10 +840,33 @@ export const translations = {
           waiting: "मेजबान के शुरू करने की प्रतीक्षा है...",
           startBtn: "मिशन शुरू करें",
           copyLink: "इनवाइट लिंक कॉपी करें",
+          status: {
+            liveRoom: "लाइव रूम",
+            uptime: "समय",
+            players: "खिलाड़ी"
+          },
+          invite: {
+            title: "दोस्तों को आमंत्रित करें",
+            subtitle: "खिलाड़ियों को आमंत्रित करने के लिए नीचे दिया गया लिंक साझा करें",
+            shareTitle: "मेरे क्विज़ में शामिल हों!",
+            whatsappText: "मेरे लाइव क्विज़ रूम में यहाँ शामिल हों:",
+            whatsappBtn: "व्हाट्सएप द्वारा आमंत्रित करें",
+            whatsappFooter: "सीधे अपने दोस्तों को भेजें",
+            desc: "लिंक कॉपी करें और जिसे भी चुनौती देना चाहते हैं उसे भेजें।",
+            syncing: "सिंक्रनाइज़ हो रहा है..."
+          },
           players: {
-            awaiting: "मदद की प्रतीक्षा है...",
-            kick: "निकालें",
-            commander: "कमांडर"
+            title: "सक्रिय खिलाड़ी",
+            ready: "खिलाड़ी तैयार हैं",
+            host: "मेजबान",
+            inControl: "नियंत्रण में",
+            leader: "लीडर",
+            commander: "एडमिन",
+            left: "छोड़ दिया",
+            idle: "निष्क्रिय",
+            active: "सक्रिय",
+            awaiting: "खिलाड़ियों की प्रतीक्षा है...",
+            kick: "निकालें"
           },
           selection: {
             title: "मिशन कॉन्फ़िगरेशन",
@@ -806,11 +877,48 @@ export const translations = {
             viewQs: "प्रश्न देखें",
             noQs: "कोई प्रश्न नहीं मिला।",
             back: "सेक्टर्स पर लौटें",
-            mixed: "मेगा मिक्स प्रोटोकॉल"
+            mixed: "मेगा मिक्स प्रोटोकॉल",
+            searchPlaceholder: "विषय खोजें...",
+            altInt: "विषय चुनें",
+            selectTopic: "विषय चुनें",
+            reset: "रीसेट",
+            scanning: "स्कैन हो रहा है...",
+            assessments: "प्रश्न",
+            backToTopics: "विषयों पर वापस जाएं",
+            selectPkg: "पैकेज चुनें",
+            package: "सेट",
+            decrypting: "प्रश्न लोड हो रहे हैं...",
+            pkgIntel: "पैकेज पूर्वावलोकन",
+            statement: "प्रश्न",
+            diff: "कठिनाई",
+            timer: "टाइमर",
+            timerSub: "प्रश्न समय सीमा निर्धारित करें"
+          },
+          controls: {
+            exit: "बाहर निकलें",
+            sync: "सिंक",
+            terminate: "समाप्त करें",
+            terminateConfirm: "क्या आप वाकई लाइव रूम समाप्त करना चाहते हैं?",
+            initiate: "क्विज़ शुरू करें"
+          },
+          ready: {
+            title: "खेलने के लिए तैयार",
+            subtitle: "मेजबान की प्रतीक्षा है",
+            desc: "{host} क्विज़ तैयार कर रहा है।"
+          },
+          pending: {
+            title: "प्रतीक्षा कर रहे हैं",
+            desc: "{host} द्वारा आपका अनुरोध स्वीकार करने की प्रतीक्षा है।"
           },
           toasts: {
-            left: "एक खिलाड़ी मिशन छोड़कर चला गया है।",
-            copied: "इनवाइट लिंक कॉपी कर लिया गया है!"
+            left: "एक खिलाड़ी रूम छोड़कर चला गया है।",
+            copied: "इनवाइट लिंक कॉपी कर लिया गया है!",
+            desync: "कैटेगरी सिंक विफल",
+            noTopic: "कृपया एक विषय चुनें",
+            noTimer: "कृपया समय सीमा चुनें",
+            linkCopied: "लिंक कॉपी हो गया!",
+            syncComplete: "रूम सिंक हो गया!",
+            decryptFail: "प्रश्न लोड करने में विफल"
           }
         },
         quiz: {
@@ -854,6 +962,12 @@ export const translations = {
         analyzing: "आपके प्रदर्शन का विश्लेषण किया जा रहा है...",
         accuracy: "सटीकता",
         status: "स्थिति",
+        challenge: {
+          title: "मित्र को चुनौती दें",
+          subtitle: "साबित करें कि आप अपने समूह में सबसे समझदार हैं!",
+          btn: "व्हाट्सएप पर भेजें",
+          shareBtn: "व्हाट्सएप पर शेयर करें"
+        },
         motivation: {
           perfect: "शानदार स्कोर!",
           great: "बहुत अच्छा!",

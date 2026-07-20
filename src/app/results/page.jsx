@@ -15,6 +15,7 @@ import autoTable from "jspdf-autotable";
 import AdGate from "@/components/monetization/AdGate";
 import { toPng } from "html-to-image";
 import toast from "react-hot-toast";
+import { updateBadgeStats } from "@/lib/badgeManager";
 
 function getMotivation(percentage, t) {
   if (percentage === 100) return { text: t('result.motivation.perfect'), emoji: "🌟" };
@@ -79,28 +80,32 @@ export default function ResultPage() {
     if (!quizzes || !Array.isArray(quizzes)) return [];
     const validQuizzes = quizzes.filter(q => q && q.topic && !q.hidden);
     
-    // If showAllQuizzes is false, and no search query, show only first 6 recommendations
-    // If search query is present, search across all valid quizzes
-    if (!showAllQuizzes && !searchQuery) {
-      return validQuizzes.slice(0, 6);
-    }
-    
     const query = searchQuery.toLowerCase();
     return validQuizzes.filter(q => 
       (q.topic && q.topic.toLowerCase().includes(query)) ||
       (q.description && q.description.toLowerCase().includes(query))
-    ).slice(0, showAllQuizzes ? 50 : 10);
-  }, [quizzes, searchQuery, showAllQuizzes]);
+    ).slice(0, 50);
+  }, [quizzes, searchQuery]);
 
   // Show suggestions 5 seconds after results are revealed (post-ad)
   useEffect(() => {
-    if (questions && questions.length > 0 && !showGateAd) {
-      const timer = setTimeout(() => {
-        setShowPostQuizPopup(true);
-      }, 5000);
-      return () => clearTimeout(timer);
+    if (questions && questions.length > 0) {
+      const pct = Math.round((score / questions.length) * 100);
+      updateBadgeStats({
+        quizCount: 1,
+        perfectCount: pct === 100 ? 1 : 0,
+        totalQuestions: questions.length,
+        categoryId: quizId || quizCategoryName || "general"
+      });
+
+      if (!showGateAd) {
+        const timer = setTimeout(() => {
+          setShowPostQuizPopup(true);
+        }, 7000);
+        return () => clearTimeout(timer);
+      }
     }
-  }, [questions, showGateAd]);
+  }, [questions, showGateAd, score, quizId, quizCategoryName]);
 
   const handleContinueNextSet = () => {
      if (isMixedMode) {
@@ -319,7 +324,7 @@ export default function ResultPage() {
                     }}
                     className="px-4 py-2 bg-white text-indigo-600 rounded-xl text-xs font-black uppercase tracking-wider hover:bg-indigo-50 transition-colors shadow-lg"
                   >
-                    Send on WhatsApp
+                    {t('result.challenge.btn')}
                   </button>
                 </div>
               </div>
@@ -380,18 +385,20 @@ export default function ResultPage() {
 
             {/* Action Buttons */}
             <div className={styles.actions}>
-              <button className="btn-primary" onClick={handlePlayAgain}>
-                🔄 {t('result.actions.playAgain')}
-              </button>
-              <button
-                className="btn-secondary"
-                onClick={() => setShowReview(!showReview)}
-              >
-                {showReview ? t('result.actions.hideAnswers') : `📋 ${t('result.actions.viewAnswers')}`}
-              </button>
-              <button className="btn-secondary" onClick={handleBackToQuizzes}>
-                ← {t('result.actions.backToQuizzes')}
-              </button>
+              <div className="flex flex-col sm:flex-row gap-3 w-full">
+                <button className="btn-primary flex-1 whitespace-nowrap" onClick={handlePlayAgain}>
+                  🔄 {t('result.actions.playAgain')}
+                </button>
+                <button
+                  className="btn-secondary flex-1 whitespace-nowrap"
+                  onClick={() => setShowReview(!showReview)}
+                >
+                  {showReview ? t('result.actions.hideAnswers') : `📋 ${t('result.actions.viewAnswers')}`}
+                </button>
+                <button className="btn-secondary flex-1 whitespace-nowrap" onClick={handleBackToQuizzes}>
+                  ← {t('result.actions.backToQuizzes')}
+                </button>
+              </div>
               
               <div className="flex gap-2 w-full mt-4">
                  <button 
@@ -517,12 +524,6 @@ export default function ResultPage() {
                    onChange={(e) => setSearchQuery(e.target.value)}
                    className={styles.searchInput}
                  />
-                 <button 
-                   className={`${styles.viewAllBtn} ${showAllQuizzes ? styles.active : ""}`}
-                   onClick={() => setShowAllQuizzes(!showAllQuizzes)}
-                 >
-                   {showAllQuizzes ? t('result.popup.showingAll') : t('result.popup.viewAll')}
-                 </button>
                </div>
             </div>
 
@@ -538,7 +539,7 @@ export default function ResultPage() {
 
               <div className={styles.suggestionsList}>
                  <h3 className={styles.suggestionsLabel}>
-                   {showAllQuizzes ? t('result.popup.exploreAll') : t('result.popup.recommended')}
+                   {t('result.popup.exploreAll')}
                  </h3>
                 <div className={styles.miniSuggestionsGrid}>
                   {filteredQuizzes.map(quiz => (
