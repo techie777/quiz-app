@@ -16,6 +16,7 @@ import AdGate from "@/components/monetization/AdGate";
 import { toPng } from "html-to-image";
 import toast from "react-hot-toast";
 import { updateBadgeStats } from "@/lib/badgeManager";
+import { shareResult } from "@/lib/shareImage";
 
 function getMotivation(percentage, t) {
   if (percentage === 100) return { text: t('result.motivation.perfect'), emoji: "🌟" };
@@ -51,7 +52,7 @@ export default function ResultPage() {
     categoryName: quizCategoryName
   } = useQuiz();
   const { quizzes } = useData();
-  const [showReview, setShowReview] = useState(false);
+  const [showReview, setShowReview] = useState(true);
   const [confetti, setConfetti] = useState([]);
   const [showPostQuizPopup, setShowPostQuizPopup] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -169,12 +170,27 @@ export default function ResultPage() {
   };
 
   const handleBackToQuizzes = () => {
-    resetQuiz();
+    // User requested "Continue to next set should directly start the next set of quiz"
     if (isMixedMode) {
-      router.push("/");
+      startMixedQuiz(questions, mixedSectionName, timerSetting, difficulty, language);
+      router.push("/quiz/mix");
       return;
     }
-    router.push(`/category/${quizSlug || quizId}`);
+    
+    // FETCH NEXT SET LOGIC
+    const nextSetIndex = (selectedSetIndex || 1) + 1;
+    const CHUNK_SIZE = 20;
+    const startIndex = (nextSetIndex - 1) * CHUNK_SIZE;
+    
+    if (category && category.questions && category.questions.length > startIndex) {
+      const nextQuestions = category.questions.slice(startIndex, startIndex + CHUNK_SIZE);
+      startQuizSet(quizId, nextQuestions, timerSetting, language, nextSetIndex, category.topic);
+      router.push(`/quiz/${quizId}`);
+    } else {
+      // If no next set exists, just go back to category page
+      resetQuiz();
+      router.push(`/category/${quizSlug || quizId}`);
+    }
   };
 
   const handleExportPDF = () => {
@@ -269,38 +285,14 @@ export default function ResultPage() {
                     }
                   </button>
                     <button onClick={async () => {
-                        const shareText = t('result.share.text')
-                          .replace('{score}', score)
-                          .replace('{total}', total)
-                          .replace('{percentage}', percentage)
-                          .replace('{topic}', quizCategoryName || category?.topic || mixedSectionName || 'QuizWeb');
-                        const shareUrl = window.location.origin + (quizSlug || quizId ? `/category/${quizSlug || quizId}` : '/');
-                        
-                        try {
-                          if (resultCardRef.current && navigator.share && navigator.canShare) {
-                            const dataUrl = await toPng(resultCardRef.current, { cacheBust: true, pixelRatio: 2, backgroundColor: '#0f172a' });
-                            const blob = await (await fetch(dataUrl)).blob();
-                            const file = new File([blob], 'quiz-result.png', { type: 'image/png' });
-                            
-                            if (navigator.canShare({ files: [file] })) {
-                              await navigator.share({
-                                files: [file],
-                                title: t('result.share.title'),
-                                text: shareText + "\n" + shareUrl,
-                              });
-                              return;
-                            }
-                          }
-                        } catch (err) {
-                          console.error("Share image failed:", err);
-                        }
-
-                        if (navigator.share) {
-                            navigator.share({ title: t('result.share.title'), text: shareText, url: shareUrl }).catch(()=>{});
-                        } else { 
-                            navigator.clipboard.writeText(`${shareText} ${shareUrl}`); 
-                            toast.success(t('result.share.copied')); 
-                        }
+                        const topicName = quizCategoryName || category?.topic || mixedSectionName || 'QuizWeb';
+                        await shareResult({
+                          score,
+                          total,
+                          percentage,
+                          topic: topicName,
+                          quizId: quizSlug || quizId
+                        });
                     }} className="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-widest hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all ml-auto">
                         <Share2 size={14} /> {t('common.share')}
                     </button>
@@ -481,6 +473,14 @@ export default function ResultPage() {
                           </strong>
                         </p>
                       </div>
+                      {(question.explanation || (isHindi && question.explanationHi)) && (
+                        <div className="mt-3.5 p-3.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                          <span className="font-extrabold text-indigo-600 dark:text-indigo-400 block mb-1 uppercase tracking-wider text-[11px]">
+                            💡 {isHindi ? "स्पष्टीकरण:" : "Explanation:"}
+                          </span>
+                          {isHindi && question.explanationHi ? question.explanationHi : question.explanation}
+                        </div>
+                      )}
                     </div>
                   );
                 })}

@@ -177,6 +177,12 @@
   color: #b91c1c !important;
 }
 
+.skippedNode {
+  background: #fffbeb !important;
+  border-color: #f59e0b !important;
+  color: #b45309 !important;
+}
+
 
 .mapFooter {
   display: flex;

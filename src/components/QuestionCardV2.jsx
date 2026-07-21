@@ -287,6 +287,17 @@ export default function QuestionCardV2({
         })}
       </div>
 
+      {revealed && !showExplanation && (
+        <div className="mt-6 p-5 rounded-2xl bg-indigo-50/80 dark:bg-slate-800/90 border border-indigo-200/60 dark:border-indigo-900/40 shadow-sm animate-in fade-in duration-300">
+          <div className="flex items-center gap-2 mb-2 font-black text-xs uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+            <span>💡 {isHindi ? "स्पष्टीकरण एवं समीक्षा" : "Explanation & Review"}</span>
+          </div>
+          <p className="m-0 text-sm leading-relaxed text-slate-700 dark:text-slate-200 font-medium">
+            {getDynamicExplanation(question, isHindi)}
+          </p>
+        </div>
+      )}
+
       {showExplanation && (
         <div className={styles.explanationOverlay} onClick={() => onCloseExplanation?.()}>
           <div className={styles.centeredExplanationCard} onClick={(e) => e.stopPropagation()}>

@@ -27,6 +27,13 @@ export default function QuizSidebar({
   const { status } = useQuiz();
   // State for elapsed time
   const [elapsed, setElapsed] = useState(0);
+  const [maxVisited, setMaxVisited] = useState(currentIndex);
+
+  useEffect(() => {
+    if (currentIndex > maxVisited) {
+      setMaxVisited(currentIndex);
+    }
+  }, [currentIndex, maxVisited]);
 
   // Sync elapsed time
   useEffect(() => {
@@ -93,11 +100,14 @@ export default function QuizSidebar({
             const isCurrent = index === currentIndex;
             const isAnswered = question.userAnswer !== undefined;
             const isCorrect = isAnswered && String(question.options[question.userAnswer]).trim() === String(question.correctAnswer).trim();
+            const isSkipped = !isAnswered && index < maxVisited && !isCurrent;
             
             let nodeClass = styles.node;
             if (isCurrent) nodeClass += ` ${styles.activeNode}`;
-            if (isAnswered) {
+            else if (isAnswered) {
               nodeClass += isCorrect ? ` ${styles.correctNode}` : ` ${styles.wrongNode}`;
+            } else if (isSkipped) {
+              nodeClass += ` ${styles.skippedNode}`;
             }
 
             return (

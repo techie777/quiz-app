@@ -106,6 +106,16 @@
   .desktopAuth {
     display: none;
   }
+
+  .gamification {
+    gap: 8px;
+    margin: 0 8px;
+    padding: 4px 8px;
+  }
+  
+  .xpContainer, .streakBadge {
+    display: none !important;
+  }
 }
 
 .loading {
@@ -382,14 +392,5 @@
   transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-@media (max-width: 640px) {
-  .gamification {
-    gap: 8px;
-    margin: 0 8px;
-    padding: 4px 8px;
-  }
-  .xpContainer {
-    display: none;
-  }
-}
+
 

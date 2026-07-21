@@ -31,18 +31,20 @@ class SocketService {
       const socketUrl = getSocketUrl();
       
       this.socket = io(socketUrl, {
-        reconnectionAttempts: 5,
+        path: '/socket.io',
+        reconnectionAttempts: 10,
         reconnectionDelay: 1000,
-        timeout: 10000,
+        timeout: 20000,
         forceNew: true,
-        transports: ['websocket'] // Force WebSocket to avoid XHR polling errors
+        transports: ['polling', 'websocket'], // Allow polling fallback with automatic upgrade to websocket for production load balancers/proxies
+        withCredentials: true
       });
       
-      console.log('???? Socket Engine Initialized:', socketUrl);
+      console.log('📡 Socket Engine Initialized:', socketUrl);
       
       // Add connection error logging
       this.socket.on('connect_error', (error) => {
-        console.error('???? Socket Connection Error:', error.message);
+        console.error('❌ Socket Connection Error:', error.message);
         console.error('???? Attempted URL:', socketUrl);
       });
       

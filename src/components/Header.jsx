@@ -129,7 +129,6 @@ export default function Header() {
                   fontWeight: "800",
                   fontSize: "0.8rem",
                   cursor: "pointer",
-                  display: "inline-flex",
                   alignItems: "center",
                   gap: "4px",
                   marginRight: "6px"

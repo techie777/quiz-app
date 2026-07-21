@@ -37,7 +37,10 @@ app.prepare()
     });
 
     const io = new Server(httpServer, {
-      cors: { origin: '*', methods: ['GET', 'POST'] },
+      path: '/socket.io',
+      cors: { origin: '*', methods: ['GET', 'POST'], credentials: true },
+      transports: ['polling', 'websocket'],
+      allowEIO3: true,
       pingTimeout: 60000,
       pingInterval: 25000,
       connectTimeout: 45000

@@ -28,7 +28,7 @@ export default function ScrollToTop() {
   }, []);
 
   // Do not display floating scroll button during live sessions or active quiz play to avoid UI overlap
-  if (pathname?.startsWith('/live') || pathname?.startsWith('/quiz')) {
+  if (pathname?.startsWith('/live') || pathname?.startsWith('/quiz/')) {
     return null;
   }
 
@@ -44,13 +44,13 @@ export default function ScrollToTop() {
       onClick={scrollToTop}
       style={{
         position: 'fixed',
-        bottom: '2rem',
-        right: '2rem',
+        bottom: '100px', /* Shifted up to avoid overlapping with bottom action buttons */
+        right: '20px',
         zIndex: 9999,
         background: 'var(--brand-primary, #6366f1)',
         color: 'white',
-        width: '50px',
-        height: '50px',
+        width: '42px',
+        height: '42px',
         borderRadius: '50%',
         display: 'flex',
         alignItems: 'center',
@@ -73,7 +73,7 @@ export default function ScrollToTop() {
         e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
       }}
     >
-      <ArrowUp size={24} />
+      <ArrowUp size={20} />
     </button>
   );
 }

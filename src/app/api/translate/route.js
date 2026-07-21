@@ -6,9 +6,18 @@ async function translateChunked(strings, { from, to, chunkSize = 15 }) {
   for (let i = 0; i < strings.length; i += chunkSize) {
     const chunk = strings.slice(i, i + chunkSize);
     console.log(`[Translate API] Translating chunk ${Math.floor(i / chunkSize) + 1}/${Math.ceil(strings.length / chunkSize)} (${chunk.length} items)...`);
-    const chunkRes = await translate(chunk, { from, to });
-    const arr = Array.isArray(chunkRes) ? chunkRes : [chunkRes];
-    results.push(...arr);
+    
+    // Translate individually in parallel to guarantee 1:1 count and prevent grouping issues
+    const chunkPromises = chunk.map(text => 
+      translate(text, { from, to })
+        .then(res => Array.isArray(res) ? res[0] : res)
+        .catch(err => {
+          console.error(`[Translate API] Error on item:`, err.message);
+          return text; // fallback to original text if translation fails
+        })
+    );
+    const chunkRes = await Promise.all(chunkPromises);
+    results.push(...chunkRes);
   }
   return results;
 }

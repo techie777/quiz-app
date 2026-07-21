@@ -22,7 +22,7 @@ const MIX_QUESTIONS_EN = [
   { text: "Who was the first Indian to receive a Nobel Prize?", options: ["Rabindranath Tagore", "C.V. Raman", "Mother Teresa", "Amartya Sen"] }
 ];
 
-const MixPlayCard = ({ sectionName, quizzes, onOpenModal }) => {
+const MixPlayCard = ({ sectionName, quizzes, onOpenModal, isCompact = false }) => {
   const { t, isHindi } = useLanguage();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
@@ -85,6 +85,50 @@ const MixPlayCard = ({ sectionName, quizzes, onOpenModal }) => {
   }, [isMobile, questionsList.length]);
 
   const currentQ = questionsList[currentIndex] || questionsList[0];
+
+  if (isCompact) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2 }}
+        className="group bg-gradient-to-r from-purple-500/5 via-indigo-500/5 to-purple-500/5 dark:from-purple-950/20 dark:to-indigo-950/20 p-3 sm:p-3.5 rounded-2xl border border-purple-200 dark:border-purple-900/50 hover:border-purple-400 dark:hover:border-purple-600 shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer flex items-center justify-between gap-3"
+        onClick={() => onOpenModal(sectionName)}
+        title={t('quizzes.mix.title') || "Mega Mix Challenge"}
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-purple-100 dark:bg-purple-900/40 text-xl font-black text-purple-600 dark:text-purple-300 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform border border-purple-200 dark:border-purple-800/40">
+            ✨
+          </div>
+          <div className="min-w-0">
+            <h4 className="text-sm sm:text-base font-extrabold text-purple-950 dark:text-purple-100 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors truncate">
+              {t('quizzes.mix.title') || "Mega Mix Challenge"}
+            </h4>
+            <p className="text-xs font-semibold text-purple-600/80 dark:text-purple-400/80 truncate mt-0.5">
+              🔥 500+ {isHindi ? 'मिक्स प्रश्न' : 'Random Mix'}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+          <span className="text-[11px] font-black text-purple-600 dark:text-purple-400 tracking-tight">
+            500+ Qs
+          </span>
+          <button
+            type="button"
+            className="px-3 py-1.5 sm:px-4 sm:py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs sm:text-sm font-extrabold shadow-sm hover:shadow-purple-500/25 hover:scale-105 transition-all flex items-center gap-1.5"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenModal(sectionName);
+            }}
+          >
+            <span>{isHindi ? "क्विज़ खेलें" : "Play Quiz"}</span>
+            <span className="text-xs font-bold">→</span>
+          </button>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div

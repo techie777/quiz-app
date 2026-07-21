@@ -16,6 +16,9 @@ import WelcomePromoPopup from "@/components/WelcomePromoPopup";
 import LiveStudyButton from "@/components/engine/LiveStudyButton";
 import MixPlayCard from "@/components/MixPlayCard";
 import MixQuizModal from "@/components/MixQuizModal";
+import ExamModeSwitcher from "@/components/govt-exam/ExamModeSwitcher";
+import SubjectIndexTree from "@/components/govt-exam/SubjectIndexTree";
+import DigitalBookReader from "@/components/govt-exam/DigitalBookReader";
 
 // Import safe JSON parsing utility
 function safeJsonParse(json, fallback = []) {
@@ -440,6 +443,7 @@ const SubSection = React.memo(({ title, quizzes, onViewAll, showMixCard, section
   const { t, isHindi } = useLanguage();
   const [localSearch, setLocalSearch] = useState("");
   const [showAllChips, setShowAllChips] = useState(false);
+  const [viewMode, setViewMode] = useState("compact");
 
   const filteredQuizzes = useMemo(() => {
     if (!localSearch.trim()) return quizzes || [];
@@ -552,30 +556,34 @@ const SubSection = React.memo(({ title, quizzes, onViewAll, showMixCard, section
 
   // Get relevant icon for the sub-section
   const getTranslatedTopic = useCallback((topic, topicHi) => {
-    if (isHindi && topicHi) return topicHi;
-    if (!isHindi) return topic;
+    let finalTopic = topic;
+    if (isHindi && topicHi) {
+      finalTopic = topicHi;
+    } else if (isHindi) {
+      // Fallback dictionary for common topics if topicHi is missing
+      const fallbacks = {
+        "General Knowledge": "सामान्य ज्ञान",
+        "GK": "सामान्य ज्ञान",
+        "India": "भारत",
+        "World": "विश्व",
+        "History": "इतिहास",
+        "Sports": "खेल",
+        "Computer": "कंप्यूटर",
+        "Technology": "तकनीक",
+        "Economy": "अर्थव्यवस्था",
+        "Polity": "राजव्यवस्था",
+        "Chemistry": "रसायन विज्ञान",
+        "Physics": "भौतिकी",
+        "Biology": "जीव विज्ञान",
+        "Bollywood": "बॉलीवुड",
+        "Entertainment": "मनोरंजन",
+        "Others": "अन्य"
+      };
+      finalTopic = fallbacks[topic] || topic;
+    }
     
-    // Fallback dictionary for common topics if topicHi is missing
-    const fallbacks = {
-      "General Knowledge": "सामान्य ज्ञान",
-      "GK": "सामान्य ज्ञान",
-      "India": "भारत",
-      "World": "विश्व",
-      "History": "इतिहास",
-      "Sports": "खेल",
-      "Computer": "कंप्यूटर",
-      "Technology": "तकनीक",
-      "Economy": "अर्थव्यवस्था",
-      "Polity": "राजव्यवस्था",
-      "Chemistry": "रसायन विज्ञान",
-      "Physics": "भौतिकी",
-      "Biology": "जीव विज्ञान",
-      "Bollywood": "बॉलीवुड",
-      "Entertainment": "मनोरंजन",
-      "Others": "अन्य"
-    };
-    
-    return fallbacks[topic] || topic;
+    // Clean redundant "Section A: " prefixes
+    return finalTopic ? finalTopic.replace(/^Section\s+[A-Z0-9]+:\s*/i, '').trim() : '';
   }, [isHindi]);
 
   const getSubSectionIcon = useCallback((title) => {
@@ -620,249 +628,192 @@ const SubSection = React.memo(({ title, quizzes, onViewAll, showMixCard, section
     <div className={styles.subSection} id={id}>
       <div className={styles.subSectionContentWrapper}>
         
-        {String(title || "").trim().toLowerCase() !== "topics" && title !== sectionName && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-            <span className={styles.subSectionIcon}>{getSubSectionIcon(title)}</span>
-            <h3 className={styles.subSectionTitle} style={{ fontSize: '1.1rem', margin: 0 }}>
-              {getTranslatedTopic(title, null)}
-              <span className={styles.subSectionCount}>({quizzes.length} {isHindi ? 'क्विज़' : 'Quizzes'})</span>
-            </h3>
-          </div>
-        )}
-
-        <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'center' }}>
-          <div className={styles.searchBox} style={{ width: '100%', maxWidth: '450px', margin: '0 auto', borderRadius: '20px', padding: '2px 14px', background: 'var(--bg-primary)' }}>
-            <span className={styles.searchIcon} style={{ display: 'flex', alignItems: 'center', opacity: 0.7 }}>
-              <Search size={18} />
-            </span>
-            <input
-              type="text"
-              className={styles.searchInput}
-              style={{ padding: '10px 0', fontSize: '0.92rem', marginLeft: '8px' }}
-              placeholder={isHindi ? `खोजें ${sectionName || title} क्विज़ विषय...` : `Search ${sectionName || title} Quiz Topic Here...`}
-              value={localSearch}
-              onChange={(e) => setLocalSearch(e.target.value)}
-            />
-            {localSearch && (
-              <button
-                onClick={() => setLocalSearch("")}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'var(--text-muted)',
-                  cursor: 'pointer',
-                  padding: '4px',
-                  display: 'flex',
-                  alignItems: 'center'
-                }}
-              >
-                ✕
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Stats Summary */}
-        {quizzes && quizzes.length > 0 && (
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
-            <div style={{ 
-              display: 'inline-flex', 
-              alignItems: 'center', 
-              gap: '12px', 
-              background: 'var(--bg-secondary)', 
-              border: '1px solid var(--card-border)',
-              padding: '6px 20px', 
-              borderRadius: '100px',
-              boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '1.1rem' }}>📚</span>
-                <span style={{ fontSize: '0.85rem', fontWeight: '800', color: 'var(--brand-primary, #4f46e5)' }}>
-                  {quizzes.length} <span style={{ color: 'var(--text-secondary)', fontWeight: '600' }}>{isHindi ? 'श्रेणियां' : 'Categories'}</span>
-                </span>
-              </div>
-              <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--card-border)' }} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '1.1rem' }}>📝</span>
-                <span style={{ fontSize: '0.85rem', fontWeight: '800', color: 'var(--success, #10b981)' }}>
-                  {quizzes.reduce((acc, q) => acc + (q.questionCount || 0), 0)} <span style={{ color: 'var(--text-secondary)', fontWeight: '600' }}>{isHindi ? 'प्रश्न' : 'Questions'}</span>
-                </span>
-              </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
+          {String(title || "").trim().toLowerCase() !== "topics" && title !== sectionName ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span className={styles.subSectionIcon}>{getSubSectionIcon(title)}</span>
+              <h3 className={styles.subSectionTitle} style={{ fontSize: '1.1rem', margin: 0 }}>
+                {getTranslatedTopic(title, null)}
+                <span className={styles.subSectionCount}>({quizzes.length} {isHindi ? 'क्विज़' : 'Quizzes'})</span>
+              </h3>
             </div>
-          </div>
-        )}
+          ) : <div />}
 
-        {/* Quick Access Chips */}
-        {quizzes && quizzes.length > 0 && (
-          <div style={{ 
-            display: 'flex', 
-            flexWrap: 'wrap', 
-            gap: '8px', 
-            justifyContent: 'center', 
-            marginBottom: '20px',
-            padding: '4px'
-          }}>
-            {quizzes.slice(0, showAllChips ? quizzes.length : 5).map((quiz) => (
-              <button
-                key={quiz.id}
-                onClick={(e) => {
-                  e.preventDefault();
-                  const el = document.getElementById(`quiz-card-${quiz.id}`);
-                  if (el) {
-                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    // Optional: add a temporary highlight effect
-                    el.style.transition = 'box-shadow 0.3s ease';
-                    el.style.boxShadow = '0 0 0 4px rgba(99, 102, 241, 0.5)';
-                    setTimeout(() => { el.style.boxShadow = ''; }, 1500);
-                  }
-                }}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '6px 12px',
-                  borderRadius: '12px',
-                  background: 'rgba(99, 102, 241, 0.05)',
-                  border: '1px solid rgba(99, 102, 241, 0.15)',
-                  color: 'var(--text-primary)',
-                  fontSize: '0.8rem',
-                  fontWeight: '600',
-                  textDecoration: 'none',
-                  transition: 'all 0.2s ease',
-                  whiteSpace: 'nowrap'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'var(--brand-gradient)';
-                  e.currentTarget.style.borderColor = 'transparent';
-                  e.currentTarget.style.color = 'white';
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.2)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(99, 102, 241, 0.05)';
-                  e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.15)';
-                  e.currentTarget.style.color = 'var(--text-primary)';
-                  e.currentTarget.style.transform = 'none';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-              >
-                <span style={{ fontSize: '1rem' }}>{quiz.emoji || "📝"}</span>
-                <span>{isHindi && quiz.topicHi ? quiz.topicHi : quiz.topic}</span>
-              </button>
-            ))}
-            {quizzes.length > 5 && (
-              <button
-                onClick={() => setShowAllChips(!showAllChips)}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  padding: '6px 12px',
-                  borderRadius: '12px',
-                  background: 'rgba(99, 102, 241, 0.08)',
-                  border: '1px dashed rgba(99, 102, 241, 0.4)',
-                  color: 'var(--brand-primary, #6366f1)',
-                  fontSize: '0.8rem',
-                  fontWeight: '700',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  whiteSpace: 'nowrap'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(99, 102, 241, 0.15)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(99, 102, 241, 0.08)';
-                }}
-              >
-                {showAllChips ? (isHindi ? 'कम दिखाएं' : 'View Less') : (isHindi ? 'और देखें' : `+${quizzes.length - 5} More`)}
-              </button>
-            )}
-          </div>
-        )}
-
-
-
-        <div className={styles.subSectionGrid}>
-          {showMixCard && <MixPlayCard sectionName={sectionName} quizzes={quizzes} onOpenModal={onOpenMixModal} />}
-          {(filteredQuizzes || []).map((quiz) => (
-            <motion.div
-              key={quiz.id}
-              id={`quiz-card-${quiz.id}`}
-              className={styles.subSectionCard}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
+          {/* View Mode Switcher: Compact List vs Detailed Cards */}
+          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200/80 dark:border-slate-700">
+            <button
+              type="button"
+              onClick={() => setViewMode("compact")}
+              className={`px-3 py-1 rounded-lg text-xs font-extrabold transition-all flex items-center gap-1.5 ${
+                viewMode === "compact"
+                  ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs border border-slate-200/60 dark:border-slate-800"
+                  : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+              }`}
+              title={isHindi ? "सूची दृश्य" : "Compact List View"}
             >
-              <Link href={`/category/${quiz.slug || quiz.id}`} className={styles.subSectionCardLink}>
-                <div className={styles.subSectionCardImage}>
-                  {quiz.image ? (
-                    <img 
-                      src={quiz.image} 
-                      alt={quiz.topic} 
-                      className={styles.subSectionCardImg}
-                      loading="lazy"
-                    />
-                  ) : (
-                    <span className={styles.subSectionCardEmoji}>
-                      {getRelevantImage(quiz.topic, quiz.emoji)}
-                    </span>
-                  )}
-                  <div className={styles.cardActions}>
-                    <button 
-                      className={`${styles.favoriteBtn} ${favorites.has(quiz.id) ? styles.isFavorite : ''}`}
-                      onClick={(e) => toggleFavorite(e, quiz.id)}
-                      title={favorites.has(quiz.id) ? (t('common.removeFav') || "Remove from favorites") : (t('common.addFav') || "Add to favorites")}
-                    >
-                      <Heart size={16} fill={favorites.has(quiz.id) ? "currentColor" : "none"} />
-                    </button>
-                    <button
-                      className={styles.shareBtn}
-                      onClick={(e) => handleShare(e, quiz)}
-                      title={t('common.share') || "Share"}
-                    >
-                      <Share2 size={16} />
-                    </button>
-                  </div>
-                </div>
-                <div className={styles.subSectionCardContent}>
-                  <h4 className={styles.subSectionCardTitle}>{getTranslatedTopic(quiz.topic, quiz.topicHi)}</h4>
-                  
-                  <div className={styles.subSectionCardFooter}>
-                    <span className={styles.subSectionCardCount}>
-                      📝 {quiz.questionCount || 0}+ {isHindi ? 'प्रश्न' : 'Questions'}
-                    </span>
-                  </div>
-
-                  {/* Featured Question & 4 Options Preview (Auto-rotates ONLY on Mobile, Static on Desktop) */}
-                  <CardQuestionPreview quiz={quiz} isHindi={isHindi} />
-
-                  <div className={styles.setCardActions}>
-                    <button
-                      className={styles.playQuizButton}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        window.location.href = `/category/${quiz.slug || quiz.id}`;
-                      }}
-                      aria-label={`${t('quizzes.cards.playQuiz')} ${quiz.topic}`}
-                    >
-                      {t('quizzes.cards.playQuiz')}
-                    </button>
-                    <button
-                      className={`${styles.liveButtonStyle} ${styles.liveButtonOutline}`}
-                      onClick={(e) => handleLivePlay(e, quiz.id)}
-                      title={t('quizzes.cards.playWithFriends') || "Play with friends"}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                      {t('quizzes.cards.playLive')}
-                    </button>
-                  </div>
-                </div>
-              </Link>
-            </motion.div>
-          ))}
+              <span>☰</span>
+              <span>{isHindi ? "सूची" : "List"}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("detailed")}
+              className={`px-3 py-1 rounded-lg text-xs font-extrabold transition-all flex items-center gap-1.5 ${
+                viewMode === "detailed"
+                  ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs border border-slate-200/60 dark:border-slate-800"
+                  : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+              }`}
+              title={isHindi ? "विस्तृत दृश्य" : "Detailed Preview Cards"}
+            >
+              <span>🎴</span>
+              <span>{isHindi ? "विस्तृत" : "Cards"}</span>
+            </button>
+          </div>
         </div>
+
+        {viewMode === "compact" ? (
+          /* Compact Row Design System (Design 1 with Right-Side Play CTA) */
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 mb-4">
+            {showMixCard && <MixPlayCard sectionName={sectionName} quizzes={quizzes} onOpenModal={onOpenMixModal} isCompact={true} />}
+            {(filteredQuizzes || []).map((quiz) => {
+              const fullTopicName = getTranslatedTopic(quiz.topic, quiz.topicHi);
+              return (
+                <motion.div
+                  key={quiz.id}
+                  id={`quiz-card-${quiz.id}`}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="group bg-white dark:bg-slate-900 p-3 sm:p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-indigo-600 shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer flex items-center justify-between gap-3"
+                  onClick={() => {
+                    router.push(`/category/${quiz.slug || quiz.id}`);
+                  }}
+                  title={fullTopicName}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-xl font-black flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform overflow-hidden border border-indigo-100 dark:border-indigo-900/50">
+                      {quiz.image ? (
+                        <img src={quiz.image} alt={quiz.topic} className="w-full h-full object-cover" />
+                      ) : (
+                        <span>{getRelevantImage(quiz.topic, quiz.emoji)}</span>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <h4 
+                        className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate"
+                        title={fullTopicName}
+                      >
+                        {fullTopicName}
+                      </h4>
+                      <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 truncate mt-0.5">
+                        {sectionName || title || "Topics"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                    <span className="text-[11px] font-black text-indigo-600 dark:text-indigo-400 tracking-tight">
+                      {quiz.questionCount || 0} Qs
+                    </span>
+
+                    <button
+                      type="button"
+                      className="px-3 py-1.5 sm:px-4 sm:py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs sm:text-sm font-extrabold shadow-sm hover:shadow-indigo-500/25 hover:scale-105 transition-all flex items-center gap-1.5"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/category/${quiz.slug || quiz.id}`);
+                      }}
+                    >
+                      <span>{isHindi ? "क्विज़ खेलें" : "Play Quiz"}</span>
+                      <span className="text-xs font-bold">→</span>
+                    </button>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        ) : (
+          /* Detailed Preview Card Grid */
+          <div className={styles.subSectionGrid}>
+            {showMixCard && <MixPlayCard sectionName={sectionName} quizzes={quizzes} onOpenModal={onOpenMixModal} />}
+            {(filteredQuizzes || []).map((quiz) => (
+              <motion.div
+                key={quiz.id}
+                id={`quiz-card-${quiz.id}`}
+                className={styles.subSectionCard}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Link href={`/category/${quiz.slug || quiz.id}`} className={styles.subSectionCardLink}>
+                  <div className={styles.subSectionCardImage}>
+                    {quiz.image ? (
+                      <img 
+                        src={quiz.image} 
+                        alt={quiz.topic} 
+                        className={styles.subSectionCardImg}
+                        loading="lazy"
+                      />
+                    ) : (
+                      <span className={styles.subSectionCardEmoji}>
+                        {getRelevantImage(quiz.topic, quiz.emoji)}
+                      </span>
+                    )}
+                    <div className={styles.cardActions}>
+                      <button 
+                        className={`${styles.favoriteBtn} ${favorites.has(quiz.id) ? styles.isFavorite : ''}`}
+                        onClick={(e) => toggleFavorite(e, quiz.id)}
+                        title={favorites.has(quiz.id) ? (t('common.removeFav') || "Remove from favorites") : (t('common.addFav') || "Add to favorites")}
+                      >
+                        <Heart size={16} fill={favorites.has(quiz.id) ? "currentColor" : "none"} />
+                      </button>
+                      <button
+                        className={styles.shareBtn}
+                        onClick={(e) => handleShare(e, quiz)}
+                        title={t('common.share') || "Share"}
+                      >
+                        <Share2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                  <div className={styles.subSectionCardContent}>
+                    <h4 className={styles.subSectionCardTitle}>{getTranslatedTopic(quiz.topic, quiz.topicHi)}</h4>
+                    
+                    <div className={styles.subSectionCardFooter}>
+                      <span className={styles.subSectionCardCount}>
+                        📝 {quiz.questionCount || 0}+ {isHindi ? 'प्रश्न' : 'Questions'}
+                      </span>
+                    </div>
+
+                    {/* Featured Question & 4 Options Preview */}
+                    <CardQuestionPreview quiz={quiz} isHindi={isHindi} />
+
+                    <div className={styles.setCardActions}>
+                      <button
+                        className={styles.playQuizButton}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          window.location.href = `/category/${quiz.slug || quiz.id}`;
+                        }}
+                        aria-label={`${t('quizzes.cards.playQuiz')} ${quiz.topic}`}
+                      >
+                        {t('quizzes.cards.playQuiz')}
+                      </button>
+                      <button
+                        className={`${styles.liveButtonStyle} ${styles.liveButtonOutline}`}
+                        onClick={(e) => handleLivePlay(e, quiz.id)}
+                        title={t('quizzes.cards.playWithFriends') || "Play with friends"}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                        {t('quizzes.cards.playLive')}
+                      </button>
+                    </div>
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -957,11 +908,11 @@ function categorizeQuizzes(quizzes, sections) {
     if (others.length > 0) {
       categorized.push({
         id: "uncategorized_others",
-        name: "Others",
-        nameHi: "अन्य",
+        name: "Indian State GK",
+        nameHi: "भारतीय राज्य जीके",
         subSections: [{
-          title: "General Categories",
-          titleHi: "सामान्य श्रेणियां",
+          title: "Indian State GK",
+          titleHi: "भारतीय राज्य जीके",
           quizzes: others,
           order: 1000
         }]
@@ -1036,18 +987,26 @@ const MainCategorySection = React.memo(({ section, sectionIds, onOpenMixModal, i
 });
 MainCategorySection.displayName = "MainCategorySection";
 
-export default function LandingPage({ initialCategories = [] }) {
+export default function LandingPage({ initialCategories = [], defaultAudienceTab = "regular", defaultExamMode = "read" }) {
   const { data: session } = useSession();
   const { settings, loaded, quizzes } = useData();
   const { openOnboarding } = useUI();
   const { t, isHindi } = useLanguage();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabQuery = searchParams?.get("tab");
+  const modeQuery = searchParams?.get("mode");
+
   const [mounted, setMounted] = useState(false);
   const [sections, setSections] = useState([]);
   const [sectionsLoaded, setSectionsLoaded] = useState(false);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [audienceTab, setAudienceTab] = useState("regular"); // "regular" | "govt"
+  const initialAudienceTab = tabQuery || defaultAudienceTab;
+  const [audienceTab, setAudienceTab] = useState(initialAudienceTab); // "regular" | "govt" | "image"
+  const [examMode, setExamMode] = useState(modeQuery || (initialAudienceTab === "regular" ? "quiz" : "read")); // "read" | "quiz"
+  const [selectedReadChapter, setSelectedReadChapter] = useState(null);
+  const [selectedReadSubject, setSelectedReadSubject] = useState(null);
   const quizSectionRef = useRef(null);
 
   const scrollToQuizzes = () => {
@@ -1494,20 +1453,25 @@ export default function LandingPage({ initialCategories = [] }) {
 
   const sectionChipsData = useMemo(() => {
     if (audienceTab === "govt" || audienceTab === "image") {
-      const chips = [];
+      const chipsMap = new Map();
       categorizedQuizzes.forEach(section => {
         (section.subSections || []).forEach(sub => {
           if (sub.quizzes && sub.quizzes.length > 0) {
-            chips.push({
-              id: sub.title,
-              name: sub.title,
-              nameHi: sub.titleHi,
-              count: sub.quizzes.length
-            });
+            const key = sub.title;
+            if (chipsMap.has(key)) {
+              chipsMap.get(key).count += sub.quizzes.length;
+            } else {
+              chipsMap.set(key, {
+                id: sub.title,
+                name: sub.title,
+                nameHi: sub.titleHi,
+                count: sub.quizzes.length
+              });
+            }
           }
         });
       });
-      return chips;
+      return Array.from(chipsMap.values());
     }
 
     return categorizedQuizzes.map(section => {
@@ -1519,6 +1483,21 @@ export default function LandingPage({ initialCategories = [] }) {
         count: totalQuizzesCount
       };
     }).filter(s => s.count > 0);
+  }, [categorizedQuizzes, audienceTab]);
+
+  const govtChaptersList = useMemo(() => {
+    if (audienceTab !== "govt") return [];
+    const list = [];
+    categorizedQuizzes.forEach((sec) => {
+      (sec.subSections || []).forEach((sub) => {
+        if (sub.quizzes && sub.quizzes.length > 0) {
+          sub.quizzes.forEach((q) => list.push(q));
+        } else {
+          list.push(sub);
+        }
+      });
+    });
+    return list;
   }, [categorizedQuizzes, audienceTab]);
 
   return (
@@ -1544,7 +1523,11 @@ export default function LandingPage({ initialCategories = [] }) {
           <div className={styles.audienceTabsWrapper}>
             <div className={styles.audienceTabsContainer}>
               <button
-                onClick={() => setAudienceTab("regular")}
+                onClick={() => {
+                  setAudienceTab("regular");
+                  setExamMode("quiz");
+                  setSelectedReadChapter(null);
+                }}
                 className={styles.audienceTabBtn}
                 style={{
                   color: audienceTab === "regular" ? '#ffffff' : 'var(--text-secondary)',
@@ -1565,7 +1548,7 @@ export default function LandingPage({ initialCategories = [] }) {
                   />
                 )}
                 <span style={{ fontSize: '1.1rem' }}>🎯</span>
-                <span>{t('quizzes.tabs.regular') || 'Regular Quizzes'}</span>
+                <span>{isHindi ? 'क्विज़' : 'Quizzes'}</span>
                 <span className={styles.audienceTabBadge} style={{
                   background: audienceTab === "regular" ? 'rgba(255, 255, 255, 0.25)' : 'rgba(99, 102, 241, 0.1)',
                   color: audienceTab === "regular" ? '#ffffff' : 'var(--accent)',
@@ -1575,7 +1558,11 @@ export default function LandingPage({ initialCategories = [] }) {
               </button>
 
               <button
-                onClick={() => setAudienceTab("govt")}
+                onClick={() => {
+                  setAudienceTab("govt");
+                  setExamMode("read");
+                  setSelectedReadChapter(null);
+                }}
                 className={styles.audienceTabBtn}
                 style={{
                   color: audienceTab === "govt" ? '#ffffff' : 'var(--text-secondary)',
@@ -1596,7 +1583,7 @@ export default function LandingPage({ initialCategories = [] }) {
                   />
                 )}
                 <span style={{ fontSize: '1.1rem' }}>🏛️</span>
-                <span>{t('quizzes.tabs.govtExams') || 'Govt Exam Preparation'}</span>
+                <span>{isHindi ? 'सरकारी परीक्षा' : 'Govt Exams'}</span>
                 <span className={styles.audienceTabBadge} style={{
                   background: audienceTab === "govt" ? 'rgba(255, 255, 255, 0.25)' : 'rgba(99, 102, 241, 0.1)',
                   color: audienceTab === "govt" ? '#ffffff' : 'var(--accent)',
@@ -1606,7 +1593,10 @@ export default function LandingPage({ initialCategories = [] }) {
               </button>
 
               <button
-                onClick={() => setAudienceTab("image")}
+                onClick={() => {
+                  setAudienceTab("image");
+                  setSelectedReadChapter(null);
+                }}
                 className={styles.audienceTabBtn}
                 style={{
                   color: audienceTab === "image" ? '#ffffff' : 'var(--text-secondary)',
@@ -1638,7 +1628,21 @@ export default function LandingPage({ initialCategories = [] }) {
             </div>
           </div>
 
-          <div className={styles.searchActionRow}>
+          {/* Exam Mode Switcher (Placed above search bar for Regular & Govt Exam Prep) */}
+          {(audienceTab === "regular" || audienceTab === "govt") && (
+            <div className="w-full max-w-xl mx-auto mb-1 px-2">
+              <ExamModeSwitcher
+                mode={examMode}
+                onModeChange={(newMode) => {
+                  setExamMode(newMode);
+                  setSelectedReadChapter(null);
+                }}
+                isHindi={isHindi}
+              />
+            </div>
+          )}
+
+          <div className={styles.searchActionRow} style={{ marginTop: '0px' }}>
             {/* Integrated Search Command Center */}
             <div className={styles.heroSearchWrapper} style={{ flex: 1, margin: 0, position: 'relative', zIndex: 1000 }}>
               <div className={styles.searchBox}>
@@ -1697,27 +1701,6 @@ export default function LandingPage({ initialCategories = [] }) {
               )}
             </div>
             
-            <button 
-              className={`${styles.feedTab} ${styles.playLiveBtnMobile}`}
-              style={{ margin: 0, padding: '0 24px', flexShrink: 0, height: '56px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--brand-gradient)', border: 'none', color: 'white', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 8px 25px rgba(99, 102, 241, 0.35)' }}
-              onClick={() => {
-                const sessionId = Math.random().toString(36).substring(2, 10).toUpperCase();
-                toast.success(isHindi ? "लाइव रूम बना रहे हैं..." : "Creating live room...");
-                router.push(`/live/${sessionId}?is_host=true`);
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
-                e.currentTarget.style.boxShadow = '0 12px 30px rgba(99, 102, 241, 0.45)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'none';
-                e.currentTarget.style.boxShadow = '0 8px 25px rgba(99, 102, 241, 0.35)';
-              }}
-            >
-              <span className={styles.tabIcon} style={{ color: 'white' }}><Radio size={18} /></span>
-              {isHindi ? 'लाइव खेलें' : 'Play Live'} <span className={`${styles.liveDot} animate-pulse`} style={{ background: '#fff', boxShadow: '0 0 0 2px rgba(255,255,255,0.4)' }} />
-            </button>
-
             {session?.user && (
               <button 
                 className={styles.feedTab}
@@ -1731,71 +1714,27 @@ export default function LandingPage({ initialCategories = [] }) {
             )}
           </div>
 
-          {/* Section Chips */}
-          {!search && !activeFilters.length && sectionChipsData.length > 0 && (
-            <div className={styles.sectionChipsContainer} style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center', margin: '0 auto 16px auto', maxWidth: '800px' }}>
-              {sectionChipsData.map((s) => (
-                <button
-                  key={s.id}
-                  className={styles.sectionChip}
-                  onClick={() => scrollToSection(s.name)}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    padding: '10px 20px',
-                    borderRadius: '16px',
-                    background: 'rgba(99, 102, 241, 0.08)',
-                    border: '1.5px solid rgba(99, 102, 241, 0.15)',
-                    color: 'var(--accent)',
-                    fontSize: '0.9rem',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    boxShadow: '0 4px 12px rgba(99, 102, 241, 0.05)'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'var(--brand-gradient)';
-                    e.currentTarget.style.borderColor = 'transparent';
-                    e.currentTarget.style.color = 'white';
-                    e.currentTarget.style.transform = 'translateY(-3px)';
-                    e.currentTarget.style.boxShadow = '0 10px 25px rgba(99, 102, 241, 0.3)';
-                    const countSpan = e.currentTarget.querySelector('.chip-count-badge');
-                    if (countSpan) {
-                      countSpan.style.background = 'rgba(255, 255, 255, 0.25)';
-                      countSpan.style.color = 'white';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(99, 102, 241, 0.08)';
-                    e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.15)';
-                    e.currentTarget.style.color = 'var(--accent)';
-                    e.currentTarget.style.transform = 'none';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.05)';
-                    const countSpan = e.currentTarget.querySelector('.chip-count-badge');
-                    if (countSpan) {
-                      countSpan.style.background = 'var(--bg-primary)';
-                      countSpan.style.color = 'var(--accent)';
-                    }
-                  }}
-                >
-                  <span>{isHindi && s.nameHi ? s.nameHi : s.name}</span>
-                  <span className="chip-count-badge" style={{ 
-                    display: 'inline-flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    background: 'var(--bg-primary)', 
-                    padding: '2px 8px', 
-                    borderRadius: '10px', 
-                    fontSize: '0.75rem', 
-                    color: 'var(--accent)',
-                    fontWeight: '800',
-                    transition: 'all 0.3s ease'
-                  }}>
-                    {s.count}
-                  </span>
-                </button>
-              ))}
+          {/* Section Chips (Shown in Quiz Mode, hidden in Read Mode) */}
+          {!search && !activeFilters.length && sectionChipsData.length > 0 && examMode === "quiz" && (
+            <div className="w-full max-w-5xl mx-auto my-3 px-2">
+              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-2 px-1 justify-center flex-wrap">
+                {sectionChipsData.map((s) => {
+                  const rawName = isHindi && s.nameHi ? s.nameHi : s.name;
+                  const cleanName = rawName ? rawName.replace(/^Section\s+[A-Z0-9]+:\s*/i, '').trim() : '';
+                  return (
+                    <button
+                      key={s.id}
+                      onClick={() => scrollToSection(s.name)}
+                      className="group inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-indigo-500 hover:ring-2 hover:ring-indigo-500/20 text-slate-700 dark:text-slate-200 text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow-md flex-shrink-0"
+                    >
+                      <span>{cleanName}</span>
+                      <span className="px-2 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 text-[11px] font-bold">
+                        {s.count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
@@ -1804,20 +1743,43 @@ export default function LandingPage({ initialCategories = [] }) {
       {/* Main Category Sections */}
       {!search && !activeFilters.length && (
         <div className={styles.allSubSections}>
-
-
           {/* Scroll Anchor for Main Quizzes (e.g., General Knowledge) */}
           <div ref={quizSectionRef} className="h-0 w-0 pointer-events-none -mt-8" />
 
-          {categorizedQuizzes.map((section) => (
-            <MainCategorySection 
-              key={section.id}
-              section={section} 
-              sectionIds={sectionIds}
-              onOpenMixModal={handleOpenMixModal}
-              isFirstSection={true}
-            />
-          ))}
+          {examMode === "read" ? (
+            selectedReadChapter ? (
+              <DigitalBookReader
+                chapter={selectedReadChapter}
+                subject={selectedReadSubject}
+                onBackToIndex={() => setSelectedReadChapter(null)}
+                isHindi={isHindi}
+                allChapters={govtChaptersList}
+                onSelectChapter={(chap, subj) => {
+                  setSelectedReadChapter(chap);
+                  if (subj) setSelectedReadSubject(subj);
+                }}
+              />
+            ) : (
+              <SubjectIndexTree
+                sections={categorizedQuizzes}
+                onSelectChapter={(chap, subj) => {
+                  setSelectedReadChapter(chap);
+                  setSelectedReadSubject(subj);
+                }}
+                isHindi={isHindi}
+              />
+            )
+          ) : (
+            categorizedQuizzes.map((section) => (
+              <MainCategorySection 
+                key={section.id}
+                section={section} 
+                sectionIds={sectionIds}
+                onOpenMixModal={handleOpenMixModal}
+                isFirstSection={true}
+              />
+            ))
+          )}
         </div>
       )}
 
@@ -1827,146 +1789,19 @@ export default function LandingPage({ initialCategories = [] }) {
         sectionName={activeMixSection} 
       />
 
-      {/* All Categories Section (always shown, but title changes based on search/filter) */}
-      <div className={styles.allCategoriesWrapper} style={{ marginTop: (!search && !activeFilters.length) ? '40px' : '0' }}>
-        <h2 className={styles.sectionTitle}>
-          {(search || activeFilters.length > 0) ? t('quizzes.search.results') : t('quizzes.sections.all')}
-        </h2>
-        {loading && visibleCategories.length === 0 && <div className={styles.loadingHint}>{t('quizzes.sections.loading')}</div>}
-        {/* For You Welcome Banner */}
-        {isPersonalized && userInterestsCount > 0 && (
-          <div className="max-w-6xl mx-auto mb-10 p-6 rounded-3xl bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 flex flex-col md:flex-row items-center justify-between gap-6" style={{ gridColumn: "1 / -1", width: "100%" }}>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-cyan-500 flex items-center justify-center text-2xl shadow-lg shadow-cyan-500/20">👤</div>
-              <div>
-                <h3 className="text-xl font-black text-slate-800 dark:text-white">{t('banners.personalized.title')}</h3>
-                <p className="text-slate-500 dark:text-slate-400 text-sm">{t('banners.personalized.subtitle').replace('{count}', userInterestsCount)}</p>
-              </div>
-            </div>
-            <button 
-              onClick={openOnboarding}
-              className="px-6 py-2 bg-slate-800 dark:bg-white dark:text-slate-900 text-white rounded-xl font-bold text-sm hover:scale-105 transition-transform"
-            >
-              {t('banners.personalized.btn')}
-            </button>
-          </div>
-        )}
-
-          <motion.div 
-            className={styles.subSectionGrid}
-            variants={{ 
-              hidden: { opacity: 0 },
-              show: {
-                opacity: 1,
-                transition: { staggerChildren: 0.05 }
-              }
-            }}
-            initial="hidden"
-            animate="show"
-          >
-            {/* Regular Quiz Cards */}
-            {loading && visibleCategories.length === 0
-              ? Array.from({ length: 9 }).map((_, idx) => (
-                  <motion.div
-                    key={`sk-${idx}`}
-                    className={styles.subSectionCard}
-                    variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
-                    layout
-                  >
-                    <div className={`${styles.subSectionCard} ${styles.skeletonCard}`}>
-                      <div className={styles.subSectionCardImage}>
-                        <div className={styles.skeletonMedia} />
-                      </div>
-                      <div className={styles.subSectionCardContent}>
-                        <div className={styles.skeletonTitle} />
-                        <div className={styles.skeletonLine} />
-                        <div className={styles.skeletonLineShort} />
-                        <div className={styles.skeletonFooter} />
-                        <div className={styles.skeletonButton} />
-                      </div>
-                    </div>
-                  </motion.div>
-                ))
-              : visibleCategories.map((cat, index) => {
-                  const progress = calculateProgress(cat.id, cat.questions.length);
-                  return (
-                    <motion.div
-                      key={cat.id}
-                      className={styles.subSectionCard}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.05 }}
-                      layoutId={cat.id}
-                    >
-                      <Link
-                        href={`/category/${cat.slug || cat.id}`}
-                        className={styles.subSectionCardLink}
-                        aria-label={`View ${cat.topic} quiz category with ${cat.questions.length} questions`}
-                        onClick={() => {
-                          sessionStorage.setItem("quizReferrer", window.location.pathname);
-                        }}
-                      >
-                        <div className={styles.subSectionCardImage}>
-                          {cat.image ? (
-                            <img
-                              src={cat.image}
-                              alt={cat.topic}
-                              className={styles.subSectionCardImg}
-                              loading="lazy"
-                              onError={(e) => {
-                                e.currentTarget.style.display = "none";
-                              }}
-                            />
-                          ) : (
-                            <span className={styles.subSectionCardEmoji}>
-                              {getRelevantImage(cat.topic, cat.emoji)}
-                            </span>
-                          )}
-                        </div>
-                        <div className={styles.subSectionCardContent}>
-                          <h4 className={styles.subSectionCardTitle}>
-                            {isHindi && cat.topicHi ? cat.topicHi : cat.topic}
-                          </h4>
-                          
-                          <div className={styles.subSectionCardFooter}>
-                            <span className={styles.subSectionCardCount}>
-                              📝 {cat.questionCount || cat.questions?.length || 0}+ {isHindi ? 'प्रश्न' : 'Questions'}
-                            </span>
-                            <span className={styles.subSectionCardTime}>
-                              {estimateTime(cat.questions?.length || cat.questionCount || 20)}
-                            </span>
-                          </div>
-
-                          {/* Featured Question & 4 Options Preview (Auto-rotates ONLY on Mobile, Static on Desktop) */}
-                          <CardQuestionPreview quiz={cat} isHindi={isHindi} />
-
-                          <div className={styles.setCardActions}>
-                            <button
-                              className={styles.playQuizButton}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                window.location.href = `/category/${cat.slug || cat.id}`;
-                              }}
-                              aria-label={`${t('quizzes.cards.playQuiz')} ${cat.topic}`}
-                            >
-                              {t('quizzes.cards.playQuiz')}
-                            </button>
-                            <button
-                              className={`${styles.liveButtonStyle} ${styles.liveButtonOutline}`}
-                              onClick={(e) => handleLivePlay(e, cat.id)}
-                              title={t('quizzes.cards.playWithFriends') || "Play with friends"}
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                              {t('quizzes.cards.playLive')}
-                            </button>
-                          </div>
-                        </div>
-                      </Link>
-                    </motion.div>
-                  );
-                })}
-          </motion.div>
+      {/* All Categories Section (shown unless in Read Mode) */}
+      {!(examMode === "read") && (
+        <div className={styles.allCategoriesWrapper} style={{ marginTop: (!search && !activeFilters.length) ? '20px' : '0' }}>
+          {loading && visibleCategories.length === 0 && <div className={styles.loadingHint}>{t('quizzes.sections.loading')}</div>}
+          
+          {/* Render All Quiz Categories using SubSection so it gets List & Cards view toggle button */}
+          {visibleCategories.length > 0 && (
+            <SubSection
+              title={(search || activeFilters.length > 0) ? t('quizzes.search.results') : (t('quizzes.sections.all') || "All Quiz Categories")}
+              quizzes={visibleCategories}
+              sectionName="All Categories"
+            />
+          )}
 
           {/* Load More Button */}
           {visibleCategories.length < totalCategories && (
@@ -1987,7 +1822,8 @@ export default function LandingPage({ initialCategories = [] }) {
               </button>
             </div>
           )}
-      </div>
+        </div>
+      )}
 
       {!loading && visibleCategories.length === 0 && (search || activeFilters.length > 0) && (
         <p className={styles.empty}>
