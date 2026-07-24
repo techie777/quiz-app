@@ -28,15 +28,24 @@ export default function QuestionBankManager({
   sections,
   onReorder, 
   onEdit, 
+  onEditQuestion,
   onDelete,
+  onDeleteQuestion,
   onBulkDelete,
   onBulkMove,
   selectedPaperTitle
 }) {
+  const handleEdit = onEdit || onEditQuestion || (() => {});
+  const handleDelete = onDelete || onDeleteQuestion || (() => {});
   const [selectedQuestionId, setSelectedQuestionId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [filterSectionId, setFilterSectionId] = useState('all');
+  const [mounted, setMounted] = useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -54,9 +63,12 @@ export default function QuestionBankManager({
     onReorder(newList);
   };
 
-  const filteredQuestions = questions.filter(q => {
-    const matchesSearch = q.text.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         q.textHi?.toLowerCase().includes(searchQuery.toLowerCase());
+  const safeQuestions = Array.isArray(questions) ? questions : [];
+  const safeSections = Array.isArray(sections) ? sections : [];
+
+  const filteredQuestions = safeQuestions.filter(q => {
+    const matchesSearch = (q.text || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+                         (q.textHi || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesSection = filterSectionId === 'all' || q.sectionId === filterSectionId;
     return matchesSearch && matchesSection;
   });
@@ -196,8 +208,8 @@ export default function QuestionBankManager({
       <div className="flex-1 bg-white flex flex-col">
         <QuestionPreview 
           question={selectedQuestion} 
-          onEdit={onEdit}
-          onDelete={onDelete}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
         />
       </div>
 

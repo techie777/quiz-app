@@ -41,7 +41,6 @@ export default async function Page() {
         },
       },
       orderBy: [{ sortOrder: "asc" }, { topic: "asc" }, { id: "asc" }],
-      take: 12, // Match the itemsPerPage in client
     });
 
     // Helper to safe parse JSON

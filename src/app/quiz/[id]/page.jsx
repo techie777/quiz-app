@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useQuiz } from "@/context/QuizContext";
 import { useData } from "@/context/DataContext";
@@ -12,7 +12,7 @@ import QuizSidebar from "@/components/QuizSidebar";
 import QuizSuggestions from "@/components/QuizSuggestions";
 import ExitConfirmModal from "@/components/ExitConfirmModal";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import { Languages } from "lucide-react";
+import { Languages, BookOpen } from "lucide-react";
 import styles from "@/styles/QuizEngine.module.css";
 import { initSounds, playCorrectSound, playWrongSound, playTickerSound } from "@/lib/sounds";
 import timerStyles from "@/styles/Timer.module.css";
@@ -132,6 +132,9 @@ function QuizEngineContent() {
   const { quizzes } = useData();
   
   const {
+    quizId,
+    quizSlug,
+    selectedSetIndex,
     status,
     questions,
     currentIndex,
@@ -383,6 +386,31 @@ const QuizEngineTimer = QuizTimerComponent;
       else router.push('/');
     }
   }, [resetQuiz, referrer, router, params?.id, category]);
+
+  const searchParams = useSearchParams();
+  const setQueryParam = searchParams?.get("set");
+
+  const handleGoToReadMode = useCallback(() => {
+    const categorySlug = category?.slug || quizSlug || params?.id || quizId;
+    const setNumber = selectedSetIndex || Number(setQueryParam) || Math.floor((currentIndex || 0) / 20) + 1;
+    resetQuiz();
+    if (categorySlug) {
+      router.push(`/quizzes?mode=read&cat=${encodeURIComponent(categorySlug)}&set=${setNumber}`);
+    } else {
+      router.push(`/quizzes?mode=read`);
+    }
+  }, [resetQuiz, category, quizSlug, params?.id, quizId, selectedSetIndex, setQueryParam, currentIndex, router]);
+
+  // Ensure set query parameter is always visible in the URL bar for Quiz Mode
+  useEffect(() => {
+    if (typeof window !== 'undefined' && params?.id) {
+      const activeSet = selectedSetIndex || Number(setQueryParam) || Math.floor((currentIndex || 0) / 20) + 1 || 1;
+      const expectedSearch = `?set=${activeSet}`;
+      if (!window.location.search.includes("set=")) {
+        window.history.replaceState(null, "", `/quiz/${params.id}${expectedSearch}`);
+      }
+    }
+  }, [params?.id, selectedSetIndex, setQueryParam, currentIndex]);
 
   // Set up global navigation handlers
   useEffect(() => {
@@ -638,15 +666,22 @@ const QuizEngineTimer = QuizTimerComponent;
 
   const startTime = useMemo(() => Date.now(), []);
 
-  // Early return while loading or redirecting
+  const { engineTheme } = useUI();
+  const themeClasses = {
+    indigo: "theme-pattern-indigo",
+    midnight: "theme-pattern-midnight text-white",
+    sunset: "theme-pattern-sunset",
+    emerald: "theme-pattern-emerald",
+  };
+
   // Early return ONLY while initial loading or redirecting
   if (status === "idle" || !questions || questions.length === 0) {
     const loadingText = language === "hi" ? "प्रश्नोत्तरी लोड हो रही है..." : "Loading quiz...";
     return (
-      <div className={styles.page}>
-        <div className={styles.loadingContainer}>
-          <p>{loadingText}</p>
-          <div className={styles.spinner}></div>
+      <div className={`min-h-screen w-full flex flex-col items-center justify-center p-4 transition-all duration-500 ${themeClasses[engineTheme] || themeClasses.indigo}`}>
+        <div className="flex flex-col items-center justify-center p-8 rounded-3xl bg-slate-900/90 border border-slate-800/80 backdrop-blur-md shadow-2xl space-y-4 max-w-sm w-full text-center">
+          <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
+          <p className="text-base font-bold text-white tracking-wide">{loadingText}</p>
         </div>
       </div>
     );
@@ -655,10 +690,10 @@ const QuizEngineTimer = QuizTimerComponent;
   // Guard against crash if status is active but questions are missing
   if (status === "active" && (!questions || questions.length === 0)) {
     return (
-      <div className={styles.page}>
-        <div className={styles.loadingContainer}>
-          <p>{language === "hi" ? "प्रश्नोत्तरी तैयार की जा रही है..." : "Preparing quiz..."}</p>
-          <div className={styles.spinner}></div>
+      <div className={`min-h-screen w-full flex flex-col items-center justify-center p-4 transition-all duration-500 ${themeClasses[engineTheme] || themeClasses.indigo}`}>
+        <div className="flex flex-col items-center justify-center p-8 rounded-3xl bg-slate-900/90 border border-slate-800/80 backdrop-blur-md shadow-2xl space-y-4 max-w-sm w-full text-center">
+          <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
+          <p className="text-base font-bold text-white tracking-wide">{language === "hi" ? "प्रश्नोत्तरी तैयार की जा रही है..." : "Preparing quiz..."}</p>
         </div>
       </div>
     );
@@ -666,14 +701,6 @@ const QuizEngineTimer = QuizTimerComponent;
 
   const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
   const displayTime = `${String(Math.floor(elapsedSeconds / 60)).padStart(2, "0")}:${String(elapsedSeconds % 60).padStart(2, "0")}`;
-
-  const { engineTheme } = useUI();
-  const themeClasses = {
-    indigo: "theme-pattern-indigo",
-    midnight: "theme-pattern-midnight text-white",
-    sunset: "theme-pattern-sunset",
-    emerald: "theme-pattern-emerald",
-  };
 
   return (
     <div className={`min-h-screen w-full transition-all duration-500 ${themeClasses[engineTheme] || themeClasses.indigo}`}>
@@ -737,6 +764,17 @@ const QuizEngineTimer = QuizTimerComponent;
           {/* Controls / Power-Up Dock (The Lifeline Toolbar) */}
           <div className={styles.toolbarContainer}>
             <div className={styles.controls}>
+              {/* Read Mode Switcher Button (Placed right before 50/50) */}
+              <button
+                type="button"
+                onClick={handleGoToReadMode}
+                className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white text-xs sm:text-sm font-extrabold flex items-center gap-1.5 shadow-md shadow-emerald-500/20 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                title={language === "hi" ? "रीड मोड पर जाएं" : "Go to Read Mode"}
+              >
+                <BookOpen size={16} />
+                <span>{language === "hi" ? "रीड मोड" : "Read Mode"}</span>
+              </button>
+
               <button
                 className={`${styles.controlBtn} ${used5050 ? styles.disabled : ""}`}
                 onClick={use5050}
@@ -887,7 +925,7 @@ const QuizEngineTimer = QuizTimerComponent;
           <div className={styles.exitModal}>
             <h2 className={styles.exitModalTitle}>End Quiz Early?</h2>
             <p className={styles.exitModalText}>
-              You haven't finished all questions. Are you sure you want to end the quiz and see your results?
+              You haven&apos;t finished all questions. Are you sure you want to end the quiz and see your results?
             </p>
             <div className={styles.exitModalActions}>
               <button className={styles.exitModalCancel} onClick={() => setShowEndConfirmModal(false)}>

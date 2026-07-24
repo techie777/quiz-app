@@ -1,39 +1,376 @@
-.page { padding: 1rem 0; }
-.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
-.title { font-size: 1.5rem; font-weight: 700; margin: 0; }
-.subtitle { color: var(--text-secondary); font-size: 0.9rem; margin: 0.25rem 0 0; }
-.createForm { padding: 1.5rem; margin-bottom: 1.5rem; }
-.createForm h3 { margin: 0 0 1rem; }
-.formRow { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
-.input { padding: 0.6rem 0.8rem; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-primary); font-size: 0.9rem; flex: 1; min-width: 150px; }
-.error { color: #e53e3e; background: rgba(229,62,62,0.1); padding: 0.5rem 0.75rem; border-radius: 6px; margin-bottom: 0.75rem; font-size: 0.85rem; }
-.list { display: flex; flex-direction: column; gap: 0.75rem; }
-.row { padding: 1rem 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; }
-.rowInfo { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
-.name { font-weight: 600; font-size: 1rem; }
-.username { color: var(--text-secondary); font-size: 0.85rem; }
-.roleBadge { padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
-.master { background: rgba(128,90,213,0.15); color: #805ad5; }
-.jr { background: rgba(49,130,206,0.15); color: #3182ce; }
-.statusBadge { padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
-.active { background: rgba(72,187,120,0.15); color: #48bb78; }
-.paused { background: rgba(236,201,75,0.15); color: #d69e2e; }
-.disabled { background: rgba(229,62,62,0.15); color: #e53e3e; }
-.actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-.actionBtn { padding: 0.35rem 0.7rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-primary); cursor: pointer; font-size: 0.8rem; transition: background 0.2s; }
-.actionBtn:hover { background: var(--accent-color); color: white; }
-.deleteBtn { padding: 0.35rem 0.7rem; border-radius: 6px; border: 1px solid #e53e3e; background: transparent; color: #e53e3e; cursor: pointer; font-size: 0.8rem; transition: all 0.2s; }
-.deleteBtn:hover { background: #e53e3e; color: white; }
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 8px 4px 40px;
+}
 
-.headerActions { display: flex; align-items: center; gap: 1.5rem; }
-.tabs { display: flex; background: var(--card-bg); padding: 4px; border-radius: 8px; border: 1px solid var(--border-color); }
-.tab { padding: 6px 16px; border-radius: 6px; border: none; background: transparent; color: var(--text-secondary); cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: all 0.2s; }
-.activeTab { background: var(--accent) !important; color: white !important; }
+/* Header Banner */
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.06) 0%, rgba(168, 85, 247, 0.06) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.18);
+  border-radius: 20px;
+  padding: 24px 28px;
+  box-shadow: 0 4px 20px -2px rgba(99, 102, 241, 0.08);
+}
 
-.pinDisplay { display: flex; align-items: center; gap: 8px; background: rgba(236, 72, 153, 0.1); padding: 6px 12px; border-radius: 6px; border: 1px dashed var(--accent); }
-.pinLabel { font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; }
-.pinValue { font-family: monospace; font-size: 1.1rem; font-weight: 800; color: var(--accent); letter-spacing: 2px; }
+.headerTitleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 
-.rowActions { display: flex; align-items: center; gap: 1rem; }
+.badgeHeader {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: rgba(99, 102, 241, 0.12);
+  color: #6366f1;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  width: fit-content;
+}
 
-.empty { text-align: center; padding: 3rem; color: var(--text-secondary); font-style: italic; }
+.title {
+  font-size: 1.85rem;
+  font-weight: 900;
+  color: var(--text-primary, #0f172a);
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.subtitle {
+  color: var(--text-secondary, #64748b);
+  font-size: 0.92rem;
+  margin: 0;
+  font-weight: 500;
+}
+
+.actionButtonsGroup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.tabs {
+  display: flex;
+  background: var(--bg-primary, #ffffff);
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid var(--card-border, #cbd5e1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.tab {
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary, #64748b);
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.activeTab {
+  background: #6366f1 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+.primaryBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.88rem;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+  transition: all 0.2s ease;
+}
+
+.primaryBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.45);
+}
+
+.secondaryBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 12px;
+  background: var(--bg-primary, #ffffff);
+  color: var(--text-primary, #334155);
+  font-weight: 700;
+  font-size: 0.88rem;
+  border: 1px solid var(--card-border, #e2e8f0);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.secondaryBtn:hover {
+  background: var(--bg-secondary, #f8fafc);
+  border-color: #6366f1;
+  color: #6366f1;
+  transform: translateY(-1px);
+}
+
+/* KPI Stats Bar */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.kpiCard {
+  background: var(--bg-primary, #ffffff);
+  border: 1px solid var(--card-border, #e2e8f0);
+  border-radius: 16px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease;
+}
+
+.kpiCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.kpiIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+
+.kpiContent {
+  display: flex;
+  flex-direction: column;
+}
+
+.kpiValue {
+  font-size: 1.45rem;
+  font-weight: 900;
+  color: var(--text-primary, #0f172a);
+  line-height: 1.1;
+}
+
+.kpiLabel {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-secondary, #64748b);
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* User & Admin Accounts List */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.row {
+  background: var(--bg-primary, #ffffff);
+  border: 1px solid var(--card-border, #e2e8f0);
+  border-radius: 16px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  transition: all 0.15s ease;
+}
+
+.row:hover {
+  border-color: #6366f1;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.08);
+}
+
+.rowInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.name {
+  font-size: 1.02rem;
+  font-weight: 800;
+  color: var(--text-primary, #0f172a);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.username {
+  color: var(--text-secondary, #64748b);
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.roleBadge {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.master {
+  background: rgba(168, 85, 247, 0.12);
+  color: #a855f7;
+}
+
+.jr {
+  background: rgba(99, 102, 241, 0.12);
+  color: #6366f1;
+}
+
+.statusBadge {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.active {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+}
+
+.paused {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+}
+
+.disabled {
+  background: rgba(244, 63, 94, 0.12);
+  color: #f43f5e;
+}
+
+.rowActions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.pinDisplay {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(99, 102, 241, 0.06);
+  padding: 6px 14px;
+  border-radius: 10px;
+  border: 1px dashed rgba(99, 102, 241, 0.4);
+}
+
+.pinLabel {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--text-secondary, #64748b);
+  text-transform: uppercase;
+}
+
+.pinValue {
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: #6366f1;
+  letter-spacing: 1px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.actionBtn {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--card-border, #cbd5e1);
+  background: var(--bg-primary, #ffffff);
+  color: var(--text-primary, #334155);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.actionBtn:hover {
+  background: var(--bg-secondary, #f8fafc);
+  border-color: #6366f1;
+  color: #6366f1;
+}
+
+.deleteBtn {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  background: rgba(244, 63, 94, 0.05);
+  color: #f43f5e;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.deleteBtn:hover {
+  background: #f43f5e;
+  color: #ffffff;
+}
+
+.input {
+  padding: 10px 14px;
+  border: 1.5px solid var(--card-border, #cbd5e1);
+  border-radius: 10px;
+  background: var(--bg-primary, #ffffff);
+  color: var(--text-primary, #0f172a);
+  font-size: 0.9rem;
+  font-weight: 600;
+  outline: none;
+}
+
+.input:focus {
+  border-color: #6366f1;
+}
+
+.empty {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-secondary);
+  font-style: italic;
+}

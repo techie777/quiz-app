@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
+import Link from "next/link";
 import { useData } from "@/context/DataContext";
 import { useAdmin } from "@/context/AdminContext";
 import styles from "@/styles/AdminCategories.module.css";
@@ -28,13 +29,10 @@ const EditForm = ({ category, onSave, onCancel, isNew = false, quizzes = [], set
     const file = e.target.files[0];
     if (!file) return;
     
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       toast.error('Please select a valid image file');
       return;
     }
-    
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error('Image file size must be less than 5MB');
       return;
@@ -67,13 +65,10 @@ const EditForm = ({ category, onSave, onCancel, isNew = false, quizzes = [], set
     const file = e.target.files[0];
     if (!file) return;
     
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       toast.error('Please select a valid image file');
       return;
     }
-    
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error('Image file size must be less than 5MB');
       return;
@@ -105,11 +100,12 @@ const EditForm = ({ category, onSave, onCancel, isNew = false, quizzes = [], set
   return (
     <div className={styles.inlineForm}>
       <h2 className={styles.formTitle}>
-        {isNew ? "Add Category" : "Edit Category"}
+        {isNew ? "📁 Create New Quiz Category" : "✏️ Edit Quiz Category"}
       </h2>
+      
       <div className={styles.formGrid}>
         <div className={styles.field}>
-          <label>Emoji</label>
+          <label>Emoji Icon</label>
           <input
             value={form.emoji}
             onChange={(e) => setForm({ ...form, emoji: e.target.value })}
@@ -117,34 +113,37 @@ const EditForm = ({ category, onSave, onCancel, isNew = false, quizzes = [], set
             className={styles.input}
           />
         </div>
+
         <div className={styles.field}>
-          <label>Topic Name</label>
+          <label>Topic Title (English)</label>
           <input
             value={form.topic}
             onChange={(e) => setForm({ ...form, topic: e.target.value })}
-            placeholder="e.g. Science"
+            placeholder="e.g. Biology & Life Sciences"
             className={styles.input}
           />
         </div>
+
         <div className={styles.field}>
-          <label>Description</label>
-          <input
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-            placeholder="Short description"
-            className={styles.input}
-          />
-        </div>
-        
-        <div className={styles.field}>
-          <label>Topic Name (Hindi)</label>
+          <label>Topic Title (Hindi)</label>
           <input
             value={form.topicHi || ""}
             onChange={(e) => setForm({ ...form, topicHi: e.target.value })}
-            placeholder="जैसे: विज्ञान"
+            placeholder="जैसे: जीव विज्ञान"
             className={styles.input}
           />
         </div>
+
+        <div className={styles.field}>
+          <label>Description (English)</label>
+          <input
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+            placeholder="Short overview"
+            className={styles.input}
+          />
+        </div>
+
         <div className={styles.field}>
           <label>Description (Hindi)</label>
           <input
@@ -156,13 +155,26 @@ const EditForm = ({ category, onSave, onCancel, isNew = false, quizzes = [], set
         </div>
 
         <div className={styles.field}>
+          <label>Category Type</label>
+          <select
+            value={form.categoryClass === 'govt-exam' || form.categoryClass?.includes('govt-exam') ? 'govt-exam' : (form.categoryClass === 'image-quiz' || form.categoryClass?.includes('image-quiz') ? 'image-quiz' : '')}
+            onChange={(e) => setForm({ ...form, categoryClass: e.target.value })}
+            className={styles.select}
+          >
+            <option value="">Regular Category</option>
+            <option value="govt-exam">Govt Exam / Preparation</option>
+            <option value="image-quiz">Image Quiz</option>
+          </select>
+        </div>
+
+        <div className={styles.field}>
           <label>Parent Category (Optional)</label>
           <select
             value={form.parentId || ""}
             onChange={(e) => setForm({ ...form, parentId: e.target.value || null })}
-            className={styles.input}
+            className={styles.select}
           >
-            <option value="">None (Top Level)</option>
+            <option value="">None (Top Level Category)</option>
             {quizzes
               .filter((c) => c.id !== editingId && !c.parentId)
               .map((c) => (
@@ -173,18 +185,20 @@ const EditForm = ({ category, onSave, onCancel, isNew = false, quizzes = [], set
           </select>
         </div>
 
-        <div className={styles.toggleField}>
-          <label className={styles.checkboxLabel}>
-            <input
-              type="checkbox"
-              checked={!!form.showSubCategoriesOnHome}
-              onChange={(e) => setForm({ ...form, showSubCategoriesOnHome: e.target.checked })}
-            />
-            Show sub-categories on home page
-          </label>
-        </div>
         <div className={styles.field}>
-          <label>Category Image</label>
+          <label>Original Language</label>
+          <select
+            value={form.originalLang || "en"}
+            onChange={(e) => setForm({ ...form, originalLang: e.target.value })}
+            className={styles.select}
+          >
+            <option value="en">English (EN)</option>
+            <option value="hi">Hindi (HI)</option>
+          </select>
+        </div>
+
+        <div className={styles.field}>
+          <label>Category Thumbnail Image</label>
           <input type="file" accept="image/*" onChange={handleImageUpload} className={styles.fileInput} />
           {form.image && (
             <div className={styles.imagePreview}>
@@ -193,105 +207,58 @@ const EditForm = ({ category, onSave, onCancel, isNew = false, quizzes = [], set
             </div>
           )}
         </div>
-        <div className={styles.field}>
-          <label>Original Language</label>
-          <select
-            value={form.originalLang || "en"}
-            onChange={(e) => setForm({ ...form, originalLang: e.target.value })}
-            className={styles.input}
-          >
-            <option value="en">English</option>
-            <option value="hi">Hindi</option>
-          </select>
-        </div>
 
         <div className={styles.field}>
-          <label>Assign Chips</label>
-          <div className={styles.chipsWrap}>
-            {(function () {
-              let list = [];
-              try {
-                list = typeof settings?.homeChips === 'string' ? JSON.parse(settings.homeChips) : (settings.homeChips || []);
-              } catch {
-                list = [];
-              }
-              if (!Array.isArray(list) || list.length === 0) {
-                list = ["Science", "History", "GK", "Quick 5 Min"];
-              }
-              return list.map((chip) => (
-                <label key={chip} className={styles.chipCheck}>
-                  <input
-                    type="checkbox"
-                    checked={Array.isArray(form.chips) && form.chips.includes(chip)}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      const current = new Set(Array.isArray(form.chips) ? form.chips : []);
-                      if (checked) current.add(chip);
-                      else current.delete(chip);
-                      setForm({ ...form, chips: Array.from(current) });
-                    }}
-                  />
-                  <span>#{chip}</span>
-                </label>
-              ));
-            })()}
+          <label>Options & Visibility</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label className={styles.checkboxLabel}>
+              <input
+                type="checkbox"
+                checked={!!form.showSubCategoriesOnHome}
+                onChange={(e) => setForm({ ...form, showSubCategoriesOnHome: e.target.checked })}
+              />
+              <span> Show sub-categories on homepage</span>
+            </label>
+            <label className={styles.checkboxLabel}>
+              <input
+                type="checkbox"
+                checked={!!form.isTrending}
+                onChange={(e) => setForm({ ...form, isTrending: e.target.checked })}
+              />
+              <span> Mark as Trending Topic 🔥</span>
+            </label>
+            <label className={styles.checkboxLabel}>
+              <input
+                type="checkbox"
+                checked={!!form.hidden}
+                onChange={(e) => setForm({ ...form, hidden: e.target.checked })}
+              />
+              <span> Hide from public view</span>
+            </label>
           </div>
-        </div>
-
-        <div className={styles.checkboxField}>
-          <label>
-            <input
-              type="checkbox"
-              checked={!!form.isTrending}
-              onChange={(e) => setForm({ ...form, isTrending: e.target.checked })}
-            />
-            <span>Mark as Trending 🔥</span>
-          </label>
-        </div>
-
-        <div className={styles.checkboxField}>
-          <label>
-            <input
-              type="checkbox"
-              checked={!!form.hidden}
-              onChange={(e) => setForm({ ...form, hidden: e.target.checked })}
-            />
-            <span>Hidden from public view</span>
-          </label>
         </div>
       </div>
 
-      <hr className={styles.divider} />
-      <div className={styles.storySection}>
-        <h3 className={styles.sectionTitle}>Informative Story Section</h3>
+      <div style={{ marginTop: '20px' }}>
+        <h3 className={styles.sectionTitle}>📖 Digital Book / Story Content (Read Mode Sidebar)</h3>
         <div className={styles.field}>
-          <label>Story Image (Displayed in sidebar)</label>
-          <input type="file" accept="image/*" onChange={handleStoryImageUpload} className={styles.fileInput} />
-          {form.storyImage && (
-            <div className={styles.imagePreview}>
-              <img src={form.storyImage} alt="Story Preview" />
-              <button type="button" className={styles.removeImg} onClick={() => setForm({ ...form, storyImage: "" })}>✕ Remove</button>
-            </div>
-          )}
-        </div>
-        <div className={styles.field}>
-          <label>Story/Informative Text</label>
+          <label>Story/Informative Overview Text</label>
           <textarea
             value={form.storyText || ""}
             onChange={(e) => setForm({ ...form, storyText: e.target.value })}
-            placeholder="Add a short story or informative text about this quiz..."
+            placeholder="Add background notes, study summary, or chapter guide for Read Mode..."
             className={styles.textarea}
-            rows={5}
+            rows={4}
           />
         </div>
       </div>
 
       <div className={styles.formActions}>
-        <button className="btn-secondary" onClick={onCancel}>
+        <button className="actionBtnSecondary" onClick={onCancel}>
           Cancel
         </button>
-        <button className="btn-primary" onClick={() => onSave(form, isNew)}>
-          {isNew ? "Add Category" : "Save Changes"}
+        <button className="actionBtnPrimary" onClick={() => onSave(form, isNew)}>
+          {isNew ? "Create Category" : "Save Changes"}
         </button>
       </div>
     </div>
@@ -303,11 +270,60 @@ export default function AdminCategoriesPage() {
   const { adminUser } = useAdmin();
   const isJr = adminUser?.role === "jr";
   const allowed = adminUser?.role === "master" || adminUser?.permissions?.categories !== false;
+
   const [editingId, setEditingId] = useState(null);
   const [confirm, setConfirm] = useState(null);
-  const [activeTab, setActiveTab] = useState("quizzes");
+  const [activeTab, setActiveTab] = useState("quizzes"); // "quizzes", "govt-exams", "image-quizzes"
+  const [healthFilter, setHealthFilter] = useState("all"); // "all", "ready", "progress", "empty"
+  const [search, setSearch] = useState("");
+
   const dragItem = useRef(null);
   const dragOver = useRef(null);
+
+  // Health Metrics for Category Tab
+  const healthStats = useMemo(() => {
+    let empty = 0;
+    let progress = 0;
+    let ready = 0;
+
+    quizzes.forEach((c) => {
+      const count = c.questionCount || 0;
+      if (count === 0) empty++;
+      else if (count < 20) progress++;
+      else ready++;
+    });
+
+    return { empty, progress, ready, total: quizzes.length };
+  }, [quizzes]);
+
+  // Main Categories Filtered
+  const filteredCategories = useMemo(() => {
+    return quizzes
+      .filter((c) => !c.parentId)
+      .filter((cat) => {
+        if (activeTab === "all") return true;
+        const cls = cat.categoryClass || "";
+        if (activeTab === "govt-exams") return cls.includes("govt-exam");
+        if (activeTab === "image-quizzes") return cls.includes("image-quiz");
+        return !cls.includes("govt-exam") && !cls.includes("image-quiz");
+      })
+      .filter((cat) => {
+        if (!search) return true;
+        const query = search.toLowerCase();
+        return (
+          cat.topic?.toLowerCase().includes(query) ||
+          cat.topicHi?.toLowerCase().includes(query) ||
+          cat.description?.toLowerCase().includes(query)
+        );
+      })
+      .filter((cat) => {
+        const count = cat.questionCount || 0;
+        if (healthFilter === "empty") return count === 0;
+        if (healthFilter === "progress") return count > 0 && count < 20;
+        if (healthFilter === "ready") return count >= 20;
+        return true;
+      });
+  }, [quizzes, activeTab, search, healthFilter]);
 
   if (!allowed) {
     return (
@@ -317,30 +333,18 @@ export default function AdminCategoriesPage() {
     );
   }
 
-  const openAdd = () => {
-    setEditingId("new");
-  };
-
-  const openEdit = (cat) => {
-    setEditingId(cat.id);
-  };
+  const openAdd = () => setEditingId("new");
+  const openEdit = (cat) => setEditingId(cat.id);
 
   const handleSave = async (formData, isNew) => {
-    console.log("[AdminCategories] handleSave called:", { isNew, topic: formData.topic });
     try {
-      // Basic validation with existence check
       if (!formData || !formData.topic) {
-        toast.error("Topic is required!");
+        toast.error("Topic title is required!");
         return;
       }
 
       const topicStr = String(formData.topic).trim();
-      const emojiStr = formData.emoji ? String(formData.emoji).trim() : "";
-
-      if (!topicStr) {
-        toast.error("Topic cannot be empty!");
-        return;
-      }
+      const emojiStr = formData.emoji ? String(formData.emoji).trim() : "📁";
 
       const data = { 
         topic: topicStr, 
@@ -360,15 +364,11 @@ export default function AdminCategoriesPage() {
         chips: Array.isArray(formData.chips) ? formData.chips : [],
       };
 
-      console.log("[AdminCategories] data for API:", data);
-
       if (!isNew) {
         if (isJr) {
-          console.log("[AdminCategories] Submitting pending update");
           await submitPending("update_category", { categoryId: editingId, ...data });
           setEditingId(null);
         } else {
-          console.log("[AdminCategories] Updating category directly:", editingId);
           const success = await updateCategory(editingId, data);
           if (success) {
             toast.success("Category updated successfully!");
@@ -379,23 +379,21 @@ export default function AdminCategoriesPage() {
         }
       } else {
         if (isJr) {
-          console.log("[AdminCategories] Submitting pending creation");
           await submitPending("create_category", data);
           setEditingId(null);
         } else {
-          console.log("[AdminCategories] Creating category directly");
           const success = await addCategory(data);
           if (success) {
             toast.success("Category created successfully!");
             setEditingId(null);
           } else {
-            toast.error("Failed to create category. Please check the server logs.");
+            toast.error("Failed to create category.");
           }
         }
       }
     } catch (error) {
       console.error("[AdminCategories] handleSave error:", error);
-      toast.error("An unexpected error occurred: " + error.message);
+      toast.error("An error occurred: " + error.message);
     }
   };
 
@@ -413,41 +411,107 @@ export default function AdminCategoriesPage() {
   const handleDragEnd = () => {
     if (dragItem.current === null || dragOver.current === null) return;
     if (dragItem.current === dragOver.current) return;
+
+    const draggedCat = filteredCategories[dragItem.current];
+    const droppedOnCat = filteredCategories[dragOver.current];
+
+    if (!draggedCat || !droppedOnCat) return;
+
     const items = [...quizzes];
-    const [removed] = items.splice(dragItem.current, 1);
-    items.splice(dragOver.current, 0, removed);
-    reorderCategories(items);
+    const fromIndex = items.findIndex(c => c.id === draggedCat.id);
+    const toIndex = items.findIndex(c => c.id === droppedOnCat.id);
+
+    if (fromIndex !== -1 && toIndex !== -1) {
+      const [removed] = items.splice(fromIndex, 1);
+      items.splice(toIndex, 0, removed);
+      reorderCategories(items);
+    }
+    
     dragItem.current = null;
     dragOver.current = null;
   };
 
   return (
     <div className={styles.page}>
-      <div className={styles.header}>
-        <div>
-          <h1 className={styles.title}>Categories</h1>
-          <p className={styles.subtitle}>Manage quiz categories</p>
+      
+      {/* Header Banner */}
+      <div className={styles.headerRow}>
+        <div className={styles.headerLeft}>
+          <h1 className={styles.title}>Quiz Categories</h1>
+          <p className={styles.subtitle}>
+            Manage exam topics, sub-categories, language versions & set readiness
+          </p>
         </div>
-        <button className="btn-primary" onClick={openAdd}>
-          + Add Category
+        <button className={styles.addBtn} onClick={openAdd}>
+          <span>+ Add New Category</span>
         </button>
       </div>
 
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', borderBottom: '2px solid var(--card-border)', paddingBottom: '12px' }}>
-        <button 
-          onClick={() => setActiveTab("quizzes")}
-          style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: activeTab === 'quizzes' ? 'var(--accent)' : 'transparent', color: activeTab === 'quizzes' ? 'white' : 'var(--text-secondary)', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}
-        >📝 Quizzes</button>
-        <button 
-          onClick={() => setActiveTab("govt-exams")}
-          style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: activeTab === 'govt-exams' ? 'var(--accent)' : 'transparent', color: activeTab === 'govt-exams' ? 'white' : 'var(--text-secondary)', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}
-        >🏛️ Govt Exams</button>
-        <button 
-          onClick={() => setActiveTab("image-quizzes")}
-          style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: activeTab === 'image-quizzes' ? 'var(--accent)' : 'transparent', color: activeTab === 'image-quizzes' ? 'white' : 'var(--text-secondary)', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}
-        >🖼️ Image Quizzes</button>
+      {/* Control & Filter Center */}
+      <div className={styles.controlBar}>
+        
+        {/* Vertical Type Tabs */}
+        <div className={styles.typeTabs}>
+          <button 
+            className={`${styles.typeTabBtn} ${activeTab === 'quizzes' ? styles.typeTabBtnActive : ''}`}
+            onClick={() => setActiveTab("quizzes")}
+          >
+            <span>📝 Regular quizzes ({quizzes.filter(c => !(c.categoryClass || '').includes('govt-exam') && !(c.categoryClass || '').includes('image-quiz')).length})</span>
+          </button>
+          <button 
+            className={`${styles.typeTabBtn} ${activeTab === 'govt-exams' ? styles.typeTabBtnActive : ''}`}
+            onClick={() => setActiveTab("govt-exams")}
+          >
+            <span>🏛️ Govt Exams ({quizzes.filter(c => (c.categoryClass || '').includes('govt-exam')).length})</span>
+          </button>
+          <button 
+            className={`${styles.typeTabBtn} ${activeTab === 'image-quizzes' ? styles.typeTabBtnActive : ''}`}
+            onClick={() => setActiveTab("image-quizzes")}
+          >
+            <span>🖼️ Image Quizzes ({quizzes.filter(c => (c.categoryClass || '').includes('image-quiz')).length})</span>
+          </button>
+        </div>
+
+        {/* Health & Search Controls */}
+        <div className={styles.subFiltersRow}>
+          <div className={styles.healthTabs}>
+            <button
+              className={`${styles.healthTabBtn} ${healthFilter === 'all' ? styles.healthTabBtnActive : ''}`}
+              onClick={() => setHealthFilter("all")}
+            >
+              All ({healthStats.total})
+            </button>
+            <button
+              className={`${styles.healthTabBtn} ${healthFilter === 'empty' ? styles.healthTabBtnActive : ''}`}
+              onClick={() => setHealthFilter("empty")}
+            >
+              🔴 Empty ({healthStats.empty})
+            </button>
+            <button
+              className={`${styles.healthTabBtn} ${healthFilter === 'progress' ? styles.healthTabBtnActive : ''}`}
+              onClick={() => setHealthFilter("progress")}
+            >
+              🟡 In Progress ({healthStats.progress})
+            </button>
+            <button
+              className={`${styles.healthTabBtn} ${healthFilter === 'ready' ? styles.healthTabBtnActive : ''}`}
+              onClick={() => setHealthFilter("ready")}
+            >
+              🟢 Ready ({healthStats.ready})
+            </button>
+          </div>
+
+          <input
+            className={styles.searchInput}
+            placeholder="Search category title..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+
       </div>
 
+      {/* Categories List */}
       <div className={styles.list}>
         {editingId === "new" && (
           <EditForm 
@@ -460,19 +524,25 @@ export default function AdminCategoriesPage() {
             editingId={editingId}
           />
         )}
-        
-        {quizzes
-          .filter((c) => !c.parentId)
-          .filter((cat) => {
-            const cls = cat.categoryClass || "";
-            if (activeTab === "govt-exams") return cls.includes("govt-exam");
-            if (activeTab === "image-quizzes") return cls.includes("image-quiz");
-            return !cls.includes("govt-exam") && !cls.includes("image-quiz");
-          })
-          .map((cat, idx) => (
+
+        {filteredCategories.map((cat, idx) => {
+          const count = cat.questionCount || 0;
+          const sets = Math.ceil(count / 20);
+
+          let statusLabel = `${sets} ${sets === 1 ? 'SET' : 'SETS'} READY`;
+          let pillClass = styles.pillReady;
+          if (count === 0) {
+            statusLabel = "NEEDS CONTENT";
+            pillClass = styles.pillEmpty;
+          } else if (count < 20) {
+            statusLabel = "IN PROGRESS";
+            pillClass = styles.pillWarning;
+          }
+
+          return (
             <div key={cat.id}>
               <div
-                className={`${styles.row} glass-card ${editingId === cat.id ? styles.editingRow : ""}`}
+                className={styles.row}
                 draggable={editingId === null}
                 onDragStart={() => (dragItem.current = idx)}
                 onDragEnter={() => (dragOver.current = idx)}
@@ -486,27 +556,35 @@ export default function AdminCategoriesPage() {
                   {cat.image ? (
                     <img src={cat.image} alt="" className={styles.rowImage} />
                   ) : (
-                    <span className={styles.emoji}>{cat.emoji}</span>
+                    <span className={styles.emoji}>{cat.emoji || "📁"}</span>
                   )}
-                  <div>
+                  
+                  <div className={styles.nameGroup}>
                     <span className={styles.name}>
                       {cat.topic}
                       <span className={`${styles.langBadge} ${cat.originalLang === 'hi' ? styles.langHi : styles.langEn}`}>
                         {cat.originalLang === 'hi' ? 'HI' : 'EN'}
                       </span>
                     </span>
-                    <span className={styles.desc}>{cat.description}</span>
+                    {cat.description && <span className={styles.desc}>{cat.description}</span>}
                   </div>
                 </div>
+
                 <div className={styles.rowMeta}>
                   {cat.showSubCategoriesOnHome && (
                     <span className={styles.homeBadge} title="Sub-categories shown on home page">🏠</span>
                   )}
                   {cat.isTrending && <span className={styles.trendingBadge}>🔥 Trending</span>}
-                  <span className={styles.count}>{cat.questionCount || 0} Q</span>
+                  
+                  <span className={`${styles.statusPill} ${pillClass}`}>{statusLabel}</span>
+                  <span className={styles.count}>{count} Qs</span>
+
                   <div className={styles.actions}>
+                    <Link href={`/admin/questions?category=${cat.id}`} className={styles.addQBtn}>
+                      <span>+ Add Qs</span>
+                    </Link>
                     <button
-                      className={styles.visibilityBtn}
+                      className={styles.iconBtn}
                       onClick={() =>
                         isJr
                           ? submitPending("update_category", {
@@ -519,11 +597,11 @@ export default function AdminCategoriesPage() {
                     >
                       {cat.hidden ? "🙈" : "👁️"}
                     </button>
-                    <button className={styles.editBtn} onClick={() => openEdit(cat)}>
-                      {editingId === cat.id ? "📂" : "✏️"}
+                    <button className={styles.iconBtn} onClick={() => openEdit(cat)}>
+                      ✏️
                     </button>
                     <button
-                      className={styles.deleteBtn}
+                      className={`${styles.iconBtn} ${styles.deleteBtn}`}
                       onClick={() => setConfirm(cat.id)}
                     >
                       🗑️
@@ -547,7 +625,7 @@ export default function AdminCategoriesPage() {
                 )}
               </div>
 
-              {/* Inline Edit Form for Main Category */}
+              {/* Inline Edit Form */}
               {editingId === cat.id && (
                 <EditForm 
                   category={cat} 
@@ -559,35 +637,33 @@ export default function AdminCategoriesPage() {
                 />
               )}
 
-              {/* Render sub-categories */}
+              {/* Render Sub-categories */}
               <div className={styles.subRows}>
                 {quizzes
                   .filter((sub) => sub.parentId === cat.id)
                   .map((sub) => (
-                    <div
-                      key={sub.id}
-                      className={`${styles.row} ${styles.subRow} glass-card ${editingId === sub.id ? styles.editingRow : ""}`}
-                    >
+                    <div key={sub.id} className={`${styles.row} ${styles.subRow}`}>
                       <div className={styles.rowInfo}>
                         <span className={styles.subIndicator}>↳</span>
                         {sub.image ? (
                           <img src={sub.image} alt="" className={styles.rowImage} />
                         ) : (
-                          <span className={styles.emoji}>{sub.emoji}</span>
+                          <span className={styles.emoji}>{sub.emoji || "📁"}</span>
                         )}
-                        <div>
+                        <div className={styles.nameGroup}>
                           <span className={styles.name}>{sub.topic}</span>
-                          <span className={styles.desc}>{sub.description}</span>
+                          {sub.description && <span className={styles.desc}>{sub.description}</span>}
                         </div>
                       </div>
+
                       <div className={styles.rowMeta}>
-                        {sub.hidden && (
-                          <span className={styles.hiddenBadge}>Hidden</span>
-                        )}
-                        <span className={styles.count}>{sub.questionCount || 0} Q</span>
+                        <span className={styles.count}>{sub.questionCount || 0} Qs</span>
                         <div className={styles.actions}>
+                          <Link href={`/admin/questions?category=${sub.id}`} className={styles.addQBtn}>
+                            <span>+ Add Qs</span>
+                          </Link>
                           <button
-                            className={styles.visibilityBtn}
+                            className={styles.iconBtn}
                             onClick={() =>
                               isJr
                                 ? submitPending("update_category", {
@@ -600,20 +676,18 @@ export default function AdminCategoriesPage() {
                           >
                             {sub.hidden ? "🙈" : "👁️"}
                           </button>
-                          <button
-                            className={styles.editBtn}
-                            onClick={() => openEdit(sub)}
-                          >
-                            {editingId === sub.id ? "📂" : "✏️"}
+                          <button className={styles.iconBtn} onClick={() => openEdit(sub)}>
+                            ✏️
                           </button>
                           <button
-                            className={styles.deleteBtn}
+                            className={`${styles.iconBtn} ${styles.deleteBtn}`}
                             onClick={() => setConfirm(sub.id)}
                           >
                             🗑️
                           </button>
                         </div>
                       </div>
+
                       {confirm === sub.id && (
                         <div className={styles.confirmBar}>
                           <span>{`Delete "${sub.topic}" and all its questions?`}</span>
@@ -623,15 +697,12 @@ export default function AdminCategoriesPage() {
                           >
                             Yes, Delete
                           </button>
-                          <button
-                            className={styles.confirmNo}
-                            onClick={() => setConfirm(null)}
-                          >
+                          <button className={styles.confirmNo} onClick={() => setConfirm(null)}>
                             Cancel
                           </button>
                         </div>
                       )}
-                      {/* Inline Edit Form for Sub-Category */}
+
                       {editingId === sub.id && (
                         <EditForm 
                           category={sub} 
@@ -645,12 +716,18 @@ export default function AdminCategoriesPage() {
                     </div>
                   ))}
               </div>
+
             </div>
-          ))}
-        {quizzes.length === 0 && editingId !== "new" && (
-          <p className={styles.empty}>No categories yet. Add one above!</p>
+          );
+        })}
+
+        {filteredCategories.length === 0 && editingId !== "new" && (
+          <div className={styles.emptyState}>
+            <p>No categories found matching your selected filter or search query.</p>
+          </div>
         )}
       </div>
+
     </div>
   );
 }

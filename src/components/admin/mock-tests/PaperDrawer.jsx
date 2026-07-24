@@ -14,9 +14,14 @@ export default function PaperDrawer({
   onClose, 
   form, 
   setForm, 
+  paperForm,
+  setPaperForm,
   onSave, 
   isLoading 
 }) {
+  const activeForm = form || paperForm || {};
+  const activeSetForm = setForm || setPaperForm || (() => {});
+
   return (
     <SideDrawer 
       isOpen={isOpen} 
@@ -37,8 +42,8 @@ export default function PaperDrawer({
               </label>
               <input 
                 type="text" 
-                value={form.title} 
-                onChange={e => setForm(p => ({...p, title: e.target.value}))}
+                value={activeForm.title || ''} 
+                onChange={e => activeSetForm(p => ({...p, title: e.target.value}))}
                 className={styles.input}
                 placeholder="e.g., SSC CGL 2024 Tier-I Official Mock #01"
               />
@@ -49,8 +54,8 @@ export default function PaperDrawer({
               <label>Unique URL Slug</label>
               <input 
                 type="text" 
-                value={form.slug} 
-                onChange={e => setForm(p => ({...p, slug: e.target.value}))}
+                value={activeForm.slug || ''} 
+                onChange={e => activeSetForm(p => ({...p, slug: e.target.value}))}
                 className={styles.input}
                 placeholder="ssc-cgl-2024-tier1-full-01"
               />
@@ -63,8 +68,8 @@ export default function PaperDrawer({
               </label>
               <input 
                 type="number" 
-                value={form.timeLimit} 
-                onChange={e => setForm(p => ({...p, timeLimit: parseInt(e.target.value) || 0}))}
+                value={activeForm.timeLimit || 60} 
+                onChange={e => activeSetForm(p => ({...p, timeLimit: parseInt(e.target.value) || 0}))}
                 className={styles.input}
               />
             </div>
@@ -74,8 +79,8 @@ export default function PaperDrawer({
               </label>
               <input 
                 type="number" 
-                value={form.totalMarks} 
-                onChange={e => setForm(p => ({...p, totalMarks: parseFloat(e.target.value) || 0}))}
+                value={activeForm.totalMarks || 100} 
+                onChange={e => activeSetForm(p => ({...p, totalMarks: parseFloat(e.target.value) || 0}))}
                 className={styles.input}
               />
             </div>
@@ -86,8 +91,8 @@ export default function PaperDrawer({
               <input 
                 type="number" 
                 step="0.01"
-                value={form.positiveMarking} 
-                onChange={e => setForm(p => ({...p, positiveMarking: parseFloat(e.target.value) || 0}))}
+                value={activeForm.positiveMarking || 1.0} 
+                onChange={e => activeSetForm(p => ({...p, positiveMarking: parseFloat(e.target.value) || 0}))}
                 className={styles.input}
               />
             </div>
@@ -96,8 +101,8 @@ export default function PaperDrawer({
               <input 
                 type="number" 
                 step="0.01"
-                value={form.negativeMarking} 
-                onChange={e => setForm(p => ({...p, negativeMarking: parseFloat(e.target.value) || 0}))}
+                value={activeForm.negativeMarking || 0.25} 
+                onChange={e => activeSetForm(p => ({...p, negativeMarking: parseFloat(e.target.value) || 0}))}
                 className={styles.input}
               />
             </div>
@@ -106,8 +111,8 @@ export default function PaperDrawer({
             <div className={styles.formGroup}>
               <label>Paper Type</label>
               <select 
-                value={form.paperType} 
-                onChange={e => setForm(p => ({...p, paperType: e.target.value}))}
+                value={activeForm.paperType || 'MOCK'} 
+                onChange={e => activeSetForm(p => ({...p, paperType: e.target.value}))}
                 className={styles.input}
               >
                 <option value="MOCK">Official Mock</option>
@@ -120,8 +125,8 @@ export default function PaperDrawer({
               </label>
               <input 
                 type="number" 
-                value={form.year || ''} 
-                onChange={e => setForm(p => ({...p, year: parseInt(e.target.value) || 0}))}
+                value={activeForm.year || ''} 
+                onChange={e => activeSetForm(p => ({...p, year: parseInt(e.target.value) || 0}))}
                 className={styles.input}
                 placeholder="2024"
               />
@@ -134,8 +139,8 @@ export default function PaperDrawer({
                   <HelpCircle size={14} /> Exam Instructions
                 </label>
                 <textarea 
-                  value={form.instructions} 
-                  onChange={e => setForm(p => ({...p, instructions: e.target.value}))}
+                  value={activeForm.instructions || ''} 
+                  onChange={e => activeSetForm(p => ({...p, instructions: e.target.value}))}
                   className={styles.textarea}
                   rows={5}
                   placeholder="Detailed instructions for students..."
@@ -148,8 +153,8 @@ export default function PaperDrawer({
               <label className="flex items-center gap-3 cursor-pointer group">
                 <input 
                   type="checkbox" 
-                  checked={form.isLive} 
-                  onChange={e => setForm(p => ({...p, isLive: e.target.checked}))}
+                  checked={!!activeForm.isLive} 
+                  onChange={e => activeSetForm(p => ({...p, isLive: e.target.checked}))}
                   className="w-5 h-5 accent-emerald-500 rounded-lg cursor-pointer"
                 />
                 <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900 transition-colors">Active / Live</span>
@@ -157,8 +162,8 @@ export default function PaperDrawer({
               <label className="flex items-center gap-3 cursor-pointer group">
                 <input 
                   type="checkbox" 
-                  checked={form.showSolutions} 
-                  onChange={e => setForm(p => ({...p, showSolutions: e.target.checked}))}
+                  checked={!!activeForm.showSolutions} 
+                  onChange={e => activeSetForm(p => ({...p, showSolutions: e.target.checked}))}
                   className="w-5 h-5 accent-indigo-500 rounded-lg cursor-pointer"
                 />
                 <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900 transition-colors">Show Solutions</span>

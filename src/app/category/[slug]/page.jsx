@@ -330,11 +330,18 @@ export default function CategorySetsPage() {
   const [questionsLoaded, setQuestionsLoaded] = useState(false);
   const [setSize, setSetSize] = useState(20);
   const [activeModalSet, setActiveModalSet] = useState(null);
+  const [page, setPage] = useState(1);
+
+  // Scroll to top when page changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [page]);
 
   const [timer, setTimer] = useState(0);
   const [language, setLanguage] = useState(globalLang);
   const [selectedSet, setSelectedSet] = useState(null);
-  const [page, setPage] = useState(1);
   const [searchQuestion, setSearchQuestion] = useState("");
   const [revealedAnswers, setRevealedAnswers] = useState(new Set());
   const [isTranslatingIndex, setIsTranslatingIndex] = useState(false);
@@ -479,8 +486,8 @@ export default function CategorySetsPage() {
   const filteredQuestions = useMemo(() => {
     if (!searchQuestion.trim()) return questions;
     return questions.filter(q =>
-      q.text.toLowerCase().includes(searchQuestion.toLowerCase()) ||
-      (q.options && q.options.some(opt => opt.toLowerCase().includes(searchQuestion.toLowerCase())))
+      (q?.text || "").toLowerCase().includes(searchQuestion.toLowerCase()) ||
+      (q?.options && Array.isArray(q.options) && q.options.some(opt => (opt || "").toLowerCase().includes(searchQuestion.toLowerCase())))
     );
   }, [questions, searchQuestion]);
 
@@ -497,33 +504,33 @@ export default function CategorySetsPage() {
 
   // JSON-LD Schema for SEO
   const jsonLd = useMemo(() => {
-    if (!category || !questionsLoaded) return null;
+    if (!category || !questionsLoaded || !Array.isArray(questions)) return null;
     return {
       "@context": "https://schema.org",
       "@type": "Quiz",
-      "name": category.topic,
-      "description": category.description,
+      "name": category.topic || "",
+      "description": category.description || "",
       "educationalAlignment": [
         {
           "@type": "AlignmentObject",
           "educationalFramework": "Educational Knowledge",
-          "targetName": category.topic
+          "targetName": category.topic || ""
         }
       ],
       "hasPart": questions.slice(0, 50).map((q, idx) => {
-        const correctText = String(q.correctAnswer || "").trim();
-        const correctIdx = Array.isArray(q.options)
-          ? q.options.findIndex(opt => String(opt).trim() === correctText)
+        const correctText = String(q?.correctAnswer || "").trim();
+        const correctIdx = Array.isArray(q?.options)
+          ? q.options.findIndex(opt => String(opt || "").trim() === correctText)
           : -1;
 
         return {
           "@type": "Question",
-          "name": q.text,
+          "name": q?.text || "",
           "educationalLevel": category.difficulty || "Beginner",
           "suggestedAnswer": [
             {
               "@type": "Answer",
-              "text": correctIdx !== -1 ? q.options[correctIdx] : correctText
+              "text": (correctIdx !== -1 && Array.isArray(q?.options)) ? q.options[correctIdx] : correctText
             }
           ]
         };
@@ -616,7 +623,7 @@ export default function CategorySetsPage() {
     if (selectedSet.progress && !selectedSet.progress.isComplete && mode !== 'fresh') {
       startQuizResume(selectedSet.progress, targetQuestions, mode);
     } else {
-      startQuizSet(category.id, targetQuestions, timer, language, selectedSet.index, category.topic + topicSuffix);
+      startQuizSet(category.id, targetQuestions, timer, language, selectedSet.index, category.topic + topicSuffix, true);
     }
     router.push(`/quiz/${category.slug || category.id}`);
   };

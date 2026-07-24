@@ -56,6 +56,11 @@ button {
   font-family: inherit;
 }
 
+button:active, a:active {
+  transform: scale(0.97) !important;
+  transition: transform 0.1s ease !important;
+}
+
 /* ===== Light Theme (default) ===== */
 :root,
 [data-theme="light"] {

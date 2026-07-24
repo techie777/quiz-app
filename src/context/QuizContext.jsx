@@ -582,7 +582,7 @@ export function QuizProvider({ children }) {
     dispatch({ type: "SET_FONT_SCALE", payload: next });
   }, [state.fontScale]);
 
-  const startQuiz = useCallback(async (quizId, difficulty, timer, language = "en") => {
+  const startQuiz = useCallback(async (quizId, difficulty, timer, language = "en", skipTranslation = true) => {
     const quiz = quizzes.find((q) => q.id === quizId);
     if (!quiz) return;
     
@@ -599,6 +599,11 @@ export function QuizProvider({ children }) {
     
     console.log(`[Quiz] Start. User selected: ${language}, Original data lang: ${originalLang}, Detected: ${detectedLang}`);
     
+    if (skipTranslation) {
+      console.log(`[Quiz] skipTranslation is true. Bypassing translation API.`);
+      return;
+    }
+
     // Rule: Only translate if target language is DIFFERENT from detected content language
     if (language !== detectedLang) {
       console.log(`[Quiz] Languages differ. Triggering translation from ${detectedLang} to ${language}...`);
@@ -608,9 +613,14 @@ export function QuizProvider({ children }) {
     }
   }, [quizzes, translateQuiz]);
 
-  const startQuizSet = useCallback(async (quizId, questions, timer, language = "en", setIndex = null, categoryName = null) => {
+  const startQuizSet = useCallback(async (quizId, questions, timer, language = "en", setIndex = null, categoryName = null, skipTranslation = true) => {
     const quiz = quizzes.find(q => q.id === quizId);
     dispatch({ type: "START_QUIZ_SET", payload: { quizId, quizSlug: quiz?.slug, questions, timer, language, setIndex, categoryName } });
+    
+    if (skipTranslation) {
+      console.log(`[QuizSet] skipTranslation is true. Bypassing translation API.`);
+      return;
+    }
     
     // Detect actual content language
     const detectedLang = detectQuizLanguage(questions);

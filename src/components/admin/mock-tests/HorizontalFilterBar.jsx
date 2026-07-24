@@ -17,6 +17,9 @@ export default function HorizontalFilterBar({
   onExamChange,
   activeCount 
 }) {
+  const safeCategories = Array.isArray(categories) ? categories : [];
+  const safeExams = Array.isArray(exams) ? exams : [];
+
   return (
     <div className={styles.filterBar}>
       <div className={styles.filterBreadcrumb}>
@@ -27,7 +30,7 @@ export default function HorizontalFilterBar({
           className={styles.filterSelect}
         >
           <option value="">Select Category</option>
-          {categories.map(cat => (
+          {safeCategories.map(cat => (
             <option key={cat.id} value={cat.id}>{cat.name}</option>
           ))}
         </select>
@@ -44,7 +47,7 @@ export default function HorizontalFilterBar({
           className={styles.filterSelect}
         >
           <option value="">Select Exam</option>
-          {exams
+          {safeExams
             .filter(ex => ex.categoryId === selectedCategoryId)
             .map(ex => (
               <option key={ex.id} value={ex.id}>{ex.name}</option>

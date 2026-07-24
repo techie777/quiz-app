@@ -29,9 +29,13 @@ export default function SubCategoryDrawer({
   onSave, 
   onSaveInfoSection, 
   onDeleteInfoSection,
+  saveInfoSection,
+  deleteInfoSection,
   editingInfoSection,
   setEditingInfoSection
 }) {
+  const handleSaveInfo = onSaveInfoSection || saveInfoSection || (() => {});
+  const handleDeleteInfo = onDeleteInfoSection || deleteInfoSection || (() => {});
   const [activeTab, setActiveTab] = useState('general');
 
   const tabs = [

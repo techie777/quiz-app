@@ -436,7 +436,7 @@ const CardQuestionPreview = React.memo(({ quiz, isHindi }) => {
 CardQuestionPreview.displayName = "CardQuestionPreview";
 
 // Sub-section component for categorized quizzes
-const SubSection = React.memo(({ title, quizzes, onViewAll, showMixCard, sectionName, onOpenMixModal, id }) => {
+const SubSection = React.memo(({ title, quizzes, onViewAll, showMixCard, sectionName, onOpenMixModal, id, examMode, onModeChange }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [favorites, setFavorites] = useState(new Set());
   const { data: session } = useSession();
@@ -626,8 +626,17 @@ const SubSection = React.memo(({ title, quizzes, onViewAll, showMixCard, section
 
   return (
     <div className={styles.subSection} id={id}>
-      <div className={styles.subSectionContentWrapper}>
+      <div 
+        className={styles.subSectionContentWrapper}
+        style={sectionName && sectionName !== "All Categories" ? { border: 'none', background: 'transparent', boxShadow: 'none', padding: '0', marginTop: '16px' } : {}}
+      >
         
+        {onModeChange && (
+          <div className="flex justify-center w-full mb-4">
+             <ExamModeSwitcher mode={examMode} onModeChange={onModeChange} isHindi={isHindi} compact={true} />
+          </div>
+        )}
+
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
           {String(title || "").trim().toLowerCase() !== "topics" && title !== sectionName ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -644,7 +653,7 @@ const SubSection = React.memo(({ title, quizzes, onViewAll, showMixCard, section
             <button
               type="button"
               onClick={() => setViewMode("compact")}
-              className={`px-3 py-1 rounded-lg text-xs font-extrabold transition-all flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-extrabold transition-all flex items-center gap-1.5 ${
                 viewMode === "compact"
                   ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs border border-slate-200/60 dark:border-slate-800"
                   : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
@@ -657,7 +666,7 @@ const SubSection = React.memo(({ title, quizzes, onViewAll, showMixCard, section
             <button
               type="button"
               onClick={() => setViewMode("detailed")}
-              className={`px-3 py-1 rounded-lg text-xs font-extrabold transition-all flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-extrabold transition-all flex items-center gap-1.5 ${
                 viewMode === "detailed"
                   ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs border border-slate-200/60 dark:border-slate-800"
                   : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
@@ -672,39 +681,39 @@ const SubSection = React.memo(({ title, quizzes, onViewAll, showMixCard, section
 
         {viewMode === "compact" ? (
           /* Compact Row Design System (Design 1 with Right-Side Play CTA) */
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 mb-4">
             {showMixCard && <MixPlayCard sectionName={sectionName} quizzes={quizzes} onOpenModal={onOpenMixModal} isCompact={true} />}
             {(filteredQuizzes || []).map((quiz) => {
               const fullTopicName = getTranslatedTopic(quiz.topic, quiz.topicHi);
               return (
-                <motion.div
+                  <motion.div
                   key={quiz.id}
                   id={`quiz-card-${quiz.id}`}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="group bg-white dark:bg-slate-900 p-3 sm:p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-indigo-600 shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer flex items-center justify-between gap-3"
+                  className="group bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-indigo-600 shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer flex items-center justify-between gap-3"
                   onClick={() => {
                     router.push(`/category/${quiz.slug || quiz.id}`);
                   }}
                   title={fullTopicName}
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-xl font-black flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform overflow-hidden border border-indigo-100 dark:border-indigo-900/50">
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <span className="text-2xl group-hover:scale-110 transition-transform flex-shrink-0">
                       {quiz.image ? (
-                        <img src={quiz.image} alt={quiz.topic} className="w-full h-full object-cover" />
+                        <img src={quiz.image} alt={quiz.topic} className="w-8 h-8 rounded-full object-cover" />
                       ) : (
-                        <span>{getRelevantImage(quiz.topic, quiz.emoji)}</span>
+                        getRelevantImage(quiz.topic, quiz.emoji) || "📖"
                       )}
-                    </div>
-                    <div className="min-w-0">
+                    </span>
+                    <div className="min-w-0 flex-1">
                       <h4 
-                        className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate"
+                        className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate"
                         title={fullTopicName}
                       >
                         {fullTopicName}
                       </h4>
-                      <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 truncate mt-0.5">
+                      <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 truncate mt-0.5">
                         {sectionName || title || "Topics"}
                       </p>
                     </div>
@@ -744,7 +753,15 @@ const SubSection = React.memo(({ title, quizzes, onViewAll, showMixCard, section
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <Link href={`/category/${quiz.slug || quiz.id}`} className={styles.subSectionCardLink}>
+                <div 
+                  onClick={(e) => {
+                    // Prevent navigation if clicking on buttons
+                    if (e.target.closest('button')) return;
+                    router.push(`/category/${quiz.slug || quiz.id}`);
+                  }}
+                  className={styles.subSectionCardLink}
+                  style={{ cursor: 'pointer' }}
+                >
                   <div className={styles.subSectionCardImage}>
                     {quiz.image ? (
                       <img 
@@ -809,7 +826,7 @@ const SubSection = React.memo(({ title, quizzes, onViewAll, showMixCard, section
                       </button>
                     </div>
                   </div>
-                </Link>
+                </div>
               </motion.div>
             ))}
           </div>
@@ -924,7 +941,7 @@ function categorizeQuizzes(quizzes, sections) {
 }
 
 // Main Category Section component
-const MainCategorySection = React.memo(({ section, sectionIds, onOpenMixModal, isFirstSection }) => {
+const MainCategorySection = React.memo(({ section, sectionIds, onOpenMixModal, isFirstSection, examMode, onModeChange, index }) => {
   const { isHindi } = useLanguage();
   const [isExpanded, setIsExpanded] = useState(true);
   const subSections = section.subSections || [];
@@ -934,54 +951,67 @@ const MainCategorySection = React.memo(({ section, sectionIds, onOpenMixModal, i
   const totalQuizzesCount = subSections.reduce((acc, sub) => acc + (sub.quizzes?.length || 0), 0);
   const sectionDisplayName = isHindi && section.nameHi ? section.nameHi : section.name;
 
+  const totalQuestions = subSections.reduce((acc, sub) => acc + (sub.quizzes?.reduce((qAcc, q) => qAcc + (q.questionCount || 0), 0) || 0), 0);
+
   return (
-    <div className={styles.mainCategorySection} id={sectionIds?.[section.name] || undefined}>
-      <div className={styles.mainCategoryHeader}>
-        <div className={styles.mainCategoryTitleWrapper}>
-          <h2 className={styles.sectionTitle}>
-            {sectionDisplayName}
-          </h2>
-          <span className={styles.sectionTitleCount}>
-            ({totalQuizzesCount} {isHindi ? 'क्विज़ उपलब्ध' : 'Quizzes Available'})
-          </span>
+    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden mb-6" id={sectionIds?.[section.name] || undefined}>
+      <button
+        type="button"
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full p-5 sm:p-6 flex items-center justify-between gap-4 text-left hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors"
+      >
+        <div className="flex items-center gap-3.5 min-w-0">
+          <div className="w-10 h-10 rounded-2xl bg-indigo-100 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-black text-lg flex-shrink-0">
+            {(index !== undefined ? index + 1 : 1)}
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-slate-100 truncate">
+              {sectionDisplayName}
+            </h3>
+            <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 mt-0.5">
+              {subSections.length} {isHindi ? "अध्याय" : "Chapters"} • ~
+              {totalQuizzesCount} {isHindi ? "क्विज़" : "Quizzes"}
+            </p>
+          </div>
         </div>
 
-        <button 
-          className={styles.sectionToggleIconButton}
-          onClick={() => setIsExpanded(!isExpanded)}
-          aria-label={isExpanded ? "Collapse section" : "Expand section"}
-          title={isExpanded ? (isHindi ? "छिपाएं" : "Collapse") : (isHindi ? "दिखाएं" : "Expand")}
-        >
+        <div className="flex items-center gap-3">
+          <span className="hidden sm:inline-flex px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-xs font-bold border border-indigo-100 dark:border-indigo-900">
+            {totalQuizzesCount} {isHindi ? "क्विज़" : "Quizzes"}
+          </span>
           <svg 
-            width="18" 
-            height="18" 
+            width="20" 
+            height="20" 
             viewBox="0 0 24 24" 
             fill="none" 
             stroke="currentColor" 
             strokeWidth="2.5" 
             strokeLinecap="round" 
             strokeLinejoin="round"
-            style={{ 
-              transform: isExpanded ? 'rotate(0deg)' : 'rotate(180deg)',
-              transition: 'transform 0.3s ease' 
-            }}
+            className={`text-slate-400 transition-transform duration-300 ${!isExpanded ? "rotate-180" : ""}`}
           >
-            <path d="M18 15l-6-6-6 6"/>
+            <path d="M6 9l6 6 6-6"/>
           </svg>
-        </button>
-      </div>
+        </div>
+      </button>
       
-      {isExpanded && subSections.map((subSection, index) => (
-        <SubSection
-          key={subSection.title}
-          id={sectionIds?.[subSection.title] || undefined}
-          title={isHindi && subSection.titleHi ? subSection.titleHi : subSection.title}
-          quizzes={subSection.quizzes}
-          showMixCard={isFirstSection && index === 0}
-          sectionName={section.name}
-          onOpenMixModal={onOpenMixModal}
-        />
-      ))}
+      {isExpanded && (
+        <div className="border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/40 dark:bg-slate-950/30 p-4 sm:p-6">
+          {subSections.map((subSection, idx) => (
+            <SubSection
+              key={subSection.title}
+              id={sectionIds?.[subSection.title] || undefined}
+              title={isHindi && subSection.titleHi ? subSection.titleHi : subSection.title}
+              quizzes={subSection.quizzes}
+              showMixCard={isFirstSection && idx === 0}
+              sectionName={section.name}
+              onOpenMixModal={onOpenMixModal}
+              examMode={idx === 0 ? examMode : undefined}
+              onModeChange={idx === 0 ? onModeChange : undefined}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 });
@@ -996,6 +1026,7 @@ export default function LandingPage({ initialCategories = [], defaultAudienceTab
   const searchParams = useSearchParams();
   const tabQuery = searchParams?.get("tab");
   const modeQuery = searchParams?.get("mode");
+  const catQuery = searchParams?.get("cat") || searchParams?.get("chapter") || searchParams?.get("topic");
 
   const [mounted, setMounted] = useState(false);
   const [sections, setSections] = useState([]);
@@ -1016,6 +1047,56 @@ export default function LandingPage({ initialCategories = [], defaultAudienceTab
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Auto-select chapter in Read Mode if cat parameter is present in URL
+  useEffect(() => {
+    if (catQuery) {
+      const targetQuery = catQuery.toLowerCase().trim();
+      const allSource = Array.isArray(quizzes) && quizzes.length > 0 ? quizzes : (initialCategories || []);
+
+      let matched = null;
+      for (const cat of allSource) {
+        if (
+          (cat.slug && cat.slug.toLowerCase() === targetQuery) ||
+          (cat.id && cat.id.toLowerCase() === targetQuery) ||
+          (cat.topic && cat.topic.toLowerCase() === targetQuery) ||
+          (cat.name && cat.name.toLowerCase() === targetQuery)
+        ) {
+          matched = cat;
+          break;
+        }
+        if (Array.isArray(cat.subCategories)) {
+          const subMatch = cat.subCategories.find(sub => 
+            (sub.slug && sub.slug.toLowerCase() === targetQuery) ||
+            (sub.id && sub.id.toLowerCase() === targetQuery) ||
+            (sub.topic && sub.topic.toLowerCase() === targetQuery) ||
+            (sub.name && sub.name.toLowerCase() === targetQuery) ||
+            (sub.title && sub.title.toLowerCase() === targetQuery)
+          );
+          if (subMatch) {
+            matched = subMatch;
+            break;
+          }
+        }
+      }
+
+      if (matched) {
+        setSelectedReadChapter(matched);
+        setExamMode("read");
+      } else {
+        // Fallback: Fetch category details directly from API if missing from initial SSR bundle
+        fetch(`/api/categories/${encodeURIComponent(catQuery)}?full=true`)
+          .then(res => res.ok ? res.json() : null)
+          .then(data => {
+            if (data && !data.error) {
+              setSelectedReadChapter(data);
+              setExamMode("read");
+            }
+          })
+          .catch(err => console.error("Failed to fetch read chapter:", err));
+      }
+    }
+  }, [catQuery, quizzes, initialCategories]);
   
   // New state for paginated data
   const [visibleCategories, setVisibleCategories] = useState(initialCategories);
@@ -1310,55 +1391,17 @@ export default function LandingPage({ initialCategories = [], defaultAudienceTab
 
   const chips = useMemo(() => HOME_CHIPS, []);
 
-  const sectionIds = useMemo(() => {
-    const ids = {};
-    (sections || []).forEach((s) => {
-      const key = String(s?.name || "").trim();
-      if (!key) return;
-      ids[key] = `section-${key.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}`;
-    });
-    return ids;
-  }, [sections]);
 
-  const scrollToSection = useCallback((sectionName) => {
-    const id = sectionIds[sectionName];
-    if (!id) return false;
-    const el = document.getElementById(id);
-    if (!el) return false;
-    el.scrollIntoView({ behavior: "smooth", block: "start" });
-    return true;
-  }, [sectionIds]);
 
-  const handleHomeChipClick = useCallback((chip) => {
-    const list = (sections || []).map((s) => String(s?.name || "")).filter(Boolean);
-    if (list.length === 0) return;
+  const allQuizzesSource = useMemo(() => {
+    return Array.isArray(quizzes) && quizzes.length > 0 ? quizzes : (initialCategories || []);
+  }, [quizzes, initialCategories]);
 
-    const isGk = (name) => {
-      const n = String(name || "").toLowerCase();
-      return n.includes("general knowledge") || n === "gk" || n.includes(" gk") || n.includes("gk ");
-    };
-
-    let target = null;
-    if (chip === "General Knowledge") {
-      target = list.find(isGk) || null;
-    } else {
-      target = list.find((n) => !isGk(n)) || null;
-    }
-
-    if (target) {
-      const ok = scrollToSection(target);
-      if (!ok) {
-        // fallback: jump near main list
-        document.querySelector(`.${styles.allSubSections}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    }
-  }, [sections, scrollToSection]);
-
-  // For sections, we still use the full list for now as they are specialized
-  // but we should eventually optimize /api/sections to return only what's needed.
-  const dailyCategoryIds = useMemo(() => getDailyCategoryIds(quizzes), [quizzes]);
+  const dailyCategoryIds = useMemo(() => getDailyCategoryIds(allQuizzesSource), [allQuizzesSource]);
+  
   const baseFilteredCategories = useMemo(() => {
-    let list = quizzes.filter((c) => !c.hidden && !dailyCategoryIds.has(c.id));
+    const activeQuizzes = allQuizzesSource;
+    let list = activeQuizzes.filter((c) => !c.hidden && !dailyCategoryIds.has(c.id));
     
     // Apply Personalization to the base list if active
     if (isPersonalized && userInterests.length > 0) {
@@ -1366,7 +1409,7 @@ export default function LandingPage({ initialCategories = [], defaultAudienceTab
     } else {
       // First, find all parent IDs that have showSubCategoriesOnHome set to true
       const parentIdsShowingSubCategories = new Set(
-        quizzes.filter(q => q.showSubCategoriesOnHome).map(q => q.id)
+        activeQuizzes.filter(q => q.showSubCategoriesOnHome).map(q => q.id)
       );
       // If not personalized, only show top-level categories, those marked for home, OR subcategories whose parent is marked
       list = list.filter(c => !c.parentId || c.showSubCategoriesOnHome || parentIdsShowingSubCategories.has(c.parentId));
@@ -1396,12 +1439,33 @@ export default function LandingPage({ initialCategories = [], defaultAudienceTab
     }
 
     return list;
-  }, [quizzes, dailyCategoryIds, difficultyFilter, questionCountFilter, sortBy, isPersonalized, userInterests]);
+  }, [allQuizzesSource, dailyCategoryIds, difficultyFilter, questionCountFilter, sortBy, isPersonalized, userInterests]);
 
-  const isGovtSection = useCallback((sectionName) => {
-    if (!sectionName) return false;
-    const name = String(sectionName).toLowerCase();
-    return name.includes("govt") || name.includes("exam") || name.includes("सरकारी") || name.includes("परीक्षा");
+  const isGovtSection = useCallback((section) => {
+    if (!section) return false;
+    const nameStr = typeof section === 'string' ? section : (section.name || "");
+    const name = String(nameStr).toLowerCase();
+    
+    if (name.includes("govt") || name.includes("exam") || name.includes("सरकारी") || name.includes("परीक्षा")) {
+      return true;
+    }
+
+    if (typeof section === 'object' && section.subSections) {
+      for (const sub of section.subSections) {
+        const subName = String(sub.title || "").toLowerCase();
+        if (subName.includes("govt") || subName.includes("exam") || subName.includes("सरकारी") || subName.includes("परीक्षा")) {
+          return true;
+        }
+        if (sub.quizzes) {
+          for (const q of sub.quizzes) {
+            if (q.categoryClass && q.categoryClass.includes("govt-exam")) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+    return false;
   }, []);
 
   const isImageSection = useCallback((sectionName) => {
@@ -1426,23 +1490,75 @@ export default function LandingPage({ initialCategories = [], defaultAudienceTab
     return list;
   }, [baseFilteredCategories, sections]);
 
+  const sectionIds = useMemo(() => {
+    const ids = {};
+    (allCategorizedQuizzes || []).forEach((s) => {
+      const key = String(s?.name || "").trim();
+      if (!key) return;
+      ids[key] = `section-${key.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}`;
+    });
+    return ids;
+  }, [allCategorizedQuizzes]);
+
+  const scrollToSection = useCallback((sectionName) => {
+    const id = sectionIds[sectionName];
+    if (!id) return false;
+    const el = document.getElementById(id);
+    if (!el) return false;
+    // Add offset for fixed header if present
+    const headerOffset = 100;
+    const elementPosition = el.getBoundingClientRect().top;
+    const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+    
+    window.scrollTo({
+      top: offsetPosition,
+      behavior: "smooth"
+    });
+    return true;
+  }, [sectionIds]);
+
+  const handleHomeChipClick = useCallback((chip) => {
+    const list = (sections || []).map((s) => String(s?.name || "")).filter(Boolean);
+    if (list.length === 0) return;
+
+    const isGk = (name) => {
+      const n = String(name || "").toLowerCase();
+      return n.includes("general knowledge") || n === "gk" || n.includes(" gk") || n.includes("gk ");
+    };
+
+    let target = null;
+    if (chip === "General Knowledge") {
+      target = list.find(isGk) || null;
+    } else {
+      target = list.find((n) => !isGk(n)) || null;
+    }
+
+    if (target) {
+      const ok = scrollToSection(target);
+      if (!ok) {
+        // fallback: jump near main list
+        document.querySelector(`.${styles.allSubSections}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+  }, [sections, scrollToSection]);
+
   const categorizedQuizzes = useMemo(() => {
     if (audienceTab === "govt") {
-      return allCategorizedQuizzes.filter(s => isGovtSection(s.name));
+      return allCategorizedQuizzes.filter(s => isGovtSection(s));
     }
     if (audienceTab === "image") {
       return allCategorizedQuizzes.filter(s => isImageSection(s.name));
     }
-    return allCategorizedQuizzes.filter(s => !isGovtSection(s.name) && !isImageSection(s.name));
+    return allCategorizedQuizzes.filter(s => !isGovtSection(s) && !isImageSection(s.name));
   }, [allCategorizedQuizzes, audienceTab, isGovtSection, isImageSection]);
 
   const regularCount = useMemo(() => {
-    const regularSections = allCategorizedQuizzes.filter(s => !isGovtSection(s.name) && !isImageSection(s.name));
+    const regularSections = allCategorizedQuizzes.filter(s => !isGovtSection(s) && !isImageSection(s.name));
     return regularSections.reduce((acc, sec) => acc + sec.subSections.reduce((sAcc, sub) => sAcc + (sub.quizzes?.length || 0), 0), 0);
   }, [allCategorizedQuizzes, isGovtSection, isImageSection]);
 
   const govtCount = useMemo(() => {
-    const govtSections = allCategorizedQuizzes.filter(s => isGovtSection(s.name));
+    const govtSections = allCategorizedQuizzes.filter(s => isGovtSection(s));
     return govtSections.reduce((acc, sec) => acc + sec.subSections.reduce((sAcc, sub) => sAcc + (sub.quizzes?.length || 0), 0), 0);
   }, [allCategorizedQuizzes, isGovtSection]);
 
@@ -1628,77 +1744,86 @@ export default function LandingPage({ initialCategories = [], defaultAudienceTab
             </div>
           </div>
 
-          {/* Exam Mode Switcher (Placed above search bar for Regular & Govt Exam Prep) */}
-          {(audienceTab === "regular" || audienceTab === "govt") && (
-            <div className="w-full max-w-xl mx-auto mb-1 px-2">
-              <ExamModeSwitcher
-                mode={examMode}
-                onModeChange={(newMode) => {
-                  setExamMode(newMode);
-                  setSelectedReadChapter(null);
-                }}
-                isHindi={isHindi}
-              />
-            </div>
-          )}
 
-          <div className={styles.searchActionRow} style={{ marginTop: '0px' }}>
+          <div className={styles.searchActionRow} style={{ marginTop: '0px', justifyContent: 'center' }}>
             {/* Integrated Search Command Center */}
-            <div className={styles.heroSearchWrapper} style={{ flex: 1, margin: 0, position: 'relative', zIndex: 1000 }}>
-              <div className={styles.searchBox}>
-                <span className={styles.searchIcon}>
-                  {mounted ? (loading ? "⏳" : <Search size={20} />) : null}
-                </span>
-                <input
-                  id="search-box"
-                  type="text"
-                  className={styles.searchInput}
-                  placeholder={loading ? (t('common.searching') || "Searching...") : (t('quizzes.search.placeholder') || 'Search for a quiz topic...')}
-                  value={search}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                  onKeyDown={handleSearchKeyDown}
-                  onFocus={() => setShowSuggestions(search.trim().length > 0 && searchSuggestions.length > 0)}
-                  disabled={loading}
-                />
-                {search.trim() && (
-                  <button
-                    className={styles.clearButton}
-                    onClick={() => handleSearchChange("")}
-                  >✕</button>
-                )}
-              </div>
-              
-              {showSuggestions && searchSuggestions.length > 0 && (
-                <div className={styles.suggestionsDropdown}>
-                  <div className={styles.suggestionsHeader}>
-                    <span>{t('quizzes.search.results')}</span>
-                    <span className={styles.suggestionCount}>{searchSuggestions.length} {t('quizzes.search.found')}</span>
+            {/* Blue Gradient Unified Search Header */}
+            <div className="w-full max-w-5xl mx-auto bg-gradient-to-r from-indigo-900 via-indigo-800 to-purple-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden mb-4">
+              <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
+              <div className="relative z-10">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                  <div>
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/30 border border-indigo-400/30 text-indigo-200 text-xs font-bold mb-2">
+                      <BookOpen size={14} />
+                      <span>{isHindi ? "डिजिटल अध्ययन सूचकांक" : "Digital Study Index"}</span>
+                    </div>
+                    <h2 className="text-2xl sm:text-3xl font-black tracking-tight">
+                      {isHindi ? "विषय एवं अध्याय सूची" : "Subjects & Chapter Index"}
+                    </h2>
+                    <p className="text-indigo-200 text-sm mt-1">
+                      {isHindi
+                        ? `कुल ${categorizedQuizzes.length} विषय पढ़ने के लिए उपलब्ध हैं`
+                        : `Explore ${categorizedQuizzes.length} subjects for sequential study.`}
+                    </p>
                   </div>
-                  {searchSuggestions.map((suggestion, index) => (
-                    <button
-                      key={suggestion.id}
-                      className={`${styles.suggestionItem} ${
-                        index === selectedSuggestionIndex ? styles.selected : ""
-                      }`}
-                      onClick={() => handleSuggestionClick(suggestion)}
-                    >
-                      <span className={styles.suggestionEmoji}>{suggestion.emoji || "📝"}</span>
-                      <div className={styles.suggestionContent}>
-                        <strong className={styles.suggestionName}>
-                          {isHindi && suggestion.topicHi ? suggestion.topicHi : suggestion.topic}
-                        </strong>
-                        <p className={styles.suggestionDescription}>
-                          {(() => {
-                            const desc = (isHindi && suggestion.descriptionHi) ? suggestion.descriptionHi : suggestion.description;
-                            if (!desc) return t('quizzes.search.defaultDesc');
-                            return desc.length > 70 ? desc.substring(0, 70) + "..." : desc;
-                          })()}
-                        </p>
-                      </div>
-                    </button>
-                  ))}
                 </div>
-              )}
+
+                <div className="relative">
+                  <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-300" />
+                  <input
+                    id="search-box"
+                    type="text"
+                    value={search}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    onKeyDown={handleSearchKeyDown}
+                    onFocus={() => setShowSuggestions(search.trim().length > 0 && searchSuggestions.length > 0)}
+                    disabled={loading}
+                    placeholder={
+                      loading 
+                        ? (t('common.searching') || "Searching...") 
+                        : (isHindi ? "विषय या अध्याय का नाम खोजें..." : "Search subject or chapter topic (e.g. Modern History)...")
+                    }
+                    className="w-full pl-12 pr-4 py-3.5 bg-white/10 backdrop-blur-md text-white placeholder-indigo-200/70 border border-white/20 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm sm:text-base transition-all"
+                  />
+                  {search.trim() && (
+                    <button
+                      onClick={() => handleSearchChange("")}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-indigo-200 hover:text-white bg-indigo-900/50 px-2 py-1 rounded-md"
+                    >
+                      Clear
+                    </button>
+                  )}
+                  {showSuggestions && searchSuggestions.length > 0 && (
+                    <div className={styles.suggestionsDropdown} style={{ marginTop: '8px' }}>
+                      <div className={styles.suggestionsHeader}>
+                        <span>{t('quizzes.search.results')}</span>
+                        <span className={styles.suggestionCount}>{searchSuggestions.length} {t('quizzes.search.found')}</span>
+                      </div>
+                      {searchSuggestions.map((suggestion, index) => (
+                        <button
+                          key={suggestion.id}
+                          className={`${styles.suggestionItem} ${index === selectedSuggestionIndex ? styles.selected : ""}`}
+                          onClick={() => handleSuggestionClick(suggestion)}
+                        >
+                          <span className={styles.suggestionEmoji}>{suggestion.emoji || "📝"}</span>
+                          <div className={styles.suggestionContent}>
+                            <strong className={styles.suggestionName}>
+                              {isHindi && suggestion.topicHi ? suggestion.topicHi : suggestion.topic}
+                            </strong>
+                            <p className={styles.suggestionDescription}>
+                              {(() => {
+                                const desc = (isHindi && suggestion.descriptionHi) ? suggestion.descriptionHi : suggestion.description;
+                                if (!desc) return t('quizzes.search.defaultDesc');
+                                return desc.length > 70 ? desc.substring(0, 70) + "..." : desc;
+                              })()}
+                            </p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
             
             {session?.user && (
@@ -1746,40 +1871,57 @@ export default function LandingPage({ initialCategories = [], defaultAudienceTab
           {/* Scroll Anchor for Main Quizzes (e.g., General Knowledge) */}
           <div ref={quizSectionRef} className="h-0 w-0 pointer-events-none -mt-8" />
 
-          {examMode === "read" ? (
-            selectedReadChapter ? (
-              <DigitalBookReader
-                chapter={selectedReadChapter}
-                subject={selectedReadSubject}
-                onBackToIndex={() => setSelectedReadChapter(null)}
-                isHindi={isHindi}
-                allChapters={govtChaptersList}
-                onSelectChapter={(chap, subj) => {
-                  setSelectedReadChapter(chap);
-                  if (subj) setSelectedReadSubject(subj);
-                }}
-              />
-            ) : (
-              <SubjectIndexTree
-                sections={categorizedQuizzes}
-                onSelectChapter={(chap, subj) => {
-                  setSelectedReadChapter(chap);
-                  setSelectedReadSubject(subj);
-                }}
-                isHindi={isHindi}
-              />
-            )
-          ) : (
-            categorizedQuizzes.map((section) => (
-              <MainCategorySection 
-                key={section.id}
-                section={section} 
-                sectionIds={sectionIds}
-                onOpenMixModal={handleOpenMixModal}
-                isFirstSection={true}
-              />
-            ))
-          )}
+          <>
+            <div className={`flex flex-col gap-4 w-full transition-opacity duration-300 ${examMode === "read" ? "opacity-100 block" : "opacity-0 hidden"}`}>
+              {selectedReadChapter ? (
+                <DigitalBookReader
+                  chapter={selectedReadChapter}
+                  subject={selectedReadSubject}
+                  initialPage={Number(searchParams?.get("set") || searchParams?.get("page")) || 1}
+                  onBackToIndex={() => setSelectedReadChapter(null)}
+                  isHindi={isHindi}
+                  allChapters={govtChaptersList}
+                  onSelectChapter={(chap, subj) => {
+                    setSelectedReadChapter(chap);
+                    if (subj) setSelectedReadSubject(subj);
+                  }}
+                />
+              ) : (
+                <SubjectIndexTree
+                  sections={categorizedQuizzes}
+                  onSelectChapter={(chap, subj) => {
+                    setSelectedReadChapter(chap);
+                    setSelectedReadSubject(subj);
+                  }}
+                  isHindi={isHindi}
+                  examMode={examMode}
+                  onModeChange={(audienceTab === "regular" || audienceTab === "govt") ? ((newMode) => {
+                    setExamMode(newMode);
+                    setSelectedReadChapter(null);
+                  }) : null}
+                  searchTerm={search}
+                />
+              )}
+            </div>
+            
+            <div className={`w-full max-w-5xl mx-auto space-y-6 transition-opacity duration-300 ${examMode === "quiz" ? "opacity-100 block" : "opacity-0 hidden"}`}>
+              {categorizedQuizzes.map((section, idx) => (
+                <MainCategorySection 
+                  key={section.id}
+                  index={idx}
+                  section={section} 
+                  sectionIds={sectionIds}
+                  onOpenMixModal={handleOpenMixModal}
+                  isFirstSection={true}
+                  examMode={examMode}
+                  onModeChange={(audienceTab === "regular" || audienceTab === "govt") ? ((newMode) => {
+                    setExamMode(newMode);
+                    setSelectedReadChapter(null);
+                  }) : null}
+                />
+              ))}
+            </div>
+          </>
         </div>
       )}
 

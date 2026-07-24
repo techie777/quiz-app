@@ -22,21 +22,27 @@ export default function BulkValidationSandbox({
   isOpen, 
   onClose, 
   data, 
+  sandboxData: propSandboxData,
+  setSandboxData: propSetSandboxData,
   onConfirm,
   sections 
 }) {
-  const [sandboxData, setSandboxData] = useState(data || []);
+  const [internalData, setInternalData] = useState(data || []);
+  const activeData = propSandboxData || internalData || [];
+  const setActiveData = propSetSandboxData || setInternalData;
   const [activeErrorIdx, setActiveErrorIdx] = useState(null);
+
+  const safeSections = Array.isArray(sections) ? sections : [];
 
   // Simple validation logic
   const validationSummary = {
-    total: sandboxData.length,
+    total: activeData.length,
     valid: 0,
     errors: [],
     sectionsDetected: new Set()
   };
 
-  sandboxData.forEach((q, idx) => {
+  activeData.forEach((q, idx) => {
     const errs = [];
     if (!q.text) errs.push("Missing Question Text");
     if (!q.options || q.options.length < 4) errs.push("Incomplete Options");
@@ -51,9 +57,9 @@ export default function BulkValidationSandbox({
   });
 
   const handleUpdate = (idx, field, value) => {
-    const next = [...sandboxData];
+    const next = [...activeData];
     next[idx][field] = value;
-    setSandboxData(next);
+    setActiveData(next);
   };
 
   return (
@@ -92,7 +98,7 @@ export default function BulkValidationSandbox({
               <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Sections Mapping</h4>
               <div className="space-y-2">
                  {Array.from(validationSummary.sectionsDetected).map(name => {
-                    const exists = sections.find(s => s.name === name);
+                    const exists = safeSections.find(s => s.name === name);
                     return (
                       <div key={name} className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 italic">
                          <span className="text-xs font-bold text-slate-600">{name}</span>
@@ -106,7 +112,7 @@ export default function BulkValidationSandbox({
            <div className="mt-auto space-y-3">
               <button 
                 disabled={validationSummary.errors.length > 0}
-                onClick={() => onConfirm(sandboxData)}
+                onClick={() => onConfirm && onConfirm(activeData)}
                 className={`w-full py-4 rounded-2xl font-black flex items-center justify-center gap-3 shadow-xl transition-all ${
                   validationSummary.errors.length === 0 
                   ? 'bg-indigo-600 text-white shadow-indigo-200 hover:bg-indigo-700 hover:-translate-y-1' 
@@ -147,7 +153,7 @@ export default function BulkValidationSandbox({
                        </tr>
                     </thead>
                     <tbody>
-                       {sandboxData.map((q, idx) => {
+                       {activeData.map((q, idx) => {
                           const error = validationSummary.errors.find(e => e.idx === idx);
                           return (
                             <tr key={idx} className={`border-b border-slate-50 transition-all ${error ? 'bg-rose-50/30' : 'hover:bg-slate-50/50'}`}>
@@ -190,7 +196,7 @@ export default function BulkValidationSandbox({
                                   />
                                </td>
                                <td className="p-4">
-                                  <button onClick={() => setSandboxData(prev => prev.filter((_, i) => i !== idx))} className="text-slate-300 hover:text-rose-500 transition">
+                                  <button onClick={() => setActiveData(prev => prev.filter((_, i) => i !== idx))} className="text-slate-300 hover:text-rose-500 transition">
                                      <Trash2 size={14} />
                                   </button>
                                </td>

@@ -45,7 +45,7 @@ export default function LeaderboardPage() {
                     >
                         <Trophy size={14} /> Global Intelligence Ranking
                     </motion.div>
-                    <h1 className="text-5xl md:text-6xl font-black text-slate-900 mb-6 tracking-tight">The World's <span className="text-indigo-600">Smartest</span> Players</h1>
+                    <h1 className="text-5xl md:text-6xl font-black text-slate-900 mb-6 tracking-tight">The World&apos;s <span className="text-indigo-600">Smartest</span> Players</h1>
                     <p className="text-slate-500 font-medium max-w-2xl mx-auto">
                         Ranked by cumulative Intelligence Score: Quiz Points + Facts Discovered + Challenges Conquered.
                     </p>

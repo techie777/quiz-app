@@ -553,7 +553,7 @@ export default function PaperSelection() {
                             <div className="relative z-10 max-w-2xl mx-auto">
                                 <div className="text-6xl mb-8">🚀</div>
                                 <h2 className="text-4xl font-black mb-6 tracking-tight">The Ultimate Study HUB</h2>
-                                <p className="text-indigo-200 text-lg mb-10 leading-relaxed font-medium">Don't just practice, MASTER the concepts. Our comprehensive FlexBook system provides topic-wise theory, examples, and shortcuts tailored specifically for {exam.name}.</p>
+                                <p className="text-indigo-200 text-lg mb-10 leading-relaxed font-medium">Don&apos;t just practice, MASTER the concepts. Our comprehensive FlexBook system provides topic-wise theory, examples, and shortcuts tailored specifically for {exam.name}.</p>
                                 <Link href={`/govt-study/${exam.slug}`} className="inline-block bg-white text-indigo-900 px-10 py-5 rounded-2xl font-black uppercase tracking-widest hover:scale-105 transition-transform">
                                     Explore Full Study Library
                                 </Link>

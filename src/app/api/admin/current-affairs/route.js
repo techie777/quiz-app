@@ -102,11 +102,44 @@ export async function POST(request) {
   if (!admin.ok) return NextResponse.json({ error: admin.error }, { status: admin.status });
 
   const body = await request.json().catch(() => ({}));
+
+  // Support array of items for multi-post creation
+  if (Array.isArray(body?.items) && body.items.length > 0) {
+    const createdItems = [];
+    for (const it of body.items) {
+      const date = normalizeString(it.date || body.date);
+      const heading = normalizeString(it.heading);
+      const description = normalizeString(it.description);
+      const oneLiner = normalizeString(it.oneLiner);
+      const category = normalizeString(it.category || body.category) || "National";
+      const image = typeof it.image === "string" ? it.image : "";
+      const hidden = !!it.hidden;
+
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !heading || !description) continue;
+
+      const item = await prisma.currentAffair.create({
+        data: { date, category, heading, description, oneLiner, image, hidden },
+      });
+      createdItems.push(item);
+    }
+
+    await prisma.adminActivityLog.create({
+      data: {
+        adminId: admin.admin.id,
+        action: "current_affairs_bulk_create",
+        details: `Created ${createdItems.length} items for date ${body.date || 'batch'}`,
+      },
+    });
+
+    return NextResponse.json({ count: createdItems.length, items: createdItems }, { status: 201 });
+  }
+
+  // Single item creation
   const date = normalizeString(body?.date);
   const heading = normalizeString(body?.heading);
   const description = normalizeString(body?.description);
   const oneLiner = normalizeString(body?.oneLiner);
-  const category = normalizeString(body?.category) || "General";
+  const category = normalizeString(body?.category) || "National";
   const image = typeof body?.image === "string" ? body.image : "";
   const hidden = !!body?.hidden;
 

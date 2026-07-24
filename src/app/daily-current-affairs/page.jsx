@@ -9,6 +9,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import AdGate from "@/components/monetization/AdGate";
 import { useLanguage } from "@/context/LanguageContext";
 import styles from "@/styles/CurrentAffairs.module.css";
+import CalendarWidget from "@/components/current-affairs/CalendarWidget";
+import LanguageToggle from "@/components/LanguageToggle";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -32,8 +34,6 @@ const itemVariants = {
     }
   }
 };
-
-// ... existing formatDate, etc ...
 
 function formatDate(d) {
   if (!d) return "";
@@ -79,14 +79,202 @@ function getTodayDateString() {
   return `${year}-${month}-${day}`;
 }
 
-function adjustDate(dateStr, days) {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const dt = new Date(y, m - 1, d);
-  dt.setDate(dt.getDate() + days);
-  const ny = dt.getFullYear();
-  const nm = String(dt.getMonth() + 1).padStart(2, '0');
-  const nd = String(dt.getDate()).padStart(2, '0');
-  return `${ny}-${nm}-${nd}`;
+const DUMMY_ONE_LINERS = [
+  {
+    id: "dummy-ol-1",
+    date: getTodayDateString(),
+    category: "International",
+    heading: "India & France Sign Strategic Bilateral Agreement for AI Infrastructure & Clean Energy",
+    headingHi: "भारत और फ्रांस ने एआई बुनियादी ढांचे और स्वच्छ ऊर्जा के लिए रणनीतिक समझौते पर हस्ताक्षर किए",
+    oneLiner: "India and France have partnered to launch a joint AI and clean energy innovation hub in New Delhi.",
+    oneLinerHi: "भारत और फ्रांस ने नई दिल्ली में एक संयुक्त एआई और स्वच्छ ऊर्जा नवाचार केंद्र शुरू करने के लिए साझेदारी की है।",
+    description: "The strategic partnership aims to accelerate renewable energy transitions and build high-performance computing clusters."
+  },
+  {
+    id: "dummy-ol-2",
+    date: getTodayDateString(),
+    category: "Science & Technology",
+    heading: "ISRO Successfully Launches EOS-08 Earth Observation Satellite from Sriharikota",
+    headingHi: "इसरो ने श्रीहरिकोटा से EOS-08 पृथ्वी अवलोकन उपग्रह का सफल प्रक्षेपण किया",
+    oneLiner: "ISRO's SSLV-D3 rocket placed the EOS-08 satellite into precise Low Earth Orbit.",
+    oneLinerHi: "इसरो के SSLV-D3 रॉकेट ने EOS-08 उपग्रह को सटीक निचली पृथ्वी कक्षा में स्थापित किया।",
+    description: "EOS-08 carries advanced electro-optical and thermal infrared payloads for environmental monitoring and disaster management."
+  },
+  {
+    id: "dummy-ol-3",
+    date: getTodayDateString(),
+    category: "Economy",
+    heading: "RBI Keeps Repo Rate Unchanged at 6.5% for Seventh Consecutive Policy Review",
+    headingHi: "आरबीआई ने लगातार सातवीं मौद्रिक समीक्षा में रेपो दर 6.5% पर अपरिवर्तित रखी",
+    oneLiner: "RBI's Monetary Policy Committee maintained the benchmark repo rate at 6.5% to ensure inflation stability.",
+    oneLinerHi: "आरबीआई की मौद्रिक नीति समिति ने मुद्रास्फीति की स्थिरता सुनिश्चित करने के लिए रेपो दर 6.5% पर बनाए रखी।",
+    description: "Governor Shaktikanta Das highlighted strong domestic GDP growth projections while monitoring food price pressures."
+  },
+  {
+    id: "dummy-ol-4",
+    date: getTodayDateString(),
+    category: "Sports",
+    heading: "India Secures Top Position at International Youth Science & Athletics Olympiad 2026",
+    headingHi: "भारत ने अंतर्राष्ट्रीय युवा विज्ञान और एथलेटिक्स ओलंपियाड 2026 में शीर्ष स्थान हासिल किया",
+    oneLiner: "Indian contingent won 12 gold medals at the International Youth Olympiad held in New Delhi.",
+    oneLinerHi: "नई दिल्ली में आयोजित अंतर्राष्ट्रीय युवा ओलंपियाड में भारतीय दल ने 12 स्वर्ण पदक जीते।",
+    description: "Over 45 participating nations competed in STEM research presentations and athletic tracks."
+  },
+  {
+    id: "dummy-ol-5",
+    date: getTodayDateString(),
+    category: "Defense",
+    heading: "DRDO Successfully Conducts Flight Test of Indigenous High-Speed Unmanned Aerial Vehicle",
+    headingHi: "डीआरडीओ ने स्वदेशी हाई-स्पीड मानव रहित हवाई वाहन का उड़ान परीक्षण सफलतापूर्वक किया",
+    oneLiner: "DRDO successfully flight-tested the indigenous 'Abhyas' high-speed aerial target from Odisha coast.",
+    oneLinerHi: "डीआरडीओ ने ओडिशा तट से स्वदेशी 'अभ्यास' हाई-स्पीड हवाई लक्ष्य का सफल उड़ान परीक्षण किया।",
+    description: "The vehicle demonstrated autonomous navigation capabilities and high-subsonic flight maneuvers."
+  }
+];
+
+const DUMMY_MCQS = [
+  {
+    id: "dummy-mcq-1",
+    text: "Which space agency recently launched the EOS-08 Earth Observation Satellite aboard the SSLV-D3 launch vehicle?",
+    textHi: "हाल ही में किस अंतरिक्ष एजेंसी ने SSLV-D3 प्रक्षेपण यान के माध्यम से EOS-08 पृथ्वी अवलोकन उपग्रह का प्रक्षेपण किया?",
+    options: ["NASA", "ISRO", "ESA", "JAXA"],
+    optionsHi: ["नासा (NASA)", "इसरो (ISRO)", "ईएसए (ESA)", "जाक्सा (JAXA)"],
+    correctAnswer: 1,
+    explanation: "ISRO successfully launched the EOS-08 Earth Observation Satellite from the Satish Dhawan Space Centre, Sriharikota."
+  },
+  {
+    id: "dummy-mcq-2",
+    text: "What is the benchmark Repo Rate maintained by the Reserve Bank of India in its recent Monetary Policy decision?",
+    textHi: "भारतीय रिजर्व बैंक ने अपने हालिया मौद्रिक नीति निर्णय में बेंचमार्क रेपो दर कितनी बनाए रखी है?",
+    options: ["6.0%", "6.25%", "6.5%", "6.75%"],
+    optionsHi: ["6.0%", "6.25%", "6.5%", "6.75%"],
+    correctAnswer: 2,
+    explanation: "The RBI Monetary Policy Committee voted to keep the benchmark policy repo rate unchanged at 6.5%."
+  },
+  {
+    id: "dummy-mcq-3",
+    text: "Which country partnered with India to establish a Joint AI and Clean Energy Innovation Hub in 2026?",
+    textHi: "वर्ष 2026 में संयुक्त एआई और स्वच्छ ऊर्जा नवाचार केंद्र स्थापित करने के लिए किस देश ने भारत के साथ साझेदारी की?",
+    options: ["Germany", "France", "Japan", "United Kingdom"],
+    optionsHi: ["जर्मनी", "फ्रांस", "जापान", "यूनाइटेड किंगडम"],
+    correctAnswer: 1,
+    explanation: "India and France signed a bilateral agreement in New Delhi to expand cooperation in artificial intelligence and clean energy."
+  },
+  {
+    id: "dummy-mcq-4",
+    text: "What is the name of the indigenous High-Speed Unmanned Aerial Target successfully flight-tested by DRDO?",
+    textHi: "डीआरडीओ द्वारा सफलतापूर्वक परीक्षण किए गए स्वदेशी हाई-स्पीड मानव रहित हवाई लक्ष्य का क्या नाम है?",
+    options: ["Abhyas", "Ghatak", "Rustom-II", "Tapas"],
+    optionsHi: ["अभ्यास (Abhyas)", "घातक (Ghatak)", "रुस्तम-II (Rustom-II)", "तपस (Tapas)"],
+    correctAnswer: 0,
+    explanation: "DRDO successfully flight-tested the indigenous High-Speed Unmanned Aerial Target 'Abhyas' off the Integrated Test Range in Chandipur, Odisha."
+  },
+  {
+    id: "dummy-mcq-5",
+    text: "How many gold medals did the Indian contingent win at the International Youth Science & Athletics Olympiad 2026?",
+    textHi: "अंतर्राष्ट्रीय युवा विज्ञान और एथलेटिक्स ओलंपियाड 2026 में भारतीय दल ने कितने स्वर्ण पदक जीते?",
+    options: ["8 Gold Medals", "10 Gold Medals", "12 Gold Medals", "15 Gold Medals"],
+    optionsHi: ["8 स्वर्ण पदक", "10 स्वर्ण पदक", "12 स्वर्ण पदक", "15 स्वर्ण पदक"],
+    correctAnswer: 2,
+    explanation: "India secured top position with 12 gold medals in the international competition held in New Delhi."
+  }
+];
+
+function OneLinerCard({ item, isHindi, handleShare }) {
+  const oneLinerText = isHindi 
+    ? (item.oneLinerHi || item.headingHi || item.oneLiner || item.heading) 
+    : (item.oneLiner || item.heading);
+
+  return (
+    <motion.div className={styles.oneLinerCard} variants={itemVariants} layout>
+      <div className={styles.oneLinerContentRow}>
+        <div className={styles.oneLinerBullet}>💡</div>
+        <div className={styles.oneLinerBodyText}>{oneLinerText}</div>
+        <button 
+          onClick={(e) => { e.stopPropagation(); handleShare(item); }} 
+          className={styles.badgeBtn} 
+          title="Share"
+          style={{ flexShrink: 0 }}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+function MCQReadCard({ question, qIndex, isHindi, router, selectedDate }) {
+  const [selectedOpt, setSelectedOpt] = useState(null);
+  const [showAnswer, setShowAnswer] = useState(false);
+
+  const questionText = isHindi && question.textHi ? question.textHi : question.text;
+  const rawOptions = isHindi && Array.isArray(question.optionsHi) && question.optionsHi.length > 0
+    ? question.optionsHi 
+    : (Array.isArray(question.options) ? question.options : []);
+
+  const correctIdx = typeof question.correctAnswer === 'number' ? question.correctAnswer : 0;
+  const optionKeys = ["A", "B", "C", "D"];
+
+  return (
+    <motion.div className={styles.mcqCard} variants={itemVariants} layout>
+      <div className={styles.mcqHeader}>
+        <span className={styles.mcqNumBadge}>Q{qIndex + 1} • {isHindi ? "MCQ अभ्यास" : "MCQ Practice"}</span>
+        <button 
+          className={styles.playQuizBtnSmall}
+          onClick={() => router.push(`/daily/daily-current-affairs?date=${selectedDate || getTodayDateString()}`)}
+        >
+          ▶ {isHindi ? "क्विज खेलें" : "Play Quiz"}
+        </button>
+      </div>
+      <div className={styles.mcqQuestionText}>{questionText}</div>
+      
+      <div className={styles.mcqOptionsList}>
+        {rawOptions.map((opt, idx) => {
+          let optClass = styles.mcqOptionBtn;
+          if (showAnswer || selectedOpt !== null) {
+            if (idx === correctIdx) {
+              optClass += ` ${styles.mcqCorrect}`;
+            } else if (selectedOpt === idx && idx !== correctIdx) {
+              optClass += ` ${styles.mcqIncorrect}`;
+            }
+          }
+
+          return (
+            <button
+              key={idx}
+              className={optClass}
+              onClick={() => {
+                setSelectedOpt(idx);
+                setShowAnswer(true);
+              }}
+            >
+              <span className={styles.mcqOptionKey}>{optionKeys[idx] || idx + 1}</span>
+              <span>{opt}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className={styles.viewAnswerBar}>
+        <button
+          className={styles.viewAnswerBtn}
+          onClick={() => setShowAnswer(!showAnswer)}
+        >
+          {showAnswer ? "🙈 " + (isHindi ? "उत्तर छुपाएं" : "Hide Answer") : "👁️ " + (isHindi ? "उत्तर देखें" : "View Answer")}
+        </button>
+        <span className="text-xs text-slate-400 font-medium">
+          {showAnswer ? (isHindi ? "सही उत्तर हरा है" : "Correct answer in green") : (isHindi ? "उत्तर देखने के लिए ऑप्शन दबाएं" : "Click option or button to reveal")}
+        </span>
+      </div>
+
+      {showAnswer && (
+        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className={styles.answerExplanationBox}>
+          <strong>💡 {isHindi ? "सही उत्तर:" : "Correct Answer:"}</strong> Choice {optionKeys[correctIdx]} - {rawOptions[correctIdx]}
+          {question.explanation && <div className="mt-1 text-xs text-emerald-800">{question.explanation}</div>}
+        </motion.div>
+      )}
+    </motion.div>
+  );
 }
 
 export default function DailyCurrentAffairsPage() {
@@ -95,6 +283,9 @@ export default function DailyCurrentAffairsPage() {
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
   const [months, setMonths] = useState([]);
+  const [postedDates, setPostedDates] = useState([]);
+  const [calMonth, setCalMonth] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const pageSize = 10;
@@ -107,6 +298,10 @@ export default function DailyCurrentAffairsPage() {
   const [reading, setReading] = useState(null);
   const [loginPrompt, setLoginPrompt] = useState(false);
   const maxFreeReads = 2; 
+
+  const [activeTab, setActiveTab] = useState("ca"); // "ca" | "oneliner" | "mcq"
+  const [mcqQuestions, setMcqQuestions] = useState([]);
+  const [mcqLoading, setMcqLoading] = useState(false);
 
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedMonth, setSelectedMonth] = useState("");
@@ -141,6 +336,20 @@ export default function DailyCurrentAffairsPage() {
     return Object.keys(groupedItems).sort((a, b) => b.localeCompare(a));
   }, [groupedItems]);
 
+  // Helper to fetch calendar posted dates for a month
+  const fetchMonthPostedDates = async (mStr) => {
+    try {
+      const res = await fetch(`/api/current-affairs?calMonth=${mStr}&pageSize=1`, { cache: "no-store" });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (Array.isArray(data.postedDates)) {
+        setPostedDates(data.postedDates);
+      }
+    } catch (err) {
+      console.error("Fetch month posted dates error:", err);
+    }
+  };
+
   // Load items
   const loadItems = async (pageNum, reset = false) => {
     if (pageNum > 1 && !hasMore) return;
@@ -150,13 +359,15 @@ export default function DailyCurrentAffairsPage() {
     params.set("page", String(pageNum));
     params.set("pageSize", String(pageSize));
     if (selectedCategory && selectedCategory !== "all") params.set("category", selectedCategory);
+    if (searchQuery.trim()) params.set("q", searchQuery.trim());
+    if (calMonth) params.set("calMonth", calMonth);
     
     const activeDate = selectedDate || getTodayDateString();
 
-    if (selectedDate) {
+    if (selectedDate && !searchQuery.trim()) {
       params.set("date", selectedDate);
       if (pageNum === 1) params.set("fallback", "true");
-    } else if (selectedMonth) {
+    } else if (selectedMonth && !searchQuery.trim()) {
       params.set("month", selectedMonth);
     }
 
@@ -181,8 +392,14 @@ export default function DailyCurrentAffairsPage() {
       setTotal(Number(data.total || 0));
       setCategories(Array.isArray(data.categories) ? data.categories : []);
       setMonths(Array.isArray(data.months) ? data.months : []);
+      if (Array.isArray(data.postedDates)) {
+        setPostedDates(data.postedDates);
+      }
+      if (data.calMonth && !calMonth) {
+        setCalMonth(data.calMonth);
+      }
 
-      if (data.date && data.date !== selectedDate && pageNum === 1 && selectedDate) {
+      if (data.date && data.date !== selectedDate && pageNum === 1 && selectedDate && !searchQuery.trim()) {
         setSelectedDate(data.date);
       }
     } catch (err) {
@@ -197,16 +414,55 @@ export default function DailyCurrentAffairsPage() {
   useEffect(() => {
     setHasMounted(true);
     if (!selectedDate) {
-      setSelectedDate(getTodayDateString());
+      const t = getTodayDateString();
+      setSelectedDate(t);
+      setCalMonth(t.slice(0, 7));
     }
   }, []);
+
+  // Update calMonth when selectedDate or selectedMonth changes
+  useEffect(() => {
+    if (selectedDate) {
+      setCalMonth(selectedDate.slice(0, 7));
+    } else if (selectedMonth) {
+      setCalMonth(selectedMonth);
+    }
+  }, [selectedDate, selectedMonth]);
+
+  // Fetch MCQs when activeTab === "mcq" or selectedDate changes
+  useEffect(() => {
+    if (activeTab !== "mcq" || !hasMounted) return;
+    const fetchDate = selectedDate || getTodayDateString();
+    let cancelled = false;
+
+    async function fetchMCQs() {
+      setMcqLoading(true);
+      try {
+        const res = await fetch(`/api/daily-quizzes?type=daily-current-affairs&date=${encodeURIComponent(fetchDate)}`, { cache: "no-store" });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled && Array.isArray(data.questions)) {
+          setMcqQuestions(data.questions);
+        }
+      } catch (err) {
+        console.error("Fetch MCQs Error:", err);
+      } finally {
+        if (!cancelled) setMcqLoading(false);
+      }
+    }
+
+    fetchMCQs();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, selectedDate, hasMounted]);
 
   // Initial load or filter change
   useEffect(() => {
     if (!hasMounted || selectedDate === "") return;
     setPage(1);
     loadItems(1, true);
-  }, [selectedCategory, selectedDate, selectedMonth, hasMounted]);
+  }, [selectedCategory, selectedDate, selectedMonth, searchQuery, hasMounted]);
 
   // Infinite Scroll Trigger
   useEffect(() => {
@@ -611,75 +867,180 @@ export default function DailyCurrentAffairsPage() {
 
   return (
     <main className={styles.page}>
-      {/* Date Navigation Ribbon - Now includes Export */}
-      <div className={styles.dateRibbon}>
-        <button 
-           className={styles.ribbonBtn} 
-           onClick={() => setSelectedDate(prev => adjustDate(prev || getTodayDateString(), -1))}
-           title="Previous Day"
-        >
-          ←
-        </button>
-        
-        <div className={styles.ribbonCenter}>
-           <input 
-              type="date" 
-              value={selectedDate} 
-              max={getTodayDateString()}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="bg-transparent border-none outline-none font-bold text-slate-700 cursor-pointer"
-           />
-           <div className={styles.selectedDateText}>
-              {formatDate(selectedDate || getTodayDateString())}
-           </div>
+      {/* Premium Glassmorphic Command Ribbon (Date & Search Bar) */}
+      <div className={styles.dateRibbonWrapper}>
+        <div className={styles.dateRibbon}>
+        <div className={styles.ribbonDateGroup}>
+          <button 
+             className={styles.ribbonBtn} 
+             onClick={() => setSelectedDate(prev => adjustDate(prev || getTodayDateString(), -1))}
+             title="Previous Day"
+             aria-label="Previous Day"
+          >
+            ‹
+          </button>
+          
+          <div className={styles.ribbonCenter} title="Click to change date">
+             <span style={{ fontSize: '1.05rem', color: '#6366f1' }}>📅</span>
+             <span className={styles.selectedDateText}>
+                {formatDate(selectedDate || getTodayDateString())}
+             </span>
+             <input 
+                type="date" 
+                value={selectedDate} 
+                max={getTodayDateString()}
+                onChange={(e) => {
+                  setSelectedDate(e.target.value);
+                  setSearchQuery("");
+                }}
+                className={styles.dateInputOverlay}
+             />
+          </div>
+
+          <button 
+             className={styles.ribbonBtn} 
+             onClick={() => setSelectedDate(prev => adjustDate(prev || getTodayDateString(), 1))}
+             disabled={(selectedDate || getTodayDateString()) >= getTodayDateString()}
+             title="Next Day"
+             aria-label="Next Day"
+          >
+            ›
+          </button>
+
+          <button 
+             className={styles.todayBtn}
+             onClick={() => {
+               setSelectedDate(getTodayDateString());
+               setSearchQuery("");
+             }}
+          >
+            <span>✨</span>
+            <span>{t('ca.today')}</span>
+          </button>
         </div>
 
-        <button 
-           className={styles.ribbonBtn} 
-           onClick={() => setSelectedDate(prev => adjustDate(prev || getTodayDateString(), 1))}
-           disabled={(selectedDate || getTodayDateString()) >= getTodayDateString()}
-           title="Next Day"
-        >
-          →
-        </button>
+        <div className={styles.searchWrapper}>
+          <span style={{ color: '#6366f1', fontSize: '0.9rem' }}>🔍</span>
+          <input 
+            type="text" 
+            placeholder={isHindi ? "करंट अफेयर्स खोजें..." : "Search Current Affairs..."}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className={styles.searchInput}
+          />
+          {searchQuery && (
+            <button 
+              onClick={() => setSearchQuery("")} 
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.85rem', color: '#94a3b8', padding: '0 4px' }}
+            >
+              ✕
+            </button>
+          )}
+        </div>
 
-        <button 
-           className={styles.todayBtn}
-           onClick={() => setSelectedDate(getTodayDateString())}
-        >
-          {t('ca.today')}
-        </button>
-
-        <a className={styles.exportBtnSmall} href={exportHref} target="_blank" rel="noreferrer" title="Export Intelligence">
-           📥
+        <a className={styles.exportBtnSmall} href={exportHref} target="_blank" rel="noreferrer" title="Export Intelligence PDF">
+           <span>📥</span>
+           <span>{isHindi ? "PDF एक्सपोर्ट" : "Export PDF"}</span>
         </a>
+        </div>
       </div>
 
       <div className={styles.layout}>
         <aside className={styles.sidebar}>
-          <div className={styles.sidebarTitle}>{t('ca.sidebarTitle')}</div>
-          <button
-            className={`${styles.sideItem} ${selectedCategory === "all" ? styles.sideActive : ""}`}
-            onClick={() => setSelectedCategory("all")}
-          >
-            <span className={styles.sideIcon}>🌐</span>
-            <span className={styles.sideText}>{t('ca.all')}</span>
-          </button>
-          {categories.map((c) => (
+          <div className={styles.sidebarHeaderRow}>
+            <div className={styles.sidebarTitle}>
+              <span>🗂️</span>
+              <span>{t('ca.sidebarTitle')}</span>
+            </div>
+            <div className={styles.sidebarLangWrapper}>
+              <LanguageToggle />
+            </div>
+          </div>
+          <div className={styles.categoryScrollList}>
             <button
-              key={c}
-              className={`${styles.sideItem} ${selectedCategory === c ? styles.sideActive : ""}`}
-              onClick={() => setSelectedCategory(c)}
+              className={`${styles.sideItem} ${selectedCategory === "all" ? styles.sideActive : ""}`}
+              onClick={() => setSelectedCategory("all")}
             >
-              <span className={styles.sideIcon}>{getCategoryIcon(c)}</span>
-              <span className={styles.sideText}>{c}</span>
+              <span className={styles.sideIcon}>🌐</span>
+              <span className={styles.sideText}>{t('ca.all')}</span>
             </button>
-          ))}
-          
+            {categories.map((c) => (
+              <button
+                key={c}
+                className={`${styles.sideItem} ${selectedCategory === c ? styles.sideActive : ""}`}
+                onClick={() => setSelectedCategory(c)}
+              >
+                <span className={styles.sideIcon}>{getCategoryIcon(c)}</span>
+                <span className={styles.sideText}>{c}</span>
+              </button>
+            ))}
+          </div>
         </aside>
 
         <section className={styles.content}>
-          {loading ? (
+          {/* Sticky 3-Tab Segmented Control Bar */}
+          <div className={styles.modeSegmentWrapper}>
+            <div className={styles.modeSegmentBar}>
+            <button 
+              className={`${styles.modeTabBtn} ${activeTab === "ca" ? styles.modeTabActive : ""}`}
+              onClick={() => setActiveTab("ca")}
+            >
+              <span>📰</span>
+              <span>{isHindi ? "करंट अफेयर्स" : "Current Affairs"}</span>
+            </button>
+
+            <button 
+              className={`${styles.modeTabBtn} ${activeTab === "oneliner" ? styles.modeTabActive : ""}`}
+              onClick={() => setActiveTab("oneliner")}
+            >
+              <span>💡</span>
+              <span>{isHindi ? "वन-लाइनर" : "One Liner"}</span>
+            </button>
+
+            <button 
+              className={`${styles.modeTabBtn} ${activeTab === "mcq" ? styles.modeTabActive : ""}`}
+              onClick={() => setActiveTab("mcq")}
+            >
+              <span>📝</span>
+              <span>{isHindi ? "MCQ अभ्यास" : "MCQ Practice"}</span>
+            </button>
+            </div>
+          </div>
+
+          {activeTab === "mcq" ? (
+            mcqLoading ? (
+              <div className={styles.skeletonList}>
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className={styles.skeletonCard} style={{ height: '260px', borderRadius: '1.25rem' }} />
+                ))}
+              </div>
+            ) : (
+              <div className={styles.mcqGrid}>
+                <AnimatePresence mode="popLayout">
+                  {(mcqQuestions.length > 0 ? mcqQuestions : DUMMY_MCQS).map((q, idx) => (
+                    <MCQReadCard 
+                      key={q.id || idx} 
+                      question={q} 
+                      qIndex={idx} 
+                      isHindi={isHindi} 
+                      router={router} 
+                      selectedDate={selectedDate}
+                    />
+                  ))}
+                </AnimatePresence>
+                
+                <div className="flex justify-center my-4">
+                  <button 
+                    className={styles.playQuizBtn}
+                    style={{ maxWidth: '320px' }}
+                    onClick={() => router.push(`/daily/daily-current-affairs?date=${selectedDate || getTodayDateString()}`)}
+                  >
+                    ▶ {isHindi ? "फुल टाइम्ड क्विज खेलें" : "Play Full Timed Quiz"}
+                  </button>
+                </div>
+              </div>
+            )
+          ) : loading ? (
             <div className={styles.skeletonList}>
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className={styles.skeletonCard} style={{ height: '320px', borderRadius: '1.5rem' }}>
@@ -690,46 +1051,64 @@ export default function DailyCurrentAffairsPage() {
                 </div>
               ))}
             </div>
-          ) : items.length === 0 ? (
+          ) : (items.length === 0 && activeTab !== 'oneliner') ? (
             <div className={styles.empty}>{t('ca.noResults')}</div>
           ) : (
             <div className={styles.feedContainer}>
-              <AnimatePresence mode="popLayout">
-                {sortedDates.map(date => (
-                  <motion.div 
-                    key={date} 
-                    className={styles.dateGroup}
-                    initial="hidden"
-                    animate="visible"
-                    variants={containerVariants}
-                    layout
-                  >
-                    <div className={styles.dateHeader}>
-                      <span className={styles.dateHeaderIcon}>📅</span>
-                      <span className={styles.dateHeaderText}>Current affairs / One liner / MCQ + Play Quiz</span>
-                      <div className={styles.dateHeaderLine}></div>
-                    </div>
-                    
-                    <motion.div className={styles.wallGrid} layout>
-                      {groupedItems[date].map((it) => (
-                        <WallCurrentAffairCard 
-                          key={it.id} 
-                          item={it}
-                          isRead={readItems.has(it.id)}
-                          isFav={favIds.has(it.id)}
-                          toggleFav={toggleFav}
-                          handleReadMore={handleReadMore}
-                          handleShare={handleShare}
-                          isPro={isPro}
-                          caCount={useCounts.ca}
-                          maxFree={maxFreeReads}
-                          isHindi={isHindi}
-                        />
-                      ))}
+              {activeTab === 'oneliner' && items.length === 0 ? (
+                <div className={styles.oneLinerGrid}>
+                  {DUMMY_ONE_LINERS.map((it) => (
+                    <OneLinerCard 
+                      key={it.id} 
+                      item={it} 
+                      isHindi={isHindi} 
+                      handleShare={handleShare} 
+                      router={router} 
+                    />
+                  ))}
+                </div>
+              ) : (
+                <AnimatePresence mode="popLayout">
+                  {sortedDates.map(date => (
+                    <motion.div 
+                      key={date} 
+                      className={styles.dateGroup}
+                      initial="hidden"
+                      animate="visible"
+                      variants={containerVariants}
+                      layout
+                    >
+                      <motion.div className={activeTab === 'oneliner' ? styles.oneLinerGrid : styles.wallGrid} layout>
+                        {groupedItems[date].map((it) => (
+                          activeTab === 'oneliner' ? (
+                            <OneLinerCard 
+                              key={it.id} 
+                              item={it} 
+                              isHindi={isHindi} 
+                              handleShare={handleShare} 
+                              router={router} 
+                            />
+                          ) : (
+                            <WallCurrentAffairCard 
+                              key={it.id} 
+                              item={it}
+                              isRead={readItems.has(it.id)}
+                              isFav={favIds.has(it.id)}
+                              toggleFav={toggleFav}
+                              handleReadMore={handleReadMore}
+                              handleShare={handleShare}
+                              isPro={isPro}
+                              caCount={useCounts.ca}
+                              maxFree={maxFreeReads}
+                              isHindi={isHindi}
+                            />
+                          )
+                        ))}
+                      </motion.div>
                     </motion.div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+                  ))}
+                </AnimatePresence>
+              )}
               
               <div id="load-more-trigger" className={styles.loadMoreTrigger}>
                 {loading && !isInitialLoad && (
@@ -748,8 +1127,28 @@ export default function DailyCurrentAffairsPage() {
           )}
         </section>
 
-        {/* Right Sidebar for Archives */}
+        {/* Right Sidebar with Interactive Calendar & Archives */}
         <aside className={styles.rightSidebar}>
+          {/* Calendar Widget Section */}
+          <div style={{ marginBottom: '1.25rem' }}>
+            <div className={styles.sidebarTitle}>{isHindi ? "कैलेंडर स्टेटस" : "Calendar Status"}</div>
+            <CalendarWidget 
+              selectedDate={selectedDate}
+              onSelectDate={(dStr) => {
+                setSelectedMonth("");
+                setSelectedDate(dStr);
+                setSearchQuery("");
+              }}
+              postedDates={postedDates}
+              activeMonthStr={calMonth}
+              onMonthChange={(mStr) => {
+                setCalMonth(mStr);
+                fetchMonthPostedDates(mStr);
+              }}
+              isHindi={isHindi}
+            />
+          </div>
+
           <div className={styles.sidebarTitle}>{isHindi ? "पुराने अपडेट्स (Archives)" : "Archives"}</div>
           
           <button
@@ -757,6 +1156,7 @@ export default function DailyCurrentAffairsPage() {
             onClick={() => {
               setSelectedMonth("");
               setSelectedDate(getTodayDateString());
+              setSearchQuery("");
             }}
           >
             <span className={styles.sideIcon}>📅</span>

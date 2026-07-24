@@ -1,3 +1,4 @@
+import React, { Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import Providers from "@/components/Providers";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -10,8 +11,9 @@ import "./globals.css";
 import { Inter } from 'next/font/google';
 import { generateWebsiteStructuredData, generateOrganizationStructuredData } from '@/lib/seo';
 
-const Header = dynamic(() => import('@/components/Header'), { ssr: false });
-const SmartNavigation = dynamic(() => import('@/components/SmartNavigation'), { ssr: false });
+
+import Header from '@/components/Header';
+import SmartNavigation from '@/components/SmartNavigation';
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -129,6 +131,8 @@ export default function RootLayout({ children }) {
         <link rel="preload" href="/fonts/inter-var.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
       </head>
       <body style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }} className="antialiased">
+        <Suspense fallback={null}>
+        </Suspense>
         <ScrollToTop />
         <SecurityGuards />
         <Providers>

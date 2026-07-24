@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { useData } from "@/context/DataContext";
 import { useAdmin } from "@/context/AdminContext";
 import styles from "@/styles/AdminQuestions.module.css";
@@ -55,7 +55,7 @@ function PexelsImagePicker({ onSelect, onClose }) {
             type="text"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="e.g. Eiffel Tower, Taj Mahal, Amazon logo..."
+            placeholder="e.g. Eiffel Tower, Taj Mahal, Cell structure..."
             style={{
               flex: 1, padding: '10px 16px', borderRadius: '10px',
               border: '1.5px solid var(--card-border)', fontSize: '0.95rem',
@@ -65,7 +65,7 @@ function PexelsImagePicker({ onSelect, onClose }) {
           />
           <button type="submit" style={{
             padding: '10px 22px', borderRadius: '10px', border: 'none',
-            background: 'var(--accent, #4f46e5)', color: 'white',
+            background: 'var(--accent, #6366f1)', color: 'white',
             fontWeight: '700', cursor: 'pointer', fontSize: '0.95rem'
           }} disabled={loading}>
             {loading ? 'Searching...' : 'Search'}
@@ -98,7 +98,7 @@ function PexelsImagePicker({ onSelect, onClose }) {
                     border: '2px solid transparent', transition: 'all 0.2s',
                     position: 'relative'
                   }}
-                  onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent, #4f46e5)'}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent, #6366f1)'}
                   onMouseLeave={e => e.currentTarget.style.borderColor = 'transparent'}
                 >
                   <img
@@ -116,9 +116,6 @@ function PexelsImagePicker({ onSelect, onClose }) {
                 </div>
               ))}
             </div>
-            <p style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '12px' }}>
-              Photos provided by <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>Pexels</a>
-            </p>
           </>
         )}
       </div>
@@ -146,6 +143,7 @@ export default function AdminQuestionsPage() {
   const { adminUser } = useAdmin();
   const isJr = adminUser?.role === "jr";
   const allowed = adminUser?.role === "master" || adminUser?.permissions?.questions !== false;
+
   const [filterCat, setFilterCat] = useState("all");
   const [filterDiff, setFilterDiff] = useState("all");
   const [search, setSearch] = useState("");
@@ -155,7 +153,7 @@ export default function AdminQuestionsPage() {
   const [form, setForm] = useState(EMPTY_Q);
   const [formCatId, setFormCatId] = useState("");
   const [selectedIds, setSelectedIds] = useState([]);
-  const [duplicateMatches, setDuplicateMatches] = useState({}); // { qId: { matchId, text, score } }
+  const [duplicateMatches, setDuplicateMatches] = useState({});
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
   const [showOnlyDupes, setShowOnlyDupes] = useState(false);
@@ -163,17 +161,18 @@ export default function AdminQuestionsPage() {
   const [catTab, setCatTab] = useState("quizzes");
   const [catSearch, setCatSearch] = useState("");
 
-  // Build flat list
+  // Build Flat List of All Questions
   const allQuestions = useMemo(() => {
     const list = [];
     quizzes.forEach((cat) =>
       cat.questions.forEach((q) =>
-        list.push({ ...q, categoryId: cat.id, categoryTopic: cat.topic, categoryEmoji: cat.emoji })
+        list.push({ ...q, categoryId: cat.id, categoryTopic: cat.topic, categoryEmoji: cat.emoji || "📁" })
       )
     );
     return list;
   }, [quizzes]);
 
+  // Filter Questions
   const filtered = useMemo(() => {
     return allQuestions.filter((q) => {
       if (filterCat !== "all" && q.categoryId !== filterCat) return false;
@@ -190,7 +189,6 @@ export default function AdminQuestionsPage() {
     const matches = {};
     const total = allQuestions.length;
     
-    // Pre-processing: tokenize all questions
     const tokenized = allQuestions.map(q => ({
       id: q.id,
       text: q.text,
@@ -207,7 +205,6 @@ export default function AdminQuestionsPage() {
         const q2 = tokenized[j];
         if (q2.words.size === 0) continue;
 
-        // Jaccard-like similarity Score
         let intersection = 0;
         q1.words.forEach(w => { if (q2.words.has(w)) intersection++; });
         
@@ -220,7 +217,6 @@ export default function AdminQuestionsPage() {
         }
       }
 
-      // Batch UI updates and avoid freezing
       if (i % CHUNK_SIZE === 0) {
         setScanProgress(Math.round((i / total) * 100));
         await new Promise(r => setTimeout(r, 0));
@@ -270,10 +266,9 @@ export default function AdminQuestionsPage() {
   };
 
   const handleSave = async () => {
-    console.log("[AdminQuestions] handleSave called", { editingQ: !!editingQ, formCatId });
     try {
       if ((!form.text.trim() && !form.image) || !form.correctAnswer || !formCatId) {
-        toast.error("Please provide either question text or an image, along with category and answer.");
+        toast.error("Please provide question text or image, category and answer.");
         return;
       }
       if (form.options.some((o) => !o.trim())) {
@@ -281,21 +276,20 @@ export default function AdminQuestionsPage() {
         return;
       }
 
+      const data = { 
+        text: form.text, 
+        options: form.options, 
+        correctAnswer: form.correctAnswer, 
+        difficulty: form.difficulty, 
+        image: form.image || null,
+        explanation: form.explanation || null
+      };
+
       if (editingQ) {
-        const data = { 
-          text: form.text, 
-          options: form.options, 
-          correctAnswer: form.correctAnswer, 
-          difficulty: form.difficulty, 
-          image: form.image || null,
-          explanation: form.explanation || null
-        };
         if (isJr) {
-          console.log("[AdminQuestions] Submitting pending update");
           await submitPending("update_question", { categoryId: editingCat, questionId: editingQ.id, ...data });
           setModalOpen(false);
         } else {
-          console.log("[AdminQuestions] Updating question directly:", editingQ.id);
           const success = await updateQuestion(editingCat, editingQ.id, data);
           if (success) {
             toast.success("Question updated successfully!");
@@ -305,26 +299,16 @@ export default function AdminQuestionsPage() {
           }
         }
       } else {
-        const data = { 
-          text: form.text, 
-          options: form.options, 
-          correctAnswer: form.correctAnswer, 
-          difficulty: form.difficulty, 
-          image: form.image || null,
-          explanation: form.explanation || null
-        };
         if (isJr) {
-          console.log("[AdminQuestions] Submitting pending creation");
           await submitPending("create_question", { categoryId: formCatId, ...data });
           setModalOpen(false);
         } else {
-          console.log("[AdminQuestions] Creating question directly in category:", formCatId);
           const success = await addQuestion(formCatId, data);
           if (success) {
             toast.success("Question created successfully!");
             setModalOpen(false);
           } else {
-            toast.error("Failed to create question. Please check server logs.");
+            toast.error("Failed to create question.");
           }
         }
       }
@@ -387,101 +371,102 @@ export default function AdminQuestionsPage() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.header}>
-        <div>
-          <h1 className={styles.title}>Questions</h1>
-          <p className={styles.subtitle}>{filtered.length} of {allQuestions.length} questions</p>
+      
+      {/* Header Banner */}
+      <div className={styles.headerRow}>
+        <div className={styles.headerLeft}>
+          <h1 className={styles.title}>Quiz Questions</h1>
+          <p className={styles.subtitle}>
+            Showing {filtered.length} of {allQuestions.length.toLocaleString()} questions in bank
+          </p>
         </div>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <button
-            style={{ padding: '8px 14px', borderRadius: '8px', border: '1.5px solid var(--card-border)', background: 'transparent', color: 'var(--text-secondary)', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}
-            onClick={async () => { await refreshQuizzes(); }}
-            title="Refresh question list"
-          >
-            🔄 Refresh
+
+        <div className={styles.headerActions}>
+          <button className={styles.refreshBtn} onClick={async () => { await refreshQuizzes(); }}>
+            <span>🔄 Refresh List</span>
           </button>
-          <button className="btn-primary" onClick={openAdd}>
-            + Add Question
+          <button className={styles.addBtn} onClick={openAdd}>
+            <span>+ Add Question</span>
           </button>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className={styles.filters}>
-        <input
-          className={styles.searchInput}
-          placeholder="Search questions..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <div style={{ flex: 1, minWidth: '250px' }}>
-          <Select
-            options={[
-              { value: "all", label: "All Categories" },
-              ...quizzes.map((c) => ({ value: c.id, label: `${c.emoji} ${c.topic}` }))
-            ]}
-            value={{ 
-              value: filterCat, 
-              label: filterCat === "all" ? "All Categories" : (quizzes.find(c => c.id === filterCat) ? `${quizzes.find(c => c.id === filterCat).emoji} ${quizzes.find(c => c.id === filterCat).topic}` : "All Categories") 
-            }}
-            onChange={(selected) => setFilterCat(selected.value)}
-            className="react-select-container"
-            classNamePrefix="react-select"
-            styles={{
-              control: (base) => ({
-                ...base,
-                borderRadius: '8px',
-                borderColor: 'var(--card-border)',
-                minHeight: '42px',
-                background: 'var(--bg-secondary)',
-              }),
-              menu: (base) => ({
-                ...base,
-                zIndex: 9999
-              }),
-              singleValue: (base) => ({
-                ...base,
-                color: 'var(--text-primary)',
-              }),
-              input: (base) => ({
-                ...base,
-                color: 'var(--text-primary)',
-              })
-            }}
+      {/* Control & Filter Center */}
+      <div className={styles.controlBar}>
+        <div className={styles.filtersRow}>
+          <input
+            className={styles.searchInput}
+            placeholder="Search questions by text..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
           />
-        </div>
-        <select
-          className={styles.select}
-          value={filterDiff}
-          onChange={(e) => setFilterDiff(e.target.value)}
-        >
-          <option value="all">All Difficulties</option>
-          <option value="easy">Easy</option>
-          <option value="medium">Medium</option>
-          <option value="hard">Hard</option>
-        </select>
 
-        <button 
-          onClick={startFuzzyScan} 
-          disabled={isScanning}
-          className={`${styles.scanBtn} ${isScanning ? styles.scanning : ''}`}
-        >
-          {isScanning ? `Scanning ${scanProgress}%...` : '🔍 Scan Duplicates'}
-        </button>
-
-        {Object.keys(duplicateMatches).length > 0 && (
-          <label className={styles.dupeToggle}>
-            <input 
-              type="checkbox" 
-              checked={showOnlyDupes} 
-              onChange={e => setShowOnlyDupes(e.target.checked)} 
+          <div style={{ flex: 1.5, minWidth: '220px' }}>
+            <Select
+              options={[
+                { value: "all", label: "📁 All Categories" },
+                ...quizzes.map((c) => ({ value: c.id, label: `${c.emoji || '📁'} ${c.topic}` }))
+              ]}
+              value={{ 
+                value: filterCat, 
+                label: filterCat === "all" ? "📁 All Categories" : (quizzes.find(c => c.id === filterCat) ? `${quizzes.find(c => c.id === filterCat).emoji || '📁'} ${quizzes.find(c => c.id === filterCat).topic}` : "📁 All Categories") 
+              }}
+              onChange={(selected) => setFilterCat(selected.value)}
+              styles={{
+                control: (base) => ({
+                  ...base,
+                  borderRadius: '10px',
+                  borderColor: 'var(--card-border, #cbd5e1)',
+                  minHeight: '42px',
+                  background: 'var(--bg-primary)',
+                }),
+                menu: (base) => ({
+                  ...base,
+                  zIndex: 9999
+                }),
+                singleValue: (base) => ({
+                  ...base,
+                  color: 'var(--text-primary)',
+                  fontWeight: 600,
+                  fontSize: '0.88rem'
+                })
+              }}
             />
-            Duplicates Only
-          </label>
-        )}
+          </div>
+
+          <select
+            className={styles.select}
+            value={filterDiff}
+            onChange={(e) => setFilterDiff(e.target.value)}
+          >
+            <option value="all">All Difficulties</option>
+            <option value="easy">🟢 Easy</option>
+            <option value="medium">🟡 Medium</option>
+            <option value="hard">🔴 Hard</option>
+          </select>
+
+          <button 
+            onClick={startFuzzyScan} 
+            disabled={isScanning}
+            className={`${styles.scanBtn} ${isScanning ? styles.scanning : ''}`}
+          >
+            <span>{isScanning ? `Scanning ${scanProgress}%...` : '🔍 Scan Duplicates'}</span>
+          </button>
+
+          {Object.keys(duplicateMatches).length > 0 && (
+            <label className={styles.dupeToggle}>
+              <input 
+                type="checkbox" 
+                checked={showOnlyDupes} 
+                onChange={e => setShowOnlyDupes(e.target.checked)} 
+              />
+              Show Duplicates
+            </label>
+          )}
+        </div>
       </div>
 
-      {/* Selection Status Bar */}
+      {/* Multi-Select Bar */}
       <div className={`${styles.selectActions} ${selectedIds.length > 0 ? styles.activeSelection : ''}`}>
         <label className={styles.checkboxLabel}>
           <input 
@@ -490,92 +475,97 @@ export default function AdminQuestionsPage() {
             checked={filtered.length > 0 && selectedIds.length === filtered.length}
             onChange={toggleSelectAll}
           />
-          <span className={styles.selectionText}>
+          <span>
             {selectedIds.length > 0 ? `${selectedIds.length} questions selected` : 'Select All Questions'}
           </span>
         </label>
         {selectedIds.length > 0 && !isJr && (
           <button className={styles.bulkDeleteBtn} onClick={handleBulkDelete}>
-            🗑️ Delete Selected
+            🗑️ Delete Selected ({selectedIds.length})
           </button>
         )}
       </div>
 
-      {/* Question List */}
+      {/* Question Cards List */}
       <div className={styles.list}>
         {filtered.map((q) => {
           const match = duplicateMatches[q.id];
           return (
-          <div key={q.id} className={`${styles.row} glass-card ${selectedIds.includes(q.id) ? styles.rowSelected : ''} ${match ? styles.rowDuplicate : ''}`}>
-            <div className={styles.rowSelector}>
-              <input 
-                type="checkbox" 
-                checked={selectedIds.includes(q.id)}
-                onChange={() => toggleSelect(q.id)}
-              />
-            </div>
-            <div className={styles.rowContent}>
-              <div className={styles.rowTop}>
-                <div className={styles.rowBadges}>
-                  <span className={styles.catBadge}>
-                    {q.categoryEmoji} {q.categoryTopic}
-                  </span>
-                  <span className={`${styles.diffBadge} ${styles[q.difficulty]}`}>
-                    {q.difficulty}
-                  </span>
-                  {match && (
-                    <span className={styles.dupeBadge}>
-                      Potential Duplicate ({match.score}%)
+            <div key={q.id} className={`${styles.row} ${selectedIds.includes(q.id) ? styles.rowSelected : ''} ${match ? styles.rowDuplicate : ''}`}>
+              <div className={styles.rowSelector}>
+                <input 
+                  type="checkbox" 
+                  checked={selectedIds.includes(q.id)}
+                  onChange={() => toggleSelect(q.id)}
+                />
+              </div>
+
+              <div className={styles.rowContent}>
+                <div className={styles.rowTop}>
+                  <div className={styles.rowBadges}>
+                    <span className={styles.catBadge}>
+                      {q.categoryEmoji} {q.categoryTopic}
                     </span>
-                  )}
+                    <span className={`${styles.diffBadge} ${styles[q.difficulty]}`}>
+                      {q.difficulty}
+                    </span>
+                    {match && (
+                      <span className={styles.dupeBadge}>
+                        Potential Duplicate ({match.score}%)
+                      </span>
+                    )}
+                  </div>
+
+                  <div className={styles.rowActions}>
+                    <button className={styles.editBtn} onClick={() => openEdit(q)}>
+                      ✏️ Edit
+                    </button>
+                    <button className={styles.deleteBtn} onClick={() => handleDelete(q.categoryId, q.id)}>
+                      🗑️ Delete
+                    </button>
+                  </div>
                 </div>
-                <div className={styles.rowActions}>
-                  <button className={styles.editBtn} onClick={() => openEdit(q)} title="Edit">
-                    ✏️ Edit
-                  </button>
-                  <button
-                    className={styles.deleteBtn}
-                    onClick={() => handleDelete(q.categoryId, q.id)}
-                    title="Delete"
-                  >
-                    🗑️ Delete
-                  </button>
+
+                <p className={styles.questionText}>{q.text}</p>
+
+                {match && (
+                  <div className={styles.matchBox}>
+                     <div className={styles.matchLabel}>SIMILAR TO:</div>
+                     <div className={styles.matchText}>{match.text}</div>
+                  </div>
+                )}
+
+                {q.image && <img src={q.image} alt="" className={styles.questionImg} />}
+
+                <div className={styles.optionsList}>
+                  {q.options.map((opt, i) => (
+                    <span
+                      key={i}
+                      className={`${styles.optTag} ${opt === q.correctAnswer ? styles.correctTag : ""}`}
+                    >
+                      {opt}
+                      {opt === q.correctAnswer && " ✓"}
+                    </span>
+                  ))}
                 </div>
-              </div>
-              <p className={styles.questionText}>{q.text}</p>
-              {match && (
-                <div className={styles.matchBox}>
-                   <div className={styles.matchLabel}>SIMILAR TO:</div>
-                   <div className={styles.matchText}>{match.text}</div>
-                </div>
-              )}
-              {q.image && <img src={q.image} alt="" className={styles.questionImg} />}
-              <div className={styles.optionsList}>
-                {q.options.map((opt, i) => (
-                  <span
-                    key={i}
-                    className={`${styles.optTag} ${opt === q.correctAnswer ? styles.correctTag : ""}`}
-                  >
-                    {opt}
-                    {opt === q.correctAnswer && " ✓"}
-                  </span>
-                ))}
               </div>
             </div>
-          </div>
           );
         })}
+
         {filtered.length === 0 && (
-          <p className={styles.empty}>No questions match your filters.</p>
+          <div className={styles.emptyState}>
+            <p>No questions match your current search or filter parameters.</p>
+          </div>
         )}
       </div>
 
-      {/* Add/Edit Modal */}
+      {/* Add / Edit Modal */}
       {modalOpen && (
         <div className={styles.overlay} onClick={() => setModalOpen(false)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <h2 className={styles.modalTitle}>
-              {editingQ ? "Edit Question" : "Add Question"}
+              {editingQ ? "✏️ Edit Question" : "⚡ Add New Question"}
             </h2>
 
             <div className={styles.field}>
@@ -587,9 +577,8 @@ export default function AdminQuestionsPage() {
                   disabled
                 />
               ) : (
-                <div style={{ border: '1.5px solid var(--card-border)', borderRadius: '12px', overflow: 'hidden' }}>
-                  {/* Tabs */}
-                  <div style={{ display: 'flex', borderBottom: '1.5px solid var(--card-border)', background: 'var(--bg-secondary)' }}>
+                <div style={{ border: '1.5px solid var(--card-border, #cbd5e1)', borderRadius: '12px', overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', borderBottom: '1.5px solid var(--card-border, #cbd5e1)', background: 'var(--bg-secondary, #f8fafc)' }}>
                     {[
                       { key: 'quizzes', label: '📝 Quizzes' },
                       { key: 'govt', label: '🏛️ Govt' },
@@ -601,15 +590,14 @@ export default function AdminQuestionsPage() {
                         onClick={() => { setCatTab(tab.key); setCatSearch(''); }}
                         style={{
                           flex: 1, padding: '8px 4px', border: 'none', fontSize: '0.78rem', fontWeight: 700,
-                          background: catTab === tab.key ? 'var(--accent, #4f46e5)' : 'transparent',
+                          background: catTab === tab.key ? 'var(--accent, #6366f1)' : 'transparent',
                           color: catTab === tab.key ? 'white' : 'var(--text-secondary)',
                           cursor: 'pointer', transition: 'all 0.2s'
                         }}
                       >{tab.label}</button>
                     ))}
                   </div>
-                  {/* Search */}
-                  <div style={{ padding: '8px', borderBottom: '1px solid var(--card-border)' }}>
+                  <div style={{ padding: '8px', borderBottom: '1px solid var(--card-border, #cbd5e1)' }}>
                     <input
                       type="text"
                       value={catSearch}
@@ -617,12 +605,11 @@ export default function AdminQuestionsPage() {
                       placeholder="Search category..."
                       style={{
                         width: '100%', padding: '6px 10px', borderRadius: '8px',
-                        border: '1px solid var(--card-border)', fontSize: '0.85rem',
+                        border: '1px solid var(--card-border, #cbd5e1)', fontSize: '0.85rem',
                         background: 'var(--bg-primary)', color: 'var(--text-primary)', boxSizing: 'border-box'
                       }}
                     />
                   </div>
-                  {/* Category List */}
                   <div style={{ maxHeight: '180px', overflowY: 'auto', padding: '4px' }}>
                     {quizzes
                       .filter(c => {
@@ -639,13 +626,12 @@ export default function AdminQuestionsPage() {
                           style={{
                             padding: '7px 10px', borderRadius: '8px', cursor: 'pointer',
                             fontSize: '0.87rem', fontWeight: formCatId === c.id ? 700 : 400,
-                            background: formCatId === c.id ? 'var(--accent, #4f46e5)' : 'transparent',
+                            background: formCatId === c.id ? 'var(--accent, #6366f1)' : 'transparent',
                             color: formCatId === c.id ? 'white' : 'var(--text-primary)',
                             transition: 'all 0.15s', marginBottom: '2px'
                           }}
                         >
-                          {c.emoji} {c.topic}
-                          {c.parentId && <span style={{ fontSize: '0.72rem', opacity: 0.7, marginLeft: 4 }}>↳ sub</span>}
+                          {c.emoji || '📁'} {c.topic}
                         </div>
                       ))}
                   </div>
@@ -659,7 +645,7 @@ export default function AdminQuestionsPage() {
                 className={styles.textarea}
                 value={form.text}
                 onChange={(e) => setForm({ ...form, text: e.target.value })}
-                placeholder="Enter the question"
+                placeholder="Enter question prompt..."
                 rows={3}
               />
             </div>
@@ -695,39 +681,39 @@ export default function AdminQuestionsPage() {
             </div>
 
             <div className={styles.field}>
-              <label>Difficulty</label>
+              <label>Difficulty Level</label>
               <select
                 className={styles.select}
                 value={form.difficulty}
                 onChange={(e) => setForm({ ...form, difficulty: e.target.value })}
               >
-                <option value="easy">Easy</option>
-                <option value="medium">Medium</option>
-                <option value="hard">Hard</option>
+                <option value="easy">🟢 Easy</option>
+                <option value="medium">🟡 Medium</option>
+                <option value="hard">🔴 Hard</option>
               </select>
             </div>
 
             <div className={styles.field}>
-              <label>Explanation</label>
+              <label>Explanation Notes</label>
               <textarea
                 className={styles.textarea}
                 value={form.explanation || ""}
                 onChange={(e) => setForm({ ...form, explanation: e.target.value })}
-                placeholder="Enter explanation for the correct answer..."
+                placeholder="Explanation or rationale for the correct answer..."
                 rows={3}
               />
             </div>
 
             <div className={styles.field}>
-              <label>Question Image (optional)</label>
+              <label>Question Image (Optional)</label>
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '8px' }}>
                 <input type="file" accept="image/*" onChange={handleQImageUpload} className={styles.fileInput} style={{ flex: 1 }} />
                 <button
                   type="button"
                   onClick={() => setShowPexelsPicker(true)}
                   style={{
-                    padding: '8px 14px', borderRadius: '8px', border: '1.5px solid var(--accent, #4f46e5)',
-                    background: 'transparent', color: 'var(--accent, #4f46e5)',
+                    padding: '8px 14px', borderRadius: '8px', border: '1.5px solid var(--accent, #6366f1)',
+                    background: 'transparent', color: 'var(--accent, #6366f1)',
                     fontWeight: '700', cursor: 'pointer', fontSize: '0.85rem',
                     whiteSpace: 'nowrap'
                   }}
@@ -744,14 +730,14 @@ export default function AdminQuestionsPage() {
             </div>
 
             <div className={styles.modalActions}>
-              <button className="btn-secondary" onClick={() => setModalOpen(false)}>
+              <button className="actionBtnSecondary" onClick={() => setModalOpen(false)}>
                 Cancel
               </button>
-              <button className="btn-primary" onClick={handleSave}>
+              <button className="actionBtnPrimary" onClick={handleSave}>
                 {editingQ ? "Save Changes" : "Add Question"}
               </button>
             </div>
-           </div>
+          </div>
         </div>
       )}
 

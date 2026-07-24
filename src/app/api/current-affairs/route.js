@@ -42,7 +42,9 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const dateStr = normalizeString(searchParams.get("date"));
   const month = normalizeString(searchParams.get("month"));
+  const calMonthParam = normalizeString(searchParams.get("calMonth"));
   const category = normalizeString(searchParams.get("category"));
+  const searchQuery = normalizeString(searchParams.get("q"));
   const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
   const pageSize = Math.min(500, Math.max(6, parseInt(searchParams.get("pageSize") || "10", 10) || 10));
   const fallback = searchParams.get("fallback") === "true";
@@ -55,13 +57,20 @@ export async function GET(request) {
       where.category = { equals: category, mode: "insensitive" };
     }
 
+    if (searchQuery) {
+      where.OR = [
+        { heading: { contains: searchQuery, mode: "insensitive" } },
+        { description: { contains: searchQuery, mode: "insensitive" } }
+      ];
+    }
+
     let items = [];
     let total = 0;
     let targetDate = dateStr;
 
     // Logic: If a specific date is requested and fallback is enabled, 
     // and no items are found for that date, find the latest available date.
-    if (dateStr) {
+    if (dateStr && !searchQuery) {
       where.date = { lte: dateStr }; // Use "less than or equal" for infinite scroll back in time
       
       // Check if we need to fallback to the latest date if searching for today and no data found
@@ -87,7 +96,7 @@ export async function GET(request) {
         take: pageSize,
       });
       total = await prisma.currentAffair.count({ where });
-    } else if (month) {
+    } else if (month && !searchQuery) {
       where.date = { startsWith: `${month}-` };
       items = await prisma.currentAffair.findMany({
         where,
@@ -97,7 +106,7 @@ export async function GET(request) {
       });
       total = await prisma.currentAffair.count({ where });
     } else {
-      // General list (Infinite Scroll case or overview)
+      // General list or search query
       items = await prisma.currentAffair.findMany({
         where,
         orderBy: [{ date: "desc" }, { createdAt: "desc" }],
@@ -107,7 +116,21 @@ export async function GET(request) {
       total = await prisma.currentAffair.count({ where });
     }
 
-    // Faster metadata fetch
+    // Determine target calendar month for fetching postedDates
+    const activeCalMonth = calMonthParam || (targetDate ? targetDate.slice(0, 7) : (month || new Date().toISOString().slice(0, 7)));
+
+    // Fetch posted dates for calendar for activeCalMonth
+    const monthItems = await prisma.currentAffair.findMany({
+      where: {
+        hidden: false,
+        date: { startsWith: `${activeCalMonth}-` }
+      },
+      select: { date: true },
+      distinct: ['date']
+    });
+    const postedDates = monthItems.map(x => x.date);
+
+    // Metadata fetch
     const categories = Array.from(new Set((await prisma.currentAffair.findMany({
       where: { hidden: false },
       select: { category: true },
@@ -126,6 +149,8 @@ export async function GET(request) {
       pageSize, 
       categories, 
       months,
+      postedDates,
+      calMonth: activeCalMonth,
       date: targetDate 
     });
   } catch (error) {

@@ -63,16 +63,16 @@ export default function TreeRow({
       </td>
 
       {/* Select Checkbox (Optional) */}
-      {selectable && (
-        <td className="w-10">
+      <td className="w-10">
+        {selectable && (
            <input 
              type="checkbox" 
              checked={isSelected} 
-             onChange={(e) => onSelect(e.target.checked)}
-             className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+             onChange={(e) => onSelect && onSelect(e.target.checked)}
+             className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
            />
-        </td>
-      )}
+        )}
+      </td>
 
       {/* Expand/Collapse and Title */}
       <td>

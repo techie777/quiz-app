@@ -1,21 +1,40 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { useData } from "@/context/DataContext";
+import { useAdmin } from "@/context/AdminContext";
 import styles from "@/styles/GovtExamManagement.module.css";
+import toast from "react-hot-toast";
 
 export default function GovtExamManagement() {
+  const { quizzes, updateCategory, addCategory, deleteCategory, addQuestion, updateQuestion, deleteQuestion, refreshQuizzes } = useData();
+  const { adminUser } = useAdmin();
+  const allowed = adminUser?.role === "master" || adminUser?.permissions?.govtExams !== false;
+
+  const [activeTab, setActiveTab] = useState("theory"); // "theory", "categories", "questions", "jobs"
+
+  // Theory Tab State
+  const [selectedTheoryCatId, setSelectedTheoryCatId] = useState("");
+  const [theorySearch, setTheorySearch] = useState("");
+  const [theoryForm, setTheoryForm] = useState({
+    topic: "",
+    topicHi: "",
+    description: "",
+    descriptionHi: "",
+    storyText: "",
+    storyImage: "",
+    hidden: false,
+    originalLang: "en"
+  });
+
+  // Jobs / Notifications State
   const [exams, setExams] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [editingExam, setEditingExam] = useState(null);
-  const [editingCategory, setEditingCategory] = useState(null);
-  const [activeTab, setActiveTab] = useState('exams'); // 'exams' or 'categories'
-  const [formData, setFormData] = useState({
+  const [examFormData, setExamFormData] = useState({
     title: "",
-    category: "",
+    category: "Central Govt",
     organization: "",
     governmentType: "Central Govt",
     vacancies: "",
@@ -25,12 +44,7 @@ export default function GovtExamManagement() {
     eligibility: "",
     startDate: "",
     lastDate: "",
-    quota: {
-      gen: 0,
-      sc: 0,
-      st: 0,
-      obc: 0
-    },
+    quota: { gen: 0, sc: 0, st: 0, obc: 0 },
     syllabus: "",
     applicationFee: "",
     officialWebsite: "",
@@ -38,16 +52,35 @@ export default function GovtExamManagement() {
     status: "active"
   });
 
-  const [categoryFormData, setCategoryFormData] = useState({
-    id: "",
-    name: "",
-    icon: ""
+  // Category Modal State
+  const [isCatModalOpen, setIsCatModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [catForm, setCatForm] = useState({
+    topic: "",
+    topicHi: "",
+    emoji: "🏛️",
+    description: "",
+    categoryClass: "govt-exam",
+    hidden: false,
+    parentId: ""
   });
 
-  // Load data from MongoDB on mount
+  // Question Modal State
+  const [isQModalOpen, setIsQModalOpen] = useState(false);
+  const [editingQ, setEditingQ] = useState(null);
+  const [qCatId, setQCatId] = useState("");
+  const [qForm, setQForm] = useState({
+    text: "",
+    options: ["", "", "", ""],
+    correctAnswer: "",
+    difficulty: "easy",
+    explanation: "",
+    image: ""
+  });
+
+  // Load Exam Job Notifications
   useEffect(() => {
     fetchExams();
-    fetchCategories();
   }, []);
 
   const fetchExams = async () => {
@@ -59,825 +92,559 @@ export default function GovtExamManagement() {
       }
     } catch (error) {
       console.error('Failed to fetch exams:', error);
-      // Fallback to localStorage
-      const storedExams = localStorage.getItem('govtExams');
-      if (storedExams) {
-        setExams(JSON.parse(storedExams));
-      }
     }
   };
 
-  const fetchCategories = async () => {
-    try {
-      const response = await fetch('/api/exam-categories');
-      if (response.ok) {
-        const data = await response.json();
-        setCategories(data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch categories:', error);
-      // Fallback to localStorage
-      const storedCategories = localStorage.getItem('examCategories');
-      if (storedCategories) {
-        setCategories(JSON.parse(storedCategories));
-      } else {
-        // Default categories if none exist
-        const defaultCategories = [
-          { id: "banking", name: "Banking", icon: "🏦" },
-          { id: "railway", name: "Railway", icon: "🚂" },
-          { id: "defence", name: "Defence", icon: "🎖️" },
-          { id: "teaching", name: "Teaching", icon: "👨‍🏫" },
-          { id: "engineering", name: "Engineering", icon: "⚙️" },
-          { id: "medical", name: "Medical", icon: "🏥" },
-          { id: "civil", name: "Civil Services", icon: "🏛️" }
-        ];
-        setCategories(defaultCategories);
-      }
-    }
-  };
+  const safeQuizzes = useMemo(() => (Array.isArray(quizzes) ? quizzes : []), [quizzes]);
 
-  const saveExamsToStorage = (data) => {
-    // Save to both localStorage and MongoDB
-    localStorage.setItem('govtExams', JSON.stringify(data));
-    // MongoDB saves are handled by API calls
-  };
+  // Filter Govt Exam Categories
+  const govtCategories = useMemo(() => {
+    return safeQuizzes.filter((c) => {
+      const cls = c.categoryClass || "";
+      return cls.includes("govt-exam") || c.topic?.toLowerCase().includes("gk") || c.topic?.toLowerCase().includes("history") || c.topic?.toLowerCase().includes("science") || c.topic?.toLowerCase().includes("polity") || c.topic?.toLowerCase().includes("exam");
+    });
+  }, [safeQuizzes]);
 
-  const saveCategoriesToStorage = (data) => {
-    // Save to both localStorage and MongoDB
-    localStorage.setItem('examCategories', JSON.stringify(data));
-    // MongoDB saves are handled by API calls
-  };
+  // Selected Theory Category
+  const selectedTheoryCategory = useMemo(() => {
+    if (!selectedTheoryCatId) return govtCategories[0] || safeQuizzes[0] || null;
+    return safeQuizzes.find((c) => c.id === selectedTheoryCatId) || govtCategories[0] || null;
+  }, [selectedTheoryCatId, safeQuizzes, govtCategories]);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    
-    if (name.includes('quota.')) {
-      const quotaField = name.split('.')[1];
-      setFormData(prev => ({
-        ...prev,
-        quota: {
-          ...prev.quota,
-          [quotaField]: parseInt(value) || 0
-        }
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
-  };
-
-  const handleCategoryInputChange = (e) => {
-    const { name, value } = e.target;
-    setCategoryFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    try {
-      let response;
-      
-      if (editingExam) {
-        // Update existing exam
-        response = await fetch('/api/govt-exams', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
-        });
-      } else {
-        // Add new exam
-        response = await fetch('/api/govt-exams', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
-        });
-      }
-
-      if (response.ok) {
-        await fetchExams(); // Refresh data
-        resetExamForm();
-      } else {
-        const error = await response.json();
-        alert('Failed to save exam: ' + (error.error || 'Unknown error'));
-      }
-    } catch (error) {
-      console.error('Error saving exam:', error);
-      alert('Failed to save exam. Please try again.');
-    }
-  };
-
-  const handleCategorySubmit = async (e) => {
-    e.preventDefault();
-    
-    try {
-      let response;
-      
-      if (editingCategory) {
-        // Update existing category
-        response = await fetch('/api/exam-categories', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(categoryFormData)
-        });
-      } else {
-        // Add new category
-        response = await fetch('/api/exam-categories', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(categoryFormData)
-        });
-      }
-
-      if (response.ok) {
-        await fetchCategories(); // Refresh data
-        resetCategoryForm();
-      } else {
-        const error = await response.json();
-        alert('Failed to save category: ' + (error.error || 'Unknown error'));
-      }
-    } catch (error) {
-      console.error('Error saving category:', error);
-      alert('Failed to save category. Please try again.');
-    }
-  };
-
-  const handleEdit = (exam) => {
-    setEditingExam(exam);
-    setFormData(exam);
-    setIsModalOpen(true);
-  };
-
-  const handleEditCategory = (category) => {
-    setEditingCategory(category);
-    setCategoryFormData(category);
-    setIsCategoryModalOpen(true);
-  };
-
-  const handleDelete = async (examId) => {
-    if (confirm('Are you sure you want to delete this exam?')) {
-      try {
-        const response = await fetch(`/api/govt-exams?id=${examId}`, {
-          method: 'DELETE'
-        });
-        
-        if (response.ok) {
-          await fetchExams(); // Refresh data
-        } else {
-          const error = await response.json();
-          alert('Failed to delete exam: ' + (error.error || 'Unknown error'));
-        }
-      } catch (error) {
-        console.error('Error deleting exam:', error);
-        alert('Failed to delete exam. Please try again.');
-      }
-    }
-  };
-
-  const handleDeleteCategory = async (categoryId) => {
-    try {
-      const response = await fetch(`/api/exam-categories?id=${categoryId}`, {
-        method: 'DELETE'
+  // Sync Theory Form when selected category changes
+  useEffect(() => {
+    if (selectedTheoryCategory) {
+      setTheoryForm({
+        topic: selectedTheoryCategory.topic || "",
+        topicHi: selectedTheoryCategory.topicHi || "",
+        description: selectedTheoryCategory.description || "",
+        descriptionHi: selectedTheoryCategory.descriptionHi || "",
+        storyText: selectedTheoryCategory.storyText || "",
+        storyImage: selectedTheoryCategory.storyImage || "",
+        hidden: !!selectedTheoryCategory.hidden,
+        originalLang: selectedTheoryCategory.originalLang || "en"
       });
-      
-      if (response.ok) {
-        await fetchCategories(); // Refresh data
+    }
+  }, [selectedTheoryCategory]);
+
+  if (!allowed) {
+    return (
+      <div className={styles.container}>
+        <p>Access denied.</p>
+      </div>
+    );
+  }
+
+  // Handle Theory Save
+  const handleSaveTheory = async () => {
+    if (!selectedTheoryCategory) return;
+    try {
+      const updates = {
+        topic: theoryForm.topic,
+        topicHi: theoryForm.topicHi || null,
+        description: theoryForm.description,
+        descriptionHi: theoryForm.descriptionHi || null,
+        storyText: theoryForm.storyText || "",
+        storyImage: theoryForm.storyImage || null,
+        hidden: !!theoryForm.hidden,
+        originalLang: theoryForm.originalLang || "en"
+      };
+
+      const success = await updateCategory(selectedTheoryCategory.id, updates);
+      if (success) {
+        toast.success("Chapter Theory & Notes saved! Customer Read Mode is now updated.");
       } else {
-        const error = await response.json();
-        if (error.error && error.error.includes('exams in this category')) {
-          alert('Cannot delete category. There are exams in this category. Please delete or reassign exams first.');
-        } else {
-          alert('Failed to delete category: ' + (error.error || 'Unknown error'));
-        }
+        toast.error("Failed to save Theory notes.");
       }
     } catch (error) {
-      console.error('Error deleting category:', error);
-      alert('Failed to delete category. Please try again.');
+      console.error("Save Theory Error:", error);
+      toast.error("Error saving theory notes.");
     }
   };
 
-  const resetExamForm = () => {
-    setFormData({
-      title: "",
-      category: "",
-      organization: "",
-      governmentType: "Central Govt",
-      vacancies: "",
-      postNames: "",
-      qualification: "",
-      ageLimit: "",
-      eligibility: "",
-      startDate: "",
-      lastDate: "",
-      quota: {
-        gen: 0,
-        sc: 0,
-        st: 0,
-        obc: 0
-      },
-      syllabus: "",
-      applicationFee: "",
-      officialWebsite: "",
-      description: "",
-      status: "active"
-    });
-    setEditingExam(null);
-    setIsModalOpen(false);
+  // Upload Theory Image
+  const handleTheoryImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await fetch('/api/upload/image', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setTheoryForm((prev) => ({ ...prev, storyImage: result.url }));
+        toast.success('Theory diagram uploaded!');
+      } else {
+        toast.error('Failed to upload theory image');
+      }
+    } catch (error) {
+      toast.error('Upload error');
+    }
   };
 
-  const resetCategoryForm = () => {
-    setCategoryFormData({
-      id: "",
-      name: "",
-      icon: ""
-    });
-    setEditingCategory(null);
-    setIsCategoryModalOpen(false);
+  // Save Category
+  const handleSaveCategory = async (e) => {
+    e.preventDefault();
+    try {
+      if (!catForm.topic.trim()) {
+        toast.error("Category topic is required!");
+        return;
+      }
+
+      if (editingCategory) {
+        await updateCategory(editingCategory.id, catForm);
+        toast.success("Govt Exam Category updated!");
+      } else {
+        await addCategory({
+          ...catForm,
+          categoryClass: "govt-exam",
+        });
+        toast.success("Govt Exam Category created!");
+      }
+      setIsCatModalOpen(false);
+      setEditingCategory(null);
+    } catch (err) {
+      toast.error("Failed to save category.");
+    }
   };
 
-  const filteredExams = exams.filter(exam => exam.status !== 'deleted');
+  // Save Question
+  const handleSaveQuestion = async (e) => {
+    e.preventDefault();
+    try {
+      if (!qForm.text.trim() || !qForm.correctAnswer || !qCatId) {
+        toast.error("Question text, answer, and category are required!");
+        return;
+      }
 
-  const iconOptions = [
-    "🏦", "🚂", "🎖️", "👨‍🏫", "⚙️", "🏥", "🏛️", 
-    "🏢", "🏭", "🌾", "🏛️", "🏨", "🏪", "🏬", "🏭"
-  ];
+      if (editingQ) {
+        await updateQuestion(qCatId, editingQ.id, qForm);
+        toast.success("Question updated!");
+      } else {
+        await addQuestion(qCatId, qForm);
+        toast.success("Question added to Govt Exam chapter!");
+      }
+      setIsQModalOpen(false);
+      setEditingQ(null);
+    } catch (err) {
+      toast.error("Failed to save question.");
+    }
+  };
+
+  // Save Job Notification
+  const handleSaveExamJob = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/govt-exams', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(examFormData)
+      });
+      if (res.ok) {
+        await fetchExams();
+        setIsModalOpen(false);
+        setEditingExam(null);
+        toast.success("Exam Job notification saved!");
+      }
+    } catch (error) {
+      toast.error("Failed to save exam notification.");
+    }
+  };
 
   return (
     <div className={styles.container}>
+      
+      {/* Header Banner */}
       <div className={styles.header}>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <h1 className={styles.title}>Government Exam Management</h1>
-          <p className={styles.subtitle}>Manage government job exams and categories</p>
-        </motion.div>
+        <h1 className={styles.title}>Government Exam Master Hub</h1>
+        <p className={styles.subtitle}>
+          Full control over Govt Exam Read Mode, Chapter Theory Notes, Questions & Recruitment Alerts
+        </p>
       </div>
 
-      {/* Tab Navigation */}
-      <div className={styles.tabNavigation}>
-        <button 
-          className={`${styles.tabButton} ${activeTab === 'exams' ? styles.active : ''}`}
-          onClick={() => setActiveTab('exams')}
-        >
-          📋 Exams ({filteredExams.length})
-        </button>
-        <button 
-          className={`${styles.tabButton} ${activeTab === 'categories' ? styles.active : ''}`}
-          onClick={() => setActiveTab('categories')}
-        >
-          📁 Categories ({categories.length})
-        </button>
+      {/* Primary Tab Navigation */}
+      <div className={styles.actions}>
+        <div className={styles.tabNavigation}>
+          <button
+            className={`${styles.tabButton} ${activeTab === 'theory' ? styles.active : ''}`}
+            onClick={() => setActiveTab('theory')}
+          >
+            <span>📖 Chapter Theory & Read Mode Notes</span>
+          </button>
+
+          <button
+            className={`${styles.tabButton} ${activeTab === 'categories' ? styles.active : ''}`}
+            onClick={() => setActiveTab('categories')}
+          >
+            <span>🏛️ Govt Exam Categories ({govtCategories.length})</span>
+          </button>
+
+          <button
+            className={`${styles.tabButton} ${activeTab === 'questions' ? styles.active : ''}`}
+            onClick={() => setActiveTab('questions')}
+          >
+            <span>❓ Exam Quiz Questions</span>
+          </button>
+
+          <button
+            className={`${styles.tabButton} ${activeTab === 'jobs' ? styles.active : ''}`}
+            onClick={() => setActiveTab('jobs')}
+          >
+            <span>📋 Job Vacancies & Alerts ({exams.length})</span>
+          </button>
+        </div>
+
+        <div className={styles.stats}>
+          <div className={styles.statItem}>
+            Total Categories: <strong>{quizzes.length}</strong>
+          </div>
+          <div className={styles.statItem}>
+            Govt Exam Subjects: <strong>{govtCategories.length}</strong>
+          </div>
+        </div>
       </div>
 
-      {/* Exams Tab */}
-      {activeTab === 'exams' && (
-        <>
-          <div className={styles.actions}>
-            <button 
-              className={styles.addButton}
-              onClick={() => setIsModalOpen(true)}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 5v14M5 12h14"/>
-              </svg>
-              Add New Exam
-            </button>
+      {/* TAB 1: CHAPTER THEORY & READ MODE NOTES */}
+      {activeTab === 'theory' && (
+        <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '24px' }}>
+          
+          {/* Left Column: Chapter List */}
+          <div style={{ background: 'var(--bg-primary, #fff)', border: '1px solid var(--card-border, #e2e8f0)', borderRadius: '16px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+              📚 Select Chapter / Subject
+            </h3>
             
-            <div className={styles.stats}>
-              <span className={styles.statItem}>
-                Total Exams: <strong>{filteredExams.length}</strong>
-              </span>
-              <span className={styles.statItem}>
-                Active: <strong>{filteredExams.filter(e => e.status === 'active').length}</strong>
-              </span>
+            <input
+              type="text"
+              placeholder="Search chapters..."
+              value={theorySearch}
+              onChange={(e) => setTheorySearch(e.target.value)}
+              style={{ padding: '8px 12px', borderRadius: '10px', border: '1.5px solid var(--card-border, #cbd5e1)', fontSize: '0.85rem' }}
+            />
+
+            <div style={{ maxHeight: '600px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {safeQuizzes
+                .filter((c) => !theorySearch || c.topic?.toLowerCase().includes(theorySearch.toLowerCase()))
+                .map((cat) => {
+                  const isSelected = (selectedTheoryCategory?.id === cat.id);
+                  const hasTheory = !!cat.storyText;
+                  return (
+                    <div
+                      key={cat.id}
+                      onClick={() => setSelectedTheoryCatId(cat.id)}
+                      style={{
+                        padding: '10px 12px',
+                        borderRadius: '10px',
+                        cursor: 'pointer',
+                        background: isSelected ? 'rgba(99, 102, 241, 0.12)' : 'var(--bg-secondary, #f8fafc)',
+                        border: isSelected ? '1.5px solid #6366f1' : '1px solid var(--card-border, #e2e8f0)',
+                        transition: 'all 0.15s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+                        <span style={{ fontSize: '1.2rem' }}>{cat.emoji || '📖'}</span>
+                        <span style={{ fontSize: '0.85rem', fontWeight: isSelected ? 700 : 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {cat.topic}
+                        </span>
+                      </div>
+                      {hasTheory ? (
+                        <span style={{ fontSize: '0.65rem', fontWeight: 800, background: '#10b981', color: '#fff', padding: '2px 6px', borderRadius: '10px' }}>NOTES</span>
+                      ) : (
+                        <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)' }}>0 NOTES</span>
+                      )}
+                    </div>
+                  );
+                })}
             </div>
           </div>
 
-          <div className={styles.examGrid}>
-            {filteredExams.map((exam, index) => (
-              <motion.div
-                key={exam.id}
-                className={styles.examCard}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.1 }}
-              >
-                <div className={styles.examHeader}>
-                  <div className={styles.examInfo}>
-                    <h3 className={styles.examTitle}>{exam.title}</h3>
-                    <div className={styles.examMeta}>
-                      <span className={`${styles.category} ${exam.category}`}>
-                        {categories.find(cat => cat.id === exam.category)?.icon} {categories.find(cat => cat.id === exam.category)?.name}
-                      </span>
-                      <span className={`${styles.govtType} ${exam.governmentType.toLowerCase().replace(' ', '-')}`}>
-                        {exam.governmentType}
-                      </span>
-                    </div>
-                  </div>
-                  <div className={styles.examActions}>
-                    <Link
-                      href={`/govt-exams/${exam.slug || 'ssc-cgl'}`}
-                      target="_blank"
-                      className="text-xs bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 font-extrabold px-2.5 py-1 rounded-lg flex items-center gap-1 transition"
-                      title="View Student Portal & 7-Tab Digital FlexBook"
-                    >
-                      👁️ Student View
-                    </Link>
-                    <button 
-                      className={styles.editButton}
-                      onClick={() => handleEdit(exam)}
-                      title="Edit Exam"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2h-7"/>
-                        <path d="M18.5 2.5a2.121 2.121 0 013 0L12 15l-4 1 1-4 2.5a2.121 2.121 0 013 0z"/>
-                      </svg>
-                    </button>
-                    <button 
-                      className={styles.deleteButton}
-                      onClick={() => handleDelete(exam.id)}
-                      title="Delete Exam"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/>
-                      </svg>
-                    </button>
-                  </div>
+          {/* Right Column: Theory & Notes Editor Panel */}
+          {selectedTheoryCategory ? (
+            <div style={{ background: 'var(--bg-primary, #fff)', border: '1px solid var(--card-border, #e2e8f0)', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--card-border)', paddingBottom: '16px' }}>
+                <div>
+                  <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span>{selectedTheoryCategory.emoji || '📖'}</span>
+                    <span>{selectedTheoryCategory.topic}</span>
+                  </h2>
+                  <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                    Edit chapter theory, study notes, and explanations for Customer App Read Mode
+                  </p>
                 </div>
 
-                <div className={styles.examDetails}>
-                  <div className={styles.detailRow}>
-                    <span className={styles.label}>Organization:</span>
-                    <span className={styles.value}>{exam.organization}</span>
-                  </div>
-                  <div className={styles.detailRow}>
-                    <span className={styles.label}>Vacancies:</span>
-                    <span className={styles.value}>{exam.vacancies}</span>
-                  </div>
-                  <div className={styles.detailRow}>
-                    <span className={styles.label}>Last Date:</span>
-                    <span className={styles.value}>
-                      {new Date(exam.lastDate).toLocaleDateString('en-IN', { 
-                        day: 'numeric', 
-                        month: 'short', 
-                        year: 'numeric' 
-                      })}
-                    </span>
-                  </div>
-                  <div className={styles.detailRow}>
-                    <span className={styles.label}>Status:</span>
-                    <span className={`${styles.status} ${exam.status}`}>
-                      {exam.status}
-                    </span>
-                  </div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <Link
+                    href={`/quizzes?mode=read&cat=${encodeURIComponent(selectedTheoryCategory.id)}`}
+                    target="_blank"
+                    style={{ padding: '8px 14px', borderRadius: '10px', border: '1.5px solid #6366f1', color: '#6366f1', textDecoration: 'none', fontWeight: 700, fontSize: '0.82rem' }}
+                  >
+                    👁️ Customer Preview
+                  </Link>
+
+                  <button
+                    onClick={handleSaveTheory}
+                    style={{ padding: '8px 20px', borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg, #6366f1, #4f46e5)', color: '#fff', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)' }}
+                  >
+                    💾 Save Theory Notes
+                  </button>
                 </div>
-              </motion.div>
-            ))}
-          </div>
-        </>
+              </div>
+
+              {/* Form Controls */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                    Chapter Topic Title (English)
+                  </label>
+                  <input
+                    type="text"
+                    value={theoryForm.topic}
+                    onChange={(e) => setTheoryForm({ ...theoryForm, topic: e.target.value })}
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid var(--card-border)', fontSize: '0.9rem' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                    Chapter Topic Title (Hindi)
+                  </label>
+                  <input
+                    type="text"
+                    value={theoryForm.topicHi}
+                    onChange={(e) => setTheoryForm({ ...theoryForm, topicHi: e.target.value })}
+                    placeholder="जैसे: प्राचीन एवं मध्यकालीन भारतीय इतिहास"
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid var(--card-border)', fontSize: '0.9rem' }}
+                  />
+                </div>
+              </div>
+
+              {/* Theory Content Multiline Input */}
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <label style={{ fontSize: '0.78rem', fontWeight: 800, textTransform: 'uppercase', color: '#6366f1' }}>
+                    📖 Chapter Theory, Explanations & Study Notes (Read Mode Feed)
+                  </label>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Supports paragraphs & multiline text</span>
+                </div>
+                <textarea
+                  rows={10}
+                  value={theoryForm.storyText}
+                  onChange={(e) => setTheoryForm({ ...theoryForm, storyText: e.target.value })}
+                  placeholder="Write comprehensive chapter notes, historical timelines, key formulas, rules, or explanations for this exam chapter..."
+                  style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1.5px solid var(--card-border)', fontSize: '0.92rem', lineHeight: '1.6', fontFamily: 'inherit' }}
+                />
+              </div>
+
+              {/* Theory Image Upload */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', alignItems: 'center' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                    Theory Diagram / Concept Image
+                  </label>
+                  <input type="file" accept="image/*" onChange={handleTheoryImageUpload} style={{ fontSize: '0.85rem' }} />
+                </div>
+
+                {theoryForm.storyImage && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <img src={theoryForm.storyImage} alt="Theory preview" style={{ width: '90px', height: '60px', borderRadius: '8px', objectFit: 'cover' }} />
+                    <button
+                      type="button"
+                      onClick={() => setTheoryForm({ ...theoryForm, storyImage: "" })}
+                      style={{ background: 'rgba(244, 63, 94, 0.1)', color: '#f43f5e', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Status Controls */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '20px', paddingTop: '12px', borderTop: '1px solid var(--card-border)' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 700 }}>
+                  <input
+                    type="checkbox"
+                    checked={theoryForm.hidden}
+                    onChange={(e) => setTheoryForm({ ...theoryForm, hidden: e.target.checked })}
+                  />
+                  <span>Hide from public Customer App</span>
+                </label>
+              </div>
+
+            </div>
+          ) : (
+            <div style={{ background: 'var(--bg-primary, #fff)', borderRadius: '16px', padding: '40px', textAlignment: 'center', color: 'var(--text-muted)' }}>
+              Select a chapter on the left to edit theory notes.
+            </div>
+          )}
+
+        </div>
       )}
 
-      {/* Categories Tab */}
+      {/* TAB 2: GOVT EXAM CATEGORIES & SUBJECTS */}
       {activeTab === 'categories' && (
-        <>
-          <div className={styles.actions}>
-            <button 
-              className={styles.addButton}
-              onClick={() => setIsCategoryModalOpen(true)}
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>Govt Exam Categories & Subjects</h2>
+            <button
+              onClick={() => { setEditingCategory(null); setCatForm({ topic: "", topicHi: "", emoji: "🏛️", description: "", categoryClass: "govt-exam", hidden: false, parentId: "" }); setIsCatModalOpen(true); }}
+              style={{ padding: '10px 18px', borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg, #6366f1, #4f46e5)', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 5v14M5 12h14"/>
-              </svg>
-              Add New Category
+              + Add Govt Exam Subject
             </button>
-            
-            <div className={styles.stats}>
-              <span className={styles.statItem}>
-                Total Categories: <strong>{categories.length}</strong>
-              </span>
-            </div>
           </div>
 
           <div className={styles.categoryGrid}>
-            {categories.map((category, index) => (
-              <motion.div
-                key={category.id}
-                className={styles.categoryCard}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.1 }}
-              >
+            {govtCategories.map((cat) => (
+              <div key={cat.id} className={styles.categoryCard}>
                 <div className={styles.categoryHeader}>
                   <div className={styles.categoryInfo}>
-                    <span className={styles.categoryIconLarge}>{category.icon}</span>
-                    <h3 className={styles.categoryName}>{category.name}</h3>
+                    <span className={styles.categoryIconLarge}>{cat.emoji || '🏛️'}</span>
+                    <h3 className={styles.categoryName}>{cat.topic}</h3>
+                    {cat.description && <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>{cat.description}</p>}
                   </div>
                   <div className={styles.categoryActions}>
-                    <button 
-                      className={styles.editButton}
-                      onClick={() => handleEditCategory(category)}
-                      title="Edit Category"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2h-7"/>
-                        <path d="M18.5 2.5a2.121 2.121 0 013 0L12 15l-4 1 1-4 2.5a2.121 2.121 0 013 0z"/>
-                      </svg>
-                    </button>
-                    <button 
-                      className={styles.deleteButton}
-                      onClick={() => handleDeleteCategory(category.id)}
-                      title="Delete Category"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/>
-                      </svg>
-                    </button>
+                    <button className={styles.editButton} onClick={() => { setEditingCategory(cat); setCatForm(cat); setIsCatModalOpen(true); }}>✏️</button>
+                    <button className={styles.deleteButton} onClick={() => deleteCategory(cat.id)}>🗑️</button>
                   </div>
                 </div>
 
                 <div className={styles.categoryDetails}>
                   <div className={styles.detailRow}>
-                    <span className={styles.label}>ID:</span>
-                    <span className={styles.value}>{category.id}</span>
+                    <span className={styles.label}>Questions</span>
+                    <span className={styles.value}><strong>{cat.questionCount || 0}</strong> Questions</span>
                   </div>
                   <div className={styles.detailRow}>
-                    <span className={styles.label}>Exams:</span>
-                    <span className={styles.value}>
-                      {exams.filter(exam => exam.category === category.id).length}
-                    </span>
+                    <span className={styles.label}>Read Mode Sets</span>
+                    <span className={styles.value}><strong>{Math.ceil((cat.questionCount || 0) / 20)}</strong> Sets</span>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
-        </>
-      )}
-
-      {/* Add/Edit Exam Modal */}
-      {isModalOpen && (
-        <div className={styles.modalOverlay} onClick={resetExamForm}>
-          <motion.div 
-            className={styles.modal}
-            onClick={(e) => e.stopPropagation()}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className={styles.modalHeader}>
-              <h2 className={styles.modalTitle}>
-                {editingExam ? 'Edit Exam' : 'Add New Exam'}
-              </h2>
-              <button className={styles.modalClose} onClick={resetExamForm}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 6L6 18M6 6l12 12"/>
-                </svg>
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className={styles.modalForm}>
-              <div className={styles.formGrid}>
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Exam Title *</label>
-                  <input
-                    type="text"
-                    name="title"
-                    value={formData.title}
-                    onChange={handleInputChange}
-                    className={styles.input}
-                    required
-                  />
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Category *</label>
-                  <select
-                    name="category"
-                    value={formData.category}
-                    onChange={handleInputChange}
-                    className={styles.select}
-                    required
-                  >
-                    <option value="">Select Category</option>
-                    {categories.map(cat => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.icon} {cat.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Organization *</label>
-                  <input
-                    type="text"
-                    name="organization"
-                    value={formData.organization}
-                    onChange={handleInputChange}
-                    className={styles.input}
-                    required
-                  />
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Government Type *</label>
-                  <select
-                    name="governmentType"
-                    value={formData.governmentType}
-                    onChange={handleInputChange}
-                    className={styles.select}
-                    required
-                  >
-                    <option value="Central Govt">Central Government</option>
-                    <option value="State Govt">State Government</option>
-                  </select>
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Vacancies *</label>
-                  <input
-                    type="text"
-                    name="vacancies"
-                    value={formData.vacancies}
-                    onChange={handleInputChange}
-                    className={styles.input}
-                    placeholder="e.g., 1500 or Various"
-                    required
-                  />
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Post Names</label>
-                  <textarea
-                    name="postNames"
-                    value={formData.postNames}
-                    onChange={handleInputChange}
-                    className={styles.textarea}
-                    rows="2"
-                    placeholder="e.g., Assistant, Auditor, Accountant"
-                  />
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Educational Qualification *</label>
-                  <input
-                    type="text"
-                    name="qualification"
-                    value={formData.qualification}
-                    onChange={handleInputChange}
-                    className={styles.input}
-                    required
-                  />
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Age Limit</label>
-                  <input
-                    type="text"
-                    name="ageLimit"
-                    value={formData.ageLimit}
-                    onChange={handleInputChange}
-                    className={styles.input}
-                    placeholder="e.g., 18-30 years"
-                  />
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Additional Requirements</label>
-                  <textarea
-                    name="eligibility"
-                    value={formData.eligibility}
-                    onChange={handleInputChange}
-                    className={styles.textarea}
-                    rows="2"
-                  />
-                </div>
-
-                <div className={styles.formRow}>
-                  <div className={styles.formGroup}>
-                    <label className={styles.label}>Start Date *</label>
-                    <input
-                      type="date"
-                      name="startDate"
-                      value={formData.startDate}
-                      onChange={handleInputChange}
-                      className={styles.input}
-                      required
-                    />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label className={styles.label}>Last Date *</label>
-                    <input
-                      type="date"
-                      name="lastDate"
-                      value={formData.lastDate}
-                      onChange={handleInputChange}
-                      className={styles.input}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className={styles.quotaSection}>
-                  <label className={styles.label}>Quota Distribution</label>
-                  <div className={styles.quotaGrid}>
-                    <div className={styles.quotaItem}>
-                      <label>GEN</label>
-                      <input
-                        type="number"
-                        name="quota.gen"
-                        value={formData.quota.gen}
-                        onChange={handleInputChange}
-                        className={styles.quotaInput}
-                        min="0"
-                      />
-                    </div>
-                    <div className={styles.quotaItem}>
-                      <label>SC</label>
-                      <input
-                        type="number"
-                        name="quota.sc"
-                        value={formData.quota.sc}
-                        onChange={handleInputChange}
-                        className={styles.quotaInput}
-                        min="0"
-                      />
-                    </div>
-                    <div className={styles.quotaItem}>
-                      <label>ST</label>
-                      <input
-                        type="number"
-                        name="quota.st"
-                        value={formData.quota.st}
-                        onChange={handleInputChange}
-                        className={styles.quotaInput}
-                        min="0"
-                      />
-                    </div>
-                    <div className={styles.quotaItem}>
-                      <label>OBC</label>
-                      <input
-                        type="number"
-                        name="quota.obc"
-                        value={formData.quota.obc}
-                        onChange={handleInputChange}
-                        className={styles.quotaInput}
-                        min="0"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Syllabus</label>
-                  <textarea
-                    name="syllabus"
-                    value={formData.syllabus}
-                    onChange={handleInputChange}
-                    className={styles.textarea}
-                    rows="3"
-                    placeholder="e.g., General Intelligence, Reasoning, Quantitative Aptitude"
-                  />
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Application Fee</label>
-                  <input
-                    type="text"
-                    name="applicationFee"
-                    value={formData.applicationFee}
-                    onChange={handleInputChange}
-                    className={styles.input}
-                    placeholder="e.g., General: ₹100, SC/ST: ₹0"
-                  />
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Official Website</label>
-                  <input
-                    type="text"
-                    name="officialWebsite"
-                    value={formData.officialWebsite}
-                    onChange={handleInputChange}
-                    className={styles.input}
-                    placeholder="https://example.com"
-                  />
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Description</label>
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    className={styles.textarea}
-                    rows="3"
-                    placeholder="Brief description of exam and recruitment details"
-                  />
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Status</label>
-                  <select
-                    name="status"
-                    value={formData.status}
-                    onChange={handleInputChange}
-                    className={styles.select}
-                  >
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                    <option value="closed">Closed</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className={styles.modalActions}>
-                <button type="submit" className={styles.submitButton}>
-                  {editingExam ? 'Update Exam' : 'Add Exam'}
-                </button>
-                <button type="button" onClick={resetExamForm} className={styles.cancelButton}>
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </motion.div>
         </div>
       )}
 
-      {/* Add/Edit Category Modal */}
-      {isCategoryModalOpen && (
-        <div className={styles.modalOverlay} onClick={resetCategoryForm}>
-          <motion.div 
-            className={styles.modal}
-            onClick={(e) => e.stopPropagation()}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className={styles.modalHeader}>
-              <h2 className={styles.modalTitle}>
-                {editingCategory ? 'Edit Category' : 'Add New Category'}
-              </h2>
-              <button className={styles.modalClose} onClick={resetCategoryForm}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 6L6 18M6 6l12 12"/>
-                </svg>
-              </button>
+      {/* TAB 3: EXAM QUIZ QUESTIONS */}
+      {activeTab === 'questions' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>Govt Exam Question Bank</h2>
+              <p style={{ margin: '2px 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Add, edit, or remove questions across all Govt Exam chapters</p>
             </div>
+            <button
+              onClick={() => { setEditingQ(null); setQForm({ text: "", options: ["", "", "", ""], correctAnswer: "", difficulty: "easy", explanation: "", image: "" }); setQCatId(govtCategories[0]?.id || ""); setIsQModalOpen(true); }}
+              style={{ padding: '10px 18px', borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg, #6366f1, #4f46e5)', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
+            >
+              + Add Question
+            </button>
+          </div>
 
-            <form onSubmit={handleCategorySubmit} className={styles.modalForm}>
-              <div className={styles.formGrid}>
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Category Name *</label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={categoryFormData.name}
-                    onChange={handleCategoryInputChange}
-                    className={styles.input}
-                    placeholder="e.g., Banking"
-                    required
-                  />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
+            {govtCategories.map((cat) => (
+              <div key={cat.id} style={{ background: 'var(--bg-primary, #fff)', border: '1px solid var(--card-border, #e2e8f0)', borderRadius: '14px', padding: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '1.4rem' }}>{cat.emoji || '🏛️'}</span>
+                    <strong style={{ fontSize: '0.95rem' }}>{cat.topic}</strong>
+                  </div>
+                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#6366f1', background: 'rgba(99, 102, 241, 0.1)', padding: '2px 8px', borderRadius: '10px' }}>
+                    {cat.questionCount || 0} Qs
+                  </span>
                 </div>
 
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Category Icon *</label>
-                  <select
-                    name="icon"
-                    value={categoryFormData.icon}
-                    onChange={handleCategoryInputChange}
-                    className={styles.select}
-                    required
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <Link
+                    href={`/admin/questions?category=${cat.id}`}
+                    style={{ flex: 1, padding: '8px', background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1', borderRadius: '8px', textAlign: 'center', textDecoration: 'none', fontWeight: 700, fontSize: '0.78rem' }}
                   >
-                    <option value="">Select Icon</option>
-                    {iconOptions.map(icon => (
-                      <option key={icon} value={icon}>
-                        {icon} {icon}
-                      </option>
-                    ))}
-                  </select>
+                    Manage Questions →
+                  </Link>
                 </div>
               </div>
-
-              <div className={styles.modalActions}>
-                <button type="submit" className={styles.submitButton}>
-                  {editingCategory ? 'Update Category' : 'Add Category'}
-                </button>
-                <button type="button" onClick={resetCategoryForm} className={styles.cancelButton}>
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </motion.div>
+            ))}
+          </div>
         </div>
       )}
+
+      {/* TAB 4: JOB VACANCIES & EXAM NOTIFICATIONS */}
+      {activeTab === 'jobs' && (
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>Recruitment Alerts & Exam Notifications</h2>
+            <button
+              onClick={() => { setEditingExam(null); setIsModalOpen(true); }}
+              style={{ padding: '10px 18px', borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg, #667eea, #764ba2)', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
+            >
+              + Add Exam Notification
+            </button>
+          </div>
+
+          <div className={styles.examGrid}>
+            {exams.map((exam) => (
+              <div key={exam._id || exam.id} className={styles.examCard}>
+                <div className={styles.examHeader}>
+                  <div className={styles.examInfo}>
+                    <h3 className={styles.examTitle}>{exam.title}</h3>
+                    <div className={styles.examMeta}>
+                      <span className={styles.category}>{exam.organization}</span>
+                      <span className={styles.govtType}>{exam.governmentType}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={styles.examDetails}>
+                  <div className={styles.detailRow}>
+                    <span className={styles.label}>Vacancies</span>
+                    <span className={styles.value}>{exam.vacancies}</span>
+                  </div>
+                  <div className={styles.detailRow}>
+                    <span className={styles.label}>Last Date</span>
+                    <span className={styles.value}>{exam.lastDate}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* CATEGORY MODAL */}
+      {isCatModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: 'var(--bg-primary, #fff)', borderRadius: '16px', padding: '24px', width: '90%', maxWidth: '480px' }}>
+            <h3 style={{ margin: '0 0 16px', fontSize: '1.2rem', fontWeight: 800 }}>{editingCategory ? "Edit Subject" : "Add Govt Exam Subject"}</h3>
+            <form onSubmit={handleSaveCategory} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase' }}>Emoji Icon</label>
+                <input type="text" value={catForm.emoji} onChange={(e) => setCatForm({ ...catForm, emoji: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase' }}>Subject Name (English)</label>
+                <input type="text" value={catForm.topic} onChange={(e) => setCatForm({ ...catForm, topic: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1' }} required />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase' }}>Subject Name (Hindi)</label>
+                <input type="text" value={catForm.topicHi || ""} onChange={(e) => setCatForm({ ...catForm, topicHi: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1' }} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px' }}>
+                <button type="button" onClick={() => setIsCatModalOpen(false)} style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'transparent' }}>Cancel</button>
+                <button type="submit" style={{ padding: '8px 20px', borderRadius: '8px', border: 'none', background: '#6366f1', color: '#fff', fontWeight: 700 }}>Save</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

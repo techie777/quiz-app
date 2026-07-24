@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye, EyeOff, CheckCircle2, Lightbulb } from "lucide-react";
+import { Eye, EyeOff, CheckCircle2, XCircle, Lightbulb } from "lucide-react";
 
 export default function ReadingCard({
   question,
@@ -12,6 +12,7 @@ export default function ReadingCard({
   forceReveal = false,
 }) {
   const [isRevealed, setIsRevealed] = useState(forceReveal);
+  const [selectedOpt, setSelectedOpt] = useState(null);
 
   React.useEffect(() => {
     setIsRevealed(forceReveal);
@@ -50,21 +51,51 @@ export default function ReadingCard({
     }
   }
 
-  // Find correct answer index
+  // Deterministic shuffle to avoid hydration mismatch and predictable answers
+  const finalOpts = React.useMemo(() => {
+    if (!opts || opts.length === 0) return [];
+    const hashString = (str) => {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = Math.imul(31, hash) + str.charCodeAt(i) | 0;
+      }
+      return hash;
+    };
+    let seed = hashString((question.text || "quiz") + (question.id || ""));
+    const random = () => {
+      const x = Math.sin(seed++) * 10000;
+      return x - Math.floor(x);
+    };
+    
+    const result = [...opts];
+    for (let i = result.length - 1; i > 0; i--) {
+      const j = Math.floor(random() * (i + 1));
+      [result[i], result[j]] = [result[j], result[i]];
+    }
+    return result;
+  }, [opts, question.text, question.id]);
+
+  // Find correct answer index based on ORIGINAL opts, then map to shuffled finalOpts
   let correctIndex = -1;
   const rawCorrect = question.correctAnswer;
+  
+  let correctText = null;
   if (typeof rawCorrect === "number") {
-    correctIndex = rawCorrect;
-  } else if (typeof rawCorrect === "string") {
-    // If it's a numeric string like "0", "1", "2"
-    if (!isNaN(parseInt(rawCorrect)) && parseInt(rawCorrect) >= 0 && parseInt(rawCorrect) < opts.length) {
-      correctIndex = parseInt(rawCorrect);
-    } else {
-      // Find matching option text
-      correctIndex = opts.findIndex(
-        (o) => String(o).trim().toLowerCase() === String(rawCorrect).trim().toLowerCase()
-      );
+    if (rawCorrect >= 0 && rawCorrect < opts.length) {
+      correctText = opts[rawCorrect];
     }
+  } else if (typeof rawCorrect === "string") {
+    if (!isNaN(parseInt(rawCorrect)) && parseInt(rawCorrect) >= 0 && parseInt(rawCorrect) < opts.length) {
+      correctText = opts[parseInt(rawCorrect)];
+    } else {
+      correctText = rawCorrect;
+    }
+  }
+
+  if (correctText !== null) {
+    correctIndex = finalOpts.findIndex(
+      (o) => String(o).trim().toLowerCase() === String(correctText).trim().toLowerCase()
+    );
   }
 
   const explanationText =
@@ -114,28 +145,39 @@ export default function ReadingCard({
         {qText}
       </h3>
 
-      {/* 4 Options (Vertical Layout without click validation state in default mode) */}
+      {/* 4 Options (Vertical Layout) */}
       <div className="space-y-2.5 mb-4">
-        {opts.map((option, optIdx) => {
+        {finalOpts.map((option, optIdx) => {
           const isCorrect = isRevealed && optIdx === correctIndex;
+          const isSelectedWrong = isRevealed && selectedOpt === optIdx && optIdx !== correctIndex;
           const optLetter = String.fromCharCode(65 + optIdx); // A, B, C, D
 
+          let containerClasses = "bg-slate-50/70 dark:bg-slate-800/40 border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-medium hover:bg-slate-100 dark:hover:bg-slate-800";
+          let badgeClasses = "bg-slate-200/80 dark:bg-slate-700 text-slate-700 dark:text-slate-300";
+
+          if (isCorrect) {
+            containerClasses = "bg-emerald-50 dark:bg-emerald-950/60 border-emerald-400 dark:border-emerald-600 text-emerald-950 dark:text-emerald-100 font-bold shadow-sm";
+            badgeClasses = "bg-emerald-600 text-white";
+          } else if (isSelectedWrong) {
+            containerClasses = "bg-rose-50 dark:bg-rose-950/60 border-rose-400 dark:border-rose-600 text-rose-950 dark:text-rose-100 font-bold shadow-sm";
+            badgeClasses = "bg-rose-600 text-white";
+          }
+
           return (
-            <div
+            <button
               key={optIdx}
-              className={`p-3.5 rounded-xl border transition-all flex items-center justify-between text-sm sm:text-base ${
-                isCorrect
-                  ? "bg-emerald-50 dark:bg-emerald-950/60 border-emerald-400 dark:border-emerald-600 text-emerald-950 dark:text-emerald-100 font-bold shadow-sm"
-                  : "bg-slate-50/70 dark:bg-slate-800/40 border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-medium"
-              }`}
+              onClick={() => {
+                if (!isRevealed) {
+                  setSelectedOpt(optIdx);
+                  setIsRevealed(true);
+                }
+              }}
+              className={`w-full p-3.5 rounded-xl border transition-all flex items-center justify-between text-sm sm:text-base text-left ${containerClasses}`}
+              disabled={isRevealed && selectedOpt !== null}
             >
               <div className="flex items-center gap-3">
                 <span
-                  className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black flex-shrink-0 ${
-                    isCorrect
-                      ? "bg-emerald-600 text-white"
-                      : "bg-slate-200/80 dark:bg-slate-700 text-slate-700 dark:text-slate-300"
-                  }`}
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black flex-shrink-0 transition-colors ${badgeClasses}`}
                 >
                   {optLetter}
                 </span>
@@ -144,10 +186,16 @@ export default function ReadingCard({
 
               {isCorrect && (
                 <span className="flex items-center gap-1 text-xs font-black text-emerald-600 dark:text-emerald-400 bg-emerald-100/80 dark:bg-emerald-900/60 px-2.5 py-1 rounded-lg">
-                  <CheckCircle2 size={14} /> Correct
+                  <CheckCircle2 size={14} /> {isHindi ? "सही" : "Correct"}
                 </span>
               )}
-            </div>
+
+              {isSelectedWrong && (
+                <span className="flex items-center gap-1 text-xs font-black text-rose-600 dark:text-rose-400 bg-rose-100/80 dark:bg-rose-900/60 px-2.5 py-1 rounded-lg">
+                  <XCircle size={14} /> {isHindi ? "गलत" : "Wrong"}
+                </span>
+              )}
+            </button>
           );
         })}
       </div>
@@ -173,7 +221,7 @@ export default function ReadingCard({
                     <span className="text-emerald-600 dark:text-emerald-400">
                       Option ({String.fromCharCode(65 + correctIndex)}):
                     </span>{" "}
-                    {opts[correctIndex]}
+                    {finalOpts[correctIndex]}
                   </>
                 ) : (
                   rawCorrect || "N/A"

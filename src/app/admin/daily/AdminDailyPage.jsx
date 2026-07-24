@@ -4,14 +4,19 @@ import { useEffect, useMemo, useState } from "react";
 import { useData } from "@/context/DataContext";
 import { useAdmin } from "@/context/AdminContext";
 import styles from "@/styles/AdminDaily.module.css";
+import toast, { Toaster } from "react-hot-toast";
 
 const TYPES = [
-  { key: "quiz-of-the-day", label: "Quiz of the day", categoryId: "65f1a2b3c4d5e6f7a8b9c0d9" },
-  { key: "daily-current-affairs", label: "Daily current affairs", categoryId: "65f1a2b3c4d5e6f7a8b9c0e1" },
+  { key: "quiz-of-the-day", label: "Quiz of the Day", emoji: "🏆", categoryId: "65f1a2b3c4d5e6f7a8b9c0d9" },
+  { key: "daily-current-affairs", label: "Daily Current Affairs Quiz", emoji: "🗞️", categoryId: "65f1a2b3c4d5e6f7a8b9c0e1" },
 ];
 
 function today() {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function parseExcelRows(rows) {
@@ -29,7 +34,7 @@ function parseExcelRows(rows) {
     const difficultyRaw = String(row["Difficulty"] || "").trim().toLowerCase();
 
     if (!question) {
-      errors.push(`Row ${rowNum}: missing Question`);
+      errors.push(`Row ${rowNum}: missing Question text`);
       return;
     }
     if (!opt1 || !opt2 || !opt3 || !opt4) {
@@ -67,19 +72,6 @@ function parseExcelRows(rows) {
   return { questions, errors };
 }
 
-async function generateSampleXlsx() {
-  const XLSX = await import("xlsx");
-  const data = [
-    { "Question": "What is the capital of France?", "Option 1": "London", "Option 2": "Berlin", "Option 3": "Paris", "Option 4": "Madrid", "Correct Answer": 3 },
-    { "Question": "Which planet is known as the Red Planet?", "Option 1": "Earth", "Option 2": "Mars", "Option 3": "Jupiter", "Option 4": "Venus", "Correct Answer": 2 },
-  ];
-  const ws = XLSX.utils.json_to_sheet(data);
-  ws["!cols"] = [{ wch: 40 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 16 }];
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Questions");
-  XLSX.writeFile(wb, "daily-quiz-template.xlsx");
-}
-
 export default function AdminDailyPage() {
   const { quizzes, refreshQuizzes, addQuestion, updateQuestion, deleteQuestion, bulkImportQuestions } = useData();
   const { adminUser } = useAdmin();
@@ -88,14 +80,13 @@ export default function AdminDailyPage() {
   const [type, setType] = useState(TYPES[0].key);
   const [date, setDate] = useState(today());
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState("");
   const [search, setSearch] = useState("");
   const [diff, setDiff] = useState("all");
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [history, setHistory] = useState([]);
-  const [historyQuestions, setHistoryQuestions] = useState(null); // { date: string, questions: [] }
+  const [historyQuestions, setHistoryQuestions] = useState(null);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
-  
+
   // Manual Add Form State
   const [manualText, setManualText] = useState("");
   const [manualOpt1, setManualOpt1] = useState("");
@@ -104,7 +95,7 @@ export default function AdminDailyPage() {
   const [manualOpt4, setManualOpt4] = useState("");
   const [manualCorrect, setManualCorrect] = useState(1);
   const [manualDifficulty, setManualDifficulty] = useState("easy");
-  
+
   // Edit Modal State
   const [editingQ, setEditingQ] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -112,7 +103,6 @@ export default function AdminDailyPage() {
 
   const [excelPreview, setExcelPreview] = useState(null);
   const [excelErrors, setExcelErrors] = useState([]);
-  const [attachToDay, setAttachToDay] = useState(true);
 
   const typeMeta = useMemo(() => TYPES.find((t) => t.key === type) || TYPES[0], [type]);
   const category = useMemo(
@@ -129,22 +119,10 @@ export default function AdminDailyPage() {
     });
   }, [category?.questions, diff, search]);
 
-  const selectedCount = useMemo(() => {
-    // Only count selected IDs that actually exist in the current filtered questions list
-    const currentQuestionIds = new Set(questions.map(q => q.id));
-    let count = 0;
-    selectedIds.forEach(id => {
-      if (currentQuestionIds.has(id)) count++;
-    });
-    return count;
-  }, [selectedIds, questions]);
-
   useEffect(() => {
     let cancelled = false;
     async function loadExisting() {
       setLoading(true);
-      setMsg("");
-      // Clear selections when switching type or date to prevent "ghost" selections
       setSelectedIds(new Set());
       try {
         const [dailyRes, histRes] = await Promise.all([
@@ -172,18 +150,16 @@ export default function AdminDailyPage() {
 
   const ensureCategories = async () => {
     setLoading(true);
-    setMsg("");
     try {
       const res = await fetch("/api/admin/daily-categories", { method: "POST" });
       if (res.ok) {
         await refreshQuizzes();
-        setMsg("Daily categories are ready.");
+        toast.success("Daily categories are ready!");
       } else {
-        const data = await res.json().catch(() => ({}));
-        setMsg(data.error || "Failed to create categories.");
+        toast.error("Failed to create categories.");
       }
     } catch {
-      setMsg("Failed to create categories.");
+      toast.error("Failed to create categories.");
     } finally {
       setLoading(false);
     }
@@ -210,52 +186,19 @@ export default function AdminDailyPage() {
     setSelectedIds(new Set());
   };
 
-  const deleteSelected = async () => {
-    if (selectedIds.size === 0) return;
-    if (!category || !confirm(`Are you sure you want to delete ${selectedIds.size} selected questions?`)) return;
-
-    setLoading(true);
-    setMsg("");
-    try {
-      let count = 0;
-      for (const id of selectedIds) {
-        const ok = await deleteQuestion(category.id, id);
-        if (ok) count++;
-      }
-      setSelectedIds(new Set());
-      setMsg(`Deleted ${count} questions.`);
-    } catch (err) {
-      console.error("[AdminDaily] Bulk delete error:", err);
-      setMsg("Bulk delete failed.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAddManual = async () => {
+  const handleAddManual = async (e) => {
+    e.preventDefault();
     if (!category) return;
     const text = manualText.trim();
     const options = [manualOpt1, manualOpt2, manualOpt3, manualOpt4].map((s) => s.trim());
-    if (!text) {
-      setMsg("Question is required.");
-      return;
-    }
-    if (options.some((o) => !o)) {
-      setMsg("All 4 options are required.");
-      return;
-    }
-    const idx = Number(manualCorrect);
-    if (![1, 2, 3, 4].includes(idx)) {
-      setMsg("Correct answer must be 1-4.");
-      return;
-    }
-    
+    if (!text) { toast.error("Question is required."); return; }
+    if (options.some((o) => !o)) { toast.error("All 4 options are required."); return; }
+
     setLoading(true);
-    setMsg("");
     const ok = await addQuestion(category.id, {
       text,
       options,
-      correctAnswer: options[idx - 1],
+      correctAnswer: options[manualCorrect - 1],
       difficulty: manualDifficulty,
     });
     setLoading(false);
@@ -267,27 +210,16 @@ export default function AdminDailyPage() {
       setManualOpt4("");
       setManualCorrect(1);
       setManualDifficulty("easy");
-      setMsg("Question added.");
+      toast.success("Question added successfully!");
     } else {
-      setMsg("Failed to add question.");
+      toast.error("Failed to add question.");
     }
-  };
-
-  const handleEditClick = (q) => {
-    setEditingQ(q);
-    setEditForm({
-      text: q.text,
-      options: [...q.options],
-      correctAnswer: q.correctAnswer,
-      difficulty: q.difficulty
-    });
-    setShowEditModal(true);
   };
 
   const handleSaveEdit = async () => {
     if (!category || !editingQ) return;
     if (!editForm.text.trim() || editForm.options.some(o => !o.trim()) || !editForm.correctAnswer) {
-      alert("All fields are required.");
+      toast.error("All fields are required.");
       return;
     }
 
@@ -297,87 +229,32 @@ export default function AdminDailyPage() {
     if (success) {
       setShowEditModal(false);
       setEditingQ(null);
-      setMsg("Question updated.");
+      toast.success("Question updated!");
     } else {
-      alert("Failed to update question.");
+      toast.error("Failed to update question.");
     }
   };
 
   const handleDeleteClick = async (qId) => {
     if (!category || !confirm("Are you sure you want to delete this question?")) return;
-    
     setLoading(true);
     const success = await deleteQuestion(category.id, qId);
     setLoading(false);
-    
     if (success) {
-      // Also remove from selected set if it was there
       setSelectedIds((prev) => {
         const next = new Set(prev);
         next.delete(qId);
         return next;
       });
-      setMsg("Question deleted.");
+      toast.success("Question deleted!");
     } else {
-      alert("Failed to delete question.");
+      toast.error("Failed to delete question.");
     }
   };
 
-  const handleExcelFile = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setExcelErrors([]);
-    setExcelPreview(null);
-
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
-      try {
-        const wb = XLSX.read(ev.target.result, { type: "array" });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(ws);
-        if (rows.length === 0) {
-          setExcelErrors(["The Excel file has no data rows."]);
-          return;
-        }
-        const { questions, errors } = parseExcelRows(rows);
-        if (errors.length > 0) {
-          setExcelErrors(errors);
-          return;
-        }
-        setExcelPreview(questions);
-      } catch (err) {
-        setExcelErrors(["Failed to read Excel file: " + err.message]);
-      }
-    };
-    reader.readAsArrayBuffer(file);
-    e.target.value = "";
-  };
-
-  const handleExcelImport = async () => {
-    if (!category || !excelPreview) return;
-    setLoading(true);
-    setMsg("");
-    const ok = await bulkImportQuestions(category.id, excelPreview);
-    setLoading(false);
-    if (!ok) {
-      setMsg("Import failed.");
-      return;
-    }
-    if (attachToDay) {
-      setSelectedIds((prev) => {
-        const next = new Set(prev);
-        excelPreview.forEach((q) => next.add(q.id));
-        return next;
-      });
-    }
-    setExcelPreview(null);
-    setMsg(`Imported ${excelPreview.length} questions.`);
-  };
-
-  const save = async () => {
+  const saveAssignments = async () => {
     if (!category) return;
     setLoading(true);
-    setMsg("");
     try {
       const qIds = Array.from(selectedIds);
       const res = await fetch("/api/daily-quizzes", {
@@ -391,35 +268,16 @@ export default function AdminDailyPage() {
         }),
       });
       if (res.ok) {
-        setMsg("Saved.");
+        toast.success(`Saved ${qIds.length} assigned questions for ${date}! 🎉`);
         const histRes = await fetch(`/api/daily-quizzes/history?type=${encodeURIComponent(type)}`);
         if (histRes.ok) {
-          const histData = await histRes.json();
-          setHistory(histData);
+          setHistory(await histRes.json());
         }
       } else {
-        const data = await res.json().catch(() => ({}));
-        setMsg(data.error || "Save failed.");
+        toast.error("Save failed.");
       }
     } catch (error) {
-      console.error("[AdminDaily] Save error:", error);
-      setMsg("Save failed.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleHistoryClick = async (h) => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/daily-quizzes?type=${encodeURIComponent(type)}&date=${encodeURIComponent(h.date)}`);
-      if (res.ok) {
-        const data = await res.json();
-        setHistoryQuestions({ date: h.date, questions: data.questions || [] });
-        setShowHistoryModal(true);
-      }
-    } catch (err) {
-      console.error("[AdminDaily] History questions error:", err);
+      toast.error("Save failed.");
     } finally {
       setLoading(false);
     }
@@ -436,360 +294,301 @@ export default function AdminDailyPage() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.header}>
-        <div>
-          <h1 className={styles.title}>Daily Quizzes</h1>
-          <p className={styles.subtitle}>Manage Quiz of the day and Daily current affairs.</p>
+      <Toaster position="top-right" />
+
+      {/* Header Banner */}
+      <div className={styles.headerRow}>
+        <div className={styles.headerTitleGroup}>
+          <div className={styles.badgeHeader}>
+            <span>📅 DAILY QUIZZES & CURRENT AFFAIRS ENGINE</span>
+          </div>
+          <h1 className={styles.title}>Daily Quizzes Hub</h1>
+          <p className={styles.subtitle}>
+            Manage and assign daily quiz challenges & current affairs quizzes for active users.
+          </p>
+        </div>
+
+        <div className={styles.actionButtonsGroup}>
+          <button className={styles.secondaryBtn} onClick={() => setShowHistoryModal(true)}>
+            <span>📋 History Log ({history.length})</span>
+          </button>
+          <button className={styles.primaryBtn} onClick={saveAssignments} disabled={loading || !category}>
+            <span>💾 Save Daily Quiz ({selectedIds.size} Selected)</span>
+          </button>
         </div>
       </div>
 
-      <div className={`${styles.panel} glass-card`}>
-        <div className={styles.controls}>
-          <div className={styles.field}>
-            <label>Type</label>
-            <select className={styles.input} value={type} onChange={(e) => setType(e.target.value)}>
-              {TYPES.map((t) => (
-                <option key={t.key} value={t.key}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className={styles.field}>
-            <label>Date</label>
-            <input className={styles.input} type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          </div>
-
-          <div className={styles.actions}>
-            <button className="btn-secondary" type="button" onClick={() => setDate(today())}>
-              Today
-            </button>
-            <button className="btn-primary" type="button" onClick={save} disabled={loading || !category}>
-              Save
-            </button>
+      {/* KPI Overview Grid */}
+      <div className={styles.kpiGrid}>
+        <div className={styles.kpiCard}>
+          <div className={styles.kpiIcon} style={{ background: "rgba(99, 102, 241, 0.12)", color: "#6366f1" }}>📅</div>
+          <div className={styles.kpiContent}>
+            <div className={styles.kpiValue}>{date}</div>
+            <div className={styles.kpiLabel}>Selected Date</div>
           </div>
         </div>
 
-        {!category && (
-          <div className={styles.missingBox}>
-            <div>
-              <div className={styles.missingTitle}>Required category missing</div>
-              <div className={styles.missingDesc}>
-                Create the categories “Quiz of the day” and “Daily current affairs” first.
-              </div>
-            </div>
-            <button className="btn-primary" type="button" onClick={ensureCategories} disabled={loading}>
-              Create Categories
-            </button>
+        <div className={styles.kpiCard}>
+          <div className={styles.kpiIcon} style={{ background: "rgba(168, 85, 247, 0.12)", color: "#a855f7" }}>🎯</div>
+          <div className={styles.kpiContent}>
+            <div className={styles.kpiValue}>{selectedIds.size}</div>
+            <div className={styles.kpiLabel}>Assigned Questions</div>
           </div>
-        )}
+        </div>
 
-        {msg && <div className={styles.msg}>{msg}</div>}
-
-        {category && (
-          <div className={styles.body}>
-            <div className={styles.left}>
-              <div className={styles.builder}>
-                <div className={styles.builderTitle}>Add Questions</div>
-
-                <div className={styles.builderGrid}>
-                  <div className={styles.field}>
-                    <label>Question</label>
-                    <input
-                      className={styles.input}
-                      value={manualText}
-                      onChange={(e) => setManualText(e.target.value)}
-                      placeholder="Type your question..."
-                    />
-                  </div>
-
-                  <div className={styles.row4}>
-                    <div className={styles.field}>
-                      <label>Option 1</label>
-                      <input className={styles.input} value={manualOpt1} onChange={(e) => setManualOpt1(e.target.value)} />
-                    </div>
-                    <div className={styles.field}>
-                      <label>Option 2</label>
-                      <input className={styles.input} value={manualOpt2} onChange={(e) => setManualOpt2(e.target.value)} />
-                    </div>
-                    <div className={styles.field}>
-                      <label>Option 3</label>
-                      <input className={styles.input} value={manualOpt3} onChange={(e) => setManualOpt3(e.target.value)} />
-                    </div>
-                    <div className={styles.field}>
-                      <label>Option 4</label>
-                      <input className={styles.input} value={manualOpt4} onChange={(e) => setManualOpt4(e.target.value)} />
-                    </div>
-                  </div>
-
-                  <div className={styles.row3}>
-                    <div className={styles.field}>
-                      <label>Correct answer</label>
-                      <select
-                        className={styles.input}
-                        value={manualCorrect}
-                        onChange={(e) => setManualCorrect(Number(e.target.value))}
-                      >
-                        <option value={1}>Option 1</option>
-                        <option value={2}>Option 2</option>
-                        <option value={3}>Option 3</option>
-                        <option value={4}>Option 4</option>
-                      </select>
-                    </div>
-                    <div className={styles.field}>
-                      <label>Difficulty</label>
-                      <select
-                        className={styles.input}
-                        value={manualDifficulty}
-                        onChange={(e) => setManualDifficulty(e.target.value)}
-                      >
-                        <option value="easy">Easy</option>
-                        <option value="medium">Medium</option>
-                        <option value="hard">Hard</option>
-                      </select>
-                    </div>
-                    <div className={styles.builderActions}>
-                      <label className={styles.attachToggle}>
-                        <input
-                          type="checkbox"
-                          checked={attachToDay}
-                          onChange={(e) => setAttachToDay(e.target.checked)}
-                        />
-                        Add to this day
-                      </label>
-                      <button className="btn-primary" type="button" onClick={handleAddManual} disabled={loading}>
-                        Add
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className={styles.uploadBox}>
-                  <div className={styles.uploadTitle}>Bulk Upload (Excel)</div>
-                  <div className={styles.uploadActions}>
-                    <label className={styles.fileBtn}>
-                      Upload Excel
-                      <input type="file" accept=".xlsx,.xls" hidden onChange={handleExcelFile} />
-                    </label>
-                    <button className="btn-secondary" type="button" onClick={generateSampleXlsx}>
-                      Download Template
-                    </button>
-                    {excelPreview && (
-                      <button className="btn-primary" type="button" onClick={handleExcelImport} disabled={loading}>
-                        Import {excelPreview.length}
-                      </button>
-                    )}
-                  </div>
-                  <div className={styles.formatHint}>
-                    Required columns: Question, Option 1, Option 2, Option 3, Option 4, Correct Answer (1-4). Difficulty is optional.
-                  </div>
-
-                  {excelErrors.length > 0 && (
-                    <div className={styles.errorBox}>
-                      <strong>Validation Errors:</strong>
-                      <ul>
-                        {excelErrors.map((e, i) => (
-                          <li key={i}>{e}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {excelPreview && (
-                    <div className={styles.previewBox}>
-                      <div className={styles.previewTitle}>Preview</div>
-                      <div className={styles.previewList}>
-                        {excelPreview.slice(0, 5).map((q) => (
-                          <div key={q.id} className={styles.previewItem}>
-                            <span>{q.text}</span>
-                            <span className={styles.previewBadge}>{q.difficulty}</span>
-                          </div>
-                        ))}
-                        {excelPreview.length > 5 && <div className={styles.previewMore}>+{excelPreview.length - 5} more</div>}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className={styles.toolbar}>
-                <input
-                  className={styles.input}
-                  placeholder="Search questions..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-                <select className={styles.input} value={diff} onChange={(e) => setDiff(e.target.value)}>
-                  <option value="all">All</option>
-                  <option value="easy">Easy</option>
-                  <option value="medium">Medium</option>
-                  <option value="hard">Hard</option>
-                </select>
-              </div>
-
-              <div className={styles.bulkBtns}>
-                <button className="btn-secondary" type="button" onClick={selectAllVisible}>
-                  Select Visible
-                </button>
-                <button className="btn-secondary" type="button" onClick={clearAll}>
-                  Clear Selection
-                </button>
-                {selectedCount > 0 && (
-                  <button className={`${styles.fileBtn} ${styles.deleteBtn}`} type="button" onClick={deleteSelected} disabled={loading}>
-                    🗑️ Delete ({selectedCount})
-                  </button>
-                )}
-                <div className={styles.countBadge}>{selectedCount} selected</div>
-              </div>
-
-              <div className={styles.qList}>
-                {questions.map((q) => (
-                  <div key={q.id} className={styles.qRow}>
-                    <input type="checkbox" checked={selectedIds.has(q.id)} onChange={() => toggleOne(q.id)} />
-                    <span className={styles.qText}>{q.text}</span>
-                    <span className={`${styles.diffTag} ${styles[q.difficulty]}`}>{q.difficulty}</span>
-                    <div className={styles.qActions}>
-                      <button className={styles.iconBtn} onClick={() => handleEditClick(q)} title="Edit Question">✏️</button>
-                      <button className={`${styles.iconBtn} ${styles.deleteBtn}`} onClick={() => handleDeleteClick(q.id)} title="Delete Question">🗑️</button>
-                    </div>
-                  </div>
-                ))}
-                {questions.length === 0 && <div className={styles.empty}>No questions match your filters.</div>}
-              </div>
-            </div>
-
-            <div className={styles.right}>
-              <div className={styles.historyTitle}>History</div>
-              <div className={styles.historyList}>
-                {history.map((h) => (
-                  <div key={h.date} className={`${styles.historyBtn} ${h.date === date ? styles.historyBtnActive : ""}`}>
-                    <div onClick={() => setDate(h.date)} style={{ flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span>{h.date === today() ? "Today" : h.date}</span>
-                      <span className={styles.historyCount}>{h.questionCount} Qs</span>
-                    </div>
-                    <button 
-                      className={styles.iconBtn} 
-                      onClick={(e) => { e.stopPropagation(); handleHistoryClick(h); }}
-                      title="View Questions"
-                      style={{ marginLeft: '10px' }}
-                    >
-                      👁️
-                    </button>
-                  </div>
-                ))}
-                {history.length === 0 && <div className={styles.empty}>No saved days yet.</div>}
-              </div>
-            </div>
+        <div className={styles.kpiCard}>
+          <div className={styles.kpiIcon} style={{ background: "rgba(16, 185, 129, 0.12)", color: "#10b981" }}>❓</div>
+          <div className={styles.kpiContent}>
+            <div className={styles.kpiValue}>{category?.questions?.length || 0}</div>
+            <div className={styles.kpiLabel}>Question Bank Total</div>
           </div>
-        )}
+        </div>
+
+        <div className={styles.kpiCard}>
+          <div className={styles.kpiIcon} style={{ background: "rgba(245, 158, 11, 0.12)", color: "#f59e0b" }}>🏷️</div>
+          <div className={styles.kpiContent}>
+            <div className={styles.kpiValue}>{typeMeta.label}</div>
+            <div className={styles.kpiLabel}>Quiz Category Type</div>
+          </div>
+        </div>
       </div>
 
-      {/* Edit Modal */}
-      {showEditModal && (
-        <div className={styles.overlay}>
-          <div className={styles.modal}>
-            <h2 className={styles.modalTitle}>Edit Question</h2>
-            
-            <div className={styles.builderGrid}>
-              <div className={styles.field}>
-                <label>Question Text</label>
-                <input
-                  className={styles.input}
-                  value={editForm.text}
-                  onChange={(e) => setEditForm({ ...editForm, text: e.target.value })}
-                  placeholder="Enter question text..."
+      {/* Controls Bar */}
+      <div className={styles.controlsBar}>
+        <div className={styles.typeTabs}>
+          {TYPES.map((t) => (
+            <button
+              key={t.key}
+              className={`${styles.typeTab} ${type === t.key ? styles.typeTabActive : ''}`}
+              onClick={() => setType(t.key)}
+            >
+              <span>{t.emoji} {t.label}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className={styles.dateField}>
+          <span className={styles.dateLabel}>Date:</span>
+          <input
+            type="date"
+            className={styles.inputControl}
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+          />
+          <button className={styles.secondaryBtn} onClick={() => setDate(today())} style={{ padding: "6px 12px" }}>
+            Today
+          </button>
+        </div>
+      </div>
+
+      {!category && (
+        <div style={{ background: "rgba(245, 158, 11, 0.1)", border: "1px solid #f59e0b", padding: "20px", borderRadius: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <strong style={{ fontSize: "1rem", color: "#f59e0b" }}>Required Daily Quiz Category Missing</strong>
+            <p style={{ margin: "4px 0 0", fontSize: "0.88rem", color: "var(--text-secondary)" }}>
+              Create the categories “Quiz of the day” and “Daily current affairs” in database.
+            </p>
+          </div>
+          <button className={styles.primaryBtn} onClick={ensureCategories}>
+            Create Daily Categories
+          </button>
+        </div>
+      )}
+
+      {category && (
+        <div className={styles.mainGrid}>
+          {/* LEFT: ADD NEW QUESTION */}
+          <div className={styles.cardSection}>
+            <h3 className={styles.cardTitle}>
+              <span>➕ Add New Question to Bank</span>
+            </h3>
+
+            <form onSubmit={handleAddManual} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Question Text *</label>
+                <textarea
+                  rows={3}
+                  className={styles.formInput}
+                  value={manualText}
+                  onChange={(e) => setManualText(e.target.value)}
+                  placeholder="Enter daily quiz question text..."
+                  required
                 />
               </div>
 
-              <div className={styles.row4}>
-                {editForm.options.map((opt, i) => (
-                  <div key={i} className={styles.field}>
-                    <label>Option {i + 1}</label>
-                    <input
-                      className={styles.input}
-                      value={opt}
-                      onChange={(e) => {
-                        const next = [...editForm.options];
-                        next[i] = e.target.value;
-                        setEditForm({ ...editForm, options: next });
-                      }}
-                    />
-                  </div>
-                ))}
+              <div className={styles.formGrid2}>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Option 1 *</label>
+                  <input type="text" className={styles.formInput} value={manualOpt1} onChange={(e) => setManualOpt1(e.target.value)} required />
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Option 2 *</label>
+                  <input type="text" className={styles.formInput} value={manualOpt2} onChange={(e) => setManualOpt2(e.target.value)} required />
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Option 3 *</label>
+                  <input type="text" className={styles.formInput} value={manualOpt3} onChange={(e) => setManualOpt3(e.target.value)} required />
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Option 4 *</label>
+                  <input type="text" className={styles.formInput} value={manualOpt4} onChange={(e) => setManualOpt4(e.target.value)} required />
+                </div>
               </div>
 
-              <div className={styles.row3}>
-                <div className={styles.field}>
-                  <label>Correct Answer</label>
-                  <select
-                    className={styles.input}
-                    value={editForm.options.indexOf(editForm.correctAnswer) + 1 || ""}
-                    onChange={(e) => {
-                      const idx = Number(e.target.value);
-                      if (idx >= 1 && idx <= 4) {
-                        setEditForm({ ...editForm, correctAnswer: editForm.options[idx - 1] });
-                      }
-                    }}
-                  >
-                    <option value="">Select correct option...</option>
-                    <option value="1">Option 1</option>
-                    <option value="2">Option 2</option>
-                    <option value="3">Option 3</option>
-                    <option value="4">Option 4</option>
+              <div className={styles.formGrid2}>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Correct Option</label>
+                  <select className={styles.formInput} value={manualCorrect} onChange={(e) => setManualCorrect(Number(e.target.value))}>
+                    <option value={1}>Option 1</option>
+                    <option value={2}>Option 2</option>
+                    <option value={3}>Option 3</option>
+                    <option value={4}>Option 4</option>
                   </select>
                 </div>
 
-                <div className={styles.field}>
-                  <label>Difficulty</label>
-                  <select
-                    className={styles.input}
-                    value={editForm.difficulty}
-                    onChange={(e) => setEditForm({ ...editForm, difficulty: e.target.value })}
-                  >
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Difficulty</label>
+                  <select className={styles.formInput} value={manualDifficulty} onChange={(e) => setManualDifficulty(e.target.value)}>
                     <option value="easy">Easy</option>
                     <option value="medium">Medium</option>
                     <option value="hard">Hard</option>
                   </select>
                 </div>
               </div>
+
+              <button type="submit" className={styles.primaryBtn} disabled={loading} style={{ width: "100%", marginTop: "6px" }}>
+                <span>Save Question to Bank</span>
+              </button>
+            </form>
+          </div>
+
+          {/* RIGHT: QUESTION BANK SELECTOR */}
+          <div className={styles.cardSection}>
+            <div className={styles.cardTitle}>
+              <span>Question Bank ({questions.length})</span>
+              <div style={{ display: "flex", gap: "6px" }}>
+                <button className={styles.secondaryBtn} style={{ padding: "4px 8px", fontSize: "0.75rem" }} onClick={selectAllVisible}>Select All</button>
+                <button className={styles.secondaryBtn} style={{ padding: "4px 8px", fontSize: "0.75rem" }} onClick={clearAll}>Clear</button>
+              </div>
             </div>
 
-            <div className={styles.modalActions}>
-              <button className="btn-secondary" onClick={() => setShowEditModal(false)}>Cancel</button>
-              <button className="btn-primary" onClick={handleSaveEdit}>Save Changes</button>
+            <div className={styles.formGrid2}>
+              <input
+                type="text"
+                className={styles.formInput}
+                placeholder="🔍 Search questions..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <select className={styles.formInput} value={diff} onChange={(e) => setDiff(e.target.value)}>
+                <option value="all">All Difficulties</option>
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+              </select>
+            </div>
+
+            <div className={styles.qList}>
+              {questions.length === 0 ? (
+                <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", fontStyle: "italic" }}>No questions found in bank.</p>
+              ) : (
+                questions.map((q) => {
+                  const isChecked = selectedIds.has(q.id);
+                  return (
+                    <div key={q.id} className={styles.qRow}>
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => toggleOne(q.id)}
+                        style={{ marginTop: "4px", accentColor: "#6366f1", cursor: "pointer" }}
+                      />
+
+                      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <span style={{ fontSize: "0.88rem", fontWeight: 700, color: "var(--text-primary)" }}>{q.text}</span>
+                        <span className={`${styles.diffTag} ${styles[q.difficulty || 'easy']}`}>{q.difficulty || 'easy'}</span>
+                      </div>
+
+                      <div style={{ display: "flex", gap: "4px" }}>
+                        <button
+                          className={styles.actionBtn}
+                          onClick={() => {
+                            setEditingQ(q);
+                            setEditForm({ text: q.text, options: [...q.options], correctAnswer: q.correctAnswer, difficulty: q.difficulty || "easy" });
+                            setShowEditModal(true);
+                          }}
+                        >
+                          ✏️
+                        </button>
+                        <button className={styles.actionBtnDelete} onClick={() => handleDeleteClick(q.id)}>
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
       )}
-      {/* History Questions Modal */}
-      {showHistoryModal && historyQuestions && (
-        <div className={styles.overlay}>
-          <div className={styles.modal}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h2 className={styles.modalTitle} style={{ margin: 0 }}>Quiz for {historyQuestions.date}</h2>
-              <button className={styles.iconBtn} onClick={() => setShowHistoryModal(false)}>✕</button>
-            </div>
-            
-            <div className={styles.qList} style={{ maxHeight: '60vh' }}>
-              {historyQuestions.questions.length === 0 ? (
-                <p className={styles.empty}>No questions found for this date.</p>
-              ) : (
-                historyQuestions.questions.map((q, idx) => (
-                  <div key={q.id} className={styles.qRow} style={{ gridTemplateColumns: '30px 1fr auto' }}>
-                    <span className={styles.qNum}>{idx + 1}</span>
-                    <div className={styles.qText}>
-                      <div>{q.text}</div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--success)', marginTop: '4px' }}>✓ {q.correctAnswer}</div>
-                    </div>
-                    <span className={`${styles.diffTag} ${styles[q.difficulty]}`}>{q.difficulty}</span>
+
+      {/* EDIT QUESTION MODAL */}
+      {showEditModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.6)", backdropFilter: "blur(4px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: "var(--bg-primary, #fff)", borderRadius: "18px", padding: "24px", width: "90%", maxWidth: "500px" }}>
+            <h3 style={{ margin: "0 0 14px", fontSize: "1.2rem", fontWeight: 800 }}>✏️ Edit Daily Question</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div>
+                <label className={styles.formLabel}>Question Text</label>
+                <textarea rows={3} className={styles.formInput} value={editForm.text} onChange={(e) => setEditForm({ ...editForm, text: e.target.value })} />
+              </div>
+              <div className={styles.formGrid2}>
+                {editForm.options.map((opt, i) => (
+                  <div key={i} className={styles.formGroup}>
+                    <label className={styles.formLabel}>Option {i + 1}</label>
+                    <input type="text" className={styles.formInput} value={opt} onChange={(e) => {
+                      const copy = [...editForm.options];
+                      copy[i] = e.target.value;
+                      setEditForm({ ...editForm, options: copy });
+                    }} />
                   </div>
-                ))
-              )}
+                ))}
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
+                <button className={styles.secondaryBtn} onClick={() => setShowEditModal(false)}>Cancel</button>
+                <button className={styles.primaryBtn} onClick={handleSaveEdit}>Save Changes</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* HISTORY LOG MODAL */}
+      {showHistoryModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.6)", backdropFilter: "blur(4px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: "var(--bg-primary, #fff)", borderRadius: "18px", padding: "24px", width: "90%", maxWidth: "550px", maxHeight: "80vh", overflowY: "auto" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+              <h3 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 800 }}>📋 Daily Quizzes History</h3>
+              <button className={styles.actionBtnDelete} onClick={() => setShowHistoryModal(false)}>✕</button>
             </div>
 
-            <div className={styles.modalActions}>
-              <button className="btn-primary" onClick={() => setShowHistoryModal(false)}>Close</button>
-            </div>
+            {history.length === 0 ? (
+              <p style={{ color: "var(--text-secondary)" }}>No history entries found.</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                {history.map((h) => (
+                  <div key={h.date} style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", border: "1px solid var(--card-border)", borderRadius: "10px", background: "var(--bg-secondary)" }}>
+                    <div>
+                      <strong style={{ fontSize: "0.9rem" }}>📅 {h.date}</strong>
+                      <div style={{ fontSize: "0.78rem", color: "var(--text-secondary)" }}>{h.questionIds?.length || 0} Questions Assigned</div>
+                    </div>
+                    <button className={styles.secondaryBtn} style={{ padding: "4px 10px", fontSize: "0.78rem" }} onClick={() => setDate(h.date)}>
+                      Load Date
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

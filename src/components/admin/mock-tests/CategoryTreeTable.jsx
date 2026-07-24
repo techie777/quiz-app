@@ -35,6 +35,11 @@ export default function CategoryTreeTable({
   const [expandedIds, setExpandedIds] = useState(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState(new Set());
+  const [mounted, setMounted] = useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -72,10 +77,13 @@ export default function CategoryTreeTable({
     onReorder(type === 'categories' ? 'category' : 'exam', newList);
   };
 
+  const safeCategories = Array.isArray(categories) ? categories : [];
+  const safeExams = Array.isArray(exams) ? exams : [];
+
   // Filtering logic
-  const filteredCategories = categories.filter(cat => {
+  const filteredCategories = safeCategories.filter(cat => {
     const matchesCat = cat.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesChild = exams.some(ex => ex.categoryId === cat.id && ex.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesChild = safeExams.some(ex => ex.categoryId === cat.id && ex.name.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesCat || matchesChild;
   });
 
@@ -144,7 +152,7 @@ export default function CategoryTreeTable({
                     title={cat.name}
                     subtitle={cat.slug}
                     icon={cat.icon || "📚"}
-                    hasChildren={exams.some(ex => ex.categoryId === cat.id)}
+                    hasChildren={safeExams.some(ex => ex.categoryId === cat.id)}
                     isExpanded={expandedIds.has(cat.id)}
                     onToggle={() => toggleExpand(cat.id)}
                     onEdit={() => onEditCategory(cat)}
@@ -159,10 +167,10 @@ export default function CategoryTreeTable({
                       onDragEnd={(e) => handleDragEnd(e, 'exams', cat.id)}
                     >
                       <SortableContext 
-                        items={exams.filter(ex => ex.categoryId === cat.id).map(ex => ex.id)}
+                        items={safeExams.filter(ex => ex.categoryId === cat.id).map(ex => ex.id)}
                         strategy={verticalListSortingStrategy}
                       >
-                        {exams
+                        {safeExams
                           .filter(ex => ex.categoryId === cat.id)
                           .map(ex => (
                             <TreeRow 

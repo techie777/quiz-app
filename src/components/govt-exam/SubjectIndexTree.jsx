@@ -4,6 +4,8 @@ import React, { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Search, BookOpen, Layers } from "lucide-react";
 
+import ExamModeSwitcher from "./ExamModeSwitcher";
+
 // Clean main subject name by stripping redundant "Section A: " prefixes
 function getMainSubjectName(title, isHindi = false) {
   if (!title) return isHindi ? "सामान्य विषय" : "General Subject";
@@ -15,8 +17,10 @@ export default function SubjectIndexTree({
   sections = [],
   onSelectChapter,
   isHindi = false,
+  examMode,
+  onModeChange,
+  searchTerm = "",
 }) {
-  const [searchTerm, setSearchTerm] = useState("");
   const [expandedSections, setExpandedSections] = useState({});
 
   // Flatten top sections into main subject groups (e.g. Section A, Section B, Section C, Section D)
@@ -31,7 +35,11 @@ export default function SubjectIndexTree({
       if (subSections.length > 0) {
         subSections.forEach((sub, sIdx) => {
           const subTitle = isHindi && sub.titleHi ? sub.titleHi : (sub.title || sub.name || `Subject ${sIdx + 1}`);
-          const mainSubject = getMainSubjectName(subTitle, isHindi);
+          let finalTitle = subTitle;
+          if (String(sub.title || "").trim().toLowerCase() === "topics" || String(subTitle || "").trim().toLowerCase() === "topics" || subTitle === secName) {
+            finalTitle = isHindi ? secNameHi : secName;
+          }
+          const mainSubject = getMainSubjectName(finalTitle, isHindi);
 
           const chapters = (sub.quizzes && sub.quizzes.length > 0)
             ? sub.quizzes
@@ -39,7 +47,7 @@ export default function SubjectIndexTree({
 
           list.push({
             id: sub.id || `${sec.id || secIdx}_sub_${sIdx}`,
-            title: subTitle,
+            title: finalTitle,
             mainSubjectName: mainSubject,
             parentSection: sec,
             subSection: sub,
@@ -117,58 +125,6 @@ export default function SubjectIndexTree({
 
   return (
     <div className="w-full max-w-5xl mx-auto space-y-6">
-      {/* Index Header & Search Bar */}
-      <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-purple-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
-        <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="relative z-10">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/30 border border-indigo-400/30 text-indigo-200 text-xs font-bold mb-2">
-                <BookOpen size={14} />
-                <span>{isHindi ? "डिजिटल अध्ययन सूचकांक" : "Digital Study Index"}</span>
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-black tracking-tight">
-                {isHindi ? "विषय एवं अध्याय सूची" : "Subjects & Chapter Index"}
-              </h2>
-              <p className="text-indigo-200 text-sm mt-1">
-                {isHindi
-                  ? `कुल ${totalSubjects} विषय एवं ${totalChapters} अध्याय पढ़ने के लिए उपलब्ध हैं`
-                  : `Explore ${totalSubjects} subjects and ${totalChapters} chapters for sequential study.`}
-              </p>
-            </div>
-          </div>
-
-          {/* Search Box */}
-          <div className="relative">
-            <Search
-              size={20}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-300"
-            />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder={
-                isHindi
-                  ? "विषय या अध्याय का नाम खोजें (उदा: प्राचीन भारत, गणित)..."
-                  : "Search subject or chapter topic (e.g. Modern History, Algebra)..."
-              }
-              className="w-full pl-12 pr-4 py-3.5 bg-white/10 backdrop-blur-md text-white placeholder-indigo-200/70 border border-white/20 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm sm:text-base transition-all"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm("")}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-indigo-200 hover:text-white bg-indigo-900/50 px-2 py-1 rounded-md"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Index Tree List */}
       <div className="space-y-4">
         {filteredGroups.length === 0 ? (
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-12 text-center border border-dashed border-slate-300 dark:border-slate-800">
@@ -211,10 +167,10 @@ export default function SubjectIndexTree({
                       {grpIdx + 1}
                     </div>
                     <div className="min-w-0">
-                      <h3 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-slate-100 truncate">
+                      <h3 className="text-base sm:text-xl font-extrabold text-slate-900 dark:text-slate-100 truncate">
                         {grpTitle}
                       </h3>
-                      <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 mt-0.5">
+                      <p className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
                         {chapters.length} {isHindi ? "अध्याय" : "Chapters"} • ~
                         {totalQCount} {isHindi ? "प्रश्न" : "Questions"}
                       </p>
@@ -244,6 +200,12 @@ export default function SubjectIndexTree({
                       transition={{ duration: 0.25 }}
                       className="border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/40 dark:bg-slate-950/30 p-4 sm:p-6"
                     >
+                      {onModeChange && grpIdx === 0 && (
+                        <div className="flex justify-center w-full mb-4">
+                           <ExamModeSwitcher mode={examMode} onModeChange={onModeChange} isHindi={isHindi} compact={true} />
+                        </div>
+                      )}
+                      
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                         {chapters.map((cat, catIdx) => {
                           const catTitle =
@@ -267,20 +229,23 @@ export default function SubjectIndexTree({
                                   <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate">
                                     {catTitle}
                                   </h4>
-                                  {/* Center line displaying the Main Subject Name */}
                                   <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 truncate mt-0.5">
                                     {mainSubj}
                                   </p>
                                 </div>
                               </div>
 
-                              <div className="flex items-center gap-2 flex-shrink-0">
-                                <span className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/80 text-slate-600 dark:text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-300 text-xs font-black transition-colors">
-                                  {qCount} Qs
+                              <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                                <span className="text-[11px] font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
+                                  {qCount} {isHindi ? "प्रश्न" : "Qs"}
                                 </span>
-                                <span className="text-slate-300 dark:text-slate-700 group-hover:text-indigo-500 group-hover:translate-x-0.5 transition-all font-bold">
-                                  →
-                                </span>
+                                <button
+                                  type="button"
+                                  className="px-3 py-1.5 sm:px-4 sm:py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white text-xs sm:text-sm font-extrabold shadow-sm hover:shadow-emerald-500/25 hover:scale-105 transition-all flex items-center gap-1.5"
+                                >
+                                  <span>{isHindi ? "पढ़ें" : "Read"}</span>
+                                  <span className="text-xs font-bold">→</span>
+                                </button>
                               </div>
                             </div>
                           );
