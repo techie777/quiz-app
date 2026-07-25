@@ -1,7 +1,14 @@
 {
+  "/quizzes/page": "app/quizzes/page.js",
   "/page": "app/page.js",
   "/api/admin/notifications/unread-count/route": "app/api/admin/notifications/unread-count/route.js",
-  "/quizzes/page": "app/quizzes/page.js",
+  "/daily-current-affairs/page": "app/daily-current-affairs/page.js",
+  "/daily/[type]/page": "app/daily/[type]/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/categories/route": "app/api/categories/route.js",
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/api/navigation/route": "app/api/navigation/route.js",
+  "/api/settings/route": "app/api/settings/route.js",
   "/api/mock-tests/trial/route": "app/api/mock-tests/trial/route.js",
-  "/admin/categories/page": "app/admin/categories/page.js"
+  "/admin/page": "app/admin/page.js"
 }

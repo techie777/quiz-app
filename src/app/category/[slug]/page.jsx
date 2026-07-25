@@ -12,6 +12,7 @@ import { Users } from "lucide-react";
 import toast from "react-hot-toast";
 import styles from "@/styles/CategorySets.module.css";
 import ResumeBanner from "@/components/ResumeBanner";
+import QuizEmptyState from "@/components/QuizEmptyState";
 
 // Helper function to detect if text is Hindi
 function isHindiText(text) {
@@ -342,6 +343,7 @@ export default function CategorySetsPage() {
   const [timer, setTimer] = useState(0);
   const [language, setLanguage] = useState(globalLang);
   const [selectedSet, setSelectedSet] = useState(null);
+  const [isStarting, setIsStarting] = useState(false);
   const [searchQuestion, setSearchQuestion] = useState("");
   const [revealedAnswers, setRevealedAnswers] = useState(new Set());
   const [isTranslatingIndex, setIsTranslatingIndex] = useState(false);
@@ -356,6 +358,19 @@ export default function CategorySetsPage() {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // Pre-fetch quiz page route for zero-delay navigation
+  useEffect(() => {
+    if (category?.slug || category?.id) {
+      router.prefetch(`/quiz/${category.slug || category.id}`);
+    }
+  }, [category, router]);
+
+  useEffect(() => {
+    if (selectedSet && (category?.slug || category?.id)) {
+      router.prefetch(`/quiz/${category.slug || category.id}`);
+    }
+  }, [selectedSet, category, router]);
 
   // Sync index language with quiz context when clicking toggle
   const { translateQuiz } = useQuiz();
@@ -581,10 +596,14 @@ export default function CategorySetsPage() {
       toast.error("Loading questions...");
       return;
     }
+    setIsStarting(false);
     setIsMixMode(false);
     setSelectedSet(set);
     const detectedLang = detectQuizLanguage(set.questions);
     setLanguage(detectedLang);
+    if (category?.slug || category?.id) {
+      router.prefetch(`/quiz/${category.slug || category.id}`);
+    }
   };
 
   const handlePlayMix = () => {
@@ -592,13 +611,18 @@ export default function CategorySetsPage() {
       toast.error("Loading questions...");
       return;
     }
+    setIsStarting(false);
     setIsMixMode(true);
     setSelectedSet({ index: 'mix', questions: [] }); // Dummy set to open modal
     setLanguage(detectQuizLanguage(questions));
+    if (category?.slug || category?.id) {
+      router.prefetch(`/quiz/${category.slug || category.id}`);
+    }
   };
 
   const handleStart = (mode = 'normal') => {
-    if (!selectedSet || !questionsLoaded) return;
+    if (!selectedSet || !questionsLoaded || isStarting) return;
+    setIsStarting(true);
 
     let targetQuestions = selectedSet.questions;
     let topicSuffix = isMixMode 
@@ -613,6 +637,7 @@ export default function CategorySetsPage() {
 
       if (filtered.length === 0) {
         toast.error(`No ${difficulty.toLowerCase()} questions found in this category.`);
+        setIsStarting(false);
         return;
       }
 
@@ -702,165 +727,172 @@ export default function CategorySetsPage() {
           </section>
         )}
 
-        {/* Sets Navigation */}
-        <section className={styles.setsNavigation}>
-          <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>🎯 {t('quizzes.category.sets')}</h2>
-            <h3 className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500 my-2">
-              {category.topic}
-            </h3>
-            <p className={styles.sectionLead}>{isHindi ? 'प्रत्येक सेट फोकस और त्वरित सीखने के लिए अनुकूलित है।' : 'Each set is optimized for focus and quick learning.'}</p>
-          </div>
+        {/* If Quiz Has No Questions */}
+        {questionsLoaded && questions.length === 0 ? (
+          <QuizEmptyState topic={category.topic} isHindi={isHindi} />
+        ) : (
+          <>
+            {/* Sets Navigation */}
+            <section className={styles.setsNavigation}>
+              <div className={styles.sectionHeader}>
+                <h2 className={styles.sectionTitle}>🎯 {t('quizzes.category.sets')}</h2>
+                <h3 className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500 my-2">
+                  {category.topic}
+                </h3>
+                <p className={styles.sectionLead}>{isHindi ? 'प्रत्येक सेट फोकस और त्वरित सीखने के लिए अनुकूलित है।' : 'Each set is optimized for focus and quick learning.'}</p>
+              </div>
 
-          <div className={styles.setsGrid}>
-            {page === 1 && (
-              <SetCard 
-                isMix={true} 
-                categoryTopic={category.topic} 
-                t={t} 
-                styles={styles} 
-                handlePlayMix={handlePlayMix} 
-                mixQuestions={questions}
-              />
-            )}
-            {paginatedSets.map((set) => (
-              <SetCard
-                key={set.index}
-                set={set}
-                t={t}
-                isHindi={isHindi}
-                handlePlay={handlePlay}
-                handleLivePlay={handleLivePlay}
-                styles={styles}
-                onViewQuestions={setActiveModalSet}
-                categoryTopic={category.topic}
-              />
-            ))}
-          </div>
-
-          {totalPages > 1 && (
-            <div className={styles.paginationArea}>
-              <button className={styles.pageArrow} disabled={page === 1} onClick={() => setPage(page - 1)}>&lt;</button>
-              <div className={styles.pageDots}>
-                {Array.from({ length: totalPages }).map((_, i) => (
-                  <button key={i} className={`${styles.pageDot} ${page === i + 1 ? styles.dotActive : ""}`} onClick={() => setPage(i + 1)}>{i + 1}</button>
+              <div className={styles.setsGrid}>
+                {page === 1 && (
+                  <SetCard 
+                    isMix={true} 
+                    categoryTopic={category.topic} 
+                    t={t} 
+                    styles={styles} 
+                    handlePlayMix={handlePlayMix} 
+                    mixQuestions={questions}
+                  />
+                )}
+                {paginatedSets.map((set) => (
+                  <SetCard
+                    key={set.index}
+                    set={set}
+                    t={t}
+                    isHindi={isHindi}
+                    handlePlay={handlePlay}
+                    handleLivePlay={handleLivePlay}
+                    styles={styles}
+                    onViewQuestions={setActiveModalSet}
+                    categoryTopic={category.topic}
+                  />
                 ))}
               </div>
-              <button className={styles.pageArrow} disabled={page === totalPages} onClick={() => setPage(page + 1)}>→</button>
-            </div>
-          )}
-        </section>
 
-        {/* --- Senior Strategy: SEO Question Index --- */}
-        <section className={styles.seoIndexSection}>
-          <div className={styles.indexHeader}>
-            <div className={styles.indexTitleGroup}>
-              <h2 className={styles.indexTitle}>📑 {isHindi ? 'प्रश्न अनुक्रमणिका और अध्ययन मार्गदर्शिका' : 'Question Index & Study Guide'}</h2>
-              <div className={styles.indexLangToggle}>
-                <button
-                  className={language === "en" ? styles.langActive : ""}
-                  onClick={() => handleLanguageToggle("en")}
-                  disabled={isTranslatingIndex}
-                >{isTranslatingIndex && language !== "en" ? "..." : (isHindi ? 'अंग्रेजी अनुक्रमणिका' : 'English Index')}</button>
-                <button
-                  className={language === "hi" ? styles.langActive : ""}
-                  onClick={() => handleLanguageToggle("hi")}
-                  disabled={isTranslatingIndex}
-                >{isTranslatingIndex && language !== "hi" ? "..." : (isHindi ? 'हिंदी अनुक्रमणिका' : 'Hindi Index')}</button>
-              </div>
-            </div>
-            <div className={styles.searchBar}>
-              <span className={styles.searchIcon}>🔍</span>
-              <input
-                type="text"
-                placeholder={isHindi ? 'विशिष्ट प्रश्न खोजें...' : 'Search specific questions...'}
-                className={styles.searchInput}
-                value={searchQuestion}
-                onChange={(e) => setSearchQuestion(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className={styles.questionsList}>
-            {!questionsLoaded ? <div className={styles.loadingIndex}>{isHindi ? 'प्रश्न अनुक्रमणिका अनुकूलित की जा रही है...' : 'Optimizing question index...'}</div> : (
-              sets.map((set) => {
-                const setQuestions = set.questions.filter(q =>
-                  !searchQuestion.trim() ||
-                  q.text.toLowerCase().includes(searchQuestion.toLowerCase()) ||
-                  (q.options && q.options.some(opt => opt.toLowerCase().includes(searchQuestion.toLowerCase())))
-                );
-
-                if (setQuestions.length === 0) return null;
-
-                return (
-                  <div key={set.index} className={styles.indexSetGroup}>
-                    <div className={styles.indexSetHeader}>
-                      <div className={styles.indexSetInfo}>
-                        <h3 className={styles.indexSetTitle}>
-                          {category.topic} {t('live.lobby.selection.set')} {set.index}
-                        </h3>
-                        <p className={styles.indexSetSub}>{isHindi ? 'प्रश्न' : 'Questions'} #{set.start + 1} {isHindi ? 'से' : 'to'} #{set.end}</p>
-                      </div>
-                      <button className={styles.indexPlayBtn} onClick={() => handlePlay(set)}>
-                        {isHindi ? 'खेलें' : 'Play'} {category.topic} {isHindi ? 'क्विज़' : 'Quiz'} ({t('live.lobby.selection.set')} {set.index}) →
-                      </button>
-                    </div>
-                    <div className={styles.indexSetQuestions}>
-                      {setQuestions.map((q, qOffset) => {
-                        const globalIdx = set.start + set.questions.indexOf(q);
-                        return (
-                          <div key={globalIdx} className={styles.indexItem}>
-                            {/* Monetization Slot Placeholder */}
-                            {globalIdx > 0 && globalIdx % 10 === 0 && <div className={styles.adPlaceholder}><span>ADVERTISEMENT SLOT</span></div>}
-
-                            <div className={styles.indexQuestion}>
-                              <span className={styles.qNum}>#{globalIdx + 1}</span>
-                              <h3 className={styles.qText}>{q.text}</h3>
-                            </div>
-
-                            <ul className={styles.optionsList}>
-                              {q.options.map((opt, oIdx) => {
-                                const isCorrect = String(opt).trim() === String(q.correctAnswer).trim();
-                                const showCorrect = revealedAnswers.has(globalIdx) && isCorrect;
-                                return (
-                                  <li key={oIdx} className={showCorrect ? styles.correctOpt : ""}>
-                                    {opt} {showCorrect && <span className={styles.check}>✓</span>}
-                                  </li>
-                                );
-                              })}
-                            </ul>
-
-                            <div className={styles.indexActions}>
-                              <button className={styles.revealBtn} onClick={() => toggleAnswer(globalIdx)}>
-                                {revealedAnswers.has(globalIdx) ? (isHindi ? 'उत्तर छिपाएं' : 'Hide Answer') : (isHindi ? 'उत्तर देखें' : 'View Answer')}
-                              </button>
-                            </div>
-
-                            <AnimatePresence>
-                              {revealedAnswers.has(globalIdx) && q.explanation && (
-                                <motion.div
-                                  className={styles.expandedDetails}
-                                  initial={{ height: 0, opacity: 0 }}
-                                  animate={{ height: "auto", opacity: 1 }}
-                                  exit={{ height: 0, opacity: 0 }}
-                                >
-                                  <p className={styles.explanation}><strong>{isHindi ? 'स्पष्टीकरण:' : 'Explanation:'}</strong> {q.explanation}</p>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-                        );
-                      })}
-                    </div>
+              {totalPages > 1 && (
+                <div className={styles.paginationArea}>
+                  <button className={styles.pageArrow} disabled={page === 1} onClick={() => setPage(page - 1)}>&lt;</button>
+                  <div className={styles.pageDots}>
+                    {Array.from({ length: totalPages }).map((_, i) => (
+                      <button key={i} className={`${styles.pageDot} ${page === i + 1 ? styles.dotActive : ""}`} onClick={() => setPage(i + 1)}>{i + 1}</button>
+                    ))}
                   </div>
-                );
-              })
-            )}
-            {questionsLoaded && sets.every(s => s.questions.filter(q => !searchQuestion.trim() || q.text.toLowerCase().includes(searchQuestion.toLowerCase()) || (q.options && q.options.some(opt => opt.toLowerCase().includes(searchQuestion.toLowerCase())))).length === 0) && (
-              <p className={styles.noResults}>{isHindi ? 'आपकी खोज से मेल खाने वाला कोई प्रश्न नहीं मिला।' : 'No questions found matching your search.'}</p>
-            )}
-          </div>
-        </section>
+                  <button className={styles.pageArrow} disabled={page === totalPages} onClick={() => setPage(page + 1)}>→</button>
+                </div>
+              )}
+            </section>
+
+            {/* --- Senior Strategy: SEO Question Index --- */}
+            <section className={styles.seoIndexSection}>
+              <div className={styles.indexHeader}>
+                <div className={styles.indexTitleGroup}>
+                  <h2 className={styles.indexTitle}>📑 {isHindi ? 'प्रश्न अनुक्रमणिका और अध्ययन मार्गदर्शिका' : 'Question Index & Study Guide'}</h2>
+                  <div className={styles.indexLangToggle}>
+                    <button
+                      className={language === "en" ? styles.langActive : ""}
+                      onClick={() => handleLanguageToggle("en")}
+                      disabled={isTranslatingIndex}
+                    >{isTranslatingIndex && language !== "en" ? "..." : (isHindi ? 'अंग्रेजी अनुक्रमणिका' : 'English Index')}</button>
+                    <button
+                      className={language === "hi" ? styles.langActive : ""}
+                      onClick={() => handleLanguageToggle("hi")}
+                      disabled={isTranslatingIndex}
+                    >{isTranslatingIndex && language !== "hi" ? "..." : (isHindi ? 'हिंदी अनुक्रमणिका' : 'Hindi Index')}</button>
+                  </div>
+                </div>
+                <div className={styles.searchBar}>
+                  <span className={styles.searchIcon}>🔍</span>
+                  <input
+                    type="text"
+                    placeholder={isHindi ? 'विशिष्ट प्रश्न खोजें...' : 'Search specific questions...'}
+                    className={styles.searchInput}
+                    value={searchQuestion}
+                    onChange={(e) => setSearchQuestion(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className={styles.questionsList}>
+                {!questionsLoaded ? <div className={styles.loadingIndex}>{isHindi ? 'प्रश्न अनुक्रमणिका अनुकूलित की जा रही है...' : 'Optimizing question index...'}</div> : (
+                  sets.map((set) => {
+                    const setQuestions = set.questions.filter(q =>
+                      !searchQuestion.trim() ||
+                      q.text.toLowerCase().includes(searchQuestion.toLowerCase()) ||
+                      (q.options && q.options.some(opt => opt.toLowerCase().includes(searchQuestion.toLowerCase())))
+                    );
+
+                    if (setQuestions.length === 0) return null;
+
+                    return (
+                      <div key={set.index} className={styles.indexSetGroup}>
+                        <div className={styles.indexSetHeader}>
+                          <div className={styles.indexSetInfo}>
+                            <h3 className={styles.indexSetTitle}>
+                              {category.topic} {t('live.lobby.selection.set')} {set.index}
+                            </h3>
+                            <p className={styles.indexSetSub}>{isHindi ? 'प्रश्न' : 'Questions'} #{set.start + 1} {isHindi ? 'से' : 'to'} #{set.end}</p>
+                          </div>
+                          <button className={styles.indexPlayBtn} onClick={() => handlePlay(set)}>
+                            {isHindi ? 'खेलें' : 'Play'} {category.topic} {isHindi ? 'क्विज़' : 'Quiz'} ({t('live.lobby.selection.set')} {set.index}) →
+                          </button>
+                        </div>
+                        <div className={styles.indexSetQuestions}>
+                          {setQuestions.map((q, qOffset) => {
+                            const globalIdx = set.start + set.questions.indexOf(q);
+                            return (
+                              <div key={globalIdx} className={styles.indexItem}>
+                                {/* Monetization Slot Placeholder */}
+                                {globalIdx > 0 && globalIdx % 10 === 0 && <div className={styles.adPlaceholder}><span>ADVERTISEMENT SLOT</span></div>}
+
+                                <div className={styles.indexQuestion}>
+                                  <span className={styles.qNum}>#{globalIdx + 1}</span>
+                                  <h3 className={styles.qText}>{q.text}</h3>
+                                </div>
+
+                                <ul className={styles.optionsList}>
+                                  {q.options.map((opt, oIdx) => {
+                                    const isCorrect = String(opt).trim() === String(q.correctAnswer).trim();
+                                    const showCorrect = revealedAnswers.has(globalIdx) && isCorrect;
+                                    return (
+                                      <li key={oIdx} className={showCorrect ? styles.correctOpt : ""}>
+                                        {opt} {showCorrect && <span className={styles.check}>✓</span>}
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
+
+                                <div className={styles.indexActions}>
+                                  <button className={styles.revealBtn} onClick={() => toggleAnswer(globalIdx)}>
+                                    {revealedAnswers.has(globalIdx) ? (isHindi ? 'उत्तर छिपाएं' : 'Hide Answer') : (isHindi ? 'उत्तर देखें' : 'View Answer')}
+                                  </button>
+                                </div>
+
+                                <AnimatePresence>
+                                  {revealedAnswers.has(globalIdx) && q.explanation && (
+                                    <motion.div
+                                      className={styles.expandedDetails}
+                                      initial={{ height: 0, opacity: 0 }}
+                                      animate={{ height: "auto", opacity: 1 }}
+                                      exit={{ height: 0, opacity: 0 }}
+                                    >
+                                      <p className={styles.explanation}><strong>{isHindi ? 'स्पष्टीकरण:' : 'Explanation:'}</strong> {q.explanation}</p>
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+                {questionsLoaded && sets.every(s => s.questions.filter(q => !searchQuestion.trim() || q.text.toLowerCase().includes(searchQuestion.toLowerCase()) || (q.options && q.options.some(opt => opt.toLowerCase().includes(searchQuestion.toLowerCase())))).length === 0) && (
+                  <p className={styles.noResults}>{isHindi ? 'आपकी खोज से मेल खाने वाला कोई प्रश्न नहीं मिला।' : 'No questions found matching your search.'}</p>
+                )}
+              </div>
+            </section>
+          </>
+        )}
       </div>
 
       {/* Timer Modal (unchanged logic, updated UI) */}
@@ -937,13 +969,65 @@ export default function CategorySetsPage() {
               <button
                 className={styles.btnLaunch}
                 onClick={() => handleStart('normal')}
-                disabled={!questionsLoaded}
+                disabled={!questionsLoaded || isStarting}
+                style={isStarting ? { opacity: 0.85, cursor: "wait", pointerEvents: "none" } : {}}
               >
-                🚀 {isMixMode ? (isHindi ? 'चुनौती शुरू करें' : 'Start Challenge') : (selectedSet.progress?.isComplete ? (isHindi ? 'फिर से अभ्यास करें' : 'Practice Again') : (isHindi ? 'सीखना शुरू करें' : 'Start Mastering'))}
+                {isStarting ? (
+                  <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
+                    <span 
+                      style={{
+                        display: "inline-block",
+                        width: "20px",
+                        height: "20px",
+                        border: "3px solid rgba(255,255,255,0.3)",
+                        borderTopColor: "#ffffff",
+                        borderRadius: "50%",
+                        animation: "spin 0.6s linear infinite"
+                      }}
+                    />
+                    <span>{isHindi ? 'प्रश्नोत्तरी शुरू हो रही है...' : 'Launching Quiz...'}</span>
+                  </span>
+                ) : (
+                  <>🚀 {isMixMode ? (isHindi ? 'चुनौती शुरू करें' : 'Start Challenge') : (selectedSet.progress?.isComplete ? (isHindi ? 'फिर से अभ्यास करें' : 'Practice Again') : (isHindi ? 'सीखना शुरू करें' : 'Start Mastering'))}</>
+                )}
               </button>
-              <button className={styles.btnLater} onClick={closeModal}>{isHindi ? 'बाद में तय करें' : 'Decide Later'}</button>
+              <button className={styles.btnLater} onClick={closeModal} disabled={isStarting}>{isHindi ? 'बाद में तय करें' : 'Decide Later'}</button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Instant Launch Transition Overlay */}
+      {isStarting && (
+        <div 
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 10000,
+            background: "rgba(15, 23, 42, 0.85)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#ffffff"
+          }}
+        >
+          <div style={{
+            width: "56px",
+            height: "56px",
+            border: "4px solid rgba(99, 102, 241, 0.2)",
+            borderTopColor: "#6366f1",
+            borderRadius: "50%",
+            animation: "spin 0.8s linear infinite",
+            marginBottom: "16px"
+          }} />
+          <h3 style={{ fontSize: "1.25rem", fontWeight: 800, margin: "0 0 6px" }}>
+            {isHindi ? "🚀 अभ्यास सत्र तैयार किया जा रहा है..." : "🚀 Preparing Quiz Engine..."}
+          </h3>
+          <p style={{ fontSize: "0.88rem", color: "#94a3b8", margin: 0 }}>
+            {isHindi ? "बस एक क्षण..." : "Just a moment..."}
+          </p>
         </div>
       )}
 
@@ -1005,5 +1089,6 @@ export default function CategorySetsPage() {
     setSelectedSet(null);
     setTimer(0);
     setIsMixMode(false);
+    setIsStarting(false);
   }
 }

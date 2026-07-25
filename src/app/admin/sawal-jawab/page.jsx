@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Plus, Trash2, Edit2, Search, HelpCircle, ChevronRight, Layers, FileText, AlertCircle, Upload, Download as DownloadIcon, X } from "lucide-react";
 import { toast } from "react-hot-toast";
+import CategorySearchSelect from "@/components/admin/CategorySearchSelect";
 
 export default function SawalJawabAdmin() {
   const [categories, setCategories] = useState([]);
@@ -201,16 +202,15 @@ export default function SawalJawabAdmin() {
               />
             </div>
             {activeTab === "items" && categories.length > 0 && (
-              <select 
-                className="bg-white border border-slate-200 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm font-bold text-slate-700 appearance-none min-w-[160px]"
-                value={filterCategory}
-                onChange={e => setFilterCategory(e.target.value)}
-              >
-                <option value="all">All Categories</option>
-                {categories.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                ))}
-              </select>
+              <div className="min-w-[200px]">
+                <CategorySearchSelect
+                  categories={categories.map(c => ({ id: c.id, topic: c.name }))}
+                  value={filterCategory}
+                  onChange={val => setFilterCategory(val || "all")}
+                  includeAllOption={true}
+                  placeholder="🔍 Search category..."
+                />
+              </div>
             )}
           </div>
         </div>
@@ -353,14 +353,12 @@ export default function SawalJawabAdmin() {
                         Please create a category first!
                       </div>
                     ) : (
-                      <select 
-                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-indigo-100 transition-all font-bold text-slate-700 cursor-pointer"
+                      <CategorySearchSelect
+                        categories={categories.map(c => ({ id: c.id, topic: c.name }))}
                         value={formData.categoryId}
-                        onChange={e => setFormData({...formData, categoryId: e.target.value})}
-                        required
-                      >
-                        {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                      </select>
+                        onChange={val => setFormData({...formData, categoryId: val})}
+                        placeholder="🔍 Search & select category..."
+                      />
                     )}
                   </div>
 

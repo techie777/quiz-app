@@ -80,6 +80,9 @@ const initialState = {
 // Key for storage
 const STORAGE_KEY = 'global_quiz_state';
 
+// Client-side translation cache (0ms instant language swap)
+const clientTranslationCache = new Map();
+
 function quizReducer(state, action) {
   switch (action.type) {
     case "START_QUIZ": {
@@ -398,7 +401,11 @@ export function QuizProvider({ children }) {
 
   const finishQuiz = useCallback(() => {
     dispatch({ type: "FINISH_QUIZ" });
-    syncProgressToDB(null, null, true); // Final sync with forceComplete=true
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      window.requestIdleCallback(() => syncProgressToDB(null, null, true));
+    } else {
+      setTimeout(() => syncProgressToDB(null, null, true), 10);
+    }
   }, [state]);
 
   const updateScore = useCallback((amount) => {
@@ -437,10 +444,62 @@ export function QuizProvider({ children }) {
     ];
 
     const isAllowed = allowedPairs.some(p => p.from === from && p.to === to);
-    
     if (!isAllowed) {
       console.log(`[Quiz/Translate] Translation from ${from} to ${to} is not allowed or unnecessary.`);
       return null;
+    }
+
+    // Fast Path 1: Check DB pre-translated fields (e.g. textHi & optionsHi)
+    if (to === "hi" && questions.every(q => q.textHi && (q.optionsHi || q.options))) {
+      console.log("[Quiz/Translate] Found pre-translated Hindi fields in DB! Swapping in 0ms...");
+      const translatedQuestions = questions.map(q => {
+        const correctIdx = q.options.findIndex(opt => 
+          String(opt || "").trim() === String(q.correctAnswer || "").trim()
+        );
+        const optsHi = typeof q.optionsHi === 'string' ? JSON.parse(q.optionsHi) : (q.optionsHi || q.options);
+        const newOptions = Array.isArray(optsHi) ? optsHi : q.options;
+        const newCorrect = (correctIdx !== -1 && newOptions[correctIdx]) ? newOptions[correctIdx] : q.correctAnswer;
+        return {
+          ...q,
+          text: q.textHi,
+          options: newOptions,
+          correctAnswer: newCorrect
+        };
+      });
+
+      dispatch({ type: "SET_QUESTIONS", payload: translatedQuestions });
+      toast.success("Switched to Hindi");
+      return { questions: translatedQuestions, story: storyText };
+    }
+
+    if (to === "en" && questions.every(q => q.text && q.options && q.textHi)) {
+      console.log("[Quiz/Translate] Found pre-translated English fields in DB! Swapping in 0ms...");
+      const translatedQuestions = questions.map(q => {
+        const correctIdx = q.options.findIndex(opt => 
+          String(opt || "").trim() === String(q.correctAnswer || "").trim()
+        );
+        return {
+          ...q,
+          text: q.text,
+          options: q.options,
+          correctAnswer: (correctIdx !== -1 && q.options[correctIdx]) ? q.options[correctIdx] : q.correctAnswer
+        };
+      });
+
+      dispatch({ type: "SET_QUESTIONS", payload: translatedQuestions });
+      toast.success("Switched to English");
+      return { questions: translatedQuestions, story: storyText };
+    }
+
+    // Fast Path 2: Check Client Cache
+    const cacheKey = `${state.quizId || 'session'}_${questions.length}_${from}_${to}`;
+    if (clientTranslationCache.has(cacheKey)) {
+      console.log("[Quiz/Translate] Retrieved translated quiz from client cache (0ms)!");
+      const cached = clientTranslationCache.get(cacheKey);
+      dispatch({ type: "SET_QUESTIONS", payload: cached.questions });
+      if (cached.story) dispatch({ type: "SET_TRANSLATED_STORY", payload: cached.story });
+      toast.success(`Switched to ${to === 'hi' ? 'Hindi' : 'English'}`);
+      return cached;
     }
 
     // Additional check: detect if source content actually matches the 'from' language
@@ -518,10 +577,13 @@ export function QuizProvider({ children }) {
             return null;
         }
 
+        const resultObj = { questions: translatedQuestions, story: translatedStory };
+        clientTranslationCache.set(cacheKey, resultObj);
+
         dispatch({ type: "SET_QUESTIONS", payload: translatedQuestions });
         dispatch({ type: "SET_TRANSLATED_STORY", payload: translatedStory });
         toast.success(`Translated to ${to === 'hi' ? 'Hindi' : 'English'}`);
-        return { questions: translatedQuestions, story: translatedStory };
+        return resultObj;
       } else {
         const errorData = await res.json().catch(() => ({}));
         console.error("Translation API error response:", errorData);
@@ -534,7 +596,7 @@ export function QuizProvider({ children }) {
       toast.error("Failed to connect to translation service");
     }
     return null;
-  }, []);
+  }, [state.quizId]);
 
   const toggleLanguage = useCallback(
     async (storyText = null) => {

@@ -1037,7 +1037,7 @@ export default function LandingPage({ initialCategories = [], defaultAudienceTab
   const [audienceTab, setAudienceTab] = useState(initialAudienceTab); // "regular" | "govt" | "image"
   const [examMode, setExamMode] = useState(modeQuery || (initialAudienceTab === "regular" ? "quiz" : "read")); // "read" | "quiz"
   const [selectedReadChapter, setSelectedReadChapter] = useState(null);
-  const [selectedReadSubject, setSelectedReadSubject] = useState(null);
+  const [selectedChipFilter, setSelectedChipFilter] = useState("all");
   const quizSectionRef = useRef(null);
 
   const scrollToQuizzes = () => {
@@ -1568,38 +1568,45 @@ export default function LandingPage({ initialCategories = [], defaultAudienceTab
   }, [allCategorizedQuizzes, isImageSection]);
 
   const sectionChipsData = useMemo(() => {
-    if (audienceTab === "govt" || audienceTab === "image") {
-      const chipsMap = new Map();
-      categorizedQuizzes.forEach(section => {
-        (section.subSections || []).forEach(sub => {
-          if (sub.quizzes && sub.quizzes.length > 0) {
-            const key = sub.title;
-            if (chipsMap.has(key)) {
-              chipsMap.get(key).count += sub.quizzes.length;
-            } else {
-              chipsMap.set(key, {
-                id: sub.title,
-                name: sub.title,
-                nameHi: sub.titleHi,
-                count: sub.quizzes.length
-              });
-            }
-          }
-        });
-      });
-      return Array.from(chipsMap.values());
-    }
+    const allAvailable = (quizzes && quizzes.length > 0) ? quizzes : (initialCategories || []);
+    
+    // Count image quizzes with at least 1 question
+    const imageCountVal = allAvailable.filter(c => 
+      !c.hidden &&
+      (c.isImageQuiz || c.categoryClass?.includes("image-quiz") || c.topic?.toLowerCase().includes("image") || c.name?.toLowerCase().includes("image")) &&
+      ((c.questionCount ?? c.questions?.length ?? 0) > 0)
+    ).length;
 
-    return categorizedQuizzes.map(section => {
-      const totalQuizzesCount = section.subSections.reduce((acc, sub) => acc + (sub.quizzes?.length || 0), 0);
+    let baseChips = categorizedQuizzes.map(section => {
+      const validQuizzes = section.subSections.reduce((acc, sub) => {
+        const subValid = (sub.quizzes || []).filter(q => (q.questionCount ?? q.questions?.length ?? 0) > 0);
+        return acc + subValid.length;
+      }, 0);
       return {
         id: section.id,
         name: section.name,
         nameHi: section.nameHi,
-        count: totalQuizzesCount
+        count: validQuizzes
       };
     }).filter(s => s.count > 0);
-  }, [categorizedQuizzes, audienceTab]);
+
+    // Insert Image Quiz chip right before "Others" (or at the end if Others doesn't exist)
+    const imageChip = {
+      id: "Image Quiz",
+      name: "Image Quiz",
+      nameHi: "चित्र क्विज़",
+      count: imageCountVal
+    };
+
+    const othersIndex = baseChips.findIndex(s => s.name?.toLowerCase().includes("others") || s.nameHi?.includes("अन्य"));
+    if (othersIndex > -1) {
+      baseChips.splice(othersIndex, 0, imageChip);
+    } else {
+      baseChips.push(imageChip);
+    }
+
+    return baseChips;
+  }, [categorizedQuizzes, quizzes, initialCategories]);
 
   const govtChaptersList = useMemo(() => {
     if (audienceTab !== "govt") return [];
@@ -1607,14 +1614,64 @@ export default function LandingPage({ initialCategories = [], defaultAudienceTab
     categorizedQuizzes.forEach((sec) => {
       (sec.subSections || []).forEach((sub) => {
         if (sub.quizzes && sub.quizzes.length > 0) {
-          sub.quizzes.forEach((q) => list.push(q));
-        } else {
+          sub.quizzes.forEach((q) => {
+            if ((q.questionCount ?? q.questions?.length ?? 0) > 0) list.push(q);
+          });
+        } else if ((sub.questionCount ?? sub.questions?.length ?? 0) > 0) {
           list.push(sub);
         }
       });
     });
     return list;
   }, [categorizedQuizzes, audienceTab]);
+
+  const displayedMasterCategories = useMemo(() => {
+    const allAvailable = (quizzes && quizzes.length > 0) ? quizzes : (initialCategories || []);
+    
+    // MANDATORY RULE: Hide categories that have 0 questions by default
+    let list = allAvailable.filter(c => {
+      if (c.hidden) return false;
+      const qCount = c.questionCount ?? c.questions?.length ?? 0;
+      return qCount > 0;
+    });
+
+    if (selectedChipFilter === "Image Quiz") {
+      list = list.filter(q => 
+        q.isImageQuiz || 
+        q.categoryClass?.includes("image-quiz") || 
+        (q.topic && q.topic.toLowerCase().includes("image")) ||
+        (q.name && q.name.toLowerCase().includes("image"))
+      );
+    } else if (selectedChipFilter !== "all") {
+      const targetSection = (categorizedQuizzes || []).find(s => s.name === selectedChipFilter || s.id === selectedChipFilter);
+      if (targetSection && Array.isArray(targetSection.subSections)) {
+        const sectionQuizzes = [];
+        targetSection.subSections.forEach(sub => {
+          if (Array.isArray(sub.quizzes)) {
+            sectionQuizzes.push(...sub.quizzes.filter(q => (q.questionCount ?? q.questions?.length ?? 0) > 0));
+          }
+        });
+        if (sectionQuizzes.length > 0) list = sectionQuizzes;
+      } else {
+        const query = selectedChipFilter.toLowerCase();
+        list = list.filter(q => 
+          (q.topic && q.topic.toLowerCase().includes(query)) || 
+          (q.topicHi && q.topicHi.toLowerCase().includes(query))
+        );
+      }
+    }
+
+    if (search && search.trim()) {
+      const sQuery = search.toLowerCase().trim();
+      list = list.filter(q => 
+        (q.topic && q.topic.toLowerCase().includes(sQuery)) ||
+        (q.topicHi && q.topicHi.toLowerCase().includes(sQuery)) ||
+        (q.description && q.description.toLowerCase().includes(sQuery))
+      );
+    }
+
+    return list;
+  }, [quizzes, initialCategories, categorizedQuizzes, selectedChipFilter, search]);
 
   return (
     <main className={styles.page}>
@@ -1626,150 +1683,55 @@ export default function LandingPage({ initialCategories = [], defaultAudienceTab
         <div className={`${styles.orb} ${styles.orb4}`} />
       </div>
 
-      {/* Search Orbs & Hero Section */}
+      {/* ONE BIG MASTER CONTAINER - DATA EXPERT DESIGN OVERHAUL */}
       <motion.section 
-        className={styles.hero}
-        initial={{ opacity: 0, y: -20 }}
+        className="w-full max-w-6xl mx-auto my-6 px-3 sm:px-6"
+        initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
+        transition={{ duration: 0.5 }}
       >
-        <div className={styles.heroContent}>
+        <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 sm:p-10 shadow-2xl shadow-indigo-500/5 relative overflow-hidden">
           
-          {/* Audience Mode Dual Tab Segmented Switcher */}
-          <div className={styles.audienceTabsWrapper}>
-            <div className={styles.audienceTabsContainer}>
-              <button
-                onClick={() => {
-                  setAudienceTab("regular");
-                  setExamMode("quiz");
-                  setSelectedReadChapter(null);
-                }}
-                className={styles.audienceTabBtn}
-                style={{
-                  color: audienceTab === "regular" ? '#ffffff' : 'var(--text-secondary)',
-                }}
-              >
-                {audienceTab === "regular" && (
-                  <motion.div
-                    layoutId="audienceTabIndicator"
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      borderRadius: '18px',
-                      background: 'var(--brand-gradient)',
-                      boxShadow: '0 6px 20px rgba(99, 102, 241, 0.35)',
-                      zIndex: -1
-                    }}
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                  />
-                )}
-                <span style={{ fontSize: '1.1rem' }}>🎯</span>
-                <span>{isHindi ? 'क्विज़' : 'Quizzes'}</span>
-                <span className={styles.audienceTabBadge} style={{
-                  background: audienceTab === "regular" ? 'rgba(255, 255, 255, 0.25)' : 'rgba(99, 102, 241, 0.1)',
-                  color: audienceTab === "regular" ? '#ffffff' : 'var(--accent)',
-                }}>
-                  {regularCount}
-                </span>
-              </button>
+          {/* Decorative Background Elements */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 dark:bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-500/10 dark:bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
 
-              <button
-                onClick={() => {
-                  setAudienceTab("govt");
-                  setExamMode("read");
-                  setSelectedReadChapter(null);
-                }}
-                className={styles.audienceTabBtn}
-                style={{
-                  color: audienceTab === "govt" ? '#ffffff' : 'var(--text-secondary)',
-                }}
-              >
-                {audienceTab === "govt" && (
-                  <motion.div
-                    layoutId="audienceTabIndicator"
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      borderRadius: '18px',
-                      background: 'var(--brand-gradient)',
-                      boxShadow: '0 6px 20px rgba(99, 102, 241, 0.35)',
-                      zIndex: -1
-                    }}
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                  />
-                )}
-                <span style={{ fontSize: '1.1rem' }}>🏛️</span>
-                <span>{isHindi ? 'सरकारी परीक्षा' : 'Govt Exams'}</span>
-                <span className={styles.audienceTabBadge} style={{
-                  background: audienceTab === "govt" ? 'rgba(255, 255, 255, 0.25)' : 'rgba(99, 102, 241, 0.1)',
-                  color: audienceTab === "govt" ? '#ffffff' : 'var(--accent)',
-                }}>
-                  {govtCount}
-                </span>
-              </button>
+          {/* 1. Header Bar */}
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/50 dark:border-indigo-800/50 text-indigo-600 dark:text-indigo-400 text-xs font-black uppercase tracking-widest mb-2">
+                <Sparkles size={14} />
+                <span>{isHindi ? "मास्टर क्विज़ सूचकांक" : "Master Quiz Index"}</span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                {isHindi ? "सभी क्विज़ एवं अध्ययन विषय" : "All Quizzes & Study Index"}
+              </h1>
+            </div>
 
-              <button
-                onClick={() => {
-                  setAudienceTab("image");
-                  setSelectedReadChapter(null);
-                }}
-                className={styles.audienceTabBtn}
-                style={{
-                  color: audienceTab === "image" ? '#ffffff' : 'var(--text-secondary)',
-                }}
-              >
-                {audienceTab === "image" && (
-                  <motion.div
-                    layoutId="audienceTabIndicator"
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      borderRadius: '18px',
-                      background: 'var(--brand-gradient)',
-                      boxShadow: '0 6px 20px rgba(99, 102, 241, 0.35)',
-                      zIndex: -1
-                    }}
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                  />
-                )}
-                <span style={{ fontSize: '1.1rem' }}>🖼️</span>
-                <span>{isHindi ? 'चित्र क्विज़' : 'Image Quizzes'}</span>
-                <span className={styles.audienceTabBadge} style={{
-                  background: audienceTab === "image" ? 'rgba(255, 255, 255, 0.25)' : 'rgba(99, 102, 241, 0.1)',
-                  color: audienceTab === "image" ? '#ffffff' : 'var(--accent)',
-                }}>
-                  {imageCount}
-                </span>
-              </button>
+            <div className="flex items-center gap-3">
+              <span className="px-3.5 py-1.5 rounded-full bg-indigo-100/70 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-xs font-black">
+                ✨ {displayedMasterCategories.length} {isHindi ? "विषय उपलब्ध" : "Topics Available"}
+              </span>
+              {session?.user && (
+                <button 
+                  className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
+                  onClick={openOnboarding}
+                  title={t('banners.personalized.btn') || "Personalize"}
+                >
+                  <SlidersHorizontal size={18} />
+                </button>
+              )}
             </div>
           </div>
 
-
-          <div className={styles.searchActionRow} style={{ marginTop: '0px', justifyContent: 'center' }}>
-            {/* Integrated Search Command Center */}
-            {/* Blue Gradient Unified Search Header */}
-            <div className="w-full max-w-5xl mx-auto bg-gradient-to-r from-indigo-900 via-indigo-800 to-purple-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden mb-4">
-              <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
-              <div className="relative z-10">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                  <div>
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/30 border border-indigo-400/30 text-indigo-200 text-xs font-bold mb-2">
-                      <BookOpen size={14} />
-                      <span>{isHindi ? "डिजिटल अध्ययन सूचकांक" : "Digital Study Index"}</span>
-                    </div>
-                    <h2 className="text-2xl sm:text-3xl font-black tracking-tight">
-                      {isHindi ? "विषय एवं अध्याय सूची" : "Subjects & Chapter Index"}
-                    </h2>
-                    <p className="text-indigo-200 text-sm mt-1">
-                      {isHindi
-                        ? `कुल ${categorizedQuizzes.length} विषय पढ़ने के लिए उपलब्ध हैं`
-                        : `Explore ${categorizedQuizzes.length} subjects for sequential study.`}
-                    </p>
-                  </div>
-                </div>
-
+          {/* 2. STICKY CONTROL BAR: SEARCH BAR + QUIZ MODE / READ MODE TAB (FIXED ON SCROLL) */}
+          <div className="sticky top-14 sm:top-16 z-50 py-3 px-3 sm:px-6 -mx-6 sm:-mx-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-y border-slate-200/80 dark:border-slate-800 shadow-sm transition-all mb-6">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-3 max-w-5xl mx-auto">
+              
+              {/* Search Bar (Left / Center) */}
+              <div className="relative flex-1 w-full z-50">
                 <div className="relative">
-                  <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-300" />
+                  <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-500 dark:text-indigo-400" />
                   <input
                     id="search-box"
                     type="text"
@@ -1781,98 +1743,112 @@ export default function LandingPage({ initialCategories = [], defaultAudienceTab
                     placeholder={
                       loading 
                         ? (t('common.searching') || "Searching...") 
-                        : (isHindi ? "विषय या अध्याय का नाम खोजें..." : "Search subject or chapter topic (e.g. Modern History)...")
+                        : (isHindi ? "विषय या क्विज़ का नाम खोजें (उदा. एमपी जीके, इतिहास, रसायन)..." : "Search quiz name or topic (e.g. Madhya Pradesh, History)...")
                     }
-                    className="w-full pl-12 pr-4 py-3.5 bg-white/10 backdrop-blur-md text-white placeholder-indigo-200/70 border border-white/20 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm sm:text-base transition-all"
+                    className="w-full pl-12 pr-20 py-3 bg-slate-50 dark:bg-slate-800/90 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 border-2 border-slate-200 dark:border-slate-700 hover:border-indigo-500/60 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-500/15 rounded-2xl text-sm font-bold shadow-inner transition-all"
                   />
-                  {search.trim() && (
+                  {search.trim() ? (
                     <button
                       onClick={() => handleSearchChange("")}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-indigo-200 hover:text-white bg-indigo-900/50 px-2 py-1 rounded-md"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 bg-slate-200/60 dark:bg-slate-700 px-2.5 py-1 rounded-md transition-colors"
                     >
                       Clear
                     </button>
+                  ) : (
+                    <span className="hidden sm:inline-block absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 dark:text-slate-500 bg-slate-200/60 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-300/50 dark:border-slate-700">
+                      ⌘K
+                    </span>
                   )}
+
+                  {/* Autocomplete Dropdown - Z-50 Layer OVER Everything */}
                   {showSuggestions && searchSuggestions.length > 0 && (
-                    <div className={styles.suggestionsDropdown} style={{ marginTop: '8px' }}>
-                      <div className={styles.suggestionsHeader}>
-                        <span>{t('quizzes.search.results')}</span>
-                        <span className={styles.suggestionCount}>{searchSuggestions.length} {t('quizzes.search.found')}</span>
-                      </div>
-                      {searchSuggestions.map((suggestion, index) => (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 border-2 border-indigo-100 dark:border-slate-700 rounded-2xl shadow-2xl z-50 overflow-hidden max-h-80 overflow-y-auto">
+                      {searchSuggestions.map((suggestion) => (
                         <button
                           key={suggestion.id}
-                          className={`${styles.suggestionItem} ${index === selectedSuggestionIndex ? styles.selected : ""}`}
+                          className="w-full text-left px-5 py-3.5 flex items-center gap-3 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors border-b border-slate-100 dark:border-slate-700/50 last:border-0"
                           onClick={() => handleSuggestionClick(suggestion)}
                         >
-                          <span className={styles.suggestionEmoji}>{suggestion.emoji || "📝"}</span>
-                          <div className={styles.suggestionContent}>
-                            <strong className={styles.suggestionName}>
+                          <span className="text-2xl">{suggestion.emoji || "📝"}</span>
+                          <div className="flex-1 min-w-0">
+                            <strong className="block text-sm font-bold text-slate-900 dark:text-white truncate">
                               {isHindi && suggestion.topicHi ? suggestion.topicHi : suggestion.topic}
                             </strong>
-                            <p className={styles.suggestionDescription}>
-                              {(() => {
-                                const desc = (isHindi && suggestion.descriptionHi) ? suggestion.descriptionHi : suggestion.description;
-                                if (!desc) return t('quizzes.search.defaultDesc');
-                                return desc.length > 70 ? desc.substring(0, 70) + "..." : desc;
-                              })()}
-                            </p>
+                            <span className="text-xs text-slate-500 dark:text-slate-400">
+                              {suggestion.questionCount || 0} {isHindi ? 'प्रश्न' : 'Questions'}
+                            </span>
                           </div>
+                          <ArrowRight size={16} className="text-indigo-500" />
                         </button>
                       ))}
                     </div>
                   )}
                 </div>
               </div>
-            </div>
-            
-            {session?.user && (
-              <button 
-                className={styles.feedTab}
-                style={{ margin: 0, padding: '0 16px', flexShrink: 0, height: '56px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-secondary)', border: '1px solid var(--navbar-border)', color: 'var(--text-primary)', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
-                onClick={openOnboarding}
-                title={t('banners.personalized.btn') || "Personalize"}
-              >
-                <SlidersHorizontal size={18} />
-                <span className="hidden sm:inline">{t('banners.personalized.btn') || "Personalize"}</span>
-              </button>
-            )}
-          </div>
 
-          {/* Section Chips (Shown in Quiz Mode, hidden in Read Mode) */}
-          {!search && !activeFilters.length && sectionChipsData.length > 0 && examMode === "quiz" && (
-            <div className="w-full max-w-5xl mx-auto my-3 px-2">
-              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-2 px-1 justify-center flex-wrap">
-                {sectionChipsData.map((s) => {
-                  const rawName = isHindi && s.nameHi ? s.nameHi : s.name;
-                  const cleanName = rawName ? rawName.replace(/^Section\s+[A-Z0-9]+:\s*/i, '').trim() : '';
-                  return (
-                    <button
-                      key={s.id}
-                      onClick={() => scrollToSection(s.name)}
-                      className="group inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-indigo-500 hover:ring-2 hover:ring-indigo-500/20 text-slate-700 dark:text-slate-200 text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow-md flex-shrink-0"
-                    >
-                      <span>{cleanName}</span>
-                      <span className="px-2 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 text-[11px] font-bold">
-                        {s.count}
-                      </span>
-                    </button>
-                  );
-                })}
+              {/* Quiz Mode vs Read Mode Switcher (Right) */}
+              <div className="w-full md:w-auto flex-shrink-0">
+                <ExamModeSwitcher 
+                  mode={examMode} 
+                  onModeChange={(newMode) => {
+                    setExamMode(newMode);
+                    setSelectedReadChapter(null);
+                  }}
+                  isHindi={isHindi} 
+                  compact={true}
+                />
               </div>
             </div>
-          )}
-        </div>
-      </motion.section>
+          </div>
 
-      {/* Main Category Sections */}
-      {!search && !activeFilters.length && (
-        <div className={styles.allSubSections}>
-          {/* Scroll Anchor for Main Quizzes (e.g., General Knowledge) */}
-          <div ref={quizSectionRef} className="h-0 w-0 pointer-events-none -mt-8" />
+          {/* 3. Section Chips Directly Below Search Bar (Z-20 layer below z-50 search dropdown) */}
+          <div className="relative z-20 max-w-4xl mx-auto mb-8">
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-2 px-1 justify-center flex-wrap">
+              <button
+                onClick={() => setSelectedChipFilter("all")}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex-shrink-0 ${
+                  selectedChipFilter === "all"
+                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 scale-105"
+                    : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border border-slate-200/60 dark:border-slate-700"
+                }`}
+              >
+                <span>🌟 {isHindi ? "सभी विषय" : "All Topics"}</span>
+                <span className={`px-2 py-0.5 rounded-md text-[11px] font-extrabold ${
+                  selectedChipFilter === "all" ? "bg-white/20 text-white" : "bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300"
+                }`}>
+                  {displayedMasterCategories.length}
+                </span>
+              </button>
 
-          <>
-            <div className={`flex flex-col gap-4 w-full transition-opacity duration-300 ${examMode === "read" ? "opacity-100 block" : "opacity-0 hidden"}`}>
+              {sectionChipsData.map((s) => {
+                const rawName = isHindi && s.nameHi ? s.nameHi : s.name;
+                const cleanName = rawName ? rawName.replace(/^Section\s+[A-Z0-9]+:\s*/i, '').trim() : '';
+                const isSelected = selectedChipFilter === s.name;
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => setSelectedChipFilter(isSelected ? "all" : s.name)}
+                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex-shrink-0 ${
+                      isSelected
+                        ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 scale-105"
+                        : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border border-slate-200/60 dark:border-slate-700"
+                    }`}
+                  >
+                    <span>{s.id === "Image Quiz" ? "🖼️ " : ""}{cleanName}</span>
+                    <span className={`px-2 py-0.5 rounded-md text-[11px] font-extrabold ${
+                      isSelected ? "bg-white/20 text-white" : "bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300"
+                    }`}>
+                      {s.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 4. Organised Categories Inside The Big Card */}
+          {examMode === "read" ? (
+            <div className="relative z-10 mt-6">
               {selectedReadChapter ? (
                 <DigitalBookReader
                   chapter={selectedReadChapter}
@@ -1895,77 +1871,87 @@ export default function LandingPage({ initialCategories = [], defaultAudienceTab
                   }}
                   isHindi={isHindi}
                   examMode={examMode}
-                  onModeChange={(audienceTab === "regular" || audienceTab === "govt") ? ((newMode) => {
+                  onModeChange={(newMode) => {
                     setExamMode(newMode);
                     setSelectedReadChapter(null);
-                  }) : null}
+                  }}
                   searchTerm={search}
                 />
               )}
             </div>
-            
-            <div className={`w-full max-w-5xl mx-auto space-y-6 transition-opacity duration-300 ${examMode === "quiz" ? "opacity-100 block" : "opacity-0 hidden"}`}>
-              {categorizedQuizzes.map((section, idx) => (
-                <MainCategorySection 
-                  key={section.id}
-                  index={idx}
-                  section={section} 
-                  sectionIds={sectionIds}
-                  onOpenMixModal={handleOpenMixModal}
-                  isFirstSection={true}
-                  examMode={examMode}
-                  onModeChange={(audienceTab === "regular" || audienceTab === "govt") ? ((newMode) => {
-                    setExamMode(newMode);
-                    setSelectedReadChapter(null);
-                  }) : null}
-                />
-              ))}
+          ) : (
+            <div className="relative z-10">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-4">
+                {displayedMasterCategories.map((cat) => {
+                  const title = (isHindi && cat.topicHi) ? cat.topicHi : cat.topic;
+                  const desc = (isHindi && cat.descriptionHi) ? cat.descriptionHi : cat.description;
+                  const qCount = cat.questionCount || cat.questions?.length || 0;
+                  const setCount = Math.max(1, Math.ceil(qCount / 20));
+
+                  return (
+                    <motion.div
+                      key={cat.id}
+                      whileHover={{ y: -4, scale: 1.01 }}
+                      transition={{ duration: 0.2 }}
+                      onClick={() => router.push(`/category/${cat.slug || cat.id}`)}
+                      className="group cursor-pointer bg-slate-50/80 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 hover:border-indigo-500/50 dark:hover:border-indigo-500/50 rounded-2xl p-5 shadow-sm hover:shadow-xl hover:shadow-indigo-500/10 transition-all duration-300 flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-3 mb-3">
+                          <span className="w-12 h-12 rounded-2xl bg-indigo-100/60 dark:bg-indigo-900/40 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                            {cat.emoji || getRelevantImage(cat.topic || "", "") || "📝"}
+                          </span>
+                          <span className="px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-xs font-black border border-indigo-100 dark:border-indigo-900/50">
+                            {qCount} {isHindi ? 'प्रश्न' : 'Qs'}
+                          </span>
+                        </div>
+
+                        <h3 className="text-base font-black text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-1">
+                          {title}
+                        </h3>
+                        
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2 leading-relaxed">
+                          {desc || (isHindi ? "अभ्यास करें और अपनी तैयारी को बेहतर बनाएं।" : "Practice now to boost your test score.")}
+                        </p>
+                      </div>
+
+                      <div className="mt-5 pt-4 border-t border-slate-200/60 dark:border-slate-700/50 flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500">
+                          🧩 {setCount} {isHindi ? 'सेट्स उपलब्ध' : 'Sets Available'}
+                        </span>
+                        
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black shadow-md shadow-indigo-600/20 group-hover:translate-x-1 transition-all">
+                          <span>{isHindi ? "खेलें" : "Play"}</span>
+                          <ArrowRight size={14} />
+                        </span>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+
+              {displayedMasterCategories.length === 0 && (
+                <div className="text-center py-16">
+                  <span className="text-4xl">🔍</span>
+                  <h4 className="text-lg font-bold text-slate-700 dark:text-slate-300 mt-3">
+                    {isHindi ? "कोई क्विज़ श्रेणी नहीं मिली" : "No matching quiz categories found"}
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-1">
+                    {isHindi ? "कृपया कोई अन्य खोज शब्द या फ़िल्टर आज़माएं।" : "Try searching for a different keyword or reset filters."}
+                  </p>
+                </div>
+              )}
             </div>
-          </>
+          )}
+
         </div>
-      )}
+      </motion.section>
 
       <MixQuizModal 
         isOpen={showMixModal} 
         onClose={() => setShowMixModal(false)} 
         sectionName={activeMixSection} 
       />
-
-      {/* All Categories Section (shown unless in Read Mode) */}
-      {!(examMode === "read") && (
-        <div className={styles.allCategoriesWrapper} style={{ marginTop: (!search && !activeFilters.length) ? '20px' : '0' }}>
-          {loading && visibleCategories.length === 0 && <div className={styles.loadingHint}>{t('quizzes.sections.loading')}</div>}
-          
-          {/* Render All Quiz Categories using SubSection so it gets List & Cards view toggle button */}
-          {visibleCategories.length > 0 && (
-            <SubSection
-              title={(search || activeFilters.length > 0) ? t('quizzes.search.results') : (t('quizzes.sections.all') || "All Quiz Categories")}
-              quizzes={visibleCategories}
-              sectionName="All Categories"
-            />
-          )}
-
-          {/* Load More Button */}
-          {visibleCategories.length < totalCategories && (
-            <div className={styles.loadMoreContainer}>
-              <button 
-                className={styles.loadMoreButton} 
-                onClick={handleLoadMore}
-                disabled={loadingMore}
-              >
-                {loadingMore ? (
-                  <>
-                    <span className={styles.loader}></span>
-                    {t('common.loading') || 'Loading...'}
-                  </>
-                ) : (
-                  t('quizzes.sections.loadMore')
-                )}
-              </button>
-            </div>
-          )}
-        </div>
-      )}
 
       {!loading && visibleCategories.length === 0 && (search || activeFilters.length > 0) && (
         <p className={styles.empty}>

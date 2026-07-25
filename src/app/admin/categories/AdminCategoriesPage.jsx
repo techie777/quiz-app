@@ -6,6 +6,7 @@ import { useData } from "@/context/DataContext";
 import { useAdmin } from "@/context/AdminContext";
 import styles from "@/styles/AdminCategories.module.css";
 import toast from "react-hot-toast";
+import CategorySearchSelect from "@/components/admin/CategorySearchSelect";
 
 const EMPTY_CAT = { id: "", topic: "", topicHi: "", emoji: "", description: "", descriptionHi: "", categoryClass: "", hidden: false, image: "", parentId: "", showSubCategoriesOnHome: false, storyText: "", storyImage: "", originalLang: "en", isTrending: false, chips: [] };
 
@@ -169,20 +170,13 @@ const EditForm = ({ category, onSave, onCancel, isNew = false, quizzes = [], set
 
         <div className={styles.field}>
           <label>Parent Category (Optional)</label>
-          <select
+          <CategorySearchSelect
+            categories={quizzes.filter((c) => c.id !== editingId && !c.parentId)}
             value={form.parentId || ""}
-            onChange={(e) => setForm({ ...form, parentId: e.target.value || null })}
-            className={styles.select}
-          >
-            <option value="">None (Top Level Category)</option>
-            {quizzes
-              .filter((c) => c.id !== editingId && !c.parentId)
-              .map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.emoji} {c.topic}
-                </option>
-              ))}
-          </select>
+            onChange={(val) => setForm({ ...form, parentId: val || null })}
+            emptyLabel="None (Top Level Category)"
+            placeholder="🔍 Search parent category..."
+          />
         </div>
 
         <div className={styles.field}>

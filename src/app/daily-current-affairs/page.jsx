@@ -180,24 +180,62 @@ const DUMMY_MCQS = [
   }
 ];
 
-function OneLinerCard({ item, isHindi, handleShare }) {
+function OneLinerCard({ item, isHindi, handleShare, router }) {
   const oneLinerText = isHindi 
     ? (item.oneLinerHi || item.headingHi || item.oneLiner || item.heading) 
     : (item.oneLiner || item.heading);
+  const headingText = isHindi && item.headingHi ? item.headingHi : item.heading;
+  const categoryIcon = getCategoryIcon(item.category);
 
   return (
-    <motion.div className={styles.oneLinerCard} variants={itemVariants} layout>
-      <div className={styles.oneLinerContentRow}>
-        <div className={styles.oneLinerBullet}>💡</div>
-        <div className={styles.oneLinerBodyText}>{oneLinerText}</div>
-        <button 
-          onClick={(e) => { e.stopPropagation(); handleShare(item); }} 
-          className={styles.badgeBtn} 
-          title="Share"
-          style={{ flexShrink: 0 }}
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
-        </button>
+    <motion.div 
+      className="group bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-amber-400 dark:hover:border-amber-500 rounded-3xl p-5 sm:p-6 shadow-sm hover:shadow-xl hover:shadow-amber-500/10 transition-all duration-300 relative overflow-hidden flex flex-col justify-between" 
+      variants={itemVariants} 
+      layout
+    >
+      {/* Decorative Accent Bar */}
+      <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-amber-400 via-indigo-500 to-purple-600 rounded-r-full" />
+
+      <div className="pl-3">
+        {/* Top Meta Row */}
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 text-xs font-black border border-amber-200/60 dark:border-amber-900/50">
+              {categoryIcon} {item.category || (isHindi ? "सामयिकी" : "General")}
+            </span>
+            <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 flex items-center gap-1">
+              <span>📅</span> {formatDate(item.date)}
+            </span>
+          </div>
+
+          <button 
+            onClick={(e) => { e.stopPropagation(); handleShare(item); }} 
+            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-amber-100 dark:hover:bg-amber-900/40 text-slate-500 hover:text-amber-600 transition-colors" 
+            title="Share Fact"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+          </button>
+        </div>
+
+        {/* Main Heading */}
+        <h4 className="text-base sm:text-lg font-black text-slate-900 dark:text-white leading-snug mb-3 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+          {headingText}
+        </h4>
+
+        {/* High-Yield One-Liner Exam Highlight Box */}
+        <div className="bg-amber-50/80 dark:bg-slate-800/80 border border-amber-200/80 dark:border-amber-900/40 rounded-2xl p-4 text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed font-semibold">
+          <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-400 font-extrabold mr-1.5 uppercase text-[11px] tracking-wider">
+            <span>💡 ⚡ High-Yield Exam Fact:</span>
+          </span>
+          {oneLinerText}
+        </div>
+      </div>
+
+      {/* Card Footer */}
+      <div className="pl-3 mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-400 dark:text-slate-500">
+          🔥 {isHindi ? "त्वरित पुनरीक्षण कार्ड" : "Rapid Revision Note"}
+        </span>
       </div>
     </motion.div>
   );
@@ -590,122 +628,225 @@ export default function DailyCurrentAffairsPage() {
     return useCounts.ca < maxFreeReads;
   };
 
-  // Share functionality
+  // Helper function to reset canvas shadow state completely
+  const resetShadow = (ctx) => {
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+  };
+
+  // Share functionality (Redesigned World-Class Social Card Generator)
   const handleShare = async (item) => {
     try {
-      // Create a canvas to generate the share image
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       
-      // Set canvas size
       canvas.width = 1080;
       canvas.height = 1080;
       
-      // Create premium gradient background (like the card)
-      const grd = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-      grd.addColorStop(0, '#f0f9ff'); // soft light blue
-      grd.addColorStop(1, '#e0f2fe'); // deeper light blue
-      ctx.fillStyle = grd;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Ensure shadows are clear at start
+      resetShadow(ctx);
 
-      // Top banner with Hindi/English title
-      ctx.fillStyle = '#3b82f6';
-      ctx.fillRect(0, 0, canvas.width, 160);
-      ctx.fillStyle = '#1e40af';
-      ctx.fillRect(canvas.width - 200, 50, 160, 60);
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 36px "Outfit", sans-serif';
-      ctx.fillText(isHindi ? "दैनिक" : "Daily", canvas.width - 170, 80);
-      ctx.fillText(isHindi ? "जानकारी" : "Briefing", canvas.width - 170, 100);
+      // 1. Premium Dark Indigo Glow Background
+      const mainGrd = ctx.createLinearGradient(0, 0, 1080, 1080);
+      mainGrd.addColorStop(0, '#0f172a');
+      mainGrd.addColorStop(0.5, '#1e1b4b');
+      mainGrd.addColorStop(1, '#0f172a');
+      ctx.fillStyle = mainGrd;
+      ctx.fillRect(0, 0, 1080, 1080);
 
-      // Draw Main White Card Content Box
-      ctx.shadowColor = 'rgba(15, 23, 42, 0.08)';
-      ctx.shadowBlur = 40;
-      ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 20;
-      
+      // Radial Glow Accents
+      const glow1 = ctx.createRadialGradient(900, 150, 20, 900, 150, 450);
+      glow1.addColorStop(0, 'rgba(99, 102, 241, 0.35)');
+      glow1.addColorStop(1, 'rgba(99, 102, 241, 0)');
+      ctx.fillStyle = glow1;
+      ctx.fillRect(0, 0, 1080, 1080);
+
+      const glow2 = ctx.createRadialGradient(150, 900, 20, 150, 900, 450);
+      glow2.addColorStop(0, 'rgba(245, 158, 11, 0.25)');
+      glow2.addColorStop(1, 'rgba(245, 158, 11, 0)');
+      ctx.fillStyle = glow2;
+      ctx.fillRect(0, 0, 1080, 1080);
+
+      // 2. Top Header Brand Bar (Dynamic Spacing to Prevent Text Overlap)
       ctx.fillStyle = '#ffffff';
-      roundRect(ctx, 80, 220, canvas.width - 160, canvas.height - 380, 30);
+      ctx.font = '900 34px "Outfit", sans-serif';
+      ctx.fillText('🧠 QuizWeb', 70, 88);
+      const logoWidth = ctx.measureText('🧠 QuizWeb').width;
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '600 20px "Inter", sans-serif';
+      ctx.fillText(isHindi ? '• दैनिक समसामयिकी' : '• Daily Current Affairs', 70 + logoWidth + 14, 86);
+
+      // Right Header Badge (Exam Revision Pill)
+      ctx.fillStyle = 'rgba(245, 158, 11, 0.2)';
+      roundRect(ctx, 770, 52, 240, 50, 25);
       ctx.fill();
-      
-      // Top blue border on the card
-      const accentGrd = ctx.createLinearGradient(80, 220, canvas.width - 80, 220);
-      accentGrd.addColorStop(0, '#38bdf8');
-      accentGrd.addColorStop(1, '#3b82f6');
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.5)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 20px "Outfit", sans-serif';
+      ctx.fillText(isHindi ? '⚡ परीक्षा सार' : '⚡ TOPIC BRIEFING', 800, 84);
+
+      // 3. Main Intelligence Card Container
+      const cardX = 70;
+      const cardY = 135;
+      const cardW = 940;
+      const cardH = 780;
+
+      // Card Drop Shadow (Only for the card box)
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+      ctx.shadowBlur = 35;
+      ctx.shadowOffsetY = 15;
+
+      // Card Background Fill
+      ctx.fillStyle = '#1e293b';
+      roundRect(ctx, cardX, cardY, cardW, cardH, 28);
+      ctx.fill();
+
+      // CRITICAL FIX: Reset shadow properties completely so text is NEVER duplicated!
+      resetShadow(ctx);
+
+      // Card Border Stroke
+      ctx.strokeStyle = 'rgba(99, 102, 241, 0.35)';
+      ctx.lineWidth = 2;
+      roundRect(ctx, cardX, cardY, cardW, cardH, 28);
+      ctx.stroke();
+
+      // Top Accent Line on Card
+      const accentGrd = ctx.createLinearGradient(cardX, cardY, cardX + cardW, cardY);
+      accentGrd.addColorStop(0, '#6366f1');
+      accentGrd.addColorStop(0.5, '#a855f7');
+      accentGrd.addColorStop(1, '#ec4899');
       ctx.fillStyle = accentGrd;
-      roundRect(ctx, 80, 220, canvas.width - 160, 16, 30);
-      ctx.fill();
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(80, 236, canvas.width - 160, 20); // Cover bottom curve of the top border
-
-      // Reset shadow for text
-      ctx.shadowBlur = 0;
-      ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 0;
-
-      // Draw Date Pill
-      ctx.fillStyle = '#e0f2fe'; // var(--bg-secondary)
-      roundRect(ctx, 140, 280, 240, 50, 12);
+      roundRect(ctx, cardX, cardY, cardW, 8, 28);
       ctx.fill();
       ctx.fillStyle = '#1e293b';
-      ctx.font = 'bold 24px "Outfit", sans-serif';
-      ctx.fillText(`📅 ${formatDate(item.date)}`, 160, 314);
+      ctx.fillRect(cardX, cardY + 8, cardW, 10);
+
+      // 4. Meta Row: Category Pill & Date Stamp
+      const metaY = cardY + 50;
+      // Category Pill
+      const catText = `${getCategoryIcon(item.category)} ${(item.category || "GENERAL").toUpperCase()}`;
+      ctx.font = 'bold 20px "Outfit", sans-serif';
+      const catWidth = ctx.measureText(catText).width + 36;
       
-      // Draw Category Pill (next to Date)
-      ctx.fillStyle = '#e0f2fe';
-      roundRect(ctx, 400, 280, 300, 50, 12);
+      ctx.fillStyle = 'rgba(99, 102, 241, 0.2)';
+      roundRect(ctx, cardX + 40, metaY, catWidth, 44, 22);
       ctx.fill();
-      ctx.fillStyle = '#0284c7';
-      ctx.font = 'bold 22px "Outfit", sans-serif';
-      ctx.fillText(`${getCategoryIcon(item.category)} ${item.category.toUpperCase()}`, 420, 314);
+      ctx.strokeStyle = 'rgba(129, 140, 248, 0.5)';
+      ctx.lineWidth = 1;
+      roundRect(ctx, cardX + 40, metaY, catWidth, 44, 22);
+      ctx.stroke();
 
-      // Draw Quote mark
-      ctx.fillStyle = 'rgba(56, 189, 248, 0.15)';
-      ctx.font = 'bold 160px "Georgia", serif';
-      ctx.fillText('“', 140, 420);
+      ctx.fillStyle = '#818cf8';
+      ctx.fillText(catText, cardX + 58, metaY + 29);
 
-      // Draw Heading
-      ctx.fillStyle = '#0f172a';
-      ctx.font = 'bold 44px "Outfit", sans-serif';
-      const headingText = isHindi && item.headingHi ? item.headingHi : item.heading;
-      const headingLines = wrapText(ctx, headingText, canvas.width - 280);
-      let yPos = 460;
-      headingLines.slice(0, 3).forEach(line => {
-        ctx.fillText(line, 140, yPos);
-        yPos += 60;
-      });
+      // Date Stamp Pill
+      const dateText = `📅 ${formatDate(item.date)}`;
+      ctx.font = 'bold 20px "Outfit", sans-serif';
+      const dateWidth = ctx.measureText(dateText).width + 36;
 
-      // Draw Description
-      ctx.fillStyle = '#475569';
-      ctx.font = '28px "Inter", sans-serif';
-      const descText = isHindi && item.descriptionHi ? item.descriptionHi : item.description;
-      const descLines = wrapText(ctx, descText.substring(0, 300) + '...', canvas.width - 280);
-      yPos += 30;
-      descLines.slice(0, 5).forEach(line => {
-        ctx.fillText(line, 140, yPos);
-        yPos += 45;
-      });
+      const dateX = cardX + 56 + catWidth;
+      ctx.fillStyle = 'rgba(241, 245, 249, 0.08)';
+      roundRect(ctx, dateX, metaY, dateWidth, 44, 22);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(241, 245, 249, 0.15)';
+      ctx.lineWidth = 1;
+      roundRect(ctx, dateX, metaY, dateWidth, 44, 22);
+      ctx.stroke();
 
-      // Bottom info section (Footer)
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillText(dateText, dateX + 18, metaY + 29);
+
+      // 5. Main Headline
       ctx.fillStyle = '#ffffff';
-      roundRect(ctx, 80, canvas.height - 140, canvas.width - 160, 100, 20);
+      ctx.font = '800 42px "Outfit", sans-serif';
+      const headingText = isHindi && item.headingHi ? item.headingHi : item.heading;
+      const headingLines = wrapText(ctx, headingText, cardW - 80);
+
+      let textY = metaY + 95;
+      headingLines.slice(0, 3).forEach(line => {
+        ctx.fillText(line, cardX + 40, textY);
+        textY += 54;
+      });
+
+      // 6. High-Yield Exam Takeaway Callout Box (if oneLiner exists)
+      const oneLinerText = isHindi 
+        ? (item.oneLinerHi || item.oneLiner) 
+        : item.oneLiner;
+
+      if (oneLinerText) {
+        textY += 15;
+        const boxY = textY;
+        
+        ctx.font = '600 24px "Inter", sans-serif';
+        const oneLinerLines = wrapText(ctx, oneLinerText, cardW - 130);
+        const boxH = Math.min(oneLinerLines.length * 36 + 50, 160);
+
+        ctx.fillStyle = 'rgba(245, 158, 11, 0.12)';
+        roundRect(ctx, cardX + 40, boxY, cardW - 80, boxH, 18);
+        ctx.fill();
+
+        ctx.fillStyle = '#f59e0b';
+        ctx.fillRect(cardX + 40, boxY, 8, boxH);
+
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = 'bold 19px "Outfit", sans-serif';
+        ctx.fillText(isHindi ? '💡 परीक्षा उपयोगी मुख्य सार:' : '💡 EXAM KEY TAKEAWAY:', cardX + 65, boxY + 34);
+
+        ctx.fillStyle = '#fef08a';
+        ctx.font = '600 23px "Inter", sans-serif';
+        let lineY = boxY + 68;
+        oneLinerLines.slice(0, 3).forEach(l => {
+          ctx.fillText(l, cardX + 65, lineY);
+          lineY += 34;
+        });
+
+        textY = boxY + boxH + 25;
+      } else {
+        textY += 15;
+      }
+
+      // 7. Summary Description Body
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '500 26px "Inter", sans-serif';
+      const descText = isHindi && item.descriptionHi ? item.descriptionHi : item.description;
+      const availableH = (cardY + cardH) - textY - 20;
+      const maxDescLines = Math.max(1, Math.floor(availableH / 40));
+      const descLines = wrapText(ctx, descText, cardW - 80);
+
+      descLines.slice(0, maxDescLines).forEach(line => {
+        ctx.fillText(line, cardX + 40, textY);
+        textY += 40;
+      });
+
+      // 8. Bottom Glassmorphic Branding Footer
+      const footerY = 945;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+      roundRect(ctx, 70, footerY, 940, 90, 24);
       ctx.fill();
-      
-      // Website info text
-      ctx.fillStyle = '#3b82f6';
-      ctx.font = 'bold 28px "Outfit", sans-serif';
-      ctx.fillText(isHindi ? 'क्विज़वेब पर अधिक दैनिक समसामयिकी पढ़ें' : 'Read more Daily Current Affairs on QuizWeb', 120, canvas.height - 90);
-      
-      ctx.fillStyle = '#64748b';
-      ctx.font = '20px "Inter", sans-serif';
-      ctx.fillText(isHindi ? 'नवीनतम राष्ट्रीय और अंतर्राष्ट्रीय विकास के साथ अपडेट रहें।' : 'Stay updated with the latest national and international developments.', 120, canvas.height - 60);
-      
-      // Website URL link
-      ctx.fillStyle = '#1e40af';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.lineWidth = 1;
+      roundRect(ctx, 70, footerY, 940, 90, 24);
+      ctx.stroke();
+
+      // Footer Text Left
+      ctx.fillStyle = '#818cf8';
       ctx.font = 'bold 24px "Outfit", sans-serif';
-      ctx.fillText(`🌐 ${window.location.host}`, canvas.width - 340, canvas.height - 75);
-      
-      // Convert to blob and share
+      ctx.fillText(isHindi ? 'प्रतिस्पर्धी परीक्षाओं के लिए विश्वसनीय जानकारी' : 'Trusted Current Affairs for UPSC, SSC & Govt Exams', 110, footerY + 52);
+
+      // Footer Right Website Badge
+      const hostText = `🌐 ${window.location.host}`;
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 24px "Outfit", sans-serif';
+      const hostW = ctx.measureText(hostText).width;
+      ctx.fillText(hostText, 980 - hostW, footerY + 52);
+
+      // Convert canvas to image blob and share/download
       canvas.toBlob(async (blob) => {
         if (navigator.share && navigator.canShare({ files: [new File([blob], 'current-affair.png', { type: 'image/png' })] })) {
           await navigator.share({
@@ -714,11 +855,10 @@ export default function DailyCurrentAffairsPage() {
             files: [new File([blob], 'current-affair.png', { type: 'image/png' })]
           });
         } else {
-          // Fallback: download the image
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = 'current-affair.png';
+          a.download = `Current-Affairs-${item.date || 'QuizWeb'}.png`;
           a.click();
           URL.revokeObjectURL(url);
         }
@@ -800,52 +940,84 @@ export default function DailyCurrentAffairsPage() {
   const WallCurrentAffairCard = ({ item, isRead, isFav, toggleFav, handleReadMore, handleShare, isPro, caCount, maxFree, isHindi }) => {
     const displayHeading = isHindi && item.headingHi ? item.headingHi : item.heading;
     const displayDesc = isHindi && item.descriptionHi ? item.descriptionHi : item.description;
+    const displayOneLiner = isHindi && item.oneLinerHi ? item.oneLinerHi : item.oneLiner;
+    const categoryIcon = getCategoryIcon(item.category);
 
     return (
       <motion.div 
         variants={itemVariants}
-        className={styles.wallCard}
         layout
+        className="group cursor-pointer bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-indigo-500/60 dark:hover:border-indigo-500/60 rounded-3xl p-6 sm:p-7 shadow-sm hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300 relative overflow-hidden flex flex-col justify-between"
+        onClick={() => handleReadMore(item)}
       >
-        <div className={styles.wallCardContent} style={item.image ? { backgroundImage: `linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 100%), url('${item.image}')` } : {}} onClick={() => handleReadMore(item)}>
-           <div className={styles.actionBadge}>
-             <button onClick={(e) => { e.stopPropagation(); toggleFav(item.id); }} className={styles.badgeBtn} title="Favourite">{isFav ? "❤️" : "🤍"}</button>
-             <button onClick={(e) => { e.stopPropagation(); handleShare(item); }} className={styles.badgeBtn} title="Share" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--text-secondary)' }}><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
-             </button>
-           </div>
-           
-           <div className={styles.quoteWrapper}>
-             <span className={styles.quoteMark}>“</span>
-             <h3 className={styles.bigCardText}>{displayHeading}</h3>
-             <div className={styles.cardDatePill}>
-               <span className={styles.calendarIcon}>📅</span> {formatDate(item.date)}
-             </div>
-           </div>
-           
-           <p className={styles.cardSummary}>{displayDesc}</p>
+        {/* Top Decorative Soft Indigo Light Border Line */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-indigo-200/80 dark:bg-indigo-900/60" />
 
-           {item.oneLiner && (
-             <div style={{ padding: '8px 12px', background: 'var(--accent-light)', borderLeft: '3px solid var(--accent)', borderRadius: '4px', fontSize: '0.85rem', marginBottom: '1rem', color: 'var(--accent-dark)', fontWeight: '500' }}>
-               <strong>💡 One-Liner:</strong> {item.oneLiner}
-             </div>
-           )}
-           
-           <div className={styles.cardFooter}>
-             <span className={styles.cardCategory}>{getCategoryIcon(item.category)} {item.category}</span>
-             <div className="flex gap-2 items-center">
-                {isRead && <span className="text-[10px] bg-emerald-500/80 text-white px-2 py-0.5 rounded-full font-bold">READ</span>}
-                <button 
-                  className={styles.playQuizBtnSmall}
-                  onClick={(e) => { 
-                    e.stopPropagation(); 
-                    router.push(`/daily/daily-current-affairs?date=${item.date}`);
-                  }}
-                >
-                  ▶ Play Quiz
-                </button>
-             </div>
-           </div>
+        <div>
+          {/* Header Row: Category Badge, Date Pill, Action Buttons */}
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="px-3.5 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-300 text-xs font-black border border-indigo-200/60 dark:border-indigo-900/60 uppercase tracking-wider">
+                {categoryIcon} {item.category || (isHindi ? "सामयिकी" : "General")}
+              </span>
+              
+              <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold border border-slate-200/60 dark:border-slate-700 flex items-center gap-1.5">
+                <span>📅</span> {formatDate(item.date)}
+              </span>
+
+              {isRead && (
+                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-black tracking-widest uppercase shadow-sm">
+                  {isHindi ? "पढ़ा हुआ" : "READ"}
+                </span>
+              )}
+            </div>
+
+            {/* Bookmark & Share Badges */}
+            <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+              <button 
+                onClick={() => toggleFav(item.id)} 
+                className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-rose-100 dark:hover:bg-rose-950/40 text-slate-500 hover:text-rose-500 transition-colors text-sm" 
+                title="Favourite"
+              >
+                {isFav ? "❤️" : "🤍"}
+              </button>
+              <button 
+                onClick={() => handleShare(item)} 
+                className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-950/40 text-slate-500 hover:text-indigo-600 transition-colors text-sm" 
+                title="Share"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Big Headline */}
+          <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors leading-snug mb-3">
+            {displayHeading}
+          </h3>
+
+          {/* Description Summary */}
+          <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed line-clamp-3 mb-4 font-medium">
+            {displayDesc}
+          </p>
+
+          {/* High-Yield One-Liner Highlight Box inside Article Card */}
+          {displayOneLiner && (
+            <div className="bg-indigo-50/70 dark:bg-slate-800/80 border-l-4 border-indigo-500 rounded-xl p-3.5 mb-4 text-xs sm:text-sm text-indigo-950 dark:text-indigo-200 font-semibold">
+              <span className="font-black text-indigo-600 dark:text-indigo-400 block mb-0.5 uppercase text-[11px] tracking-wider">
+                💡 {isHindi ? "परीक्षा उपयोगी सार (Key Takeaway):" : "Exam Key Takeaway:"}
+              </span>
+              {displayOneLiner}
+            </div>
+          )}
+        </div>
+
+        {/* Footer Action Bar */}
+        <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
+          <span className="inline-flex items-center gap-1.5 text-xs font-black text-indigo-600 dark:text-indigo-400 group-hover:translate-x-1 transition-transform">
+            <span>{isHindi ? "पूरा विवरण पढ़ें" : "Read Full Intelligence"}</span>
+            <span>→</span>
+          </span>
         </div>
       </motion.div>
     );
@@ -1223,108 +1395,123 @@ export default function DailyCurrentAffairsPage() {
       </div>
 
       {reading && (
-        <div className={styles.modalOverlay} onClick={() => setReading(null)}>
-          <div className={`${styles.modal} glass-card`} onClick={(e) => e.stopPropagation()}>
-            {/* Mobile Navigation - Top */}
-            <div className={styles.mobileModalNavigation}>
-              <button 
-                className={styles.navButton}
-                onClick={navigateToPrevious}
-                disabled={items.findIndex(item => item.id === reading?.id) === 0}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M19 12H5M12 19l-7-7 7-7"/>
-                </svg>
-                {t('ca.prev')}
-              </button>
-              
-              <div className={styles.navInfo}>
-                <span>{items.findIndex(item => item.id === reading?.id) + 1} / {items.length}</span>
-              </div>
-              
-              <div style={{ display: 'flex', gap: '8px' }}>
+        <div className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center p-3 sm:p-6 pt-20 sm:pt-24 pb-12 bg-slate-950/80 backdrop-blur-md overflow-y-auto" onClick={() => setReading(null)}>
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ type: "spring", stiffness: 350, damping: 25 }}
+            className="w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden relative my-auto mt-4 sm:my-auto" 
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Top Command Bar */}
+            <div className="flex items-center justify-between gap-3 p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/80 dark:bg-slate-900/80">
+              <div className="flex items-center gap-2">
                 <button 
-                  className={styles.navButton}
+                  className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-indigo-50 dark:hover:bg-indigo-950/40 disabled:opacity-30 disabled:pointer-events-none transition-all flex items-center gap-1.5"
+                  onClick={navigateToPrevious}
+                  disabled={items.findIndex(item => item.id === reading?.id) === 0}
+                >
+                  <span>←</span>
+                  <span>{isHindi ? "पिछला" : "Previous"}</span>
+                </button>
+
+                <span className="px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-xs font-black border border-indigo-100 dark:border-indigo-900">
+                  {items.findIndex(item => item.id === reading?.id) + 1} / {items.length}
+                </span>
+
+                <button 
+                  className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-indigo-50 dark:hover:bg-indigo-950/40 disabled:opacity-30 disabled:pointer-events-none transition-all flex items-center gap-1.5"
                   onClick={navigateToNext}
                   disabled={items.findIndex(item => item.id === reading?.id) === items.length - 1}
                 >
-                  {t('ca.next')}
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M5 12h14M12 5l7 7-7 7"/>
-                  </svg>
-                </button>
-                <button className={styles.navCloseBtn} onClick={() => setReading(null)} title="Close">
-                  ✕
+                  <span>{isHindi ? "अगला" : "Next"}</span>
+                  <span>→</span>
                 </button>
               </div>
+
+              <button 
+                className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-rose-100 dark:hover:bg-rose-950/50 text-slate-500 hover:text-rose-500 flex items-center justify-center text-sm font-black transition-colors" 
+                onClick={() => setReading(null)} 
+                title="Close"
+              >
+                ✕
+              </button>
             </div>
 
-            {/* Desktop Absolute Close Button */}
-            <button className={`${styles.absoluteCloseBtn} ${styles.desktopOnly}`} onClick={() => setReading(null)} title="Close">
-              ✕
-            </button>
-
-            {/* Top Row: Compact Date */}
-            <div className={styles.modalHeaderCompact}>
-              <div className={styles.compactDate}>
-                <span className={styles.compactDateIcon}>📅</span>
-                {formatDate(reading.date)}
-              </div>
-            </div>
-
-
-
-            {/* Content Area */}
-            <div className={styles.modalContent}>
-              <div className={styles.modalImageContainer}>
-                {reading.image ? (
-                  <img src={reading.image} alt={reading.heading} className={styles.modalImage} />
-                ) : (
-                  <div className={styles.modalImageFallback}>
-                    <span>🗞️</span>
-                  </div>
-                )}
-              </div>
+            {/* Modal Body Content */}
+            <div className="p-6 sm:p-8 max-h-[72vh] overflow-y-auto custom-scrollbar space-y-5">
               
-              <div className={styles.modalTextContainer}>
-                <h2 className={styles.modalTitle}>{reading.heading}</h2>
-                <div className={styles.modalDesc}>
-                  {reading.description.split('\n').map((paragraph, index) => (
-                    <p key={index}>{paragraph}</p>
-                  ))}
+              {/* Category & Date Meta Row */}
+              <div className="flex items-center justify-between gap-3 flex-wrap border-b border-slate-100 dark:border-slate-800/60 pb-4">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-3.5 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-300 text-xs font-black uppercase tracking-wider border border-indigo-200/50 dark:border-indigo-900/50">
+                    {getCategoryIcon(reading.category)} {reading.category || (isHindi ? "सामयिकी" : "General")}
+                  </span>
+                  <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold border border-slate-200/60 dark:border-slate-700 flex items-center gap-1.5">
+                    <span>📅</span> {formatDate(reading.date)}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => toggleFav(reading.id)} 
+                    className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-rose-100 dark:hover:bg-rose-950/40 text-slate-500 hover:text-rose-500 transition-colors text-sm" 
+                    title="Favourite"
+                  >
+                    {favIds.has(reading.id) ? "❤️" : "🤍"}
+                  </button>
+                  <button 
+                    onClick={() => handleShare(reading)} 
+                    className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-950/40 text-slate-500 hover:text-indigo-600 transition-colors text-sm" 
+                    title="Share Briefing Image"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                  </button>
                 </div>
               </div>
+
+              {/* Optional Cover Image */}
+              {reading.image && (
+                <div className="w-full rounded-2xl overflow-hidden shadow-md max-h-72">
+                  <img src={reading.image} alt={reading.heading} className="w-full h-full object-cover" />
+                </div>
+              )}
+
+              {/* Current Affairs Headline */}
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white leading-tight pt-1">
+                {isHindi && reading.headingHi ? reading.headingHi : reading.heading}
+              </h2>
+
+              {/* Article Content Text */}
+              <div className="text-slate-700 dark:text-slate-200 text-sm sm:text-base leading-relaxed space-y-3 font-normal pt-1">
+                {(isHindi && reading.descriptionHi ? reading.descriptionHi : reading.description)
+                  .split('\n')
+                  .map((para, pIdx) => (
+                    <p key={pIdx}>{para}</p>
+                  ))
+                }
+              </div>
             </div>
 
-            {/* Desktop Navigation - Bottom */}
-            <div className={styles.modalNavigation}>
-              <button 
-                className={styles.navButton}
-                onClick={navigateToPrevious}
-                disabled={items.findIndex(item => item.id === reading?.id) === 0}
+            {/* Bottom Footer Bar */}
+            <div className="flex items-center justify-between p-4 px-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/60">
+              <button
+                className="px-4 py-2 rounded-xl bg-slate-200/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 text-xs font-bold transition-colors"
+                onClick={() => setReading(null)}
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M19 12H5M12 19l-7-7 7-7"/>
-                </svg>
-                Previous
+                {isHindi ? "बंद करें" : "Close Reader"}
               </button>
-              
-              <div className={styles.navInfo}>
-                <span>{items.findIndex(item => item.id === reading?.id) + 1} / {items.length}</span>
-              </div>
-              
+
               <button 
-                className={styles.navButton}
-                onClick={navigateToNext}
-                disabled={items.findIndex(item => item.id === reading?.id) === items.length - 1}
+                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black shadow-md shadow-indigo-600/20 transition-all flex items-center gap-1.5"
+                onClick={() => handleShare(reading)}
               >
-                Next
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 12h14M12 5l7 7-7 7"/>
-                </svg>
+                <span>🔗</span>
+                <span>{isHindi ? "शेयर कार्ड" : "Share Briefing"}</span>
               </button>
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
 

@@ -6,6 +6,7 @@ import { useData } from "@/context/DataContext";
 import { useAdmin } from "@/context/AdminContext";
 import styles from "@/styles/AdminUpload.module.css";
 import toast, { Toaster } from "react-hot-toast";
+import CategorySearchSelect from "@/components/admin/CategorySearchSelect";
 
 const DIFFICULTIES = ["easy", "medium", "hard"];
 
@@ -135,7 +136,7 @@ export default function AdminUploadPage() {
   const [uploadCurrent, setUploadCurrent] = useState(0);
 
   // Excel state
-  const [selectedCatId, setSelectedCatId] = useState(quizzes[0]?.id || "");
+  const [selectedCatId, setSelectedCatId] = useState("");
   const [excelPreview, setExcelPreview] = useState(null);
   const [excelErrors, setExcelErrors] = useState([]);
   const [excelSuccess, setExcelSuccess] = useState(false);
@@ -153,13 +154,6 @@ export default function AdminUploadPage() {
   const [imgProgress, setImgProgress] = useState(0);
   const [imgResults, setImgResults] = useState(null);
 
-  // Set default category when quizzes load
-  useEffect(() => {
-    if (quizzes.length > 0 && !selectedCatId) {
-      setSelectedCatId(quizzes[0].id);
-    }
-  }, [quizzes, selectedCatId]);
-
   const allowed = adminUser?.role === "master" || adminUser?.permissions?.upload !== false;
   if (!allowed) {
     return (
@@ -171,7 +165,16 @@ export default function AdminUploadPage() {
 
   // ===== Excel handlers =====
   const handleExcelFile = (file) => {
-    if (!file) return;
+    if (!selectedCatId) {
+      toast.error("⚠️ Please select a target quiz category first!");
+      setExcelErrors(["Please select a target quiz category before uploading an Excel file."]);
+      if (excelInputRef.current) excelInputRef.current.value = "";
+      return;
+    }
+    if (!file) {
+      toast.error("⚠️ Please select a valid Excel spreadsheet file.");
+      return;
+    }
     setExcelErrors([]);
     setExcelPreview(null);
     setExcelSuccess(false);
@@ -196,7 +199,7 @@ export default function AdminUploadPage() {
         }
 
         setExcelPreview(questions);
-        toast.success(`Parsed ${questions.length} questions from Excel file!`);
+        toast.success(`Parsed ${questions.length} questions from Excel file! Click import below.`);
       } catch (err) {
         setExcelErrors(["Failed to read Excel file: " + err.message]);
       }
@@ -205,10 +208,19 @@ export default function AdminUploadPage() {
   };
 
   const handleExcelImport = async () => {
-    if (!excelPreview || !selectedCatId || isUploading) return;
+    if (!selectedCatId) {
+      toast.error("⚠️ Please select a target quiz category first!");
+      return;
+    }
+    if (!excelPreview || excelPreview.length === 0) {
+      toast.error("⚠️ Please upload an Excel spreadsheet file first!");
+      return;
+    }
+    if (isUploading) return;
 
     setIsUploading(true);
-    setUploadTotal(excelPreview.length);
+    const countToImport = excelPreview.length;
+    setUploadTotal(countToImport);
     setUploadCurrent(0);
     setUploadProgress(0);
 
@@ -236,7 +248,10 @@ export default function AdminUploadPage() {
 
         setExcelSuccess(true);
         setExcelPreview(null);
-        toast.success(`Successfully imported ${excelPreview.length} questions!`);
+        await refreshQuizzes();
+        const catObj = quizzes.find((c) => c.id === selectedCatId);
+        const catName = catObj?.topic || "Selected Category";
+        toast.success(`🎉 Successfully uploaded ${countToImport} questions! Question count updated for '${catName}'.`, { duration: 5000 });
       }
     } catch (err) {
       console.error("Bulk upload error:", err);
@@ -450,24 +465,30 @@ export default function AdminUploadPage() {
 
           {/* Category Select */}
           <div className={styles.field}>
-            <label className={styles.fieldLabel}>Target Quiz Category</label>
-            <select
-              className={styles.select}
+            <label className={styles.fieldLabel}>Target Quiz Category <span style={{ color: "#ef4444" }}>*</span></label>
+            <CategorySearchSelect
+              categories={quizzes}
               value={selectedCatId}
-              onChange={(e) => setSelectedCatId(e.target.value)}
-            >
-              {quizzes.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {(c.emoji || "📖") + " " + c.topic}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => {
+                setSelectedCatId(val);
+                setExcelErrors([]);
+              }}
+              emptyLabel="-- Select Quiz Category (Required First) --"
+              placeholder="🔍 Search quiz name (e.g. History, Gulam Vansh, GK)..."
+            />
           </div>
 
           {/* Drag & Drop Zone */}
           <div
             className={styles.dropzone}
-            onClick={() => excelInputRef.current?.click()}
+            onClick={() => {
+              if (!selectedCatId) {
+                toast.error("⚠️ Please select a target quiz category first!");
+                setExcelErrors(["Please select a target quiz category before uploading an Excel file."]);
+                return;
+              }
+              excelInputRef.current?.click();
+            }}
           >
             <div className={styles.dropIcon}>📁</div>
             <h3 className={styles.dropText}>Click or Drag Excel Spreadsheet Here</h3>
@@ -642,18 +663,13 @@ export default function AdminUploadPage() {
         <div className={styles.uploadCard}>
           <div className={styles.field}>
             <label className={styles.fieldLabel}>Target Category for Image Questions</label>
-            <select
-              className={styles.select}
+            <CategorySearchSelect
+              categories={quizzes}
               value={imgCatId}
-              onChange={(e) => setImgCatId(e.target.value)}
-            >
-              <option value="">-- Select Category --</option>
-              {quizzes.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {(c.emoji || "🖼️") + " " + c.topic}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setImgCatId(val)}
+              emptyLabel="-- Select Category --"
+              placeholder="🔍 Search category for image questions..."
+            />
           </div>
 
           <div className={styles.dropzone} onClick={() => document.getElementById("img-bulk-input")?.click()}>

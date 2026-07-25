@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, Search, BookOpen, Layers } from "lucide-react";
+import { ChevronDown, Search, BookOpen, Layers, ArrowRight } from "lucide-react";
 
 import ExamModeSwitcher from "./ExamModeSwitcher";
 
@@ -200,54 +200,55 @@ export default function SubjectIndexTree({
                       transition={{ duration: 0.25 }}
                       className="border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/40 dark:bg-slate-950/30 p-4 sm:p-6"
                     >
-                      {onModeChange && grpIdx === 0 && (
-                        <div className="flex justify-center w-full mb-4">
-                           <ExamModeSwitcher mode={examMode} onModeChange={onModeChange} isHindi={isHindi} compact={true} />
-                        </div>
-                      )}
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                        {chapters.map((cat, catIdx) => {
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                        {chapters.filter(cat => (cat.questionCount ?? cat.questions?.length ?? 0) > 0).map((cat, catIdx) => {
                           const catTitle =
                             isHindi && cat.topicHi
                               ? cat.topicHi
                               : cat.topic || cat.title || cat.name || `Chapter ${catIdx + 1}`;
+                          const desc =
+                            (isHindi && cat.descriptionHi) ? cat.descriptionHi : cat.description;
                           const qCount =
                             cat.questionCount || cat.questions?.length || 20;
 
                           return (
-                            <div
+                            <motion.div
                               key={cat.id || catIdx}
+                              whileHover={{ y: -4, scale: 1.01 }}
+                              transition={{ duration: 0.2 }}
                               onClick={() => onSelectChapter(cat, group.parentSection)}
-                              className="group bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-indigo-600 shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer flex items-center justify-between gap-3"
+                              className="group cursor-pointer bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/80 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 dark:hover:border-emerald-500/50 rounded-2xl p-5 shadow-sm hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300 flex flex-col justify-between"
                             >
-                              <div className="flex items-center gap-3.5 min-w-0">
-                                <span className="text-2xl group-hover:scale-110 transition-transform flex-shrink-0">
-                                  {cat.emoji || "📖"}
-                                </span>
-                                <div className="min-w-0 flex-1">
-                                  <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate">
-                                    {catTitle}
-                                  </h4>
-                                  <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 truncate mt-0.5">
-                                    {mainSubj}
-                                  </p>
+                              <div>
+                                <div className="flex items-center justify-between gap-3 mb-3">
+                                  <span className="w-12 h-12 rounded-2xl bg-emerald-100/60 dark:bg-emerald-950/60 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                                    {cat.emoji || "📖"}
+                                  </span>
+                                  <span className="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 text-xs font-black border border-emerald-100 dark:border-emerald-900/50">
+                                    {qCount} {isHindi ? 'प्रश्न' : 'Qs'}
+                                  </span>
                                 </div>
+
+                                <h4 className="text-base font-black text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-1">
+                                  {catTitle}
+                                </h4>
+                                
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2 leading-relaxed">
+                                  {desc || (isHindi ? "अध्याय पढ़ें और अवधारणाओं को समझें।" : "Read chapter content and master key concepts.")}
+                                </p>
                               </div>
 
-                              <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                                <span className="text-[11px] font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
-                                  {qCount} {isHindi ? "प्रश्न" : "Qs"}
+                              <div className="mt-5 pt-4 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between">
+                                <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 truncate max-w-[140px]">
+                                  📘 {mainSubj}
                                 </span>
-                                <button
-                                  type="button"
-                                  className="px-3 py-1.5 sm:px-4 sm:py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white text-xs sm:text-sm font-extrabold shadow-sm hover:shadow-emerald-500/25 hover:scale-105 transition-all flex items-center gap-1.5"
-                                >
+                                
+                                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-black shadow-md shadow-emerald-600/20 group-hover:translate-x-1 transition-all">
                                   <span>{isHindi ? "पढ़ें" : "Read"}</span>
-                                  <span className="text-xs font-bold">→</span>
-                                </button>
+                                  <ArrowRight size={14} />
+                                </span>
                               </div>
-                            </div>
+                            </motion.div>
                           );
                         })}
                       </div>

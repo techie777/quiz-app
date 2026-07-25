@@ -17,6 +17,8 @@ import {
 import ReadingCard from "./ReadingCard";
 import { useQuiz } from "@/context/QuizContext";
 
+const chapterQuestionsCache = new Map();
+
 export default function DigitalBookReader({
   chapter,
   subject,
@@ -33,23 +35,6 @@ export default function DigitalBookReader({
   const [searchTerm, setSearchTerm] = useState("");
   const [revealAll, setRevealAll] = useState(false);
   const [page, setPage] = useState(initialPage);
-
-  useEffect(() => {
-    if (initialPage) {
-      setPage(initialPage);
-    }
-  }, [initialPage]);
-  const ITEMS_PER_PAGE = 20;
-
-  const chapterId = chapter?.id || chapter?.slug;
-  const chapterTitle =
-    isHindi && chapter?.topicHi
-      ? chapter.topicHi
-      : chapter?.topic || chapter?.title || "Study Chapter";
-  const subjectTitle =
-    isHindi && subject?.nameHi
-      ? subject.nameHi
-      : subject?.name || "Govt Exam Preparation";
 
   // Fetch full questions for the chapter if questions list is empty or partial
   useEffect(() => {
@@ -69,21 +54,28 @@ export default function DigitalBookReader({
       }, 50);
     }
 
-    if (chapterId && (!chapter.questions || chapter.questions.length <= 3)) {
-      setLoading(true);
-      fetch(`/api/categories/${chapterId}?full=true`, { cache: "no-store" })
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          if (isMounted && data && Array.isArray(data.questions)) {
-            setQuestions(data.questions);
-          }
-        })
-        .catch((err) => console.error("Failed to load chapter questions:", err))
-        .finally(() => {
-          if (isMounted) setLoading(false);
-        });
-    } else if (chapter?.questions) {
-      setQuestions(chapter.questions);
+    if (chapterId) {
+      if (chapterQuestionsCache.has(chapterId)) {
+        setQuestions(chapterQuestionsCache.get(chapterId));
+        setLoading(false);
+      } else if (!chapter.questions || chapter.questions.length <= 3) {
+        setLoading(true);
+        fetch(`/api/categories/${chapterId}?full=true`)
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data) => {
+            if (isMounted && data && Array.isArray(data.questions)) {
+              chapterQuestionsCache.set(chapterId, data.questions);
+              setQuestions(data.questions);
+            }
+          })
+          .catch((err) => console.error("Failed to load chapter questions:", err))
+          .finally(() => {
+            if (isMounted) setLoading(false);
+          });
+      } else if (chapter?.questions) {
+        chapterQuestionsCache.set(chapterId, chapter.questions);
+        setQuestions(chapter.questions);
+      }
     }
     return () => {
       isMounted = false;

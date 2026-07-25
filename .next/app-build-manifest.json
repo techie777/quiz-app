@@ -47,6 +47,78 @@
       "static/chunks/main-app.js",
       "static/css/app/quizzes/page.css",
       "static/chunks/app/quizzes/page.js"
+    ],
+    "/admin/upload/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/admin/upload/page.css",
+      "static/chunks/app/admin/upload/page.js"
+    ],
+    "/admin/sections/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/admin/sections/page.css",
+      "static/chunks/app/admin/sections/page.js"
+    ],
+    "/admin/questions/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/admin/questions/page.css",
+      "static/chunks/app/admin/questions/page.js"
+    ],
+    "/category/[slug]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/category/[slug]/page.css",
+      "static/chunks/app/category/[slug]/page.js"
+    ],
+    "/admin/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/admin/page.css",
+      "static/chunks/app/admin/page.js"
+    ],
+    "/admin/fun-facts/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/admin/fun-facts/page.css",
+      "static/chunks/app/admin/fun-facts/page.js"
+    ],
+    "/admin/notifications/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/admin/notifications/page.css",
+      "static/chunks/app/admin/notifications/page.js"
+    ],
+    "/quiz/[id]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/quiz/[id]/page.css",
+      "static/chunks/app/quiz/[id]/page.js"
+    ],
+    "/results/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/results/page.css",
+      "static/chunks/app/results/page.js"
+    ],
+    "/admin/login/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/admin/login/page.css",
+      "static/chunks/app/admin/login/page.js"
+    ],
+    "/daily-current-affairs/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/daily-current-affairs/page.css",
+      "static/chunks/app/daily-current-affairs/page.js"
+    ],
+    "/daily/[type]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/daily/[type]/page.css",
+      "static/chunks/app/daily/[type]/page.js"
     ]
   }
 }

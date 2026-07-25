@@ -44,9 +44,9 @@ export default function ScrollToTop() {
       onClick={scrollToTop}
       style={{
         position: 'fixed',
-        bottom: '100px', /* Shifted up to avoid overlapping with bottom action buttons */
+        bottom: '24px',
         right: '20px',
-        zIndex: 9999,
+        zIndex: 30,
         background: 'var(--brand-primary, #6366f1)',
         color: 'white',
         width: '42px',

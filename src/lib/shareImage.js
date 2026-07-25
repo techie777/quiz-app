@@ -368,10 +368,10 @@ export async function shareResult({ score, total, percentage, topic, quizId }) {
   const quizUrl = `${baseUrl}${quizId ? `/category/${quizId}` : "/"}`;
   const shareMessage = `🏆 I just scored ${score}/${total} (${percentage}%) on the "${topic || "QuizWeb"}" quiz!\n\nCan you beat my score? Challenge me now: ${quizUrl}`;
 
-  toast.success("Preparing result card...", { icon: "🏆" });
+  toast.success("Preparing result card...", { icon: "🏆", id: "share-toast" });
 
   try {
-    const blob = await generateCommonShareImage({
+    const blobPromise = generateCommonShareImage({
       type: "result",
       subtitle: "QUIZ CHAMPION REPORT",
       quizTitle: topic || "General Knowledge Quiz",
@@ -380,14 +380,29 @@ export async function shareResult({ score, total, percentage, topic, quizId }) {
       percentage,
       quizUrl,
     });
-    const file = new File([blob], "quiz-result.png", { type: "image/png" });
 
-    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+    // 300ms timeout fallback for ultra-fast share modal launch
+    const blob = await Promise.race([
+      blobPromise,
+      new Promise((resolve) => setTimeout(() => resolve(null), 300))
+    ]);
+
+    if (blob && navigator.share && navigator.canShare?.({ files: [new File([blob], "quiz-result.png", { type: "image/png" })] })) {
+      const file = new File([blob], "quiz-result.png", { type: "image/png" });
       await navigator.share({
         title: `My Quiz Result - ${topic}`,
         text: shareMessage,
         files: [file],
       });
+      toast.dismiss("share-toast");
+      return;
+    } else if (navigator.share) {
+      await navigator.share({
+        title: `My Quiz Result - ${topic}`,
+        text: shareMessage,
+        url: quizUrl,
+      });
+      toast.dismiss("share-toast");
       return;
     }
   } catch (err) {
@@ -396,6 +411,7 @@ export async function shareResult({ score, total, percentage, topic, quizId }) {
     }
   }
 
+  toast.dismiss("share-toast");
   const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareMessage)}`;
   if (typeof window !== "undefined") {
     window.open(waUrl, "_blank");

@@ -5,6 +5,7 @@ import { toast } from "react-hot-toast";
 import { CheckCircle, Plus, Edit, Trash2, Upload, Download, Search, Filter, Globe, Eye, FileSpreadsheet } from "lucide-react";
 import * as XLSX from 'xlsx';
 import styles from "@/styles/TrueFalse.module.css";
+import CategorySearchSelect from "@/components/admin/CategorySearchSelect";
 
 export default function AdminTrueFalsePage() {
   const [activeTab, setActiveTab] = useState("categories");
@@ -665,16 +666,13 @@ export default function AdminTrueFalsePage() {
                 
                 <div>
                   <label className="block text-sm font-medium mb-1">Category</label>
-                  <select
+                  <CategorySearchSelect
+                    categories={categories.map(c => ({ id: c.id, topic: c.name }))}
                     value={filterCategoryId}
-                    onChange={(e) => setFilterCategoryId(e.target.value)}
-                    className="w-full p-2 border rounded"
-                  >
-                    <option value="">All Categories</option>
-                    {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))}
-                  </select>
+                    onChange={val => setFilterCategoryId(val)}
+                    emptyLabel="All Categories"
+                    placeholder="🔍 Search category..."
+                  />
                 </div>
                 
                 <div className="flex items-end">
@@ -700,16 +698,13 @@ export default function AdminTrueFalsePage() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">Category *</label>
-                  <select
+                  <CategorySearchSelect
+                    categories={categories.map(c => ({ id: c.id, topic: c.name }))}
                     value={questionCatId}
-                    onChange={(e) => setQuestionCatId(e.target.value)}
-                    className="w-full p-2 border rounded"
-                  >
-                    <option value="">Select a category</option>
-                    {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))}
-                  </select>
+                    onChange={val => setQuestionCatId(val)}
+                    emptyLabel="Select a category"
+                    placeholder="🔍 Search & select category..."
+                  />
                 </div>
                 
                 <div>

@@ -298,108 +298,254 @@
   margin-top: 32px;
 }
 
-/* ===== Review ===== */
+/* ===== Answer Review Modern Redesign ===== */
 .review {
   margin-top: 40px;
-  animation: fadeIn 0.3s ease;
+  animation: fadeIn 0.4s ease;
+}
+
+.reviewHeaderMain {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.reviewTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .reviewTitle {
-  font-size: 1.3rem;
-  font-weight: 700;
+  font-size: 1.4rem;
+  font-weight: 800;
   color: var(--text-primary);
-  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+
+.reviewFilterTabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: var(--bg-secondary);
+  padding: 6px;
+  border-radius: 16px;
+  border: 1px solid var(--card-border);
+}
+
+.filterBtn {
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filterBtn:hover {
+  color: var(--text-primary);
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.filterBtnActive {
+  background: var(--bg-primary);
+  color: var(--accent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  font-weight: 800;
 }
 
 .reviewItem {
-  border-radius: var(--border-radius);
-  padding: 20px;
-  margin-bottom: 12px;
-  border-left: 4px solid transparent;
+  border-radius: 20px;
+  padding: 22px 24px;
+  margin-bottom: 16px;
+  background: var(--bg-primary);
+  border: 1.5px solid var(--card-border);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.03);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.25s ease;
+}
+
+.reviewItem:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+.reviewItem::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 5px;
+  height: 100%;
+  border-radius: 4px 0 0 4px;
+}
+
+.reviewCorrect::before {
+  background: linear-gradient(180deg, #10b981, #059669);
+}
+
+.reviewWrong::before {
+  background: linear-gradient(180deg, #ef4444, #dc2626);
+}
+
+.reviewSkipped::before {
+  background: linear-gradient(180deg, #f59e0b, #d97706);
 }
 
 .reviewCorrect {
-  background: var(--success-bg);
-  border-left-color: var(--success);
+  border-color: rgba(16, 185, 129, 0.25);
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.02), var(--bg-primary));
 }
 
 .reviewWrong {
-  background: var(--danger-bg);
-  border-left-color: var(--danger);
+  border-color: rgba(239, 68, 68, 0.25);
+  background: linear-gradient(180deg, rgba(239, 68, 68, 0.02), var(--bg-primary));
 }
 
 .reviewSkipped {
-  background: var(--bg-secondary);
-  border-left-color: var(--text-muted);
+  border-color: rgba(245, 158, 11, 0.25);
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.02), var(--bg-primary));
 }
 
 .reviewHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
-.reviewBadge {
-  padding: 4px 10px;
+.reviewNumPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
   border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 700;
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+  font-size: 0.78rem;
+  font-weight: 800;
   text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.badgeCorrect {
-  background: var(--success);
-  color: white;
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: 30px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  border: 1px solid transparent;
 }
 
-.badgeWrong {
-  background: var(--danger);
-  color: white;
+.statusBadgeCorrect {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border-color: rgba(16, 185, 129, 0.3);
 }
 
-.badgeSkipped {
-  background: var(--text-muted);
-  color: white;
+.statusBadgeWrong {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+  border-color: rgba(239, 68, 68, 0.3);
 }
 
-.reviewNum {
-  font-weight: 700;
-  color: var(--text-secondary);
-  font-size: 0.85rem;
-}
-
-.reviewBadge {
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.reviewCorrect .reviewBadge {
-  color: var(--success);
-}
-
-.reviewWrong .reviewBadge {
-  color: var(--danger);
+.statusBadgeSkipped {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+  border-color: rgba(245, 158, 11, 0.3);
 }
 
 .reviewQuestion {
-  font-size: 1rem;
-  font-weight: 500;
+  font-size: 1.05rem;
+  font-weight: 700;
   color: var(--text-primary);
-  margin-bottom: 8px;
+  line-height: 1.55;
+  margin: 0 0 18px 0;
 }
 
-.reviewAnswers {
-  font-size: 0.9rem;
-  line-height: 1.6;
+.answerGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
 }
 
-.yourAnswer {
-  color: var(--danger);
+.answerCard {
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--card-border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.correctAnswer {
-  color: var(--success);
+.answerCardUserWrong {
+  background: rgba(239, 68, 68, 0.06);
+  border-color: rgba(239, 68, 68, 0.25);
+}
+
+.answerCardUserCorrect {
+  background: rgba(16, 185, 129, 0.06);
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+.answerCardCorrect {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.answerCardSkipped {
+  background: rgba(245, 158, 11, 0.06);
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+.answerLabel {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.answerLabelUserWrong {
+  color: #dc2626;
+}
+
+.answerLabelUserCorrect {
+  color: #059669;
+}
+
+.answerLabelCorrect {
+  color: #059669;
+}
+
+.answerLabelSkipped {
+  color: #d97706;
+}
+
+.answerText {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.4;
 }
 
 /* ===== Dialogues & Popups ===== */

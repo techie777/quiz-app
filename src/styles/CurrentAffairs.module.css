@@ -433,6 +433,9 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   margin-bottom: 0.5rem;
+  line-height: 1.35;
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
 }
 
 .subtitle {

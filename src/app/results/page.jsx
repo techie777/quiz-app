@@ -53,13 +53,23 @@ export default function ResultPage() {
   } = useQuiz();
   const { quizzes } = useData();
   const [showReview, setShowReview] = useState(true);
+  const [reviewFilterTab, setReviewFilterTab] = useState("all");
   const [confetti, setConfetti] = useState([]);
   const [showPostQuizPopup, setShowPostQuizPopup] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showAllQuizzes, setShowAllQuizzes] = useState(false);
-  const [showGateAd, setShowGateAd] = useState(true);
+  const [showGateAd, setShowGateAd] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
+  const [isLaunchingNextSet, setIsLaunchingNextSet] = useState(false);
   const resultCardRef = useRef(null);
+
+  // Instant route prefetching for seamless continuation
+  useEffect(() => {
+    if (quizSlug || quizId) {
+      router.prefetch(`/category/${quizSlug || quizId}`);
+      router.prefetch(`/quiz/${quizSlug || quizId}`);
+    }
+  }, [quizSlug, quizId, router]);
 
   useEffect(() => {
     if (authSession?.user && !authSession.user.isAdmin) {
@@ -74,8 +84,8 @@ export default function ResultPage() {
 
   const category = useMemo(() => {
     if (isMixedMode) return null;
-    return (quizzes || []).find((q) => q.id === quizId);
-  }, [quizzes, quizId, isMixedMode]);
+    return (quizzes || []).find((q) => q.id === quizId || q.slug === quizSlug || q.slug === quizId);
+  }, [quizzes, quizId, quizSlug, isMixedMode]);
 
   const filteredQuizzes = useMemo(() => {
     if (!quizzes || !Array.isArray(quizzes)) return [];
@@ -108,13 +118,56 @@ export default function ResultPage() {
     }
   }, [questions, showGateAd, score, quizId, quizCategoryName]);
 
-  const handleContinueNextSet = () => {
-     if (isMixedMode) {
-       router.push("/");
-       return;
-     }
-     router.push(`/category/${quizSlug || quizId}`);
-   };
+  const handleContinueNextSet = async () => {
+    if (isLaunchingNextSet) return;
+
+    if (isMixedMode) {
+      router.push("/");
+      return;
+    }
+
+    setIsLaunchingNextSet(true);
+    const nextSetIndex = (selectedSetIndex || 1) + 1;
+    const CHUNK_SIZE = 20;
+    const startIndex = (nextSetIndex - 1) * CHUNK_SIZE;
+    const catTarget = category || (quizzes || []).find((q) => q.id === quizId || q.slug === quizSlug || q.slug === quizId);
+
+    let allQs = catTarget?.questions || [];
+
+    // If questions list is empty or doesn't have enough questions for next set, fetch full category from API
+    if (!allQs || allQs.length <= startIndex) {
+      try {
+        const targetId = catTarget?.slug || quizSlug || quizId;
+        if (targetId) {
+          const res = await fetch(`/api/categories/${targetId}`);
+          if (res.ok) {
+            const fullData = await res.json();
+            if (fullData && Array.isArray(fullData.questions)) {
+              allQs = fullData.questions;
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch next set questions:", err);
+      }
+    }
+
+    const nextQuestions = allQs.slice(startIndex, startIndex + CHUNK_SIZE);
+
+    if (nextQuestions.length > 0) {
+      const topicSuffix = ` Set ${nextSetIndex}`;
+      const topicTitle = (catTarget?.topic || quizCategoryName || "Quiz") + topicSuffix;
+
+      startQuizSet(catTarget?.id || quizId, nextQuestions, timerSetting, language, nextSetIndex, topicTitle, true);
+      router.prefetch(`/quiz/${catTarget?.slug || quizSlug || quizId}`);
+      router.push(`/quiz/${catTarget?.slug || quizSlug || quizId}`);
+    } else {
+      // If no more sets exist, redirect to category sets page
+      setIsLaunchingNextSet(false);
+      resetQuiz();
+      router.push(`/category/${catTarget?.slug || quizSlug || quizId}`);
+    }
+  };
 
    const handleSuggestionClick = (suggestionId) => {
      setShowPostQuizPopup(false);
@@ -278,11 +331,17 @@ export default function ResultPage() {
             <div id="result-card" ref={resultCardRef} className={`${styles.scoreCard} glass-card`}>
               {(quizId || isMixedMode) && (
                 <div className={styles.nextSetTeaser} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '16px' }}>
-                  <button className={styles.nextSetLink} onClick={handleContinueNextSet}>
-                    {isMixedMode 
-                      ? `${t('result.actions.backTo')} ${mixedSectionName} ${t('common.categories') || 'Categories'}`
-                      : `${t('result.actions.continue')} ${(isHindi && category?.topicHi) ? category.topicHi : (category?.topic || t('result.actions.nextSet'))} (${selectedSetIndex ? `${t('live.lobby.selection.set')} ${selectedSetIndex + 1}` : t('common.next')})`
-                    }
+                  <button className={styles.nextSetLink} onClick={handleContinueNextSet} disabled={isLaunchingNextSet} style={isLaunchingNextSet ? { opacity: 0.85, cursor: "wait" } : {}}>
+                    {isLaunchingNextSet ? (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                        <span style={{ display: "inline-block", width: "14px", height: "14px", border: "2px solid white", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.6s linear infinite" }} />
+                        <span>{isHindi ? 'लोड हो रहा है...' : 'Launching Set...'}</span>
+                      </span>
+                    ) : isMixedMode ? (
+                      `${t('result.actions.backTo')} ${mixedSectionName} ${t('common.categories') || 'Categories'}`
+                    ) : (
+                      `${t('result.actions.continue')} ${(isHindi && category?.topicHi) ? category.topicHi : (category?.topic || t('result.actions.nextSet'))} (${selectedSetIndex ? `${t('live.lobby.selection.set')} ${selectedSetIndex + 1}` : t('common.next')})`
+                    )}
                   </button>
                     <button onClick={async () => {
                         const topicName = quizCategoryName || category?.topic || mixedSectionName || 'QuizWeb';
@@ -422,68 +481,158 @@ export default function ResultPage() {
             {/* Answer Review */}
             {showReview && (
               <div className={styles.review}>
-                <h2 className={styles.reviewTitle}>{t('result.review.title')}</h2>
-                {questions.map((question, index) => {
-                  const answer = answers.find((a) => a.questionId === question.id);
-                  const isAnswered = !!answer;
-                  const isCorrect = answer?.isCorrect || false;
-                  
-                  const selectedOptionText = isAnswered && answer.selected !== null && answer.selected !== undefined 
-                    ? question.options[answer.selected] 
-                    : (answer?.selected === null ? t('result.review.timedOut') : t('result.review.skippedLabel'));
-                  
-                  return (
-                    <div
-                      key={question.id}
-                      className={`${styles.reviewItem} ${
-                        !isAnswered ? styles.reviewSkipped : (isCorrect ? styles.reviewCorrect : styles.reviewWrong)
-                      }`}
-                    >
-                      <div className={styles.reviewHeader}>
-                        <span className={styles.reviewNum}>Q{index + 1}</span>
-                        <span className={`${styles.reviewBadge} ${!isAnswered ? styles.badgeSkipped : (isCorrect ? styles.badgeCorrect : styles.badgeWrong)}`}>
-                          {!isAnswered ? `✗ ${t('result.review.badgeSkipped')}` : (isCorrect ? `✓ ${t('result.review.badgeCorrect')}` : `✗ ${t('result.review.badgeWrong')}`)}
-                        </span>
-                      </div>
-                      <p className={styles.reviewQuestion}>
-                        {(isHindi && question.textHi) ? question.textHi : question.text}
-                      </p>
-                      
-                      <div className={styles.reviewAnswers}>
-                        <p className={styles.yourAnswer}>
-                          {t('result.review.yourAnswer')}: <strong>
-                            {(() => {
-                              if (!isAnswered || answer.selected === null) return selectedOptionText;
-                              if (isHindi && Array.isArray(question.optionsHi) && question.optionsHi[answer.selected]) {
-                                return question.optionsHi[answer.selected];
-                              }
-                              return selectedOptionText;
-                            })()}
-                          </strong>
-                        </p>
-                        <p className={styles.correctAnswer}>
-                          {t('result.review.correct')}: <strong>
-                            {(() => {
-                              if (isHindi && Array.isArray(question.optionsHi)) {
-                                const correctIdx = question.options.findIndex(opt => String(opt).trim() === String(question.correctAnswer).trim());
-                                if (correctIdx !== -1 && question.optionsHi[correctIdx]) return question.optionsHi[correctIdx];
-                              }
-                              return question.correctAnswer;
-                            })()}
-                          </strong>
-                        </p>
-                      </div>
-                      {(question.explanation || (isHindi && question.explanationHi)) && (
-                        <div className="mt-3.5 p-3.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                          <span className="font-extrabold text-indigo-600 dark:text-indigo-400 block mb-1 uppercase tracking-wider text-[11px]">
-                            💡 {isHindi ? "स्पष्टीकरण:" : "Explanation:"}
-                          </span>
-                          {isHindi && question.explanationHi ? question.explanationHi : question.explanation}
-                        </div>
-                      )}
+                <div className={styles.reviewHeaderMain}>
+                  <div className={styles.reviewTitleRow}>
+                    <h2 className={styles.reviewTitle}>
+                      <span>📋</span>
+                      <span>{isHindi ? 'उत्तर समीक्षा' : 'Answer Review'}</span>
+                    </h2>
+                    
+                    {/* Filter Tabs */}
+                    <div className={styles.reviewFilterTabs}>
+                      <button 
+                        className={`${styles.filterBtn} ${reviewFilterTab === 'all' ? styles.filterBtnActive : ''}`}
+                        onClick={() => setReviewFilterTab('all')}
+                      >
+                        {isHindi ? 'सभी' : 'All'} ({questions.length})
+                      </button>
+                      <button 
+                        className={`${styles.filterBtn} ${reviewFilterTab === 'wrong' ? styles.filterBtnActive : ''}`}
+                        onClick={() => setReviewFilterTab('wrong')}
+                      >
+                        ❌ {isHindi ? 'गलत' : 'Wrong'} ({performance?.wrong || 0})
+                      </button>
+                      <button 
+                        className={`${styles.filterBtn} ${reviewFilterTab === 'correct' ? styles.filterBtnActive : ''}`}
+                        onClick={() => setReviewFilterTab('correct')}
+                      >
+                        ✓ {isHindi ? 'सही' : 'Correct'} ({performance?.correct || 0})
+                      </button>
+                      <button 
+                        className={`${styles.filterBtn} ${reviewFilterTab === 'skipped' ? styles.filterBtnActive : ''}`}
+                        onClick={() => setReviewFilterTab('skipped')}
+                      >
+                        ⏱️ {isHindi ? 'छूटे' : 'Skipped'} ({performance?.skipped || 0})
+                      </button>
                     </div>
-                  );
-                })}
+                  </div>
+                </div>
+
+                {questions
+                  .map((question, index) => ({ question, originalIndex: index }))
+                  .filter(({ question }) => {
+                    const answer = answers.find((a) => a.questionId === question.id);
+                    const isAnswered = !!answer;
+                    const isCorrect = answer?.isCorrect || false;
+                    
+                    if (reviewFilterTab === 'wrong') return isAnswered && !isCorrect;
+                    if (reviewFilterTab === 'correct') return isAnswered && isCorrect;
+                    if (reviewFilterTab === 'skipped') return !isAnswered;
+                    return true;
+                  })
+                  .map(({ question, originalIndex }) => {
+                    const answer = answers.find((a) => a.questionId === question.id);
+                    const isAnswered = !!answer;
+                    const isCorrect = answer?.isCorrect || false;
+
+                    // Get user selected option text
+                    let userSelectedText = "";
+                    if (!isAnswered || answer?.selected === null || answer?.selected === undefined) {
+                      userSelectedText = isHindi ? "उत्तर नहीं दिया / समय समाप्त" : "Skipped / Timed Out";
+                    } else if (isHindi && Array.isArray(question.optionsHi) && question.optionsHi[answer.selected]) {
+                      userSelectedText = question.optionsHi[answer.selected];
+                    } else if (Array.isArray(question.options) && question.options[answer.selected]) {
+                      userSelectedText = question.options[answer.selected];
+                    } else {
+                      userSelectedText = String(answer.selected);
+                    }
+
+                    // Get correct option text
+                    let correctOptionText = "";
+                    if (isHindi && Array.isArray(question.optionsHi)) {
+                      const correctIdx = question.options.findIndex(opt => String(opt).trim() === String(question.correctAnswer).trim());
+                      if (correctIdx !== -1 && question.optionsHi[correctIdx]) {
+                        correctOptionText = question.optionsHi[correctIdx];
+                      }
+                    }
+                    if (!correctOptionText) {
+                      correctOptionText = question.correctAnswer || (question.options ? question.options[0] : "");
+                    }
+
+                    return (
+                      <div
+                        key={question.id || originalIndex}
+                        className={`${styles.reviewItem} ${
+                          !isAnswered ? styles.reviewSkipped : (isCorrect ? styles.reviewCorrect : styles.reviewWrong)
+                        }`}
+                      >
+                        {/* Question Top Bar */}
+                        <div className={styles.reviewHeader}>
+                          <span className={styles.reviewNumPill}>
+                            {isHindi ? `प्रश्न ${originalIndex + 1}` : `Question ${originalIndex + 1}`}
+                          </span>
+                          
+                          <span className={`${styles.statusBadge} ${
+                            !isAnswered 
+                              ? styles.statusBadgeSkipped 
+                              : (isCorrect ? styles.statusBadgeCorrect : styles.statusBadgeWrong)
+                          }`}>
+                            {!isAnswered 
+                              ? (isHindi ? '⏱️ छूटा हुआ' : '⏱️ Skipped')
+                              : (isCorrect ? (isHindi ? '✓ सही उत्तर' : '✓ Correct') : (isHindi ? '✕ गलत उत्तर' : '✕ Incorrect'))
+                            }
+                          </span>
+                        </div>
+
+                        {/* Question Body */}
+                        <h4 className={styles.reviewQuestion}>
+                          {(isHindi && question.textHi) ? question.textHi : question.text}
+                        </h4>
+                        
+                        {/* Answer Comparison Cards */}
+                        <div className={styles.answerGrid}>
+                          {/* User Answer Card */}
+                          <div className={`${styles.answerCard} ${
+                            !isAnswered 
+                              ? styles.answerCardSkipped 
+                              : (isCorrect ? styles.answerCardUserCorrect : styles.answerCardUserWrong)
+                          }`}>
+                            <span className={`${styles.answerLabel} ${
+                              !isAnswered 
+                                ? styles.answerLabelSkipped 
+                                : (isCorrect ? styles.answerLabelUserCorrect : styles.answerLabelUserWrong)
+                            }`}>
+                              {!isAnswered 
+                                ? (isHindi ? '⏱️ आपका चयन' : '⏱️ Your Choice')
+                                : (isCorrect ? (isHindi ? '✓ आपका उत्तर (सही)' : '✓ Your Answer (Correct)') : (isHindi ? '❌ आपका उत्तर' : '❌ Your Answer'))
+                              }
+                            </span>
+                            <span className={styles.answerText}>{userSelectedText}</span>
+                          </div>
+
+                          {/* Correct Answer Card (shown when user was incorrect or skipped) */}
+                          {(!isCorrect || !isAnswered) && (
+                            <div className={`${styles.answerCard} ${styles.answerCardCorrect}`}>
+                              <span className={`${styles.answerLabel} ${styles.answerLabelCorrect}`}>
+                                💡 {isHindi ? 'सही उत्तर' : 'Correct Answer'}
+                              </span>
+                              <span className={styles.answerText}>{correctOptionText}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Explanation / Jawab Logic */}
+                        {(question.explanation || (isHindi && question.explanationHi)) && (
+                          <div className="mt-4 p-4 rounded-xl bg-indigo-50/60 dark:bg-slate-800/80 border border-indigo-100 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                            <span className="font-black text-indigo-600 dark:text-indigo-400 block mb-1 uppercase tracking-wider text-[11px]">
+                              💡 {isHindi ? "व्याख्या:" : "Explanation:"}
+                            </span>
+                            {isHindi && question.explanationHi ? question.explanationHi : question.explanation}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
               </div>
             )}
           </div>

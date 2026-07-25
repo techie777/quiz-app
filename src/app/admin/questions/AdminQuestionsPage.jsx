@@ -6,6 +6,7 @@ import { useAdmin } from "@/context/AdminContext";
 import styles from "@/styles/AdminQuestions.module.css";
 import toast from "react-hot-toast";
 import Select from "react-select";
+import CategorySearchSelect from "@/components/admin/CategorySearchSelect";
 
 // Pexels Image Picker Component
 function PexelsImagePicker({ onSelect, onClose }) {
@@ -402,35 +403,12 @@ export default function AdminQuestionsPage() {
           />
 
           <div style={{ flex: 1.5, minWidth: '220px' }}>
-            <Select
-              options={[
-                { value: "all", label: "📁 All Categories" },
-                ...quizzes.map((c) => ({ value: c.id, label: `${c.emoji || '📁'} ${c.topic}` }))
-              ]}
-              value={{ 
-                value: filterCat, 
-                label: filterCat === "all" ? "📁 All Categories" : (quizzes.find(c => c.id === filterCat) ? `${quizzes.find(c => c.id === filterCat).emoji || '📁'} ${quizzes.find(c => c.id === filterCat).topic}` : "📁 All Categories") 
-              }}
-              onChange={(selected) => setFilterCat(selected.value)}
-              styles={{
-                control: (base) => ({
-                  ...base,
-                  borderRadius: '10px',
-                  borderColor: 'var(--card-border, #cbd5e1)',
-                  minHeight: '42px',
-                  background: 'var(--bg-primary)',
-                }),
-                menu: (base) => ({
-                  ...base,
-                  zIndex: 9999
-                }),
-                singleValue: (base) => ({
-                  ...base,
-                  color: 'var(--text-primary)',
-                  fontWeight: 600,
-                  fontSize: '0.88rem'
-                })
-              }}
+            <CategorySearchSelect
+              categories={quizzes}
+              value={filterCat}
+              onChange={(val) => setFilterCat(val || "all")}
+              includeAllOption={true}
+              placeholder="🔍 Search category..."
             />
           </div>
 

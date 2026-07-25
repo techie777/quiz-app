@@ -11,7 +11,7 @@
 .heroContent {
   max-width: 1300px;
   margin: 0 auto;
-  padding: 1.5rem 1.25rem 4rem;
+  padding: 1.15rem 1.25rem 3rem;
   background: var(--bg-primary);
   color: var(--text-primary);
 }
@@ -22,21 +22,22 @@
 
 .heroHeader {
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.15rem;
+  padding-top: 0;
 }
 
 .heroBadge {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.4rem 1rem;
+  gap: 0.4rem;
+  padding: 0.25rem 0.85rem;
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1));
   border: 1px solid rgba(99, 102, 241, 0.2);
   border-radius: 999px;
-  font-size: 0.825rem;
+  font-size: 0.78rem;
   font-weight: 700;
   color: #6366f1;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.35rem;
 }
 
 [data-theme='dark'] .heroBadge {
@@ -46,14 +47,17 @@
 }
 
 .heroTitle {
-  font-size: clamp(2rem, 4.5vw, 3.5rem);
+  font-size: clamp(1.75rem, 3.2vw, 2.5rem);
   font-weight: 900;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
   background: linear-gradient(135deg, #0f172a, #334155);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  margin-bottom: 0.5rem;
-  line-height: 1.15;
+  margin-top: 0.25rem;
+  margin-bottom: 0.35rem;
+  line-height: 1.28;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
 }
 
 [data-theme='dark'] .heroTitle {
@@ -63,12 +67,12 @@
 }
 
 .heroSubtitle {
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   color: #64748b;
-  max-width: 550px;
+  max-width: 540px;
   margin: 0 auto;
   font-weight: 500;
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
 [data-theme='dark'] .heroSubtitle {
@@ -80,19 +84,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
+  gap: 0.6rem;
   flex-wrap: wrap;
-  margin-top: 1.25rem;
-  margin-bottom: 2rem;
+  margin-top: 0.75rem;
+  margin-bottom: 1.25rem;
 }
 
 .navPill {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.6rem 1.1rem;
-  border-radius: 14px;
-  font-size: 0.9rem;
+  gap: 0.45rem;
+  padding: 0.45rem 0.95rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
   font-weight: 700;
   background: var(--bg-secondary);
   border: 1px solid var(--card-border);
@@ -148,7 +152,7 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
+  gap: 1.25rem;
 }
 
 @media (max-width: 868px) {
@@ -161,8 +165,8 @@
 .card {
   position: relative;
   background: white;
-  border-radius: 28px;
-  padding: 2rem;
+  border-radius: 24px;
+  padding: 1.5rem 1.75rem;
   text-decoration: none;
   transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
   border: 1.5px solid var(--card-border);
