@@ -17,6 +17,7 @@ import styles from "@/styles/QuizEngine.module.css";
 import { initSounds, playCorrectSound, playWrongSound, playTickerSound } from "@/lib/sounds";
 import timerStyles from "@/styles/Timer.module.css";
 import toast from "react-hot-toast";
+import { useTier } from "@/context/TierContext";
 
 // Persistent-Fix Local Timer Component
 const QuizTimerComponent = ({ seconds, onExpire, questionKey, isPaused }) => {
@@ -130,6 +131,7 @@ function QuizEngineContent() {
   const params = useParams();
   const { data: session } = useSession();
   const { quizzes } = useData();
+  const { tier } = useTier();
   
   const {
     quizId,
@@ -474,8 +476,8 @@ const QuizEngineTimer = QuizTimerComponent;
   // Hint System
   const useHint = () => {
     setShowHint(true);
-    toast.success("Hint Unlocked! (-5 points)", { icon: '💡' });
-    if (score > 5) updateScore(-5);
+    toast.success(tier === "kids" ? "Hint Unlocked! 💡" : "Hint Unlocked! (-5 points)", { icon: '💡' });
+    if (tier !== "kids" && score > 5) updateScore(-5);
   };
 
   const triggerLifelineEffect = (type) => {
@@ -497,11 +499,11 @@ const QuizEngineTimer = QuizTimerComponent;
       const wrongAnswers = currentQ.options.map((_, idx) => idx).filter(idx => idx !== correctAnswerIndex);
       const toRemove = wrongAnswers.sort(() => Math.random() - 0.5).slice(0, 2);
       setUsed5050(true);
-      updateScore(-3);
+      if (tier !== "kids") updateScore(-3);
       setRemovedOptions(toRemove);
       setFreeLifelinesUsed(prev => ({ ...prev, "50/50": true }));
       triggerLifelineEffect('5050');
-      toast.success("50:50 Activated! (-3 points)", { icon: '✂️' });
+      toast.success(tier === "kids" ? "50:50 Helper Activated! ✂️" : "50:50 Activated! (-3 points)", { icon: '✂️' });
     };
 
     // Rule: 1 free per session. If used already, triggers Ad.
@@ -531,10 +533,10 @@ const QuizEngineTimer = QuizTimerComponent;
       const normalizedStats = stats.map(val => Math.round((val / total) * 100));
       setAudienceStats(normalizedStats);
       setUsedAskAudience(true);
-      updateScore(-3);
+      if (tier !== "kids") updateScore(-3);
       setFreeLifelinesUsed(prev => ({ ...prev, "poll": true }));
       triggerLifelineEffect('poll');
-      toast.success("Audience Poll Live! (-3 points)", { icon: '👥' });
+      toast.success(tier === "kids" ? "Friends Poll Live! 👥" : "Audience Poll Live! (-3 points)", { icon: '👥' });
     };
 
     // Rule: 1 free per session.
@@ -736,7 +738,7 @@ const QuizEngineTimer = QuizTimerComponent;
                 </div>
               </div>
             <div className={styles.topCenter}>
-              {timerSetting > 0 && status === "active" && currentQuestion && (
+              {tier !== "kids" && timerSetting > 0 && status === "active" && currentQuestion && (
                 <QuizTimerComponent
                   seconds={timerSetting}
                   onExpire={handleTimerExpire}
@@ -779,7 +781,7 @@ const QuizEngineTimer = QuizTimerComponent;
                 className={`${styles.controlBtn} ${used5050 ? styles.disabled : ""}`}
                 onClick={use5050}
                 disabled={used5050}
-                title="50/50 Lifeline (-3 points)"
+                title={tier === "kids" ? (language === "hi" ? "50/50 मदद" : "50/50 Helper") : "50/50 Lifeline (-3 points)"}
                 data-icon="50/50"
               />
               
@@ -787,7 +789,7 @@ const QuizEngineTimer = QuizTimerComponent;
                 className={`${styles.controlBtn} ${usedAskAudience ? styles.disabled : ""}`}
                 onClick={useAskAudience}
                 disabled={usedAskAudience}
-                title="Ask Audience (-3 points)"
+                title={tier === "kids" ? (language === "hi" ? "दोस्तों से पूछें" : "Ask Friends") : "Ask Audience (-3 points)"}
                 data-icon="👥"
               />
               

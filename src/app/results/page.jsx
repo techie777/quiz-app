@@ -8,6 +8,7 @@ import { useQuiz } from "@/context/QuizContext";
 import { useSession } from "next-auth/react";
 import { useData } from "@/context/DataContext";
 import { useLanguage } from "@/context/LanguageContext";
+import { useTier } from "@/context/TierContext";
 import styles from "@/styles/ResultPage.module.css";
 import { useMonetization } from "@/context/MonetizationContext";
 import jsPDF from "jspdf";
@@ -33,6 +34,7 @@ export default function ResultPage() {
   const { isPro } = useMonetization();
   const { data: authSession } = useSession();
   const { t, isHindi } = useLanguage();
+  const { tier } = useTier();
   const { 
     score, 
     questions, 
@@ -190,6 +192,36 @@ export default function ResultPage() {
   const total = performance?.total || 0;
   const percentage = performance?.accuracy || 0;
   const motivation = getMotivation(percentage, t);
+
+  const starCount = useMemo(() => {
+    if (percentage >= 70) return 3;
+    if (percentage >= 40) return 2;
+    return 1;
+  }, [percentage]);
+
+  // Award stars and stickers for Kids tier
+  useEffect(() => {
+    if (tier === "kids" && questions && questions.length > 0) {
+      if (typeof window !== "undefined") {
+        const curStars = parseInt(localStorage.getItem("kids_stars_count") || "12", 10);
+        const newStars = curStars + starCount;
+        localStorage.setItem("kids_stars_count", String(newStars));
+        
+        let curStickers = ["super_star", "rocket_kid", "dino_explorer"];
+        try {
+          const parsed = JSON.parse(localStorage.getItem("kids_stickers_unlocked") || "[]");
+          if (Array.isArray(parsed)) {
+            curStickers = Array.from(new Set([...curStickers, ...parsed]));
+          }
+        } catch (e) {}
+
+        if (starCount === 3 && !curStickers.includes("super_star")) curStickers.push("super_star");
+        if (percentage >= 50 && !curStickers.includes("lion_champ")) curStickers.push("lion_champ");
+        if (percentage === 100 && !curStickers.includes("golden_cup")) curStickers.push("golden_cup");
+        localStorage.setItem("kids_stickers_unlocked", JSON.stringify(curStickers));
+      }
+    }
+  }, [tier, questions, starCount, percentage]);
 
   // Always call this hook - handle redirection logic inside
   useEffect(() => {
@@ -402,36 +434,104 @@ export default function ResultPage() {
                 </div>
               )}
 
-              <div className={styles.trophy}>🏆</div>
-              <h1 className={styles.heading}>{t('result.title')}</h1>
-              <div className={styles.scoreCircle}>
-                <span className={styles.scoreNum}>{score}</span>
-                <span className={styles.scoreDivider}>/</span>
-                <span className={styles.scoreTotal}>{total}</span>
-              </div>
-              <div className={styles.motivation}>
-                <span>{motivation.emoji}</span>
-                <span>{motivation.text}</span>
-              </div>
-              <div className={styles.percentage}>{percentage}%</div>
-              <div className={styles.stats}>
-                <div className={styles.statItem}>
-                  <span className={styles.statLabel}>{t('result.stats.total')}</span>
-                  <span className={styles.statValue}>{total}</span>
+              {tier === "kids" ? (
+                /* Kids Scoring Feedback: Stars & Sticker Celebration (Requirement 5) */
+                <div className="flex flex-col items-center justify-center my-6 select-none text-center">
+                  <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-950/40 flex items-center justify-center text-3xl mb-3 shadow-inner">
+                    ⭐
+                  </div>
+
+                  <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mb-2">
+                    {starCount === 3
+                      ? (isHindi ? "शानदार खेल! 🌟" : "Superb Job! 🌟")
+                      : (isHindi ? "बहुत बढ़िया! 🚀" : "Awesome Play! 🚀")}
+                  </h1>
+
+                  {/* Star Rating Display */}
+                  <div className="flex items-center justify-center gap-2 mb-4">
+                    {[1, 2, 3].map((starIdx) => {
+                      const isFilled = starIdx <= starCount;
+                      return (
+                        <span
+                          key={starIdx}
+                          className={`text-5xl sm:text-6xl transition-transform duration-300 transform ${
+                            isFilled
+                              ? "scale-110 drop-shadow-[0_4px_12px_rgba(251,191,36,0.6)] animate-pulse"
+                              : "opacity-25 filter grayscale"
+                          }`}
+                        >
+                          ⭐
+                        </span>
+                      );
+                    })}
+                  </div>
+
+                  {/* Encouraging Kid Badge */}
+                  <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 text-white font-black text-sm sm:text-base shadow-lg shadow-orange-500/20 mb-3">
+                    <span>{starCount === 3 ? "🏆" : starCount === 2 ? "🚀" : "🎨"}</span>
+                    <span>
+                      {starCount === 3
+                        ? (isHindi ? "सुपर स्टार चैंपियन!" : "Super Star Champion!")
+                        : starCount === 2
+                        ? (isHindi ? "अंतरिक्ष खोजकर्ता!" : "Space Explorer!")
+                        : (isHindi ? "साहसी खिलाड़ी!" : "Nice Try, Keep Shining!")}
+                    </span>
+                  </div>
+
+                  {/* Cheerful Motivation Message */}
+                  <p className="text-sm font-bold text-slate-600 dark:text-slate-300 max-w-xs mb-4 leading-relaxed">
+                    {starCount === 3
+                      ? (isHindi ? "वाह! आपने 3 चमकदार स्टार्स जीते और नया स्टिकर अनलॉक किया!" : "Woohoo! You earned 3 shiny stars and unlocked a new sticker badge!")
+                      : starCount === 2
+                      ? (isHindi ? "बहुत बढ़िया! आपने 2 चमकदार स्टार्स जीते!" : "Awesome play! You unlocked 2 shiny stars!")
+                      : (isHindi ? "शाबाश! सीखने के लिए 1 स्टार मिला!" : "Good effort! You earned a star for playing!")}
+                  </p>
+
+                  {/* Link to Rewards to see stickers */}
+                  <Link
+                    href="/rewards"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 text-xs font-black hover:scale-105 transition-all shadow-sm"
+                  >
+                    <span>🎁</span>
+                    <span>{isHindi ? "स्टिकर एल्बम में देखें" : "View in Sticker Album"}</span>
+                    <span>→</span>
+                  </Link>
                 </div>
-                <div className={`${styles.statItem} ${styles.correct}`}>
-                  <span className={styles.statLabel}>{t('result.stats.correct')}</span>
-                  <span className={styles.statValue}>{performance.correct}</span>
-                </div>
-                <div className={`${styles.statItem} ${styles.wrong}`}>
-                  <span className={styles.statLabel}>{t('result.stats.wrong')}</span>
-                  <span className={styles.statValue}>{performance.wrong}</span>
-                </div>
-                <div className={`${styles.statItem} ${styles.skipped}`}>
-                  <span className={styles.statLabel}>{t('result.stats.skipped')}</span>
-                  <span className={styles.statValue}>{performance.skipped}</span>
-                </div>
-              </div>
+              ) : (
+                /* Adults & Students Numeric Scoring Feedback */
+                <>
+                  <div className={styles.trophy}>🏆</div>
+                  <h1 className={styles.heading}>{t('result.title')}</h1>
+                  <div className={styles.scoreCircle}>
+                    <span className={styles.scoreNum}>{score}</span>
+                    <span className={styles.scoreDivider}>/</span>
+                    <span className={styles.scoreTotal}>{total}</span>
+                  </div>
+                  <div className={styles.motivation}>
+                    <span>{motivation.emoji}</span>
+                    <span>{motivation.text}</span>
+                  </div>
+                  <div className={styles.percentage}>{percentage}%</div>
+                  <div className={styles.stats}>
+                    <div className={styles.statItem}>
+                      <span className={styles.statLabel}>{t('result.stats.total')}</span>
+                      <span className={styles.statValue}>{total}</span>
+                    </div>
+                    <div className={`${styles.statItem} ${styles.correct}`}>
+                      <span className={styles.statLabel}>{t('result.stats.correct')}</span>
+                      <span className={styles.statValue}>{performance.correct}</span>
+                    </div>
+                    <div className={`${styles.statItem} ${styles.wrong}`}>
+                      <span className={styles.statLabel}>{t('result.stats.wrong')}</span>
+                      <span className={styles.statValue}>{performance.wrong}</span>
+                    </div>
+                    <div className={`${styles.statItem} ${styles.skipped}`}>
+                      <span className={styles.statLabel}>{t('result.stats.skipped')}</span>
+                      <span className={styles.statValue}>{performance.skipped}</span>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Action Buttons */}

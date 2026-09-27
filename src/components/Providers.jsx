@@ -13,6 +13,8 @@ import { useSession } from "next-auth/react";
 import { useEffect } from "react";
 import toast from "react-hot-toast";
 
+import { TierProvider } from "@/context/TierContext";
+
 function AuthToaster() {
   const { status } = useSession();
 
@@ -40,14 +42,16 @@ export default function Providers({ children }) {
       <ThemeProvider attribute="data-theme" defaultTheme="light">
         <Toaster position="top-right" />
         <LanguageProvider>
-          <UIProvider>
-            <DataProvider>
-              <MonetizationProvider>
-                <QuizProvider>{children}</QuizProvider>
-              </MonetizationProvider>
-            </DataProvider>
-            <GlobalModals />
-          </UIProvider>
+          <TierProvider>
+            <UIProvider>
+              <DataProvider>
+                <MonetizationProvider>
+                  <QuizProvider>{children}</QuizProvider>
+                </MonetizationProvider>
+              </DataProvider>
+              <GlobalModals />
+            </UIProvider>
+          </TierProvider>
         </LanguageProvider>
       </ThemeProvider>
     </SessionProvider>

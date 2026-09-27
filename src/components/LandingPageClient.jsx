@@ -19,6 +19,7 @@ import MixQuizModal from "@/components/MixQuizModal";
 import ExamModeSwitcher from "@/components/govt-exam/ExamModeSwitcher";
 import SubjectIndexTree from "@/components/govt-exam/SubjectIndexTree";
 import DigitalBookReader from "@/components/govt-exam/DigitalBookReader";
+import CategoryCard from "@/components/CategoryCard";
 
 // Import safe JSON parsing utility
 function safeJsonParse(json, fallback = []) {
@@ -1661,6 +1662,14 @@ export default function LandingPage({ initialCategories = [], defaultAudienceTab
       }
     }
 
+    // Scope difficulty filter to the whole Adults Quiz Hub (Requirement 2)
+    if (difficultyFilter !== "all") {
+      list = list.filter(c => {
+        if (!c.questions || c.questions.length === 0) return true;
+        return c.questions.some(q => (q.difficulty || "").toLowerCase() === difficultyFilter.toLowerCase());
+      });
+    }
+
     if (search && search.trim()) {
       const sQuery = search.toLowerCase().trim();
       list = list.filter(q => 
@@ -1671,7 +1680,7 @@ export default function LandingPage({ initialCategories = [], defaultAudienceTab
     }
 
     return list;
-  }, [quizzes, initialCategories, categorizedQuizzes, selectedChipFilter, search]);
+  }, [quizzes, initialCategories, categorizedQuizzes, selectedChipFilter, search, difficultyFilter]);
 
   return (
     <main className={styles.page}>
@@ -1799,6 +1808,65 @@ export default function LandingPage({ initialCategories = [], defaultAudienceTab
                 />
               </div>
             </div>
+
+            {/* Global Difficulty Filter Scoped to Whole Quiz Hub (Requirement 2) */}
+            <div className="flex items-center justify-between gap-3 max-w-5xl mx-auto mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800 flex-wrap">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mr-1 flex items-center gap-1">
+                  <span>⚡</span>
+                  <span>{isHindi ? "कठिनाई:" : "Difficulty:"}</span>
+                </span>
+                {[
+                  { id: "all", label: isHindi ? "सभी स्तर" : "All", icon: "✨" },
+                  { id: "easy", label: isHindi ? "सरल" : "Easy", icon: "🟢" },
+                  { id: "medium", label: isHindi ? "मध्यम" : "Medium", icon: "🟡" },
+                  { id: "hard", label: isHindi ? "कठिन" : "Hard", icon: "🔴" },
+                ].map((diff) => (
+                  <button
+                    key={diff.id}
+                    onClick={() => setDifficultyFilter(diff.id)}
+                    className={`px-3 py-1 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${
+                      difficultyFilter === diff.id
+                        ? "bg-indigo-600 text-white shadow-sm shadow-indigo-500/25 scale-105"
+                        : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                    }`}
+                  >
+                    <span>{diff.icon}</span>
+                    <span>{diff.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Requirement 2: Exam-tag filter strictly scoped to Exam Prep / govt tab only */}
+              {audienceTab === "govt" && (
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-indigo-500 mr-1 flex items-center gap-1">
+                    <span>🏛️</span>
+                    <span>{isHindi ? "परीक्षा बोर्ड:" : "Exam Boards:"}</span>
+                  </span>
+                  {[
+                    { id: "all", label: isHindi ? "सभी" : "All", icon: "✨" },
+                    { id: "ssc", label: "SSC", icon: "🦁" },
+                    { id: "banking", label: "Banking", icon: "🏦" },
+                    { id: "railway", label: "Railway", icon: "🚆" },
+                    { id: "police", label: "Police", icon: "👮" },
+                  ].map((examTag) => (
+                    <button
+                      key={examTag.id}
+                      onClick={() => setSelectedChipFilter(examTag.id === "all" ? "all" : examTag.label)}
+                      className={`px-2.5 py-1 rounded-xl text-xs font-black transition-all flex items-center gap-1 ${
+                        selectedChipFilter === (examTag.id === "all" ? "all" : examTag.label)
+                          ? "bg-indigo-600 text-white shadow-sm"
+                          : "bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
+                      }`}
+                    >
+                      <span>{examTag.icon}</span>
+                      <span>{examTag.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* 3. Section Chips Directly Below Search Bar (Z-20 layer below z-50 search dropdown) */}
@@ -1881,53 +1949,10 @@ export default function LandingPage({ initialCategories = [], defaultAudienceTab
             </div>
           ) : (
             <div className="relative z-10">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-4">
-                {displayedMasterCategories.map((cat) => {
-                  const title = (isHindi && cat.topicHi) ? cat.topicHi : cat.topic;
-                  const desc = (isHindi && cat.descriptionHi) ? cat.descriptionHi : cat.description;
-                  const qCount = cat.questionCount || cat.questions?.length || 0;
-                  const setCount = Math.max(1, Math.ceil(qCount / 20));
-
-                  return (
-                    <motion.div
-                      key={cat.id}
-                      whileHover={{ y: -4, scale: 1.01 }}
-                      transition={{ duration: 0.2 }}
-                      onClick={() => router.push(`/category/${cat.slug || cat.id}`)}
-                      className="group cursor-pointer bg-slate-50/80 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 hover:border-indigo-500/50 dark:hover:border-indigo-500/50 rounded-2xl p-5 shadow-sm hover:shadow-xl hover:shadow-indigo-500/10 transition-all duration-300 flex flex-col justify-between"
-                    >
-                      <div>
-                        <div className="flex items-center justify-between gap-3 mb-3">
-                          <span className="w-12 h-12 rounded-2xl bg-indigo-100/60 dark:bg-indigo-900/40 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
-                            {cat.emoji || getRelevantImage(cat.topic || "", "") || "📝"}
-                          </span>
-                          <span className="px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-xs font-black border border-indigo-100 dark:border-indigo-900/50">
-                            {qCount} {isHindi ? 'प्रश्न' : 'Qs'}
-                          </span>
-                        </div>
-
-                        <h3 className="text-base font-black text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-1">
-                          {title}
-                        </h3>
-                        
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2 leading-relaxed">
-                          {desc || (isHindi ? "अभ्यास करें और अपनी तैयारी को बेहतर बनाएं।" : "Practice now to boost your test score.")}
-                        </p>
-                      </div>
-
-                      <div className="mt-5 pt-4 border-t border-slate-200/60 dark:border-slate-700/50 flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500">
-                          🧩 {setCount} {isHindi ? 'सेट्स उपलब्ध' : 'Sets Available'}
-                        </span>
-                        
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black shadow-md shadow-indigo-600/20 group-hover:translate-x-1 transition-all">
-                          <span>{isHindi ? "खेलें" : "Play"}</span>
-                          <ArrowRight size={14} />
-                        </span>
-                      </div>
-                    </motion.div>
-                  );
-                })}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-4 mt-4">
+                {displayedMasterCategories.map((cat) => (
+                  <CategoryCard key={cat.id} category={cat} />
+                ))}
               </div>
 
               {displayedMasterCategories.length === 0 && (

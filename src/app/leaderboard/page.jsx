@@ -3,8 +3,12 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Medal, Award, Crown, Search, TrendingUp, Zap, Brain, BookOpen } from 'lucide-react';
+import { useTier } from '@/context/TierContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function LeaderboardPage() {
+    const { tier, studentGrade } = useTier();
+    const { isHindi } = useLanguage();
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
@@ -50,6 +54,39 @@ export default function LeaderboardPage() {
                         Ranked by cumulative Intelligence Score: Quiz Points + Facts Discovered + Challenges Conquered.
                     </p>
                 </div>
+
+                {/* Students Tier Leaderboard Stub Banner (Requirement 5) */}
+                {tier === "students" && (
+                    <motion.div 
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="mb-12 p-6 rounded-3xl bg-gradient-to-r from-sky-500 via-indigo-600 to-purple-600 text-white shadow-xl shadow-indigo-500/20 flex flex-col md:flex-row items-center justify-between gap-6"
+                    >
+                        <div className="flex items-center gap-4 text-center md:text-left">
+                            <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-3xl shadow-inner shrink-0">
+                                🎓
+                            </div>
+                            <div>
+                                <div className="flex items-center justify-center md:justify-start gap-2 mb-1">
+                                    <h2 className="text-lg sm:text-xl font-black">
+                                        {isHindi ? "कक्षा व स्कूल लीडरबोर्ड" : "Class & School Leaderboards"}
+                                    </h2>
+                                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 shadow-sm">
+                                        {isHindi ? "जल्द आ रहा है" : "Leaderboards coming soon"}
+                                    </span>
+                                </div>
+                                <p className="text-xs sm:text-sm text-white/90 max-w-xl">
+                                    {isHindi
+                                        ? `आपके बोर्ड (${studentGrade}) के सहपाठियों के साथ लाइव क्लास रैंक और 1v1 फ्रेंड चैलेंज मुकाबला जल्द ही लॉन्च हो रहा है! अभी के लिए ग्लोबल रैंकिंग देखें।`
+                                        : `Classmate rankings for your board (${studentGrade}) and 1v1 friend quiz battles are launching soon! Explore the Global Intelligence ranks below in the meantime.`}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="px-4 py-2 rounded-xl bg-white/10 border border-white/20 text-xs font-bold text-sky-100 whitespace-nowrap">
+                            ⚡ {studentGrade} Active
+                        </div>
+                    </motion.div>
+                )}
 
                 {/* Top 3 Podiums */}
                 {!loading && users.length >= 3 && (

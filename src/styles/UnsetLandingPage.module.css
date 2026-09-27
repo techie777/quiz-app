@@ -1,0 +1,476 @@
+.landingContainer {
+  width: 100%;
+  min-height: calc(100vh - 70px);
+  padding: 2rem 1rem 4rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.heroSection {
+  max-width: 860px;
+  width: 100%;
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.brandBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 1rem;
+  border-radius: 9999px;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  color: #4f46e5;
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+}
+
+[data-theme='dark'] .brandBadge {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.4);
+  color: #818cf8;
+}
+
+.mainTitle {
+  font-size: 2.5rem;
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  color: var(--text-primary, #0f172a);
+  margin-bottom: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .mainTitle {
+    font-size: 1.85rem;
+  }
+}
+
+.mainSubtitle {
+  font-size: 1.05rem;
+  line-height: 1.5;
+  color: var(--text-secondary, #64748b);
+  max-width: 680px;
+  margin: 0 auto 1.5rem auto;
+  font-weight: 500;
+}
+
+@media (max-width: 640px) {
+  .mainSubtitle {
+    font-size: 0.92rem;
+  }
+}
+
+/* Real Live Stats Strip */
+.statsStrip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1.25rem;
+  background: var(--bg-secondary, #ffffff);
+  border: 1px solid var(--card-border, #e2e8f0);
+  border-radius: 16px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary, #1e293b);
+  box-shadow: 0 4px 14px -2px rgba(0, 0, 0, 0.04);
+  flex-wrap: wrap;
+}
+
+[data-theme='dark'] .statsStrip {
+  background: #1e293b;
+  border-color: #334155;
+  box-shadow: 0 4px 14px -2px rgba(0, 0, 0, 0.25);
+}
+
+.statItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.statDot {
+  opacity: 0.35;
+}
+
+/* 3 Large Visual Tier Cards Grid */
+.cardsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  max-width: 1140px;
+  width: 100%;
+  margin-bottom: 3.5rem;
+}
+
+@media (max-width: 960px) {
+  .cardsGrid {
+    grid-template-columns: 1fr;
+    max-width: 560px;
+  }
+}
+
+.tierCard {
+  position: relative;
+  background: var(--card-bg, #ffffff);
+  border: 2px solid var(--card-border, #e2e8f0);
+  border-radius: 28px;
+  padding: 1.75rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  text-align: left;
+}
+
+.tierCard:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.12);
+}
+
+[data-theme='dark'] .tierCard {
+  background: #111827;
+  border-color: #1f2937;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.3);
+}
+
+/* Tier Card Glow Themes */
+.tierCardKids:hover {
+  border-color: #f59e0b;
+  box-shadow: 0 20px 40px -12px rgba(245, 158, 11, 0.25);
+}
+
+.tierCardStudents:hover {
+  border-color: #0ea5e9;
+  box-shadow: 0 20px 40px -12px rgba(14, 165, 233, 0.25);
+}
+
+.tierCardAdults:hover {
+  border-color: #6366f1;
+  box-shadow: 0 20px 40px -12px rgba(99, 102, 241, 0.25);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.cardIconCircle {
+  width: 54px;
+  height: 54px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.85rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.cardAgePill {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.3rem 0.75rem;
+  border-radius: 9999px;
+}
+
+.cardTitle {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--text-primary, #0f172a);
+  margin-bottom: 0.35rem;
+  line-height: 1.25;
+}
+
+.cardTagline {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #64748b);
+  line-height: 1.45;
+  margin-bottom: 1.25rem;
+  font-weight: 500;
+}
+
+/* Visual Snippet Box (Real UI preview for each tier) */
+.visualSnippetBox {
+  background: var(--bg-primary, #f8fafc);
+  border: 1.5px solid var(--card-border, #e2e8f0);
+  border-radius: 20px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  transition: transform 0.2s;
+}
+
+[data-theme='dark'] .visualSnippetBox {
+  background: #0f172a;
+  border-color: #1e293b;
+}
+
+.tierCard:hover .visualSnippetBox {
+  transform: scale(1.02);
+}
+
+.cardCtaButton {
+  width: 100%;
+  padding: 0.85rem 1.25rem;
+  border-radius: 16px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #ffffff;
+}
+
+.cardCtaButton:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+/* "How QuizWeb Works" Strip */
+.howItWorksStrip {
+  max-width: 1040px;
+  width: 100%;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--card-border, #e2e8f0);
+  border-radius: 28px;
+  padding: 2rem 1.5rem;
+  margin-bottom: 3.5rem;
+  text-align: center;
+  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme='dark'] .howItWorksStrip {
+  background: #111827;
+  border-color: #1f2937;
+  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.2);
+}
+
+.sectionHeaderSmall {
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6366f1;
+  margin-bottom: 0.35rem;
+}
+
+.sectionTitleSmall {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: var(--text-primary, #0f172a);
+  margin-bottom: 1.5rem;
+}
+
+.stepsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .stepsRow {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+}
+
+.stepCard {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1rem;
+}
+
+.stepNumberBadge {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: rgba(99, 102, 241, 0.1);
+  color: #4f46e5;
+  font-size: 0.78rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+.stepIcon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.stepTitle {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text-primary, #0f172a);
+  margin-bottom: 0.25rem;
+}
+
+.stepDesc {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #64748b);
+  line-height: 1.4;
+  max-width: 240px;
+}
+
+.stepArrow {
+  color: var(--text-secondary, #cbd5e1);
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+@media (max-width: 768px) {
+  .stepArrow {
+    transform: rotate(90deg);
+  }
+}
+
+/* Live Taste Section */
+.liveTasteSection {
+  max-width: 860px;
+  width: 100%;
+  margin-bottom: 3rem;
+  text-align: center;
+}
+
+.tasteCard {
+  background: var(--card-bg, #ffffff);
+  border: 2px solid var(--card-border, #e2e8f0);
+  border-radius: 28px;
+  padding: 2rem;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
+  text-align: left;
+  transition: all 0.25s;
+}
+
+[data-theme='dark'] .tasteCard {
+  background: #111827;
+  border-color: #1f2937;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.25);
+}
+
+.tasteCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tasteQuestion {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-primary, #0f172a);
+  line-height: 1.45;
+  margin-bottom: 1.25rem;
+}
+
+.tasteOptionsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 600px) {
+  .tasteOptionsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tasteOptionBtn {
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-align: left;
+  background: var(--bg-primary, #f8fafc);
+  border: 1.5px solid var(--card-border, #e2e8f0);
+  color: var(--text-primary, #1e293b);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tasteOptionBtn:hover {
+  background: rgba(99, 102, 241, 0.06);
+  border-color: rgba(99, 102, 241, 0.4);
+  color: #4f46e5;
+  transform: translateX(2px);
+}
+
+[data-theme='dark'] .tasteOptionBtn {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f1f5f9;
+}
+
+[data-theme='dark'] .tasteOptionBtn:hover {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: #6366f1;
+  color: #818cf8;
+}
+
+.tasteOptionBtnCorrect {
+  background: #dcfce7 !important;
+  border-color: #22c55e !important;
+  color: #15803d !important;
+}
+
+[data-theme='dark'] .tasteOptionBtnCorrect {
+  background: rgba(34, 197, 94, 0.2) !important;
+  border-color: #22c55e !important;
+  color: #4ade80 !important;
+}
+
+.tasteOptionBtnIncorrect {
+  background: #fee2e2 !important;
+  border-color: #ef4444 !important;
+  color: #b91c1c !important;
+}
+
+[data-theme='dark'] .tasteOptionBtnIncorrect {
+  background: rgba(239, 68, 68, 0.2) !important;
+  border-color: #ef4444 !important;
+  color: #f87171 !important;
+}
+
+/* Thin Footer */
+.thinFooter {
+  width: 100%;
+  max-width: 860px;
+  padding-top: 2rem;
+  border-top: 1px solid var(--card-border, #e2e8f0);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--text-secondary, #64748b);
+  flex-wrap: wrap;
+  gap: 1rem;
+}

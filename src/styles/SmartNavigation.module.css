@@ -1,6 +1,7 @@
 .navigation {
+  display: none !important;
   position: sticky;
-  top: 56px; /* Matches new header height */
+  top: 56px;
   background: var(--bg-primary);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);

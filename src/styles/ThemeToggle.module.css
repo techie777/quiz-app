@@ -37,3 +37,30 @@
 .dark .slider {
   transform: translateX(24px);
 }
+
+@media (max-width: 768px) {
+  .toggle {
+    width: 44px;
+    height: 26px;
+    flex-shrink: 0;
+  }
+
+  .icon {
+    font-size: 0.72rem;
+    left: 4px;
+  }
+
+  .slider {
+    width: 20px;
+    height: 20px;
+    left: 2px;
+  }
+
+  .dark .icon {
+    transform: translateX(17px);
+  }
+
+  .dark .slider {
+    transform: translateX(18px);
+  }
+}

@@ -14,6 +14,7 @@ import { useData } from "@/context/DataContext";
 
 const fallbackNavigationItems = [
   { key: "home", href: "/", icon: "🏠" },
+  { key: "learn", href: "/learn", icon: "✨" },
   { key: "quizzes", href: "/quizzes", icon: "🧠" },
   { key: "careerGuide", href: "/career-guide", icon: "🧭" },
   { key: "funFacts", href: "/fun-facts", icon: "💡" },
@@ -48,11 +49,14 @@ export default function SmartNavigation() {
     if (['govtExams', 'mockTests'].includes(item.key)) {
       return !!settings?.showGovtExams;
     }
-    if (!['home', 'quizzes', 'currentAffairs'].includes(item.key)) {
+    if (!['home', 'learn', 'quizzes', 'currentAffairs'].includes(item.key)) {
       return !!settings?.showOtherOptions;
     }
     return true;
   });
+
+  const duplicatedBottomKeys = ['home', 'learn', 'quizzes', 'mockTests', 'profile'];
+  const drawerNavItems = visibleNavItems.filter(item => !duplicatedBottomKeys.includes(item.key));
 
   useEffect(() => {
     const fetchNav = async () => {
@@ -401,7 +405,7 @@ export default function SmartNavigation() {
                 </div>
 
                 <ul className={styles.mobileNavList} role="menu">
-                  {visibleNavItems.map((item, index) => {
+                  {drawerNavItems.map((item, index) => {
                     const isActive = pathname === item.href;
                     if (item.key === 'quizzes') {
                       return (

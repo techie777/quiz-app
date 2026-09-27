@@ -1,41 +1,43 @@
 .header {
   position: sticky;
   top: 0;
-  z-index: 1000;
+  z-index: 1100;
   background: var(--bg-primary);
   border-bottom: 1px solid var(--card-border);
   height: 56px;
+  width: 100%;
+  max-width: 100%;
   display: flex;
   align-items: center;
   backdrop-filter: blur(8px);
-  z-index: 1100;
 }
 
 .container {
   max-width: 1200px;
   width: 100%;
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding: 0 1.25rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  box-sizing: border-box;
 }
 
 .logo {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   text-decoration: none;
   flex-shrink: 0;
 }
 
 .logoEmoji {
-  font-size: 1.5rem;
+  font-size: 1.45rem;
 }
 
 .logoText {
   color: var(--text-primary);
-  font-weight: 700;
+  font-weight: 800;
   font-size: 1.15rem;
   letter-spacing: -0.5px;
 }
@@ -43,13 +45,15 @@
 .headerActions {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
 .mobileActions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .mobileMenuButton {
@@ -58,8 +62,10 @@
   justify-content: center;
   align-items: center;
   gap: 4px;
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  flex-shrink: 0;
   padding: 0;
   background: var(--bg-secondary);
   border: 1px solid var(--card-border);
@@ -99,8 +105,40 @@
 }
 
 @media (max-width: 768px) {
+  .header {
+    height: 52px;
+  }
+
+  .container {
+    padding: 0 10px;
+  }
+
+  .logo {
+    gap: 6px;
+  }
+
+  .logoEmoji {
+    font-size: 1.35rem;
+  }
+
+  .logoText {
+    font-size: 1.05rem;
+  }
+
+  .headerActions {
+    gap: 6px;
+  }
+
+  .mobileActions {
+    gap: 6px;
+  }
+
   .mobileMenuButton {
-    display: flex;
+    display: flex !important;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    flex-shrink: 0;
   }
   
   .desktopAuth {
@@ -108,13 +146,39 @@
   }
 
   .gamification {
-    gap: 8px;
-    margin: 0 8px;
-    padding: 4px 8px;
-  }
-  
-  .xpContainer, .streakBadge {
     display: none !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .container {
+    padding: 0 6px;
+  }
+
+  .logo {
+    gap: 4px;
+  }
+
+  .logoEmoji {
+    font-size: 1.25rem;
+  }
+
+  .logoText {
+    font-size: 0.95rem;
+  }
+
+  .mobileActions {
+    gap: 4px;
+  }
+
+  .headerActions {
+    gap: 4px;
+  }
+
+  .mobileMenuButton {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
   }
 }
 

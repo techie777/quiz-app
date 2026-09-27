@@ -1,0 +1,80 @@
+.pageWrapper {
+  min-height: 100vh;
+  padding-bottom: 5rem;
+}
+
+.chipScrollArea {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 0.5rem 0.25rem;
+}
+
+.chipScrollArea::-webkit-scrollbar {
+  display: none;
+}
+
+.filterChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1.15rem;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: #94a3b8;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+
+:global([data-theme='light']) .filterChip {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #64748b;
+}
+
+.filterChip:hover {
+  transform: translateY(-1px);
+  color: #cbd5e1;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+:global([data-theme='light']) .filterChip:hover {
+  color: #0f172a;
+  border-color: #cbd5e1;
+  background: #e2e8f0;
+}
+
+/* Active Chip matching Seekho screenshot (Crisp high-contrast pill) */
+.filterChipActive {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(255, 255, 255, 0.2);
+}
+
+:global([data-theme='light']) .filterChipActive {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border-color: #0f172a !important;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.2);
+}
+
+.sectionHeading {
+  font-size: 1.35rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+
+:global([data-theme='dark']) .sectionHeading {
+  color: #ffffff;
+}

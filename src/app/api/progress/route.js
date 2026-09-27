@@ -112,6 +112,7 @@ export async function POST(request) {
         isComplete: isComplete === true,
         lastQuestionIndex,
         answersJson,
+        attempts: { increment: 1 },
       },
       create: {
         userId: session.user.id,
@@ -122,8 +123,33 @@ export async function POST(request) {
         isComplete: isComplete === true,
         lastQuestionIndex,
         answersJson,
+        attempts: 1,
       },
     });
+
+    // Also update QuizSetStat and Category attemptCount for trending discovery
+    try {
+      if (prisma.quizSetStat) {
+        await prisma.quizSetStat.upsert({
+          where: {
+            categoryId_setIndex: {
+              categoryId,
+              setIndex,
+            },
+          },
+          update: { attemptCount: { increment: 1 } },
+          create: { categoryId, setIndex, attemptCount: 1 },
+        });
+      }
+      if (prisma.category) {
+        await prisma.category.update({
+          where: { id: categoryId },
+          data: { attemptCount: { increment: 1 } },
+        });
+      }
+    } catch (statError) {
+      console.warn("[API/Progress] Stat update warning:", statError?.message);
+    }
 
     return NextResponse.json({
       ...updatedProgress,

@@ -4,6 +4,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useQuiz } from "@/context/QuizContext";
 import { useData } from "@/context/DataContext";
 import { useLanguage } from "@/context/LanguageContext";
+import { useTier } from "@/context/TierContext";
 import styles from "@/styles/QuizSidebar.module.css";
 
 export default function QuizSidebar({ 
@@ -65,6 +66,8 @@ export default function QuizSidebar({
     return `${min}:${sec.toString().padStart(2, "0")}s`;
   }, [elapsed]);
 
+  const { tier } = useTier();
+
   return (
     <aside className={styles.sidebar}>
       {/* Mission Map Navigation */}
@@ -122,9 +125,11 @@ export default function QuizSidebar({
             );
           })}
         </div>
-        <div className={styles.mapFooter}>
-          <span className={styles.mapTime}>⌛ {displayTime}</span>
-        </div>
+        {tier !== "kids" && (
+          <div className={styles.mapFooter}>
+            <span className={styles.mapTime}>⌛ {displayTime}</span>
+          </div>
+        )}
       </div>
 
     </aside>

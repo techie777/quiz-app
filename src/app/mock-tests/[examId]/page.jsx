@@ -10,6 +10,8 @@ import 'jspdf-autotable';
 import { Download, Rocket, FileText, CheckCircle2, BookOpen, ScrollText, Zap, HelpCircle, Lock, ShoppingCart, ShieldCheck } from "lucide-react";
 import { useMonetization } from '@/context/MonetizationContext';
 import { useSession } from 'next-auth/react';
+import UnifiedPaywallModal from '@/components/UnifiedPaywallModal';
+import StickyPaywallCTA from '@/components/StickyPaywallCTA';
 
 export default function PaperSelection() {
   const { examId } = useParams();
@@ -20,6 +22,13 @@ export default function PaperSelection() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('info'); 
   const [showPayWall, setShowPayWall] = useState(false);
+  const [paywallModalOpen, setPaywallModalOpen] = useState(false);
+  const [paywallItemTitle, setPaywallItemTitle] = useState("");
+
+  const handleLockedClick = (paper) => {
+    setPaywallItemTitle(paper?.title || `${exam?.name || "Exam"} Mock Paper`);
+    setPaywallModalOpen(true);
+  };
 
   useEffect(() => {
     async function fetchPapers() {
@@ -405,7 +414,7 @@ export default function PaperSelection() {
                                     </div>
                                     <div className="grid grid-cols-1 gap-4">
                                         {mocksByYear[year].map((paper, idx) => (
-                                            <PaperCard key={paper.id} paper={paper} index={idx} />
+                                            <PaperCard key={paper.id} paper={paper} index={idx} onLockedClick={handleLockedClick} />
                                         ))}
                                     </div>
                                 </div>
@@ -438,7 +447,7 @@ export default function PaperSelection() {
                                     </div>
                                     <div className="grid grid-cols-1 gap-4">
                                         {pypsByYear[year].map((paper, idx) => (
-                                            <PaperCard key={paper.id} paper={paper} index={idx} highlight />
+                                            <PaperCard key={paper.id} paper={paper} index={idx} highlight onLockedClick={handleLockedClick} />
                                         ))}
                                     </div>
                                 </div>
@@ -565,12 +574,33 @@ export default function PaperSelection() {
         </div>
       </section>
 
+      {/* Sticky CTA Bar above bottom nav when viewing locked content (Requirement 5) */}
+      <StickyPaywallCTA
+        hasLockedContent={Boolean(exam?.papers?.some(p => (p.isPaid || p.exam?.isPaid) && !hasPass(p.id) && !hasPass(p.examId)))}
+        isPro={isPro}
+        onUnlockClick={() => {
+          setPaywallItemTitle(exam?.name || "Exam Mock Series");
+          setPaywallModalOpen(true);
+        }}
+      />
+
+      {/* Unified Paywall Modal (Requirement 4) */}
+      <UnifiedPaywallModal
+        isOpen={paywallModalOpen}
+        onClose={() => setPaywallModalOpen(false)}
+        itemTitle={paywallItemTitle}
+        itemType="mock"
+      />
+
       <div className="h-32" />
     </main>
   );
 }
 
-function PaperCard({ paper, index, highlight = false }) {
+function PaperCard({ paper, index, highlight = false, onLockedClick }) {
+    const { hasPass } = useMonetization();
+    const isLocked = (paper.isPaid || paper.exam?.isPaid) && !hasPass(paper.id) && !hasPass(paper.examId);
+
     return (
         <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -621,18 +651,26 @@ function PaperCard({ paper, index, highlight = false }) {
                         <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1">Standard Scale</p>
                         <p className="text-sm font-black text-slate-700">+{paper.positiveMarking} / -{paper.negativeMarking}</p>
                     </div>
-                    <Link 
+                    {isLocked ? (
+                      <button
+                        onClick={() => onLockedClick?.(paper)}
+                        className="px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-sm transition-all shadow-lg hover:-translate-y-1 text-center min-w-[180px] bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <Lock size={16} />
+                        <span>🔒 LOCKED</span>
+                      </button>
+                    ) : (
+                      <Link 
                         href={`/mock-tests/paper/${paper.id}/instructions`}
                         className={`px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-sm transition-all shadow-lg hover:-translate-y-1 text-center min-w-[180px] ${
-                            ((paper.isPaid || paper.exam?.isPaid) && !hasPass(paper.id) && !hasPass(paper.examId))
-                            ? 'bg-slate-200 text-slate-400 cursor-not-allowed pointer-events-none'
-                            : highlight 
+                            highlight 
                                 ? 'bg-indigo-600 text-white shadow-indigo-200 hover:bg-indigo-700' 
                                 : 'bg-slate-900 text-white shadow-slate-200 hover:bg-black'
                         }`}
-                    >
-                        {((paper.isPaid || paper.exam?.isPaid) && !hasPass(paper.id) && !hasPass(paper.examId)) ? 'LOCKED' : 'START TEST'}
-                    </Link>
+                      >
+                        START TEST
+                      </Link>
+                    )}
                 </div>
             </div>
         </motion.div>

@@ -38,6 +38,7 @@ export const translations = {
     },
     nav: {
       home: "Home",
+      learn: "Learn",
       quizzes: "Quizzes",
       mockTests: "Mock Tests",
       careerGuide: "Career Guide",
@@ -56,6 +57,7 @@ export const translations = {
       descriptions: {
         personalized: "Tailored for you",
         home: "Master Hub",
+        learn: "Discover new sets",
         leaderboard: "World intelligence rankings",
         pro: "Unlock premium features",
         quizzes: "Play dynamic quizzes",
@@ -650,6 +652,7 @@ export const translations = {
       },
       nav: {
         home: "होम",
+        learn: "सीखें",
         quizzes: "क्विज़",
         mockTests: "मॉक टेस्ट",
         careerGuide: "करियर गाइड",
@@ -668,6 +671,7 @@ export const translations = {
       descriptions: {
         personalized: "आपके लिए विशेष",
         home: "मुख्य हब",
+        learn: "नए सेट्स खोजें",
         leaderboard: "विश्व बौद्धिक रैंकिंग",
         pro: "प्रीमियम सुविधाएं",
         quizzes: "गतिशील क्विज़ खेलें",

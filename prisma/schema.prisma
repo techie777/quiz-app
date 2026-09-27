@@ -136,6 +136,7 @@ model Category {
   chips                   String      @default("[]")
   sortOrder               Int         @default(0)
   showSubCategoriesOnHome Boolean     @default(false)
+  attemptCount            Int         @default(0)
 
   parentId      String?     @db.ObjectId
   parent Category? @relation("SubCategories", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -179,6 +180,7 @@ model UserProgress {
   progress          Float    @default(0) // 0-100 percentage
   score             Int      @default(0) // Total quiz points earned for this section
   isComplete        Boolean  @default(false)
+  attempts          Int      @default(1)
   
   // Resumption Data
   lastQuestionIndex Int      @default(0)
@@ -191,6 +193,17 @@ model UserProgress {
   createdAt DateTime @default(now())
 
   @@unique([userId, categoryId, setIndex])
+}
+
+model QuizSetStat {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  categoryId   String   @db.ObjectId
+  setIndex     Int
+  attemptCount Int      @default(0)
+  updatedAt    DateTime @updatedAt
+  createdAt    DateTime @default(now())
+
+  @@unique([categoryId, setIndex])
 }
 
 // ── User Features ──

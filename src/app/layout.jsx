@@ -14,6 +14,7 @@ import { generateWebsiteStructuredData, generateOrganizationStructuredData } fro
 
 import Header from '@/components/Header';
 import SmartNavigation from '@/components/SmartNavigation';
+import BottomNavBar from '@/components/BottomNavBar';
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -141,12 +142,13 @@ export default function RootLayout({ children }) {
           <div className="hidden md:block">
             <Breadcrumbs />
           </div>
-          <main style={{ flex: 1 }}>
+          <main style={{ flex: 1, paddingBottom: 'calc(5.5rem + env(safe-area-inset-bottom, 0px))' }}>
             <ErrorBoundary>
               {children}
             </ErrorBoundary>
           </main>
           <Footer />
+          <BottomNavBar />
           <PwaInstallPrompt />
         </Providers>
         

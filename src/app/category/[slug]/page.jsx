@@ -7,12 +7,18 @@ import { useSession } from "next-auth/react";
 import { useData } from "@/context/DataContext";
 import { useQuiz } from "@/context/QuizContext";
 import { useLanguage } from "@/context/LanguageContext";
+import { useTier } from "@/context/TierContext";
+import { useMonetization } from "@/context/MonetizationContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users } from "lucide-react";
 import toast from "react-hot-toast";
 import styles from "@/styles/CategorySets.module.css";
 import ResumeBanner from "@/components/ResumeBanner";
 import QuizEmptyState from "@/components/QuizEmptyState";
+import SetCard, { FREE_SETS_QUOTA } from "@/components/SetCard";
+import CategoryCard from "@/components/CategoryCard";
+import UnifiedPaywallModal from "@/components/UnifiedPaywallModal";
+import StickyPaywallCTA from "@/components/StickyPaywallCTA";
 
 // Helper function to detect if text is Hindi
 function isHindiText(text) {
@@ -33,288 +39,7 @@ function detectQuizLanguage(questions) {
   return hindiCount > sampleQuestions.length / 2 ? 'hi' : 'en';
 }
 
-const SETS_PER_PAGE = 6;
-
-const SetCard = ({ set, t, isHindi, handlePlay, handleLivePlay, styles, isMix = false, categoryTopic = "", handlePlayMix, onViewQuestions, mixQuestions = [] }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [mixIndex, setMixIndex] = useState(0);
-
-  const randomizedMixQuestions = useMemo(() => {
-    if (!isMix || !mixQuestions || mixQuestions.length === 0) return [];
-    return [...mixQuestions].sort(() => 0.5 - Math.random());
-  }, [isMix, mixQuestions]);
-
-  useEffect(() => {
-    if (isMix && randomizedMixQuestions.length > 0) {
-      const interval = setInterval(() => {
-        setMixIndex((prev) => (prev + 1) % Math.min(randomizedMixQuestions.length, 10));
-      }, 3500);
-      return () => clearInterval(interval);
-    }
-  }, [isMix, randomizedMixQuestions]);
-
-  const [showMixInfo, setShowMixInfo] = useState(false);
-
-  useEffect(() => {
-    if (isMix) {
-      const timer = setTimeout(() => setShowMixInfo(true), 600);
-      return () => clearTimeout(timer);
-    }
-  }, [isMix]);
-
-  useEffect(() => {
-    let timer;
-    if (showMixInfo) {
-      timer = setTimeout(() => setShowMixInfo(false), 5000);
-    }
-    return () => clearTimeout(timer);
-  }, [showMixInfo]);
-
-  const handleEyeClick = () => {
-    if (window.innerWidth <= 768) {
-      setIsExpanded(!isExpanded);
-    } else {
-      onViewQuestions(set);
-    }
-  };
-
-  if (isMix) {
-    return (
-      <motion.div
-        className={styles.setCard}
-        whileHover={{ y: -8, scale: 1.02 }}
-        transition={{ type: "spring", stiffness: 300 }}
-        style={{ border: '2px solid var(--accent)', background: 'linear-gradient(145deg, rgba(99, 102, 241, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%)' }}
-      >
-        <div className={styles.setCardHeader} style={{ marginBottom: '-8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
-            <h3 className={styles.setCardTitle} style={{ fontSize: '0.95rem', lineHeight: '1.3', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>✨ {t('quizzes.category.megaMix')}</h3>
-          </div>
-          <div className={styles.setMeta}>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <button
-                className={styles.viewQuestionsBtn}
-                onClick={() => setShowMixInfo(!showMixInfo)}
-                title="Mega Mix Info"
-                style={{ width: '38px', height: '38px', fontSize: '1.1rem', borderRadius: '12px', padding: 0, fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                i
-              </button>
-            </div>
-          </div>
-          <AnimatePresence>
-            {showMixInfo && (
-              <motion.div
-                initial={{ opacity: 0, y: -5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -5 }}
-                style={{
-                  position: 'absolute',
-                  top: '55px',
-                  right: '0',
-                  background: 'var(--bg-primary)',
-                  padding: '12px',
-                  borderRadius: '12px',
-                  boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
-                  zIndex: 10,
-                  fontSize: '0.8rem',
-                  color: 'var(--text-secondary)',
-                  width: 'calc(100% - 20px)',
-                  maxWidth: '280px',
-                  border: '1px solid var(--card-border)',
-                  lineHeight: '1.4'
-                }}
-              >
-                अपनी पसंद के विषय, मनचाहे सवाल और कठिनाई स्तर चुनें! बिना टाइमर या टाइमर के साथ कस्टमाइज्ड क्विज़ खेलें और खुद को चैलेंज करें।
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-        <div className={styles.setCardBody}>
-          <div className={styles.setCardBadges} style={{ margin: '4px 0' }}>
-            <span className={styles.questionCountBadge}>📝 {mixQuestions?.length || 0} {t('quizzes.cards.questions')}</span>
-          </div>
-          <div style={{ margin: '8px 0 0 0', position: 'relative', height: '110px' }}>
-            <AnimatePresence mode="wait">
-              {randomizedMixQuestions && randomizedMixQuestions.length > 0 ? (
-                <motion.div
-                  key={mixIndex}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.4 }}
-                  style={{ position: 'absolute', width: '100%' }}
-                >
-                  <p className={styles.setPreviewDesc} style={{fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0 0 8px 0', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: '36px', lineHeight: '1.4'}}>
-                    {randomizedMixQuestions[mixIndex].text}
-                  </p>
-                  {randomizedMixQuestions[mixIndex].options && Array.isArray(randomizedMixQuestions[mixIndex].options) && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-                      {randomizedMixQuestions[mixIndex].options.slice(0, 4).map((opt, i) => (
-                        <div key={i} style={{
-                          fontSize: '0.75rem',
-                          padding: '4px 8px',
-                          background: 'rgba(99, 102, 241, 0.05)',
-                          border: '1px solid rgba(99, 102, 241, 0.1)',
-                          borderRadius: '6px',
-                          color: 'var(--text-primary)',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          textAlign: 'center'
-                        }}>
-                          {opt}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </motion.div>
-              ) : (
-                <p className={styles.setPreviewDesc} style={{fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: '36px', lineHeight: '1.4'}}>
-                  {t('quizzes.category.mixDesc')} {categoryTopic}.
-                </p>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-        <div className={styles.setCardActions}>
-          <button className={styles.playIconButton} onClick={handlePlayMix} style={{ width: '100%', justifyContent: 'center' }}>
-            <span>{t('quizzes.category.configurePlay')}</span>
-            <span className={styles.playArrow}>&gt;</span>
-          </button>
-        </div>
-      </motion.div>
-    );
-  }
-
-  const firstQ = set.questions && set.questions.length > 0 ? set.questions[0] : null;
-  const previewDesc = firstQ ? firstQ.text : "";
-
-  return (
-    <motion.div
-      className={styles.setCard}
-      whileHover={{ y: -8, scale: 1.02 }}
-      transition={{ type: "spring", stiffness: 300 }}
-    >
-      <div className={styles.setCardHeader} style={{ marginBottom: '-8px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
-          <h3 className={styles.setCardTitle} style={{ fontSize: '0.95rem', lineHeight: '1.3', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={`${categoryTopic} ${t('live.lobby.selection.set')} ${set.index}`}>{categoryTopic} {t('live.lobby.selection.set')} {set.index}</h3>
-          {set.progress?.isComplete && (
-            <span className={styles.masteryTick} title={isHindi ? '100% पूर्ण' : '100% Completed'}>✓</span>
-          )}
-        </div>
-        <div className={styles.setMeta}>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            {set.progress?.progress > 0 && !set.progress.isComplete && (
-              <span className={styles.progressPercent}>{Math.round(set.progress.progress)}% Done</span>
-            )}
-            <button
-              className={`${styles.viewQuestionsBtn} ${isExpanded ? styles.viewBtnActive : ""}`}
-              onClick={handleEyeClick}
-              title={isExpanded ? "Hide Questions" : "View Questions"}
-              style={{ width: '38px', height: '38px', fontSize: '1rem', borderRadius: '12px', padding: 0 }}
-            >
-              👁️
-            </button>
-          </div>
-        </div>
-      </div>
-      <div className={styles.setCardBody}>
-        <div className={styles.setCardBadges} style={{ margin: '4px 0' }}>
-          <span className={styles.questionCountBadge}>📝 {set.questions?.length || 0} {t('quizzes.cards.questions')}</span>
-        </div>
-        {previewDesc && (
-           <div style={{ margin: '4px 0 0 0' }}>
-             <p className={styles.setPreviewDesc} style={{fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0 0 8px 0', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: '36px', lineHeight: '1.4'}}>
-               {previewDesc}
-             </p>
-             {firstQ.options && Array.isArray(firstQ.options) && (
-               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-                 {firstQ.options.slice(0, 4).map((opt, i) => (
-                   <div key={i} style={{
-                     fontSize: '0.75rem',
-                     padding: '4px 8px',
-                     background: 'rgba(99, 102, 241, 0.05)',
-                     border: '1px solid rgba(99, 102, 241, 0.1)',
-                     borderRadius: '6px',
-                     color: 'var(--text-primary)',
-                     whiteSpace: 'nowrap',
-                     overflow: 'hidden',
-                     textOverflow: 'ellipsis',
-                     textAlign: 'center'
-                   }}>
-                     {opt}
-                   </div>
-                 ))}
-               </div>
-             )}
-           </div>
-        )}
-        {set.progress && (
-          <div className={styles.scoreLine} style={{marginTop: '12px'}}>
-            <span className={styles.scoreLabel}>{t('quizzes.category.lastScore')}:</span>
-            <span className={styles.bestScore}>
-              {(() => {
-                try {
-                  const answers = JSON.parse(set.progress.answersJson || "[]");
-                  const correct = answers.filter(a => a.isCorrect).length;
-                  return `${correct} / ${set.end - set.start}`;
-                } catch (e) { return "0 / 0"; }
-              })()}
-            </span>
-          </div>
-        )}
-      </div>
-      <div className={styles.setCardActions}>
-        <button className={styles.playIconButton} onClick={() => handlePlay(set)}>
-          <span>{set.progress?.progress > 0 && !set.progress.isComplete ? t('quizzes.category.continueLearning') : t('quizzes.cards.playQuiz')}</span>
-          <span className={styles.playArrow}>&gt;</span>
-        </button>
-        <button className={styles.liveButtonStyle} onClick={() => handleLivePlay(set)}>
-          <Users size={18} />
-          <span>{t('quizzes.cards.playLive')}</span>
-        </button>
-      </div>
-
-      {/* Mobile Accordion Only */}
-      <AnimatePresence>
-        {isExpanded && (
-          <motion.div
-            key="questions-accordion"
-            className={styles.questionsAccordion}
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className={styles.accordionHeader}>
-              <span>📝 {t('quizzes.category.prepReview')}: {set.end - set.start} {t('quizzes.cards.questions')}</span>
-            </div>
-            <div className={styles.accordionList}>
-              {set.questions.map((q, idx) => (
-                <div key={q.id || idx} className={styles.accordionItem}>
-                  <div className={styles.accordionQ}>
-                    <span className={styles.accQNum}>Q{idx + 1}</span>
-                    <p className={styles.accQText}>{q.text}</p>
-                  </div>
-                  <div className={styles.accOptions}>
-                    {Array.isArray(q.options) && q.options.map((opt, oIdx) => (
-                      <span key={oIdx} className={styles.accOptBadge}>{opt}</span>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <button className={styles.accordionStartBtn} onClick={() => handlePlay(set)}>
-              {t('quizzes.cards.playQuiz')} 🚀
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-    </motion.div>
-  );
-};
+const SETS_PER_PAGE = 8;
 
 export default function CategorySetsPage() {
   const params = useParams();
@@ -323,6 +48,8 @@ export default function CategorySetsPage() {
   const { startQuizSet, startQuizResume } = useQuiz();
   const { data: session } = useSession();
   const { t, isHindi, language: globalLang } = useLanguage();
+  const { tier } = useTier();
+  const effectiveSetSize = tier === "kids" ? 10 : 20;
 
   const [category, setCategory] = useState(null);
   const [questions, setQuestions] = useState([]);
@@ -352,7 +79,14 @@ export default function CategorySetsPage() {
   const [isMixMode, setIsMixMode] = useState(false);
   const [numQuestions, setNumQuestions] = useState(20);
   const [difficulty, setDifficulty] = useState("ALL");
-  const [viewSetIndex, setViewSetIndex] = useState(null);
+  const { isPro } = useMonetization();
+  const [paywallModalOpen, setPaywallModalOpen] = useState(false);
+  const [paywallItemTitle, setPaywallItemTitle] = useState("");
+
+  const handleLockedClick = (set) => {
+    setPaywallItemTitle(`${category?.topic || "Quiz"} Set ${set?.index || ""}`);
+    setPaywallModalOpen(true);
+  };
   
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => {
@@ -472,20 +206,20 @@ export default function CategorySetsPage() {
   }, [session?.user, category?.id]);
 
   const sets = useMemo(() => {
-    if (!category || !setSize || setSize <= 0) return [];
+    if (!category || !effectiveSetSize || effectiveSetSize <= 0) return [];
     const count = category.questionCount || 0;
     const result = [];
 
-    for (let i = 0; i < count; i += setSize) {
+    for (let i = 0; i < count; i += effectiveSetSize) {
       result.push({
         index: result.length + 1,
         start: i,
-        end: Math.min(i + setSize, count),
-        questions: questions.slice(i, i + setSize),
+        end: Math.min(i + effectiveSetSize, count),
+        questions: questions.slice(i, i + effectiveSetSize),
       });
     }
     return result;
-  }, [category, questions, setSize]);
+  }, [category, questions, effectiveSetSize]);
 
   const paginatedSets = useMemo(() => {
     return sets.map(set => {
@@ -699,29 +433,20 @@ export default function CategorySetsPage() {
       {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />}
 
       <div className={styles.contentWrap}>
-        {/* Sub-Categories Navigation (Hierarchy Flow) */}
+        {/* Sub-Categories Navigation (Seekho Category Grid) */}
         {subCategories.length > 0 && (
-          <section className={styles.setsNavigation} style={{ marginBottom: '40px' }}>
-            <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>📁 {t('quizzes.category.subTopics')}</h2>
-              <p className={styles.sectionLead}>{t('quizzes.category.explore')} {category.topic}.</p>
+          <section className="mb-10">
+            <div className="mb-4">
+              <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
+                📁 {t('quizzes.category.subTopics') || (isHindi ? "उप-विषय" : "Sub-Topics")}
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                {isHindi ? `${category.topic} के अंतर्गत विशेष विषय चुनें।` : `Explore specialized sub-categories under ${category.topic}.`}
+              </p>
             </div>
-            <div className={styles.setsGrid}>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-4">
               {subCategories.map(subCat => (
-                <Link href={`/category/${subCat.slug || subCat.id}`} key={subCat.id} className={styles.setCard} style={{ textDecoration: 'none', flexDirection: 'row', alignItems: 'center', gap: '16px', padding: '24px', cursor: 'pointer' }}>
-                  <div style={{ fontSize: '2.5rem', flexShrink: 0 }}>
-                    {subCat.image ? <img src={subCat.image} style={{ width: '50px', height: '50px', borderRadius: '12px', objectFit: 'cover' }} alt={subCat.topic} /> : (subCat.emoji || '📝')}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <h3 className={styles.setCardTitle} style={{ marginBottom: '4px' }}>
-                      {isHindi && subCat.topicHi ? subCat.topicHi : subCat.topic}
-                    </h3>
-                    <p className={styles.setCardInfo} style={{ marginBottom: '0' }}>
-                      {(isHindi && subCat.descriptionHi) ? subCat.descriptionHi : (subCat.description || (isHindi ? 'इस विषय का पता लगाएं' : 'Explore this specialized topic'))}
-                    </p>
-                  </div>
-                  <div style={{ color: 'var(--accent)', fontSize: '1.5rem', fontWeight: 'bold', transition: 'transform 0.2s' }}>→</div>
-                </Link>
+                <CategoryCard key={subCat.id} category={subCat} />
               ))}
             </div>
           </section>
@@ -732,23 +457,31 @@ export default function CategorySetsPage() {
           <QuizEmptyState topic={category.topic} isHindi={isHindi} />
         ) : (
           <>
-            {/* Sets Navigation */}
-            <section className={styles.setsNavigation}>
-              <div className={styles.sectionHeader}>
-                <h2 className={styles.sectionTitle}>🎯 {t('quizzes.category.sets')}</h2>
-                <h3 className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500 my-2">
-                  {category.topic}
-                </h3>
-                <p className={styles.sectionLead}>{isHindi ? 'प्रत्येक सेट फोकस और त्वरित सीखने के लिए अनुकूलित है।' : 'Each set is optimized for focus and quick learning.'}</p>
+            {/* Sets Section (Seekho Pattern: Vertical Stack of Set Cards below one short intro line) */}
+            <section className="mt-8 mb-10">
+              <div className="mb-5 border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
+                    🎯 {t('quizzes.category.sets') || (isHindi ? "क्विज़ सेट्स" : "Quiz Sets")}
+                  </h2>
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/50">
+                    {sets.length} {isHindi ? "सेट्स" : "Sets"}
+                  </span>
+                </div>
+                {/* One short intro line */}
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                  {isHindi
+                    ? `${category.topic} के लिए ${effectiveSetSize}-प्रश्नों के सुनियोजित सेट्स हल करें और ज्ञान बढ़ाएं।`
+                    : `Complete each ${effectiveSetSize}-question set to practice and master ${category.topic}.`}
+                </p>
               </div>
 
-              <div className={styles.setsGrid}>
+              {/* Vertical list of Set cards with identical layout */}
+              <div className="flex flex-col gap-3 sm:gap-3.5">
                 {page === 1 && (
                   <SetCard 
                     isMix={true} 
                     categoryTopic={category.topic} 
-                    t={t} 
-                    styles={styles} 
                     handlePlayMix={handlePlayMix} 
                     mixQuestions={questions}
                   />
@@ -757,13 +490,11 @@ export default function CategorySetsPage() {
                   <SetCard
                     key={set.index}
                     set={set}
-                    t={t}
-                    isHindi={isHindi}
+                    categoryTopic={category.topic}
+                    freeQuota={FREE_SETS_QUOTA}
                     handlePlay={handlePlay}
                     handleLivePlay={handleLivePlay}
-                    styles={styles}
-                    onViewQuestions={setActiveModalSet}
-                    categoryTopic={category.topic}
+                    handleLockedClick={handleLockedClick}
                   />
                 ))}
               </div>
@@ -896,6 +627,7 @@ export default function CategorySetsPage() {
       </div>
 
       {/* Timer Modal (unchanged logic, updated UI) */}
+      {/* Practice Set Configuration Modal (Refined, Sleek, Compact UI) */}
       {selectedSet && (
         <div className={styles.overlay} onClick={closeModal}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
@@ -907,21 +639,45 @@ export default function CategorySetsPage() {
             >
               ✕
             </button>
-            <div className={styles.modalHeader}>
-              <span className={styles.modalEmoji}>{isMixMode ? "✨" : category.emoji}</span>
-              <h2 className={styles.modalTitle}>
-                {isMixMode ? t('quizzes.category.megaMix') : `${isHindi ? 'कॉन्फ़िगर प्रैक्टिस:' : 'Configure Practice:'} ${t('live.lobby.selection.set')} ${selectedSet.index}`}
-              </h2>
+
+            {/* Compact, Beautiful Header */}
+            <div className={styles.modalHeaderCompact}>
+              <div className={styles.modalEmojiBadge}>
+                {isMixMode ? "✨" : (category.emoji || "📝")}
+              </div>
+              <div className={styles.modalHeaderInfo}>
+                <h2
+                  className={styles.modalTitle}
+                  title={isMixMode ? t('quizzes.category.megaMix') : `${category.topic || 'Practice'}: Set ${selectedSet.index}`}
+                >
+                  {isMixMode 
+                    ? t('quizzes.category.megaMix') 
+                    : `${category.topic || 'Practice'}: Set ${selectedSet.index}`}
+                </h2>
+                <div className={styles.modalMetaPills}>
+                  <span className={styles.metaChipQuestions}>
+                    📝 {tier === 'kids' ? 10 : (selectedSet.questions?.length > 0 ? selectedSet.questions.length : ((selectedSet.end - selectedSet.start) || 20))} {isHindi ? 'प्रश्न' : 'Questions'}
+                  </span>
+                  <span className={styles.metaChipMode}>
+                    {isMixMode ? (isHindi ? 'मिक्स मोड' : 'Mix Rumble') : (isHindi ? 'अभ्यास मोड' : 'Practice Set')}
+                  </span>
+                </div>
+              </div>
             </div>
 
+            {/* Mix Mode Settings */}
             {isMixMode && (
-              <>
+              <div className={styles.mixSettingsContainer}>
                 <div className={styles.settingGroup}>
-                  <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <span>📈 {isHindi ? 'प्रश्नों की संख्या' : 'Number of Questions'}</span>
-                    <span className={styles.sliderBadge}>⚡ {numQuestions} {isHindi ? 'प्रश्न' : 'Questions'}</span>
-                  </label>
-                  <div className={styles.sliderBox}>
+                  <div className={styles.settingLabelRow}>
+                    <span className={styles.settingLabelText}>
+                      📈 {isHindi ? 'प्रश्नों की संख्या' : 'Question Count'}
+                    </span>
+                    <span className={styles.sliderBadgeCompact}>
+                      ⚡ {numQuestions} {isHindi ? 'प्रश्न' : 'Qs'}
+                    </span>
+                  </div>
+                  <div className={styles.sliderBoxCompact}>
                     <input 
                       type="range" 
                       min="5" 
@@ -932,66 +688,114 @@ export default function CategorySetsPage() {
                       className={styles.rangeSlider}
                     />
                   </div>
-                  <div className={styles.tabRow}>
+                  <div className={styles.presetChipRow}>
                     {[10, 20, 30, 50].map(n => (
-                      <button key={n} className={numQuestions === n ? styles.tabActiveEmerald : ""} onClick={() => setNumQuestions(n)}><span className={styles.tabIcon}>⚡</span> {n}</button>
+                      <button 
+                        key={n} 
+                        type="button"
+                        className={`${styles.presetChip} ${numQuestions === n ? styles.presetChipActive : ""}`} 
+                        onClick={() => setNumQuestions(n)}
+                      >
+                        ⚡ {n}
+                      </button>
                     ))}
                   </div>
                 </div>
 
                 <div className={styles.settingGroup}>
-                  <label>📊 {isHindi ? 'कठिनाई स्तर' : 'Difficulty Level'}</label>
-                  <div className={styles.tabRow}>
+                  <div className={styles.settingLabelRow}>
+                    <span className={styles.settingLabelText}>
+                      📊 {isHindi ? 'कठिनाई स्तर' : 'Difficulty'}
+                    </span>
+                  </div>
+                  <div className={styles.diffChipRow}>
                     {["ALL", "EASY", "MEDIUM", "HARD"].map(d => (
-                      <button key={d} className={difficulty === d ? styles.tabActiveAmber : ""} onClick={() => setDifficulty(d)}><span className={styles.tabIcon}>{d === 'ALL' ? '🌟' : (d === 'EASY' ? '🟢' : (d === 'MEDIUM' ? '🟡' : '🔴'))}</span> {isHindi ? (d === 'ALL' ? 'सभी' : (d === 'EASY' ? 'आसान' : (d === 'MEDIUM' ? 'मध्यम' : 'कठिन'))) : d}</button>
+                      <button 
+                        key={d} 
+                        type="button"
+                        className={`${styles.diffChip} ${difficulty === d ? styles.diffChipActive : ""}`} 
+                        onClick={() => setDifficulty(d)}
+                      >
+                        <span>{d === 'ALL' ? '🌟' : (d === 'EASY' ? '🟢' : (d === 'MEDIUM' ? '🟡' : '🔴'))}</span>
+                        <span>{isHindi ? (d === 'ALL' ? 'सभी' : (d === 'EASY' ? 'सरल' : (d === 'MEDIUM' ? 'मध्यम' : 'कठिन'))) : d}</span>
+                      </button>
                     ))}
                   </div>
                 </div>
-              </>
+              </div>
             )}
 
+            {/* Language Selection */}
             <div className={styles.settingGroup}>
-              <label>🌐 {isHindi ? 'अंग्रेजी या हिंदी पसंद करेंगे?' : 'Prefer English or Hindi?'}</label>
-              <div className={styles.tabRow}>
-                <button className={language === "en" ? styles.tabActiveCyan : ""} onClick={() => setLanguage("en")}><span className={styles.tabIcon}>🇬🇧</span> English</button>
-                <button className={language === "hi" ? styles.tabActiveCyan : ""} onClick={() => setLanguage("hi")}><span className={styles.tabIcon}>🇮🇳</span> Hindi</button>
+              <div className={styles.settingLabelRow}>
+                <span className={styles.settingLabelText}>
+                  🌐 {isHindi ? 'भाषा चुनें' : 'Language'}
+                </span>
+              </div>
+              <div className={styles.langGrid}>
+                <button 
+                  type="button"
+                  className={`${styles.langOptionBtn} ${language === "en" ? styles.langOptionActive : ""}`} 
+                  onClick={() => setLanguage("en")}
+                >
+                  <span className={styles.langFlag}>🇬🇧</span>
+                  <span className={styles.langName}>English</span>
+                </button>
+                <button 
+                  type="button"
+                  className={`${styles.langOptionBtn} ${language === "hi" ? styles.langOptionActive : ""}`} 
+                  onClick={() => setLanguage("hi")}
+                >
+                  <span className={styles.langFlag}>🇮🇳</span>
+                  <span className={styles.langName}>हिन्दी</span>
+                </button>
               </div>
             </div>
 
-            <div className={styles.settingGroup}>
-              <label>⏱️ {isHindi ? 'अपनी गति निर्धारित करें (प्रति प्रश्न समय)' : 'Set your pace (Time per question)'}</label>
-              <div className={styles.tabRow}>
-                {TIMER_OPTIONS.map(o => <button key={o.value} className={timer === o.value ? styles.tabActiveRuby : ""} onClick={() => setTimer(o.value)}><span className={styles.tabIcon}>{o.value === 0 ? '♾️' : '⌛'}</span> {o.label}</button>)}
+            {/* Pace / Timer Selection (when not Kids tier) */}
+            {tier !== "kids" && (
+              <div className={styles.settingGroup}>
+                <div className={styles.settingLabelRow}>
+                  <span className={styles.settingLabelText}>
+                    ⏱️ {isHindi ? 'समय सीमा (प्रति प्रश्न)' : 'Pace (Per Question)'}
+                  </span>
+                </div>
+                <div className={styles.timerGridCompact}>
+                  {TIMER_OPTIONS.map(o => (
+                    <button 
+                      key={o.value} 
+                      type="button"
+                      className={`${styles.timerPillCompact} ${timer === o.value ? styles.timerPillActive : ""}`} 
+                      onClick={() => setTimer(o.value)}
+                    >
+                      <span className={styles.timerIcon}>{o.value === 0 ? '♾️' : '⏳'}</span>
+                      <span className={styles.timerText}>{o.label}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
-            <div className={styles.modalActions}>
+            {/* Action Buttons */}
+            <div className={styles.modalActionsCompact}>
               <button
-                className={styles.btnLaunch}
+                className={styles.btnLaunchCompact}
                 onClick={() => handleStart('normal')}
                 disabled={!questionsLoaded || isStarting}
                 style={isStarting ? { opacity: 0.85, cursor: "wait", pointerEvents: "none" } : {}}
               >
                 {isStarting ? (
-                  <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
-                    <span 
-                      style={{
-                        display: "inline-block",
-                        width: "20px",
-                        height: "20px",
-                        border: "3px solid rgba(255,255,255,0.3)",
-                        borderTopColor: "#ffffff",
-                        borderRadius: "50%",
-                        animation: "spin 0.6s linear infinite"
-                      }}
-                    />
+                  <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                    <span className={styles.spinnerInline} />
                     <span>{isHindi ? 'प्रश्नोत्तरी शुरू हो रही है...' : 'Launching Quiz...'}</span>
                   </span>
                 ) : (
-                  <>🚀 {isMixMode ? (isHindi ? 'चुनौती शुरू करें' : 'Start Challenge') : (selectedSet.progress?.isComplete ? (isHindi ? 'फिर से अभ्यास करें' : 'Practice Again') : (isHindi ? 'सीखना शुरू करें' : 'Start Mastering'))}</>
+                  <>🚀 {isMixMode ? (isHindi ? 'चुनौती शुरू करें' : 'Start Challenge') : (selectedSet.progress?.isComplete ? (isHindi ? 'फिर से अभ्यास करें' : 'Practice Again') : (isHindi ? 'अभ्यास शुरू करें' : 'Start Practice'))}</>
                 )}
               </button>
-              <button className={styles.btnLater} onClick={closeModal} disabled={isStarting}>{isHindi ? 'बाद में तय करें' : 'Decide Later'}</button>
+              <button className={styles.btnLaterCompact} onClick={closeModal} disabled={isStarting}>
+                {isHindi ? 'रद्द करें' : 'Cancel'}
+              </button>
             </div>
           </div>
         </div>
@@ -1080,6 +884,24 @@ export default function CategorySetsPage() {
           </div>
         </div>
       )}
+
+      {/* Sticky CTA Bar above bottom nav when viewing locked content (Requirement 5) */}
+      <StickyPaywallCTA
+        hasLockedContent={sets.some((s) => s.index > FREE_SETS_QUOTA)}
+        isPro={isPro}
+        onUnlockClick={() => {
+          setPaywallItemTitle(category?.topic || "Premium Sets");
+          setPaywallModalOpen(true);
+        }}
+      />
+
+      {/* Unified Paywall Modal (Requirement 4) */}
+      <UnifiedPaywallModal
+        isOpen={paywallModalOpen}
+        onClose={() => setPaywallModalOpen(false)}
+        itemTitle={paywallItemTitle}
+        itemType="quiz"
+      />
 
       <ResumeBanner />
     </main>

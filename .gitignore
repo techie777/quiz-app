@@ -12,3 +12,6 @@ build/
 /prisma/*.db
 /prisma/*.db-journal
 /prisma/migrations/
+
+# TypeScript build info
+*.tsbuildinfo
