@@ -3,12 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { safeJsonParse } from "@/lib/utils";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { getTodayIST, normalizeDailyTier, autoGenerateQuestions } from "@/lib/dailyQuizHelper";
 
 export const dynamic = "force-dynamic";
-
-function getToday() {
-  return new Date().toISOString().slice(0, 10);
-}
 
 function normalizeQuestions(questions) {
   return questions.map((q) => ({
@@ -27,34 +24,70 @@ function normalizeQuestions(questions) {
 export async function GET(request) {
   try {
     const url = new URL(request.url);
-    const type = url.searchParams.get("type");
-    const date = url.searchParams.get("date") || getToday();
+    const rawType = url.searchParams.get("type") || url.searchParams.get("tier");
+    const date = url.searchParams.get("date") || getTodayIST();
     
-    console.log(`[API/DailyQuiz] GET called for Type: ${type}, Date: ${date}`);
-
-    if (!type) {
-      return NextResponse.json({ error: "type required" }, { status: 400 });
+    if (!rawType) {
+      return NextResponse.json({ error: "type or tier required" }, { status: 400 });
     }
 
-    const daily = await prisma.dailyQuiz.findUnique({
+    const type = normalizeDailyTier(rawType);
+    console.log(`[API/DailyQuiz] GET called for Type: ${type}, Date: ${date}`);
+
+    let daily = await prisma.dailyQuiz.findUnique({
       where: { type_date: { type, date } },
     });
 
+    // If no daily quiz is scheduled, auto-generate one suited to this tier!
     if (!daily) {
-      console.log(`[API/DailyQuiz] No entry found for ${type} on ${date}`);
+      console.log(`[API/DailyQuiz] Auto-generating daily quiz for ${type} on ${date}`);
+      try {
+        const generated = await autoGenerateQuestions(type, date);
+        if (generated && generated.questionIds && generated.questionIds.length > 0) {
+          try {
+            daily = await prisma.dailyQuiz.upsert({
+              where: { type_date: { type, date } },
+              update: {
+                categoryId: generated.categoryId,
+                questionIds: JSON.stringify(generated.questionIds),
+              },
+              create: {
+                type,
+                date,
+                categoryId: generated.categoryId,
+                questionIds: JSON.stringify(generated.questionIds),
+              },
+            });
+          } catch (dbErr) {
+            console.warn("[API/DailyQuiz] Could not persist auto-generated daily quiz to DB:", dbErr.message);
+            // Even if DB write fails, construct temporary daily object
+            daily = {
+              id: `gen-${type}-${date}`,
+              type,
+              date,
+              categoryId: generated.categoryId,
+              questionIds: JSON.stringify(generated.questionIds),
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            };
+          }
+        }
+      } catch (genErr) {
+        console.error("[API/DailyQuiz] Auto-generation failed:", genErr);
+      }
+    }
+
+    if (!daily) {
       return NextResponse.json({ type, date, daily: null, questions: [] });
     }
 
     const ids = (safeJsonParse(daily.questionIds) || []).filter(id => typeof id === 'string' && id.length === 24);
-    console.log(`[API/DailyQuiz] Found entry. Valid Question IDs count: ${ids.length}`);
     
     const rawQuestions = ids.length
       ? await prisma.question.findMany({
           where: { id: { in: ids } },
         })
       : [];
-
-    console.log(`[API/DailyQuiz] Fetched ${rawQuestions.length} questions from DB`);
 
     const byId = new Map(rawQuestions.map((q) => [q.id, q]));
     const ordered = ids.map((id) => byId.get(id)).filter(Boolean);

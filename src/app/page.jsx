@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Sparkles, SlidersHorizontal, BookOpen, Flame, Lock, Rocket, Play, Award, CheckCircle2, ShieldCheck, Zap, Globe } from "lucide-react";
+import { ArrowRight, Sparkles, SlidersHorizontal, BookOpen, Flame, Lock, Rocket, Play, Award, CheckCircle2, ShieldCheck, Zap, Globe, Search, Calendar, Heart } from "lucide-react";
 import styles from "@/styles/HubPage.module.css";
 import { useState, useEffect, useMemo } from "react";
 import { useSession } from "next-auth/react";
@@ -14,6 +14,8 @@ import CAPreviewWidget from "@/components/CAPreviewWidget";
 import CategoryCard from "@/components/CategoryCard";
 import StudentClassSelector from "@/components/StudentClassSelector";
 import UnsetLandingPage from "@/components/UnsetLandingPage";
+import DailyQuizPill from "@/components/DailyQuizPill";
+import ArenaPromptCard from "@/components/ArenaPromptCard";
 
 const KIDS_PICTURE_TILES = [
   {
@@ -109,7 +111,7 @@ const KIDS_PICTURE_TILES = [
 export default function MasterHubPage() {
   const { data: session } = useSession();
   const { openOnboarding } = useUI();
-  const { quizzes, settings } = useData();
+  const { quizzes, settings, modules, loaded: dataLoaded, refreshQuizzes } = useData();
   const { t, isHindi } = useLanguage();
   const { tier, currentConfig, studentGrade, hasSavedTier, mounted: tierMounted } = useTier();
   const [mounted, setMounted] = useState(false);
@@ -165,19 +167,62 @@ export default function MasterHubPage() {
     return { studyCategories: finalStudy, funCategories: finalFun };
   }, [quizzes]);
 
-  // Adults Tier: Scoped difficulty filter for general Play & Learn section (Requirement 2)
-  const [adultDifficulty, setAdultDifficulty] = useState("all");
+  // Explorer Tier: Search, category chip, and daily quiz states (Step 8)
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedChip, setSelectedChip] = useState("all");
+  const [dailyCompleted, setDailyCompleted] = useState(false);
+  const [dailyStreak, setDailyStreak] = useState(0);
+  const [dailyScore, setDailyScore] = useState(null);
 
-  const filteredAdultPlayCategories = useMemo(() => {
-    let list = funCategories;
-    if (adultDifficulty !== "all") {
+  useEffect(() => {
+    try {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const savedDate = localStorage.getItem("daily_quiz_last_date");
+      const savedScore = localStorage.getItem("daily_quiz_last_score");
+      const savedStreak = parseInt(localStorage.getItem("daily_quiz_streak") || "0", 10);
+      setDailyStreak(savedStreak);
+      if (savedDate === todayStr) {
+        setDailyCompleted(true);
+        setDailyScore(savedScore || "8/10");
+      }
+    } catch {}
+  }, []);
+
+  // Explorer: Automatically hide any category with 0 questions (fallback to all if counts unavailable)
+  const explorerCategories = useMemo(() => {
+    if (!quizzes || !Array.isArray(quizzes)) return [];
+    const withQuestions = quizzes.filter((cat) => {
+      const count =
+        cat.questionCount ??
+        cat._count?.questions ??
+        (Array.isArray(cat.questions) ? cat.questions.length : 0);
+      return count > 0;
+    });
+    return withQuestions.length > 0 ? withQuestions : quizzes;
+  }, [quizzes]);
+
+  // Explorer: Filter by active chip and search query
+  const filteredExplorerCategories = useMemo(() => {
+    let list = explorerCategories;
+
+    // Filter by selected category chip
+    if (selectedChip !== "all") {
+      list = list.filter((cat) => cat.id === selectedChip);
+    }
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
       list = list.filter((cat) => {
-        if (!cat.questions || cat.questions.length === 0) return true;
-        return cat.questions.some((q) => (q.difficulty || "").toLowerCase() === adultDifficulty.toLowerCase());
+        const titleEn = (cat.topic || "").toLowerCase();
+        const titleHi = (cat.topicHi || "").toLowerCase();
+        const slug = (cat.slug || "").toLowerCase();
+        return titleEn.includes(q) || titleHi.includes(q) || slug.includes(q);
       });
     }
+
     return list;
-  }, [funCategories, adultDifficulty]);
+  }, [explorerCategories, selectedChip, searchQuery]);
 
   useEffect(() => {
     setMounted(true);
@@ -237,100 +282,79 @@ export default function MasterHubPage() {
     <div className={styles.container}>
       <main className={styles.heroContent}>
         
-        {/* Hero Header with Tier-driven Greeting & Accent Palette */}
-        <div 
-          className={styles.heroHeader}
-          style={{
-            "--tier-accent": currentConfig.accentColor,
-            "--tier-accent-light": currentConfig.accentLight,
-            "--tier-accent-border": currentConfig.accentBorder,
-          }}
-        >
+        {/* Hero Header with Tier-driven Greeting & Accent Palette (Kids & Students only) */}
+        {tier !== "adults" && (
           <div 
-            className={styles.heroBadge}
+            className={styles.heroHeader}
             style={{
-              background: currentConfig.accentLight,
-              borderColor: currentConfig.accentBorder,
-              color: currentConfig.accentColor,
-              boxShadow: `0 4px 16px ${currentConfig.glowColor}`,
-              transition: "all 0.3s ease",
+              "--tier-accent": currentConfig.accentColor,
+              "--tier-accent-light": currentConfig.accentLight,
+              "--tier-accent-border": currentConfig.accentBorder,
             }}
           >
-            <span>{currentConfig.icon}</span>
-            <span>{mounted ? (isHindi ? currentConfig.badge.hi : currentConfig.badge.en) : currentConfig.badge.en}</span>
-          </div>
-
-          <h1 
-            className={styles.heroTitle}
-            style={{
-              transition: "all 0.3s ease",
-            }}
-          >
-            {mounted ? (isHindi ? currentConfig.greeting.hi : currentConfig.greeting.en) : currentConfig.greeting.en}
-          </h1>
-
-          <p className={styles.heroSubtitle}>
-            {mounted ? (isHindi ? currentConfig.subtitle.hi : currentConfig.subtitle.en) : currentConfig.subtitle.en}
-          </p>
-
-          {/* Active Mode Pill Indicator */}
-          <div 
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-              marginTop: "8px",
-              marginBottom: "4px",
-              padding: "3px 12px",
-              borderRadius: "999px",
-              fontSize: "0.78rem",
-              fontWeight: 800,
-              background: currentConfig.accentLight,
-              color: currentConfig.accentColor,
-              border: `1.5px solid ${currentConfig.accentBorder}`,
-              boxShadow: `0 2px 8px ${currentConfig.glowColor}`,
-              transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-            }}
-          >
-            <span>{currentConfig.icon}</span>
-            <span>
-              {isHindi ? `${currentConfig.labelHi} मोड सक्रिय` : `${currentConfig.label} Mode Active`}
-            </span>
-          </div>
-
-          {/* Quick Vertical Navigation Bar (Only for Adults Tier) */}
-          {(tier === "adults" || (tier !== "kids" && tier !== "students")) && (
-            <div className={styles.verticalNavPills}>
-              <Link href="/quizzes" className={styles.navPill} style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(34,197,94,0.15) 100%)", border: "1px solid rgba(16,185,129,0.35)" }}>
-                <span>🧪</span>
-                <span style={{ fontWeight: 800, color: "#15803d" }}>{isHindi ? "क्विज़ हब" : "Quiz Hub"}</span>
-                <span className={`${styles.pillBadge} ${styles.pillBadgeActive}`} style={{ background: "#16a34a", color: "#ffffff" }}>{isHindi ? "सक्रिय" : "Active"}</span>
-              </Link>
-
-              <Link href="/daily-current-affairs" className={styles.navPill}>
-                <span>📰</span>
-                <span>{isHindi ? "करंट अफेयर्स" : "Current Affairs"}</span>
-                <span className={`${styles.pillBadge} ${styles.pillBadgeActive}`}>{isHindi ? "सक्रिय" : "Active"}</span>
-              </Link>
-
-              <div className={`${styles.navPill} ${styles.navPillDisabled}`}>
-                <span>💼</span>
-                <span>{isHindi ? "करियर गाइड" : "Career Guide"}</span>
-                <span className={`${styles.pillBadge} ${styles.pillBadgeSoon}`}>{isHindi ? "शीघ्र" : "Soon"}</span>
-              </div>
-
-              <Link href="/mock-tests" className={styles.navPill} style={{ background: "linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(168,85,247,0.12) 100%)", border: "1px solid rgba(99,102,241,0.25)" }}>
-                <span>🏆</span>
-                <span style={{ fontWeight: 800, color: "#4f46e5" }}>{isHindi ? "मॉक टेस्ट सीरीज़" : "Mock Test Series"}</span>
-                <span className={`${styles.pillBadge} ${styles.pillBadgeActive}`} style={{ background: "#6366f1", color: "#ffffff" }}>{isHindi ? "फ्लैगशिप" : "FLAGSHIP"}</span>
-              </Link>
+            <div 
+              className={styles.heroBadge}
+              style={{
+                background: currentConfig.accentLight,
+                borderColor: currentConfig.accentBorder,
+                color: currentConfig.accentColor,
+                boxShadow: `0 4px 16px ${currentConfig.glowColor}`,
+                transition: "all 0.3s ease",
+              }}
+            >
+              <span>{currentConfig.icon}</span>
+              <span>{mounted ? (isHindi ? currentConfig.badge.hi : currentConfig.badge.en) : currentConfig.badge.en}</span>
             </div>
-          )}
-        </div>
+
+            <h1 
+              className={styles.heroTitle}
+              style={{
+                transition: "all 0.3s ease",
+              }}
+            >
+              {mounted ? (isHindi ? currentConfig.greeting.hi : currentConfig.greeting.en) : currentConfig.greeting.en}
+            </h1>
+
+            <p className={styles.heroSubtitle}>
+              {mounted ? (isHindi ? currentConfig.subtitle.hi : currentConfig.subtitle.en) : currentConfig.subtitle.en}
+            </p>
+
+            {/* Active Mode Pill Indicator */}
+            <div 
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                marginTop: "8px",
+                marginBottom: "4px",
+                padding: "3px 12px",
+                borderRadius: "999px",
+                fontSize: "0.78rem",
+                fontWeight: 800,
+                background: currentConfig.accentLight,
+                color: currentConfig.accentColor,
+                border: `1.5px solid ${currentConfig.accentBorder}`,
+                boxShadow: `0 2px 8px ${currentConfig.glowColor}`,
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+              }}
+            >
+              <span>{currentConfig.icon}</span>
+              <span>
+                {isHindi ? `${currentConfig.labelHi} मोड सक्रिय` : `${currentConfig.label} Mode Active`}
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* ── KIDS TIER SKIN: Large Picture-Tiles & Streak Counter ── */}
         {tier === "kids" && (
           <div className="w-full mt-6">
+            {/* Daily Quiz Pill for Kids */}
+            <DailyQuizPill tier="kids" />
+
+            {/* Quiz Arena compact card for Kids */}
+            <ArenaPromptCard audience="kids" className="mb-6" />
+
             {/* 1. Daily Streak Counter Widget (Requirement 5) */}
             <div className="w-full mb-8 p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 text-white shadow-xl shadow-orange-500/20 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-3.5 text-center sm:text-left">
@@ -490,6 +514,14 @@ export default function MasterHubPage() {
         {/* ── STUDENTS TIER SKIN: Class Selector, Streak/XP Widget, Study Lane & Fun Zone Lane ── */}
         {tier === "students" && (
           <div className="w-full mt-6">
+            {/* Daily Quiz Pill for Students */}
+            <div className="w-full mb-6">
+              <DailyQuizPill tier="students" />
+            </div>
+
+            {/* Quiz Arena compact card for Students */}
+            <ArenaPromptCard audience="students" className="mb-6" />
+
             {/* 1. Class & Board Selector Bar (Requirement 2) */}
             <div className="w-full mb-6 p-4 rounded-2xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-slate-800 dark:text-slate-100 shadow-sm">
               <div className="flex items-center gap-3">
@@ -708,260 +740,126 @@ export default function MasterHubPage() {
           </div>
         )}
 
-        {/* ── ADULTS TIER: Two Clearly Signposted Sections (Requirement 1 & 2) ── */}
+        {/* ── EXPLORER TIER: Clean Mobile-First Quiz Hub (Step 8) ── */}
         {(tier === "adults" || (tier !== "kids" && tier !== "students")) && (
-          <div className="w-full mt-6 space-y-12">
-            
-            {/* ══════════════════════════════════════════════════════════
-                SECTION 1: "Play & Learn" — SURFACED FIRST
-                General trivia/GK/fun categories, no exam framing
-               ══════════════════════════════════════════════════════════ */}
-            <section id="play-learn" className="w-full">
-              {/* Section Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
-                <div>
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/50 dark:border-emerald-800/50 text-emerald-600 dark:text-emerald-400 text-xs font-black uppercase tracking-wider mb-2">
-                    <span>🎮</span>
-                    <span>{isHindi ? "मनोरंजन व सामान्य ज्ञान" : "Casual Play & Trivia"}</span>
-                  </div>
-                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-                    <span>🧠</span>
-                    <span>{isHindi ? "खेलें और सीखें (Play & Learn)" : "Play & Learn"}</span>
-                  </h2>
-                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-2xl mt-1">
-                    {isHindi
-                      ? "दैनिक रोचक ट्रिविया, केबीसी स्टाइल सामान्य ज्ञान, विज्ञान, भूगोल व दिमागी पहेलियां — बिना किसी परीक्षा के तनाव के खेलें!"
-                      : "Daily rapid trivia, general knowledge, pop culture, science & brain teasers — play for fun, casually learn, anytime."}
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <Link
-                    href="/quizzes"
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 text-xs font-black transition-all"
-                  >
-                    <span>{isHindi ? "सभी क्विज़ विषय देखें" : "Explore All Quizzes"}</span>
-                    <ArrowRight size={14} />
-                  </Link>
-                </div>
+          <div className="w-full mt-2 space-y-4 pb-20">
+            {/* 1. Search Field */}
+            <div className="relative w-full">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                <Search size={18} />
               </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={isHindi ? "क्विज़ विषय खोजें..." : "Search quizzes..."}
+                className="w-full pl-10 pr-10 py-3 rounded-2xl bg-white/95 dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800 focus:border-indigo-500 dark:focus:border-indigo-500 text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-sm transition-all min-h-[48px]"
+                aria-label="Search quizzes"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                  aria-label="Clear search"
+                >
+                  <span className="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs">✕</span>
+                </button>
+              )}
+            </div>
 
-              {/* Requirement 2: Difficulty filter scoped to whole Quiz Hub */}
-              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 mb-5 flex-wrap">
-                <span className="text-xs font-black text-slate-400 uppercase tracking-wider mr-1">
-                  {isHindi ? "कठिनाई स्तर:" : "Difficulty:"}
-                </span>
-                {[
-                  { id: "all", label: isHindi ? "सभी स्तर" : "All", icon: "✨" },
-                  { id: "easy", label: isHindi ? "सरल" : "Easy", icon: "🟢" },
-                  { id: "medium", label: isHindi ? "मध्यम" : "Medium", icon: "🟡" },
-                  { id: "hard", label: isHindi ? "कठिन" : "Hard", icon: "🔴" },
-                ].map((diff) => (
+            {/* 2. Daily Quiz Button */}
+            <DailyQuizPill tier="explorer" />
+
+            {/* Quiz Arena compact card for Explorer */}
+            <ArenaPromptCard audience="explorer" className="mb-2" />
+
+            {/* 3. Horizontally Scrollable Category Chips */}
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+              <button
+                type="button"
+                onClick={() => setSelectedChip("all")}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-black whitespace-nowrap transition-all min-h-[36px] flex items-center gap-1.5 shrink-0 ${
+                  selectedChip === "all"
+                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/25"
+                    : "bg-white/90 dark:bg-slate-900/90 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
+                }`}
+              >
+                <span>✨</span>
+                <span>{isHindi ? "सभी" : "All"}</span>
+              </button>
+              {explorerCategories.map((cat) => {
+                const isSelected = selectedChip === cat.id;
+                const catTitle = isHindi && cat.topicHi ? cat.topicHi : cat.topic;
+                return (
                   <button
-                    key={diff.id}
-                    onClick={() => setAdultDifficulty(diff.id)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${
-                      adultDifficulty === diff.id
-                        ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/25 scale-105"
-                        : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setSelectedChip(isSelected ? "all" : cat.id)}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all min-h-[36px] flex items-center gap-1.5 shrink-0 ${
+                      isSelected
+                        ? "bg-indigo-600 text-white font-black shadow-md shadow-indigo-500/25"
+                        : "bg-white/90 dark:bg-slate-900/90 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
                     }`}
                   >
-                    <span>{diff.icon}</span>
-                    <span>{diff.label}</span>
+                    <span>{cat.emoji || "📝"}</span>
+                    <span>{catTitle}</span>
                   </button>
-                ))}
-              </div>
+                );
+              })}
+            </div>
 
-              {/* General Category Cards Grid (Step 2 Seekho-pattern CategoryCard) */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-5">
-                {filteredAdultPlayCategories.slice(0, 8).map((cat) => (
-                  <CategoryCard key={cat.id} category={cat} />
-                ))}
-              </div>
-            </section>
-
-            {/* ══════════════════════════════════════════════════════════
-                SECTION 2: "Exam Prep" — DEDICATED SEPARATE SECTION
-                Mock Tests, current affairs, exam-specific content
-               ══════════════════════════════════════════════════════════ */}
-            <section id="exam-prep" className="w-full pt-8 border-t border-slate-200 dark:border-slate-800">
-              {/* Section Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
-                <div>
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/50 dark:border-indigo-800/50 text-indigo-600 dark:text-indigo-400 text-xs font-black uppercase tracking-wider mb-2">
-                    <ShieldCheck size={14} />
-                    <span>{isHindi ? "प्रतियोगी परीक्षा हब" : "Aspirant & Exam Series"}</span>
+            {/* 4. 2-Column Grid of Category Cards */}
+            {!dataLoaded && (!quizzes || quizzes.length === 0) ? (
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 pt-1">
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <div key={n} className="rounded-2xl p-4 bg-white/60 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 animate-pulse h-28 flex flex-col justify-between">
+                    <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800" />
+                    <div className="w-3/4 h-4 rounded bg-slate-200 dark:bg-slate-800" />
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-                    <span>🏛️</span>
-                    <span>{isHindi ? "सरकारी परीक्षा तैयारी (Exam Prep)" : "Government Exam Prep"}</span>
-                  </h2>
-                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-2xl mt-1">
-                    {isHindi
-                      ? "एसएससी, बैंकिंग, रेलवे और पुलिस परीक्षाओं के लिए टीसीएस पैटर्न लाइव टाइमर, नेगेटिव मार्किंग और ऑल-इंडिया रैंक के साथ अभ्यास करें।"
-                      : "Targeted full-length mock tests, TCS timer interface, negative marking, and daily exam current affairs."}
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <Link
-                    href="/mock-tests"
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-xs font-black transition-all"
+                ))}
+              </div>
+            ) : filteredExplorerCategories.length > 0 ? (
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 pt-1">
+                {filteredExplorerCategories.map((cat) => (
+                  <CategoryCard
+                    key={cat.id}
+                    category={cat}
+                    hideViewSets={true}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 px-4 rounded-2xl bg-white/50 dark:bg-slate-900/50 border border-dashed border-slate-200 dark:border-slate-800">
+                <span className="text-3xl mb-2 block">🔍</span>
+                <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                  {searchQuery ? (isHindi ? "कोई मिलता-जुलता विषय नहीं मिला" : "No matching quizzes found") : (isHindi ? "कोई क्विज़ श्रेणी नहीं मिली" : "No quiz categories found")}
+                </p>
+                {searchQuery ? (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="mt-3 px-3 py-1.5 rounded-full text-xs font-bold bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 cursor-pointer"
                   >
-                    <span>{isHindi ? "सभी मॉक टेस्ट देखें" : "View All Mocks"}</span>
-                    <ArrowRight size={14} />
-                  </Link>
-                </div>
-              </div>
-
-              {/* Requirement 2: Exam-tag filter (SSC/Banking/Railway/Police) SCOPED TO THIS SECTION ONLY */}
-              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 mb-6 flex-wrap">
-                <span className="text-xs font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mr-1 flex items-center gap-1">
-                  <span>🏛️</span>
-                  <span>{isHindi ? "परीक्षा बोर्ड:" : "Exam Boards:"}</span>
-                </span>
-                {[
-                  { id: "ssc", label: "🏛️ SSC (CGL, CHSL, CPO)", href: "/mock-tests" },
-                  { id: "banking", label: "🏦 Banking (IBPS, SBI PO)", href: "/mock-tests" },
-                  { id: "railway", label: "🚆 Railway (RRB NTPC, ALP)", href: "/mock-tests" },
-                  { id: "police", label: "👮 Police & State Exams", href: "/mock-tests" },
-                ].map((board) => (
-                  <Link
-                    key={board.id}
-                    href={board.href}
-                    className="px-3.5 py-1.5 rounded-xl text-xs font-black bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 border border-indigo-200/60 dark:border-indigo-800/60 transition-all hover:scale-105"
+                    {isHindi ? "सर्च साफ़ करें" : "Clear search"}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => refreshQuizzes?.()}
+                    className="mt-3 px-3.5 py-1.5 rounded-full text-xs font-bold bg-indigo-600 text-white shadow-sm hover:bg-indigo-500 cursor-pointer"
                   >
-                    {board.label}
-                  </Link>
-                ))}
+                    {isHindi ? "पुनः प्रयास करें" : "Retry"}
+                  </button>
+                )}
               </div>
-
-              {/* Mock Test Showcase Dialogue Card */}
-              <div className={styles.mockTestShowcaseCard} style={{ marginBottom: "1.5rem" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                  
-                  {/* Header Tag & Bilingual Badge */}
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px" }}>
-                    <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(99, 102, 241, 0.1)", border: "1px solid rgba(99, 102, 241, 0.25)", padding: "3px 10px", borderRadius: "16px", fontSize: "0.72rem", fontWeight: 800, color: "#4f46e5" }}>
-                      <Zap size={13} />
-                      <span>{isHindi ? "🏆 ऑल इंडिया लाइव मॉक टेस्ट सीरीज़" : "🏆 ALL INDIA LIVE MOCK TEST SERIES"}</span>
-                    </div>
-                    <div style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 700, display: "flex", alignItems: "center", gap: "5px" }}>
-                      <Globe size={13} className="text-indigo-500" />
-                      <span>{isHindi ? "द्विभाषी (Hindi & English)" : "Bilingual (Hindi & English)"}</span>
-                    </div>
-                  </div>
-
-                  {/* Title & Description */}
-                  <div>
-                    <h3 style={{ fontSize: "1.2rem", fontWeight: 900, margin: "0 0 4px 0", lineHeight: 1.3, color: "var(--text-primary)" }}>
-                      {isHindi ? "सरकारी परीक्षा मॉक टेस्ट सीरीज़ (TCS पैटर्न)" : "Government Exam Mock Test Series (TCS Pattern)"}
-                    </h3>
-                    <p style={{ fontSize: "0.85rem", color: "#64748b", margin: 0, lineHeight: 1.4 }}>
-                      {isHindi
-                        ? "TCS नवीन पैटर्न, लाइव टाइमर, नेगेटिव मार्किंग और ऑल इंडिया रैंक के साथ 100% फ्री प्रैक्टिस टेस्ट।"
-                        : "Practice with real TCS exam pattern timer, section cutoff, negative marking & instant detailed solutions."}
-                    </p>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginTop: "4px" }}>
-                    <Link
-                      href={trialPaper?.id ? `/mock-tests/paper/${trialPaper.id}/instructions` : "/mock-tests"}
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        padding: "10px 20px",
-                        borderRadius: "12px",
-                        background: "#4f46e5",
-                        color: "#ffffff",
-                        fontWeight: 800,
-                        fontSize: "0.85rem",
-                        boxShadow: "0 4px 12px rgba(79, 70, 229, 0.3)",
-                        textDecoration: "none"
-                      }}
-                    >
-                      <Play size={15} fill="#fff" />
-                      <span>{isHindi ? "फ्री लाइव ट्रायल टेस्ट दें" : "Start Free Trial Test"}</span>
-                    </Link>
-
-                    <Link
-                      href="/mock-tests"
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        padding: "10px 18px",
-                        borderRadius: "12px",
-                        background: "var(--bg-secondary)",
-                        border: "1px solid var(--card-border)",
-                        color: "var(--text-primary)",
-                        fontWeight: 700,
-                        fontSize: "0.85rem",
-                        textDecoration: "none"
-                      }}
-                    >
-                      <Award size={15} />
-                      <span>{isHindi ? "सभी परीक्षा टेस्ट सीरीज़ देखें" : "Explore All Test Series"}</span>
-                    </Link>
-                  </div>
-
-                </div>
-              </div>
-
-              {/* Two Exam Verticals: Current Affairs & Career Guide */}
-              <div className={styles.grid}>
-                {/* Vertical: Current Affairs */}
-                <div className={`${styles.card} ${styles.cardCA}`}>
-                  <div>
-                    <div className={styles.cardHeader}>
-                      <div className={styles.cardIcon}>📰</div>
-                      <span className={styles.cardBadge}>{isHindi ? "दैनिक अपडेट" : "Daily Live"}</span>
-                    </div>
-                    <h3 className={styles.cardTitle}>{isHindi ? "करंट अफेयर्स" : "Current Affairs"}</h3>
-                    <p className={styles.cardDescription}>
-                      {isHindi ? "दैनिक समसामयिकी समाचार, मासिक संग्रह और परीक्षा उपयोगी वन-लाइनर्स।" : "Daily news digests, calendar archives & exam-oriented current affairs notes."}
-                    </p>
-                    
-                    <div className={styles.previewWrapperInline}>
-                      {mounted ? <CAPreviewWidget /> : <div className="animate-pulse bg-slate-100 dark:bg-slate-800 rounded-xl w-full h-[120px]" />}
-                    </div>
-                  </div>
-
-                  <Link href="/daily-current-affairs" className={styles.mainAction}>
-                    <span className={styles.viewAll}>
-                      {isHindi ? "करंट अफेयर्स पढ़ें" : "Read Current Affairs"} <ArrowRight size={18} />
-                    </span>
-                  </Link>
-                </div>
-
-                {/* Vertical: Career Guide */}
-                <div className={`${styles.card} ${styles.cardCareer}`}>
-                  <div>
-                    <div className={styles.cardHeader}>
-                      <div className={styles.cardIcon}>💼</div>
-                      <span className={styles.cardBadge}>{isHindi ? "जल्द आ रहा है" : "Coming Soon"}</span>
-                    </div>
-                    <h3 className={styles.cardTitle}>{isHindi ? "करियर गाइड" : "Career Guide"}</h3>
-                    <p className={styles.cardDescription}>
-                      {isHindi ? "परीक्षा रोडमैप, सरकारी नौकरी नोटिफिकेशन और करियर मार्गदर्शन।" : "Comprehensive exam roadmaps, job notifications, syllabus analysis & skill paths."}
-                    </p>
-                  </div>
-
-                  <div className={styles.mainAction}>
-                    <span className={styles.viewAll} style={{ opacity: 0.85 }}>
-                      <Lock size={16} /> {isHindi ? "शीघ्र उपलब्ध होगा" : "Coming Soon"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-            </section>
+            )}
           </div>
         )}
 
-            {/* Optional Personalization Prompt */}
+        {/* Optional Personalization Prompt & Support Banner (Kids & Students only) */}
+        {tier !== "adults" && (
+          <>
             {mounted && session && interests.length === 0 && !isLoadingInterests && (
               <div className="mt-10 p-6 sm:p-8 rounded-3xl bg-slate-900 border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-6">
                 <div className="flex-1">
@@ -983,10 +881,12 @@ export default function MasterHubPage() {
             <Link href="/donate" className="block mt-12 p-1 rounded-3xl bg-gradient-to-r from-orange-400 to-rose-400 hover:scale-[1.01] transition-transform shadow-xl dark:shadow-none shadow-rose-100 group">
               <div className="bg-white dark:bg-slate-900 rounded-2xl px-6 sm:px-8 py-5 flex flex-col md:flex-row items-center justify-between gap-4 overflow-hidden relative">
                 <div className="flex items-center gap-4 relative z-10">
-                  <div className="w-12 h-12 rounded-full bg-rose-50 dark:bg-rose-900/20 flex items-center justify-center text-2xl group-hover:rotate-12 transition-transform">🧡</div>
+                  <div className="w-12 h-12 rounded-full bg-rose-50 dark:bg-rose-900/20 flex items-center justify-center text-rose-500 group-hover:scale-110 transition-transform">
+                    <Heart size={22} className="text-rose-500 fill-rose-500" />
+                  </div>
                   <div>
-                    <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">{t('hub.support.title') || "Support Our Free Mission"}</h3>
-                    <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm max-w-md">{t('hub.support.desc') || "Help us keep quality educational content 100% free for students everywhere."}</p>
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">{t('hub.support.title') || (isHindi ? "हर दिन मुफ्त खेलें" : "Free to play every day")}</h3>
+                    <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm max-w-md">{t('hub.support.desc') || (isHindi ? "क्विज़वेब को बेहतर बनाने और सभी के लिए गुणवत्तापूर्ण शिक्षा उपलब्ध कराने में हमारा सहयोग करें।" : "Help us keep QuizWeb growing with quality educational quizzes for everyone.")}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 font-black text-rose-500 dark:text-rose-400 uppercase tracking-widest text-xs sm:text-sm relative z-10">
@@ -995,6 +895,8 @@ export default function MasterHubPage() {
                 <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-rose-50 dark:bg-rose-900/10 rounded-full blur-2xl opacity-50" />
               </div>
             </Link>
+          </>
+        )}
       </main>
     </div>
   );

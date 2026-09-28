@@ -1,8 +1,9 @@
 export function GET() {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://quizweb.in';
   
   const robotsTxt = `User-agent: *
 Allow: /
+Allow: /hub/*
 Allow: /category/*
 Allow: /quiz/*
 Allow: /daily-current-affairs
@@ -12,6 +13,7 @@ Allow: /govt-exams/*
 Allow: /govt-jobs-alerts
 Allow: /my-favourites
 Allow: /previous-years-papers
+Allow: /arena
 Allow: /about
 Allow: /privacy
 Allow: /copyright

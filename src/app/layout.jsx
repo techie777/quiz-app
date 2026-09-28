@@ -8,17 +8,21 @@ import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 import SecurityGuards from "@/components/SecurityGuards";
 import ScrollToTop from "@/components/ScrollToTop";
 import "./globals.css";
-import { Inter } from 'next/font/google';
+import { Poppins } from 'next/font/google';
 import { generateWebsiteStructuredData, generateOrganizationStructuredData } from '@/lib/seo';
 
 
 import Header from '@/components/Header';
 import SmartNavigation from '@/components/SmartNavigation';
 import BottomNavBar from '@/components/BottomNavBar';
+import ModuleRouteGuard from '@/components/ModuleRouteGuard';
 
-const inter = Inter({ 
-  subsets: ['latin'],
+const poppins = Poppins({ 
+  subsets: ['latin', 'latin-ext'],
+  weight: ['400', '500', '600', '700'],
   display: 'swap',
+  variable: '--font-poppins',
+  fallback: ['Noto Sans Devanagari', 'system-ui', '-apple-system', 'sans-serif'],
   preload: true
 });
 
@@ -39,7 +43,7 @@ export const metadata = {
     telephone: false,
   },
   manifest: "/site.webmanifest",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://quizweb.in'),
   alternates: {
     canonical: '/',
     languages: {
@@ -51,7 +55,7 @@ export const metadata = {
   openGraph: {
     title: "QuizWeb - Free Online Quizzes & Educational Games",
     description: "Test your knowledge with thousands of free quizzes across Science, Math, History, Sports, and more! Learn new facts and track your progress.",
-    url: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+    url: process.env.NEXT_PUBLIC_SITE_URL || 'https://quizweb.in',
     siteName: 'QuizWeb',
     images: [
       {
@@ -108,10 +112,11 @@ export default function RootLayout({ children }) {
   const organizationStructuredData = generateOrganizationStructuredData();
 
   return (
-    <html lang="en" className={inter.className} suppressHydrationWarning>
+    <html lang="en" className={`${poppins.variable} ${poppins.className}`} suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
         <link rel="dns-prefetch" href="//www.googletagmanager.com" />
         <link rel="dns-prefetch" href="//connect.facebook.net" />
         <link rel="dns-prefetch" href="//www.google-analytics.com" />
@@ -123,13 +128,12 @@ export default function RootLayout({ children }) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: organizationStructuredData }}
         />
-        <meta name="theme-color" content="#3b82f6" />
+        <meta name="theme-color" content="#6366f1" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
         <link rel="manifest" href="/site.webmanifest" />
-        <link rel="preload" href="/fonts/inter-var.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
       </head>
       <body style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }} className="antialiased">
         <Suspense fallback={null}>
@@ -137,6 +141,7 @@ export default function RootLayout({ children }) {
         <ScrollToTop />
         <SecurityGuards />
         <Providers>
+          <ModuleRouteGuard />
           <Header />
           <SmartNavigation />
           <div className="hidden md:block">

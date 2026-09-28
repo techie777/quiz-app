@@ -7,7 +7,10 @@ import styles from "@/styles/AdminDaily.module.css";
 import toast, { Toaster } from "react-hot-toast";
 
 const TYPES = [
-  { key: "quiz-of-the-day", label: "Quiz of the Day", emoji: "🏆", categoryId: "65f1a2b3c4d5e6f7a8b9c0d9" },
+  { key: "explorer", label: "Daily Quiz — Explorer", emoji: "🧭", categoryId: "65f1a2b3c4d5e6f7a8b9c0d9" },
+  { key: "students", label: "Daily Quiz — Students", emoji: "🎓", categoryId: "65f1a2b3c4d5e6f7a8b9c0d9" },
+  { key: "kids", label: "Daily Quiz — Kids", emoji: "⭐", categoryId: "65f1a2b3c4d5e6f7a8b9c0d9" },
+  { key: "quiz-of-the-day", label: "Quiz of the Day (Legacy)", emoji: "🏆", categoryId: "65f1a2b3c4d5e6f7a8b9c0d9" },
   { key: "daily-current-affairs", label: "Daily Current Affairs Quiz", emoji: "🗞️", categoryId: "65f1a2b3c4d5e6f7a8b9c0e1" },
 ];
 
@@ -106,7 +109,7 @@ export default function AdminDailyPage() {
 
   const typeMeta = useMemo(() => TYPES.find((t) => t.key === type) || TYPES[0], [type]);
   const category = useMemo(
-    () => quizzes.find((q) => q.id === typeMeta.categoryId),
+    () => quizzes.find((q) => q.id === typeMeta.categoryId) || quizzes[0],
     [quizzes, typeMeta.categoryId]
   );
 
@@ -309,6 +312,33 @@ export default function AdminDailyPage() {
         </div>
 
         <div className={styles.actionButtonsGroup}>
+          <button 
+            type="button" 
+            className={styles.secondaryBtn} 
+            onClick={async () => {
+              setLoading(true);
+              try {
+                const res = await fetch(`/api/daily-quiz?tier=${encodeURIComponent(type)}&date=${encodeURIComponent(date)}`);
+                if (res.ok) {
+                  const data = await res.json();
+                  const ids = (data?.questions || []).map((q) => q.id);
+                  if (ids.length > 0) {
+                    setSelectedIds(new Set(ids));
+                    toast.success(`Auto-generated ${ids.length} questions for ${date}`);
+                  }
+                } else {
+                  toast.error("Failed to generate questions");
+                }
+              } catch {
+                toast.error("Auto-generation error");
+              } finally {
+                setLoading(false);
+              }
+            }}
+            disabled={loading}
+          >
+            <span>⚡ Auto-Generate ({type === "kids" ? 5 : 10} Qs)</span>
+          </button>
           <button className={styles.secondaryBtn} onClick={() => setShowHistoryModal(true)}>
             <span>📋 History Log ({history.length})</span>
           </button>

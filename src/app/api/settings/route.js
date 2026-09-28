@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/adminSessionServer";
 import { prisma } from "@/lib/prisma";
+import { DEFAULT_MODULES_CONFIG, parseModulesConfig } from "@/lib/modulesConfig";
 
 export const dynamic = "force-dynamic";
 
@@ -13,14 +14,27 @@ export async function GET(request) {
       const setting = await prisma.setting.findUnique({
         where: { key }
       });
+      if (key === "modules") {
+        const val = setting?.value ? parseModulesConfig(setting.value) : DEFAULT_MODULES_CONFIG;
+        return NextResponse.json({ key: "modules", value: val });
+      }
       return NextResponse.json(setting || { key, value: null });
     }
 
     const rows = await prisma.setting.findMany();
     const settings = {};
     rows.forEach((r) => {
-      settings[r.key] = r.value === "true" ? true : r.value === "false" ? false : r.value;
+      let val = r.value === "true" ? true : r.value === "false" ? false : r.value;
+      if (r.key === "modules") {
+        val = parseModulesConfig(val);
+      }
+      settings[r.key] = val;
     });
+
+    if (!settings.modules) {
+      settings.modules = DEFAULT_MODULES_CONFIG;
+    }
+
     return NextResponse.json(settings);
   } catch (error) {
     console.error("Settings GET error:", error);
@@ -28,14 +42,15 @@ export async function GET(request) {
     // Fallback settings when database is unavailable
     const fallbackSettings = {
       difficultyEnabled: true,
-      showAdvancedFilters: true, // Add missing field
+      showAdvancedFilters: true,
       homeChips: JSON.stringify(["Science", "History", "GK", "Quick 5 Min"]),
       theme: "light",
       soundEnabled: true,
       timerEnabled: false,
       languageEnabled: true,
-      navbarEnabled: true, // Add this to ensure navbar is visible
-      footerEnabled: true, // Add this to ensure footer is visible
+      navbarEnabled: true,
+      footerEnabled: true,
+      modules: DEFAULT_MODULES_CONFIG,
     };
     
     console.log("[API] Returning fallback settings due to database error");
@@ -63,12 +78,18 @@ export async function PUT(request) {
     console.log("[Settings PUT] Body:", body);
     
     for (const [key, value] of Object.entries(body)) {
-      console.log(`[Settings PUT] Upserting ${key}: ${value}`);
-      await prisma.setting.upsert({
-        where: { key },
-        update: { value: String(value) },
-        create: { key, value: String(value) },
-      });
+      const strVal = typeof value === "object" && value !== null ? JSON.stringify(value) : String(value);
+      const existing = await prisma.setting.findUnique({ where: { key } });
+      if (existing) {
+        await prisma.setting.update({
+          where: { key },
+          data: { value: strVal },
+        });
+      } else {
+        await prisma.setting.create({
+          data: { key, value: strVal },
+        });
+      }
     }
     console.log("[Settings PUT] Success");
     return NextResponse.json({ success: true });

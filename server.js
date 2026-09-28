@@ -1,3 +1,5 @@
+require('dotenv').config({ path: '.env.local' });
+require('dotenv').config();
 const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');

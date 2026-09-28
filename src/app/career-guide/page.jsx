@@ -1,11 +1,13 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import styles from "@/styles/CareerGuide.module.css";
 import { prisma } from "@/lib/prisma";
 import CareerGuideClient from "@/components/CareerGuideClient";
 import { cookies } from "next/headers";
 import { translations } from "@/locales/language_translations";
+import { DEFAULT_MODULES_CONFIG, parseModulesConfig } from "@/lib/modulesConfig";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 function getServerT(lang) {
   return (path) => {
@@ -42,6 +44,12 @@ export async function generateMetadata({ searchParams }) {
 }
 
 export default async function CareerGuideIndex() {
+  const setting = await prisma.setting.findUnique({ where: { key: "modules" } }).catch(() => null);
+  const modules = setting?.value ? parseModulesConfig(setting.value) : DEFAULT_MODULES_CONFIG;
+  if (!modules.careerGuide) {
+    redirect("/");
+  }
+
   const cookieStore = cookies();
   const lang = cookieStore.get('app-language')?.value || 'en';
   const t = getServerT(lang);

@@ -108,7 +108,7 @@
 }
 
 .selectedDateText {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-family-base);
   font-weight: 700;
   color: #0f172a;
   font-size: 0.9rem;
@@ -301,7 +301,7 @@
 }
 
 .quoteMark {
-  font-family: serif;
+  font-family: var(--font-family-base);
   font-size: 5rem;
   color: #38bdf8;
   opacity: 0.25;
@@ -313,8 +313,8 @@
 }
 
 .bigCardText {
-  font-family: 'Outfit', sans-serif;
-  font-weight: 800;
+  font-family: var(--font-family-base);
+  font-weight: 700;
   font-size: 1.4rem;
   line-height: 1.35;
   letter-spacing: -0.02em;
@@ -389,7 +389,7 @@
 }
 
 .dateHeaderText {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-family-base);
   font-weight: 700;
   font-size: 0.8rem;
   text-transform: uppercase;
@@ -582,9 +582,9 @@
 }
 
 .sidebarTitle {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-family-base);
   font-size: 0.72rem;
-  font-weight: 800;
+  font-weight: 700;
   text-transform: uppercase;
   color: #64748b;
   letter-spacing: 0.15em;
@@ -1460,7 +1460,7 @@
 }
 
 .calMonthTitle {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-family-base);
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--text-primary);
@@ -1706,7 +1706,7 @@
   gap: 8px;
   padding: 10px 14px;
   border-radius: 12px;
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-family-base);
   font-weight: 700;
   font-size: 0.85rem;
   color: #64748b;
@@ -1786,7 +1786,7 @@
 }
 
 .oneLinerBodyText {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-family-base);
   font-size: 0.98rem;
   font-weight: 700;
   line-height: 1.45;
@@ -1847,9 +1847,9 @@
 }
 
 .mcqQuestionText {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-family-base);
   font-size: 1.1rem;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.45;
   color: #0f172a;
 }
@@ -2026,8 +2026,8 @@
 }
 
 .selectedDateText {
-  font-family: 'Outfit', sans-serif;
-  font-weight: 800;
+  font-family: var(--font-family-base);
+  font-weight: 700;
   font-size: 0.95rem;
   color: #1e1b4b;
 }
@@ -2049,7 +2049,7 @@
   border-radius: 14px;
   background: linear-gradient(135deg, #6366f1, #4f46e5);
   color: #ffffff;
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-family-base);
   font-weight: 700;
   font-size: 0.85rem;
   border: none;
@@ -2087,7 +2087,7 @@
   border-radius: 14px;
   background: linear-gradient(135deg, #ea580c, #d97706);
   color: #ffffff;
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-family-base);
   font-weight: 700;
   font-size: 0.85rem;
   text-decoration: none;
@@ -2224,5 +2224,181 @@
     font-size: 0.85rem;
   }
 }
+
+/* ===== Step 13: Explorer Clean Mobile-First Current Affairs ===== */
+.explorerContainer {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px 16px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: fadeIn 0.3s ease;
+}
+
+.explorerDateHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--bg-primary);
+  border: 1.5px solid var(--card-border);
+  border-radius: 18px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.explorerDateArrow {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--card-border);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.explorerDateArrow:hover:not(:disabled) {
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.explorerDateArrow:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.explorerDateArrow:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.explorerDateCenter {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 16px;
+  cursor: pointer;
+  border-radius: 10px;
+  transition: background 0.2s ease;
+}
+
+.explorerDateCenter:hover {
+  background: var(--bg-secondary);
+}
+
+.explorerDateText {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.explorerDateInput {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.explorerHeadlineList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.explorerHeadlineCard {
+  background: var(--bg-primary);
+  border: 1.5px solid var(--card-border);
+  border-radius: 18px;
+  padding: 18px 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+}
+
+.explorerHeadlineCard:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+}
+
+.explorerHeadlineCard:active {
+  transform: translateY(0);
+}
+
+.explorerHeadlineTitle {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.4;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.explorerHeadlineMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.explorerCategoryTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  background: rgba(99, 102, 241, 0.08);
+  color: var(--accent);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.explorerReadTime {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.explorerEmptyState {
+  background: var(--bg-primary);
+  border: 1.5px dashed var(--card-border);
+  border-radius: 18px;
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
 
 

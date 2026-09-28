@@ -8,9 +8,9 @@ import { useMonetization } from "@/context/MonetizationContext";
 import { motion, AnimatePresence } from "framer-motion";
 import AdGate from "@/components/monetization/AdGate";
 import { useLanguage } from "@/context/LanguageContext";
+import { useTier } from "@/context/TierContext";
 import styles from "@/styles/CurrentAffairs.module.css";
 import CalendarWidget from "@/components/current-affairs/CalendarWidget";
-import LanguageToggle from "@/components/LanguageToggle";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -44,6 +44,29 @@ function formatDate(d) {
   } catch {
     return d;
   }
+}
+
+function adjustDate(dateStr, offsetDays) {
+  try {
+    const parts = String(dateStr).split("-").map(Number);
+    if (parts.length !== 3) return dateStr;
+    const [y, m, d] = parts;
+    const date = new Date(y, m - 1, d);
+    date.setDate(date.getDate() + offsetDays);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  } catch {
+    return dateStr;
+  }
+}
+
+function getReadTime(item, isHindi) {
+  const text = (item?.description || "") + " " + (item?.heading || "") + " " + (item?.oneLiner || "");
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
+  const minutes = Math.max(1, Math.ceil(words / 140));
+  return isHindi ? `${minutes} मिनट` : `${minutes} min read`;
 }
 
 const CATEGORY_ICONS = {
@@ -318,6 +341,8 @@ function MCQReadCard({ question, qIndex, isHindi, router, selectedDate }) {
 export default function DailyCurrentAffairsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { tier } = useTier();
+  const isExplorer = tier === "adults" || (tier !== "kids" && tier !== "students");
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
   const [months, setMonths] = useState([]);
@@ -1039,8 +1064,96 @@ export default function DailyCurrentAffairsPage() {
 
   return (
     <main className={styles.page}>
-      {/* Premium Glassmorphic Command Ribbon (Date & Search Bar) */}
-      <div className={styles.dateRibbonWrapper}>
+      {isExplorer ? (
+        // STEP 13: EXPLORER CLEAN CURRENT AFFAIRS
+        <div className={styles.explorerContainer}>
+          {/* Date header with previous/next day arrows */}
+          <div className={styles.explorerDateHeader}>
+            <button 
+              id="ca-prev-day-btn"
+              className={styles.explorerDateArrow}
+              onClick={() => setSelectedDate(prev => adjustDate(prev || getTodayDateString(), -1))}
+              title={isHindi ? "पिछला दिन" : "Previous Day"}
+              aria-label="Previous Day"
+            >
+              ‹
+            </button>
+
+            <div className={styles.explorerDateCenter} title={isHindi ? "तारीख चुनें" : "Select Date"}>
+              <span className={styles.explorerDateText}>
+                {formatDate(selectedDate || getTodayDateString())}
+              </span>
+              <input 
+                type="date" 
+                value={selectedDate || getTodayDateString()} 
+                max={getTodayDateString()}
+                onChange={(e) => {
+                  setSelectedDate(e.target.value);
+                  setSearchQuery("");
+                }}
+                className={styles.explorerDateInput}
+              />
+            </div>
+
+            <button 
+              id="ca-next-day-btn"
+              className={styles.explorerDateArrow}
+              onClick={() => setSelectedDate(prev => adjustDate(prev || getTodayDateString(), 1))}
+              disabled={(selectedDate || getTodayDateString()) >= getTodayDateString()}
+              title={isHindi ? "अगला दिन" : "Next Day"}
+              aria-label="Next Day"
+            >
+              ›
+            </button>
+          </div>
+
+          {/* Plain list of headline cards: headline, category tag, read time */}
+          {loading ? (
+            <div className={styles.skeletonList}>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className={styles.skeletonCard} style={{ height: '90px', borderRadius: '18px' }} />
+              ))}
+            </div>
+          ) : items.length === 0 ? (
+            <div className={styles.explorerEmptyState}>
+              {isHindi ? "इस तारीख के लिए कोई समाचार उपलब्ध नहीं है" : "No news articles found for this date."}
+            </div>
+          ) : (
+            <div className={styles.explorerHeadlineList}>
+              {items.map((item, idx) => {
+                const headline = isHindi && item.headingHi ? item.headingHi : item.heading;
+                const category = item.category || (isHindi ? "सामयिकी" : "General");
+                const readTime = getReadTime(item, isHindi);
+
+                return (
+                  <div
+                    key={item.id || idx}
+                    className={styles.explorerHeadlineCard}
+                    onClick={() => handleReadMore(item)}
+                  >
+                    <h3 className={styles.explorerHeadlineTitle}>
+                      {headline}
+                    </h3>
+
+                    <div className={styles.explorerHeadlineMeta}>
+                      <span className={styles.explorerCategoryTag}>
+                        {getCategoryIcon(item.category)} {category}
+                      </span>
+                      <span className={styles.explorerReadTime}>
+                        ⏱️ {readTime}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ) : (
+        // KIDS & STUDENTS ORIGINAL LAYOUT
+        <>
+          {/* Premium Glassmorphic Command Ribbon (Date & Search Bar) */}
+          <div className={styles.dateRibbonWrapper}>
         <div className={styles.dateRibbon}>
         <div className={styles.ribbonDateGroup}>
           <button 
@@ -1123,9 +1236,6 @@ export default function DailyCurrentAffairsPage() {
             <div className={styles.sidebarTitle}>
               <span>🗂️</span>
               <span>{t('ca.sidebarTitle')}</span>
-            </div>
-            <div className={styles.sidebarLangWrapper}>
-              <LanguageToggle />
             </div>
           </div>
           <div className={styles.categoryScrollList}>
@@ -1393,6 +1503,8 @@ export default function DailyCurrentAffairsPage() {
           </div>
         </aside>
       </div>
+      </>
+      )}
 
       {reading && (
         <div className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center p-3 sm:p-6 pt-20 sm:pt-24 pb-12 bg-slate-950/80 backdrop-blur-md overflow-y-auto" onClick={() => setReading(null)}>

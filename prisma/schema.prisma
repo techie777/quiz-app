@@ -150,6 +150,38 @@ model Category {
   progress  UserProgress[]
 }
 
+model TaxonomyCategory {
+  id            String          @id @default(auto()) @map("_id") @db.ObjectId
+  slug          String          @unique
+  name          String
+  nameHi        String
+  description   String?
+  descriptionHi String?
+  icon          String?
+  audience      String[]        @default(["explorer"])
+  sortOrder     Int             @default(0)
+  topics        TaxonomyTopic[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
+
+model TaxonomyTopic {
+  id            String           @id @default(auto()) @map("_id") @db.ObjectId
+  categoryId    String           @db.ObjectId
+  category      TaxonomyCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  slug          String
+  name          String
+  nameHi        String
+  description   String?
+  tags          String[]         @default([])
+  sortOrder     Int              @default(0)
+  questionCount Int              @default(0)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@unique([categoryId, slug])
+}
+
 model Question {
   id            String      @id @default(auto()) @map("_id") @db.ObjectId
   text          String
@@ -166,6 +198,30 @@ model Question {
   category Category @relation(fields: [categoryId], references: [id])
 
   favourites Favourite[]
+
+  // Step 4 Data Foundation fields
+  text_hi         String?
+  text_en         String?
+  options_list    String[]    @default([])
+  correct_index   Int         @default(0)
+  explanation_hi  String?
+  explanation_en  String?
+  category_id     String?     @db.ObjectId
+  topic_id        String?     @db.ObjectId
+  tags            String[]    @default([])
+  difficulty_level Int        @default(1) // 1 Easy, 2 Medium, 3 Hard
+  audience        String[]    @default(["explorer"]) // kids, students, explorer
+  exam            String[]    @default([]) // SSC, Banking, Railway, State, UPSC
+  state           String?
+  class_level     Int?
+  type            String      @default("MCQ")
+  image_url       String?
+  time_sensitive  Boolean     @default(false)
+  review_by       DateTime?
+  status          String      @default("published") // draft, reviewed, published, flagged
+  source          String?
+  attempts        Int         @default(0)
+  correct         Int         @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

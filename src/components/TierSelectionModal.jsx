@@ -147,7 +147,7 @@ export default function TierSelectionModal() {
               onClick={() => handleSelect(TIERS.ADULTS)}
               className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors py-1 px-3 rounded-lg font-medium"
             >
-              {isHindi ? "छोड़ें (वयस्क मोड में जारी रखें)" : "Skip for now (continue in Adults mode)"}
+              {isHindi ? "छोड़ें (एक्सप्लोरर मोड में जारी रखें)" : "Skip for now (continue in Explorer mode)"}
             </button>
           </div>
         </motion.div>

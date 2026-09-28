@@ -2,19 +2,15 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
 import {
-  Sparkles,
   Search,
   LayoutGrid,
   List,
-  Calendar,
   Flame,
   TrendingUp,
   X,
   Compass,
   ArrowRight,
-  ShieldCheck,
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { useQuiz } from "@/context/QuizContext";
@@ -153,28 +149,16 @@ export default function LearnDiscoveryPage() {
 
   return (
     <div className={`w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 ${styles.pageWrapper}`}>
-      {/* ── Top Header (Model: Seekho "New Releases" Screen) ── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+      {/* ── Top Header ── */}
+      <div className="flex items-center justify-between gap-4 mb-4">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-1 rounded-full text-xs font-black bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 inline-flex items-center gap-1">
-              <Sparkles size={13} className="text-amber-500" />
-              <span>{isHindi ? "डिस्कवरी हब" : "Discovery Feed"}</span>
-            </span>
-          </div>
-
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white mt-1.5 tracking-tight">
-            {isHindi ? "नई रिलीज़ (Learn)" : "New Releases"}
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+            {isHindi ? "सीखें" : "Learn"}
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            {isHindi
-              ? "हाल ही में जोड़े गए नए सेट्स और इस सप्ताह के ट्रेंडिंग क्विज़"
-              : "Discover newly added sets, trending categories & fresh study releases"}
-          </p>
         </div>
 
         {/* Top Controls: Search Input & View Toggle */}
-        <div className="flex items-center gap-2 self-start md:self-auto">
+        <div className="flex items-center gap-2">
           {/* Quick Search Bar */}
           <div className="relative">
             {isSearchOpen ? (
@@ -237,8 +221,8 @@ export default function LearnDiscoveryPage() {
         </div>
       </div>
 
-      {/* ── Requirement 2: Horizontal Filter Chips Across The Top ── */}
-      <div className="relative mb-8">
+      {/* ── Horizontal Filter Chips ── */}
+      <div className="relative mb-6">
         <div className={styles.chipScrollArea}>
           {/* "All" Filter Chip */}
           <button
@@ -289,28 +273,21 @@ export default function LearnDiscoveryPage() {
       )}
 
       {!loading && (
-        <div className="space-y-10">
-          {/* ── Section 1: "Today" (New Releases) ── */}
+        <div className="space-y-8">
+          {/* ── Section 1: "Today" ── */}
           <section>
-            <div className="flex items-center justify-between gap-3 mb-4">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center">
-                  <Flame size={18} />
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center">
+                  <Flame size={16} />
                 </div>
-                <div>
-                  <h2 className={styles.sectionHeading}>
-                    {isHindi ? "आज (Today's Releases)" : "Today"}
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {isHindi
-                      ? "हाल ही में प्रकाशित नए 20-प्रश्नों के सेट्स"
-                      : "Freshly added 20-question practice sets"}
-                  </p>
-                </div>
+                <h2 className={styles.sectionHeading}>
+                  {isHindi ? "आज" : "Today"}
+                </h2>
               </div>
 
-              <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                {filteredTodaySets.length} {isHindi ? "सेट्स उपलब्ध" : "sets available"}
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                {filteredTodaySets.length} {isHindi ? "सेट्स" : "sets"}
               </span>
             </div>
 
@@ -351,27 +328,20 @@ export default function LearnDiscoveryPage() {
             )}
           </section>
 
-          {/* ── Section 2: "This Week" (Trending & Most Attempted) ── */}
+          {/* ── Section 2: "This Week" ── */}
           <section>
-            <div className="flex items-center justify-between gap-3 mb-4">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
-                  <TrendingUp size={18} />
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                  <TrendingUp size={16} />
                 </div>
-                <div>
-                  <h2 className={styles.sectionHeading}>
-                    {isHindi ? "इस सप्ताह (This Week)" : "This Week"}
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {isHindi
-                      ? "छात्रों द्वारा सबसे अधिक हल किए गए ट्रेंडिंग सेट्स"
-                      : "Trending & most attempted sets by active learners"}
-                  </p>
-                </div>
+                <h2 className={styles.sectionHeading}>
+                  {isHindi ? "इस सप्ताह" : "This Week"}
+                </h2>
               </div>
 
-              <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                {filteredThisWeekSets.length} {isHindi ? "सेट्स उपलब्ध" : "sets available"}
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                {filteredThisWeekSets.length} {isHindi ? "सेट्स" : "sets"}
               </span>
             </div>
 
@@ -415,28 +385,21 @@ export default function LearnDiscoveryPage() {
           {/* ── Section 3: Lightweight LearnCards (Short Explainers) ── */}
           {filteredExplainers.length > 0 && (
             <section className="pt-4 border-t border-slate-200/80 dark:border-slate-800/80">
-              <div className="flex items-center justify-between gap-3 mb-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center">
-                    <Compass size={18} />
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                    <Compass size={16} />
                   </div>
-                  <div>
-                    <h3 className="text-lg font-black text-slate-900 dark:text-white">
-                      {isHindi ? "संक्षिप्त ज्ञान (Quick Concepts)" : "Quick Explainers"}
-                    </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {isHindi
-                        ? "2 मिनट में मुख्य परीक्षा अवधारणाएं समझें"
-                        : "Bite-sized notes to boost your conceptual clarity"}
-                    </p>
-                  </div>
+                  <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                    {isHindi ? "संक्षिप्त ज्ञान" : "Quick Concepts"}
+                  </h3>
                 </div>
 
                 <button
                   onClick={() => router.push("/daily-current-affairs")}
-                  className="text-xs font-black text-purple-600 dark:text-purple-400 hover:underline inline-flex items-center gap-1"
+                  className="text-xs font-bold text-purple-600 dark:text-purple-400 hover:underline inline-flex items-center gap-1"
                 >
-                  <span>{isHindi ? "और पढ़ें" : "View All"}</span>
+                  <span>{isHindi ? "सभी देखें" : "View all"}</span>
                   <ArrowRight size={13} />
                 </button>
               </div>
@@ -454,42 +417,6 @@ export default function LearnDiscoveryPage() {
           )}
         </div>
       )}
-
-      {/* ── Sticky Conversion Bottom Banner (Model: Seekho "Start 3 Day Trial") ── */}
-      <div className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] inset-x-4 max-w-xl mx-auto z-40">
-        <motion.div
-          initial={{ y: 50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.3, delay: 0.2 }}
-          className="w-full bg-white dark:bg-slate-900 text-slate-900 dark:text-white border-2 border-indigo-500/40 dark:border-indigo-400/40 rounded-2xl p-3 sm:p-3.5 shadow-2xl flex items-center justify-between gap-3 backdrop-blur-xl"
-        >
-          <div className="min-w-0 flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-400 to-indigo-600 text-white flex items-center justify-center font-black text-base shadow-md shrink-0">
-              👑
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs sm:text-sm font-black truncate">
-                  {isHindi ? "क्विज़वेब प्रो शुरू करें" : "Start 3 Day Trial"}
-                </span>
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-amber-400 text-slate-900">
-                  PRO
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                {isHindi ? "केवल ₹199/माह — 500+ सेट्स अनलॉक करें" : "Then ₹199/month — Unlock 500+ premium sets"}
-              </p>
-            </div>
-          </div>
-
-          <button
-            onClick={() => router.push("/pro")}
-            className="shrink-0 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 font-black text-xs sm:text-sm shadow-md transition-all active:scale-95"
-          >
-            {isHindi ? "ट्रायल लें" : "Try Free"}
-          </button>
-        </motion.div>
-      </div>
     </div>
   );
 }

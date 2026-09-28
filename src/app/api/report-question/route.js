@@ -1,37 +1,41 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { getDb } from '@/lib/mongoDb';
+import { ObjectId } from 'mongodb';
+
+export const dynamic = "force-dynamic";
 
 export async function POST(request) {
   try {
     const session = await getServerSession(authOptions);
-    
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
-    const { questionId, issue } = await request.json();
+    const body = await request.json();
+    const { questionId, issue, details } = body;
 
     if (!questionId || !issue) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Prepare report object
-    const report = {
-      questionId,
+    const db = await getDb();
+    const now = new Date();
+
+    const reportDoc = {
+      questionId: ObjectId.isValid(questionId) ? new ObjectId(questionId) : questionId,
       issue,
-      reportedBy: session.user.id || session.user.email,
-      reportedAt: new Date(),
-      status: 'pending'
+      details: details || issue,
+      reportedBy: session?.user?.email || session?.user?.id || 'guest',
+      reportedAt: now,
+      status: 'pending',
+      createdAt: now,
+      updatedAt: now,
     };
 
-    // For now, we'll just log it and return success
-    // TODO: Add Report model to prisma/schema.prisma and save it
-    console.log('Question Report Received:', report);
+    const res = await db.collection("QuestionReport").insertOne(reportDoc);
 
     return NextResponse.json({ 
       success: true, 
+      reportId: res.insertedId.toString(),
       message: 'Report submitted successfully' 
     });
 

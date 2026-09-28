@@ -1,0 +1,304 @@
+/* ==========================================================================
+   QUIZWEB DESIGN SYSTEM TOKENS (Step 1)
+   Base: 16px. Font: Poppins only (400, 500, 600, 700).
+   4 Tiers: Kids, Students, Explorer, Arena.
+   ========================================================================== */
+
+:root {
+  /* ===== Typography Stack ===== */
+  --font-family-base: var(--font-poppins, 'Poppins'), 'Noto Sans Devanagari', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* ===== Type Scale (in rem, base 16px) ===== */
+  /* Display: 28/36 (700) */
+  --text-display: 1.75rem;
+  --leading-display: 2.25rem;
+  --weight-display: 700;
+
+  /* H1: 24/32 (700) */
+  --text-h1: 1.5rem;
+  --leading-h1: 2rem;
+  --weight-h1: 700;
+
+  /* H2: 20/28 (600) */
+  --text-h2: 1.25rem;
+  --leading-h2: 1.75rem;
+  --weight-h2: 600;
+
+  /* H3: 17/24 (600) */
+  --text-h3: 1.0625rem;
+  --leading-h3: 1.5rem;
+  --weight-h3: 600;
+
+  /* Question: 19/30 (600) */
+  --text-question: 1.1875rem;
+  --leading-question: 1.875rem;
+  --weight-question: 600;
+
+  /* Body: 16/24 (400) */
+  --text-body: 1rem;
+  --leading-body: 1.5rem;
+  --weight-body: 400;
+
+  /* Meta: 14/20 (500) */
+  --text-meta: 0.875rem;
+  --leading-meta: 1.25rem;
+  --weight-meta: 500;
+
+  /* Badge: 12/16 (600) - absolute minimum 12px */
+  --text-badge: 0.75rem;
+  --leading-badge: 1rem;
+  --weight-badge: 600;
+
+  /* ===== Spacing Scale (4, 8, 12, 16, 24, 32) ===== */
+  --space-1: 0.25rem;  /* 4px */
+  --space-2: 0.5rem;   /* 8px */
+  --space-3: 0.75rem;  /* 12px */
+  --space-4: 1rem;     /* 16px */
+  --space-5: 1.5rem;   /* 24px */
+  --space-6: 2rem;     /* 32px */
+
+  /* Legacy mappings */
+  --space-xs: var(--space-1);
+  --space-sm: var(--space-2);
+  --space-md: var(--space-4);
+  --space-lg: var(--space-5);
+  --space-xl: var(--space-6);
+
+  /* ===== Radii Scale ===== */
+  --radius-sm: 12px;    /* buttons, chips, inputs */
+  --radius-card: 16px;  /* cards */
+  --radius-pill: 9999px;/* tags, chips, pills */
+
+  --border-radius-sm: var(--radius-sm);
+  --border-radius: var(--radius-card);
+  --card-radius: var(--radius-card);
+  --border-radius-lg: var(--radius-card);
+
+  /* ===== Elevation Levels (2 levels only) ===== */
+  --elevation-1: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+  --elevation-2: 0 8px 24px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.05);
+
+  --shadow-sm: var(--elevation-1);
+  --shadow-md: var(--elevation-2);
+  --card-shadow: var(--elevation-1);
+  --card-hover-shadow: var(--elevation-2);
+
+  /* ===== Brand & Semantic Colors (Light Mode Default) ===== */
+  --brand-primary: #6366f1;
+  --brand-primary-hover: #4f46e5;
+  --brand-primary-light: rgba(99, 102, 241, 0.1);
+  --brand-gradient: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+
+  /* Shared Neutrals (WCAG AA text contrast: muted never lighter than #5B6475 on white) */
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f1f5f9;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #5b6475;
+  --text-on-brand: #ffffff;
+  --border-subtle: #e2e8f0;
+  --border-medium: #cbd5e1;
+
+  --card-bg: #ffffff;
+  --card-border: #e2e8f0;
+
+  /* Semantics (Identical across all tiers) */
+  --success: #10b981;
+  --success-bg: rgba(16, 185, 129, 0.12);
+  --success-border: rgba(16, 185, 129, 0.3);
+  --success-text: #047857;
+
+  --error: #ef4444;
+  --error-bg: rgba(239, 68, 68, 0.12);
+  --error-border: rgba(239, 68, 68, 0.3);
+  --error-text: #b91c1c;
+
+  --warning: #f59e0b;
+  --warning-bg: rgba(245, 158, 11, 0.14);
+  --warning-border: rgba(245, 158, 11, 0.35);
+  --warning-text: #b45309;
+
+  --info: #0284c7;
+  --info-bg: rgba(2, 132, 199, 0.12);
+
+  /* Difficulty Chips */
+  --diff-easy: #10b981;
+  --diff-easy-bg: rgba(16, 185, 129, 0.12);
+  --diff-medium: #f59e0b;
+  --diff-medium-bg: rgba(245, 158, 11, 0.14);
+  --diff-hard: #ef4444;
+  --diff-hard-bg: rgba(239, 68, 68, 0.12);
+
+  /* Default Tier Accent: Explorer (Indigo) */
+  --tier-accent: #6366f1;
+  --tier-accent-hover: #4f46e5;
+  --tier-accent-light: rgba(99, 102, 241, 0.12);
+  --tier-accent-border: rgba(99, 102, 241, 0.35);
+  --tier-gradient: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  --tier-glow: 0 0 20px rgba(99, 102, 241, 0.25);
+
+  --accent: var(--tier-accent);
+  --accent-hover: var(--tier-accent-hover);
+  --accent-light: var(--tier-accent-light);
+  --accent-rgb: 99, 102, 241;
+  --text-on-accent: #ffffff;
+
+  /* Button Tokens */
+  --btn-height: 44px;
+  --btn-radius: var(--radius-sm);
+  --btn-primary-bg: var(--brand-primary);
+  --btn-primary-text: #ffffff;
+  --btn-primary-hover: var(--brand-primary-hover);
+  --btn-secondary-bg: var(--bg-tertiary);
+  --btn-secondary-text: var(--text-primary);
+  --btn-secondary-hover: #e2e8f0;
+  --btn-ghost-text: var(--text-secondary);
+  --btn-ghost-hover: var(--bg-tertiary);
+
+  /* Motion */
+  --transition-fast: 150ms ease-out;
+  --transition-normal: 200ms ease-out;
+  --transition-slow: 250ms ease-out;
+}
+
+/* ==========================================================================
+   TIER ACCENT TOKENS (Used ONLY for icons, chips, progress & highlights)
+   ========================================================================== */
+
+/* Kids: Amber / Orange */
+[data-tier="kids"] {
+  --tier-accent: #f59e0b;
+  --tier-accent-hover: #d97706;
+  --tier-accent-light: rgba(245, 158, 11, 0.14);
+  --tier-accent-border: rgba(245, 158, 11, 0.35);
+  --tier-gradient: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+  --tier-glow: 0 0 20px rgba(245, 158, 11, 0.25);
+
+  --accent: var(--tier-accent);
+  --accent-hover: var(--tier-accent-hover);
+  --accent-light: var(--tier-accent-light);
+  --accent-rgb: 245, 158, 11;
+  --text-on-accent: #ffffff;
+}
+
+/* Students: Teal */
+[data-tier="students"] {
+  --tier-accent: #0d9488;
+  --tier-accent-hover: #0f766e;
+  --tier-accent-light: rgba(13, 148, 136, 0.14);
+  --tier-accent-border: rgba(13, 148, 136, 0.35);
+  --tier-gradient: linear-gradient(135deg, #0d9488 0%, #0284c7 100%);
+  --tier-glow: 0 0 20px rgba(13, 148, 136, 0.25);
+
+  --accent: var(--tier-accent);
+  --accent-hover: var(--tier-accent-hover);
+  --accent-light: var(--tier-accent-light);
+  --accent-rgb: 13, 148, 136;
+  --text-on-accent: #ffffff;
+}
+
+/* Explorer: Indigo */
+[data-tier="adults"],
+[data-tier="explorer"] {
+  --tier-accent: #6366f1;
+  --tier-accent-hover: #4f46e5;
+  --tier-accent-light: rgba(99, 102, 241, 0.12);
+  --tier-accent-border: rgba(99, 102, 241, 0.35);
+  --tier-gradient: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  --tier-glow: 0 0 20px rgba(99, 102, 241, 0.25);
+
+  --accent: var(--tier-accent);
+  --accent-hover: var(--tier-accent-hover);
+  --accent-light: var(--tier-accent-light);
+  --accent-rgb: 99, 102, 241;
+  --text-on-accent: #ffffff;
+}
+
+/* Arena: Violet-to-Pink Gradient */
+[data-tier="arena"] {
+  --tier-accent: #8b5cf6;
+  --tier-accent-hover: #7c3aed;
+  --tier-accent-light: rgba(139, 92, 246, 0.15);
+  --tier-accent-border: rgba(139, 92, 246, 0.35);
+  --tier-gradient: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+  --tier-glow: 0 0 25px rgba(139, 92, 246, 0.3);
+
+  --accent: var(--tier-accent);
+  --accent-hover: var(--tier-accent-hover);
+  --accent-light: var(--tier-accent-light);
+  --accent-rgb: 139, 92, 246;
+  --text-on-accent: #ffffff;
+}
+
+/* ==========================================================================
+   DARK THEME TOKENS
+   ========================================================================== */
+
+[data-theme="dark"] {
+  --bg-primary: #0a0e27;
+  --bg-secondary: #111638;
+  --bg-tertiary: #1a2046;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-on-brand: #ffffff;
+  --border-subtle: rgba(255, 255, 255, 0.1);
+  --border-medium: rgba(255, 255, 255, 0.2);
+
+  --card-bg: rgba(17, 22, 56, 0.85);
+  --card-border: rgba(255, 255, 255, 0.1);
+
+  --elevation-1: 0 4px 14px rgba(0, 0, 0, 0.4);
+  --elevation-2: 0 12px 32px rgba(0, 0, 0, 0.55);
+
+  --btn-secondary-bg: #1e254e;
+  --btn-secondary-text: #f1f5f9;
+  --btn-secondary-hover: #293264;
+  --btn-ghost-text: #cbd5e1;
+  --btn-ghost-hover: #1e254e;
+
+  --modal-overlay: rgba(0, 0, 0, 0.7);
+  --modal-bg: #111638;
+
+  --progress-bg: #1a2046;
+}
+
+/* Dark Tier Accents */
+[data-theme="dark"][data-tier="kids"] {
+  --tier-accent: #fbbf24;
+  --tier-accent-hover: #f59e0b;
+  --tier-accent-light: rgba(251, 191, 36, 0.18);
+  --tier-accent-border: rgba(251, 191, 36, 0.4);
+  --tier-gradient: linear-gradient(135deg, #fbbf24 0%, #f97316 100%);
+  --accent: var(--tier-accent);
+}
+
+[data-theme="dark"][data-tier="students"] {
+  --tier-accent: #14b8a6;
+  --tier-accent-hover: #0d9488;
+  --tier-accent-light: rgba(20, 184, 166, 0.18);
+  --tier-accent-border: rgba(20, 184, 166, 0.4);
+  --tier-gradient: linear-gradient(135deg, #14b8a6 0%, #38bdf8 100%);
+  --accent: var(--tier-accent);
+}
+
+[data-theme="dark"][data-tier="adults"],
+[data-theme="dark"][data-tier="explorer"],
+[data-theme="dark"]:root {
+  --tier-accent: #818cf8;
+  --tier-accent-hover: #6366f1;
+  --tier-accent-light: rgba(129, 140, 248, 0.18);
+  --tier-accent-border: rgba(129, 140, 248, 0.4);
+  --tier-gradient: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
+  --accent: var(--tier-accent);
+}
+
+[data-theme="dark"][data-tier="arena"] {
+  --tier-accent: #a855f7;
+  --tier-accent-hover: #9333ea;
+  --tier-accent-light: rgba(168, 85, 247, 0.2);
+  --tier-accent-border: rgba(168, 85, 247, 0.45);
+  --tier-gradient: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+  --accent: var(--tier-accent);
+}

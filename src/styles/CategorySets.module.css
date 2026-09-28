@@ -124,9 +124,9 @@
 }
 
 .heroTitle {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-family-base);
   font-size: 2.8rem;
-  font-weight: 900;
+  font-weight: 700;
   color: var(--text-primary);
   margin: 0;
   letter-spacing: -1.5px;
@@ -193,9 +193,9 @@
 }
 
 .sectionTitle {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-family-base);
   font-size: 1.8rem;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 8px;
 }
@@ -792,9 +792,9 @@
 }
 
 .indexTitle {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-family-base);
   font-size: 2.2rem;
-  font-weight: 900;
+  font-weight: 700;
   color: var(--text-primary);
   letter-spacing: -1px;
 }
@@ -915,9 +915,9 @@
 }
 
 .indexSetTitle {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-family-base);
   font-size: 1.4rem;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--text-primary);
   margin: 0;
 }
@@ -1239,9 +1239,9 @@
 }
 
 .modalTitle {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-family-base);
   font-size: 1.12rem;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--text-primary);
   margin: 0;
   line-height: 1.28;
@@ -1652,9 +1652,9 @@
 }
 
 .mixTitle {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-family-base);
   font-size: 2.2rem;
-  font-weight: 900;
+  font-weight: 700;
   background: linear-gradient(135deg, #6366f1, #a855f7);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;

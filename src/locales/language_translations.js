@@ -161,9 +161,9 @@ export const translations = {
         action: "Personalize Now"
       },
       support: {
-        title: "Support Free Education",
-        desc: "Help us keep QuizWeb free and ad-free for students worldwide.",
-        action: "Learn How to Support"
+        title: "Free to play every day",
+        desc: "Help us keep QuizWeb growing with quality educational quizzes for everyone.",
+        action: "Support Us"
       }
     },
     // Live Quiz / Session
@@ -316,7 +316,8 @@ export const translations = {
         total: "Total",
         correct: "Correct",
         wrong: "Wrong",
-        skipped: "Skipped"
+        skipped: "Skipped",
+        time: "Time"
       },
       actions: {
         playAgain: "Play Again",
@@ -327,7 +328,8 @@ export const translations = {
         unlockExport: "Unlock PDF Export",
         continue: "Continue to",
         nextSet: "Next Set",
-        backTo: "Back to"
+        backTo: "Back to",
+        backToHome: "Back to Home"
       },
       review: {
         title: "Answer Review",
@@ -831,6 +833,11 @@ export const translations = {
           lastScore: "पिछला स्कोर",
           bestScore: "सर्वश्रेष्ठ स्कोर",
           noTimer: "कोई टाइमर नहीं"
+        },
+        support: {
+          title: "हर दिन मुफ्त खेलें",
+          desc: "क्विज़वेब को बेहतर बनाने और सभी के लिए गुणवत्तापूर्ण शिक्षा उपलब्ध कराने में हमारा सहयोग करें।",
+          action: "हमारा समर्थन करें"
         }
       },
       // Live Quiz / Session
@@ -983,7 +990,8 @@ export const translations = {
           total: "कुल",
           correct: "सही",
           wrong: "गलत",
-          skipped: "छोड़े गए"
+          skipped: "छोड़े गए",
+          time: "समय"
         },
         actions: {
           playAgain: "फिर से खेलें",
@@ -994,7 +1002,8 @@ export const translations = {
           unlockExport: "PDF निर्यात अनलॉक करें",
           continue: "जारी रखें",
           nextSet: "अगला सेट",
-          backTo: "वापस"
+          backTo: "वापस",
+          backToHome: "होम पर जाएं"
         },
         review: {
           title: "उत्तर समीक्षा",

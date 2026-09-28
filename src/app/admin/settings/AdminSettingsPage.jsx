@@ -102,7 +102,7 @@ function parseNavItems(raw) {
 }
 
 export default function AdminSettingsPage() {
-  const { settings, updateSettings } = useData();
+  const { settings, updateSettings, modules, updateModules } = useData();
   const { adminUser } = useAdmin();
   const [companyName, setCompanyName] = useState(settings.companyName || "QuizWeb");
   const [companyWebsite, setCompanyWebsite] = useState(settings.companyWebsite || "");
@@ -406,47 +406,249 @@ export default function AdminSettingsPage() {
         </div>
       </section>
 
-      {/* Feature Modules Toggles (Beta Launch) */}
+      {/* Modules Configuration & Feature Flags */}
       <section className={`${styles.section} glass-card`}>
-        <h2 className={styles.sectionTitle}>🚀 Feature Modules</h2>
-        <p className={styles.sectionDesc}>Toggle major features on the home page (for beta launch phasing).</p>
-        
+        <h2 className={styles.sectionTitle}>🧩 Feature Flags & Modules</h2>
+        <p className={styles.sectionDesc}>
+          Enable or disable core modules across the app. Disabled modules are hidden from navigation, home, and routes.
+        </p>
+
+        {/* Home Module */}
         <div className={styles.toggleRow}>
           <div>
-            <span className={styles.toggleLabel}>Govt Exams Module</span>
+            <span className={styles.toggleLabel}>Home Module</span>
             <p className={styles.toggleDesc}>
-              Show or hide the Government Exams preparation card on the home page.
+              Tier home dashboard and quiz discovery hub.
             </p>
           </div>
           <button
-            className={`${styles.toggleSwitch} ${settings.showGovtExams ? styles.toggleOn : ""}`}
+            className={`${styles.toggleSwitch} ${modules.home !== false ? styles.toggleOn : ""}`}
             onClick={async () => {
-              const success = await updateSettings({ showGovtExams: !settings.showGovtExams });
-              if (success) toast.success(`Govt Exams ${!settings.showGovtExams ? "enabled" : "disabled"}`);
-              else toast.error("Failed to update setting.");
+              const current = modules.home !== false;
+              const ok = await updateModules({ ...modules, home: !current });
+              if (ok) toast.success(`Home module ${!current ? "enabled" : "disabled"}`);
+              else toast.error("Failed to update module.");
             }}
           >
             <span className={styles.toggleKnob} />
           </button>
         </div>
 
+        {/* Learn Module */}
         <div className={styles.toggleRow}>
           <div>
-            <span className={styles.toggleLabel}>Other Modules (Insights & Resources)</span>
+            <span className={styles.toggleLabel}>Learn Module</span>
             <p className={styles.toggleDesc}>
-              Show or hide the Daily Insights (Fun Facts) and Resources cards.
+              Curriculum learning, study materials, and subject revision.
             </p>
           </div>
           <button
-            className={`${styles.toggleSwitch} ${settings.showOtherOptions ? styles.toggleOn : ""}`}
+            className={`${styles.toggleSwitch} ${modules.learn !== false ? styles.toggleOn : ""}`}
             onClick={async () => {
-              const success = await updateSettings({ showOtherOptions: !settings.showOtherOptions });
-              if (success) toast.success(`Other Modules ${!settings.showOtherOptions ? "enabled" : "disabled"}`);
-              else toast.error("Failed to update setting.");
+              const current = modules.learn !== false;
+              const ok = await updateModules({ ...modules, learn: !current });
+              if (ok) toast.success(`Learn module ${!current ? "enabled" : "disabled"}`);
+              else toast.error("Failed to update module.");
             }}
           >
             <span className={styles.toggleKnob} />
           </button>
+        </div>
+
+        {/* Play Module */}
+        <div className={styles.toggleRow}>
+          <div>
+            <span className={styles.toggleLabel}>Play / Quizzes Module</span>
+            <p className={styles.toggleDesc}>
+              Quick quiz play, categories, and set challenges.
+            </p>
+          </div>
+          <button
+            className={`${styles.toggleSwitch} ${modules.play !== false ? styles.toggleOn : ""}`}
+            onClick={async () => {
+              const current = modules.play !== false;
+              const ok = await updateModules({ ...modules, play: !current });
+              if (ok) toast.success(`Play module ${!current ? "enabled" : "disabled"}`);
+              else toast.error("Failed to update module.");
+            }}
+          >
+            <span className={styles.toggleKnob} />
+          </button>
+        </div>
+
+        {/* Current Affairs Module */}
+        <div className={styles.toggleRow}>
+          <div>
+            <span className={styles.toggleLabel}>Current Affairs Module</span>
+            <p className={styles.toggleDesc}>
+              Daily news, editorial digests, and one-liners.
+            </p>
+          </div>
+          <button
+            className={`${styles.toggleSwitch} ${modules.currentAffairs !== false ? styles.toggleOn : ""}`}
+            onClick={async () => {
+              const current = modules.currentAffairs !== false;
+              const ok = await updateModules({ ...modules, currentAffairs: !current });
+              if (ok) toast.success(`Current Affairs ${!current ? "enabled" : "disabled"}`);
+              else toast.error("Failed to update module.");
+            }}
+          >
+            <span className={styles.toggleKnob} />
+          </button>
+        </div>
+
+        {/* Profile Module */}
+        <div className={styles.toggleRow}>
+          <div>
+            <span className={styles.toggleLabel}>Profile Module</span>
+            <p className={styles.toggleDesc}>
+              User progress, account settings, and coin wallet.
+            </p>
+          </div>
+          <button
+            className={`${styles.toggleSwitch} ${modules.profile !== false ? styles.toggleOn : ""}`}
+            onClick={async () => {
+              const current = modules.profile !== false;
+              const ok = await updateModules({ ...modules, profile: !current });
+              if (ok) toast.success(`Profile module ${!current ? "enabled" : "disabled"}`);
+              else toast.error("Failed to update module.");
+            }}
+          >
+            <span className={styles.toggleKnob} />
+          </button>
+        </div>
+
+        {/* Quiz Arena Module */}
+        <div className={styles.toggleRow}>
+          <div>
+            <span className={styles.toggleLabel}>Quiz Arena (Custom Engine)</span>
+            <p className={styles.toggleDesc}>
+              Custom quiz builder, category multi-select, and arena challenges.
+            </p>
+          </div>
+          <button
+            className={`${styles.toggleSwitch} ${modules.arena !== false ? styles.toggleOn : ""}`}
+            onClick={async () => {
+              const current = modules.arena !== false;
+              const ok = await updateModules({ ...modules, arena: !current });
+              if (ok) toast.success(`Quiz Arena ${!current ? "enabled" : "disabled"}`);
+              else toast.error("Failed to update module.");
+            }}
+          >
+            <span className={styles.toggleKnob} />
+          </button>
+        </div>
+
+        {/* Mock Tests Module */}
+        <div className={styles.toggleRow}>
+          <div>
+            <span className={styles.toggleLabel}>Mock Tests Module</span>
+            <p className={styles.toggleDesc}>
+              Government exams, TCS-pattern test engine, and timed practice series.
+            </p>
+          </div>
+          <button
+            className={`${styles.toggleSwitch} ${modules.mockTests ? styles.toggleOn : ""}`}
+            onClick={async () => {
+              const current = Boolean(modules.mockTests);
+              const ok = await updateModules({ ...modules, mockTests: !current });
+              if (ok) toast.success(`Mock Tests ${!current ? "enabled" : "disabled"}`);
+              else toast.error("Failed to update module.");
+            }}
+          >
+            <span className={styles.toggleKnob} />
+          </button>
+        </div>
+
+        {/* Career Guide Module */}
+        <div className={styles.toggleRow}>
+          <div>
+            <span className={styles.toggleLabel}>Career Guide Module</span>
+            <p className={styles.toggleDesc}>
+              Exam roadmaps, career directories, and post-education guides.
+            </p>
+          </div>
+          <button
+            className={`${styles.toggleSwitch} ${modules.careerGuide ? styles.toggleOn : ""}`}
+            onClick={async () => {
+              const current = Boolean(modules.careerGuide);
+              const ok = await updateModules({ ...modules, careerGuide: !current });
+              if (ok) toast.success(`Career Guide ${!current ? "enabled" : "disabled"}`);
+              else toast.error("Failed to update module.");
+            }}
+          >
+            <span className={styles.toggleKnob} />
+          </button>
+        </div>
+
+        {/* Daily Quiz Module Toggles */}
+        <div style={{ marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+          <h3 style={{ fontSize: "1rem", fontWeight: 700, marginBottom: "0.5rem", color: "var(--foreground, #fff)" }}>
+            🔥 Daily Quiz per Tier
+          </h3>
+
+          <div className={styles.toggleRow}>
+            <div>
+              <span className={styles.toggleLabel}>Daily Quiz — Kids Tier</span>
+              <p className={styles.toggleDesc}>5 questions, no timer, star sticker rewards.</p>
+            </div>
+            <button
+              className={`${styles.toggleSwitch} ${modules.dailyQuiz?.kids !== false ? styles.toggleOn : ""}`}
+              onClick={async () => {
+                const current = modules.dailyQuiz?.kids !== false;
+                const ok = await updateModules({
+                  ...modules,
+                  dailyQuiz: { ...modules.dailyQuiz, kids: !current },
+                });
+                if (ok) toast.success(`Kids Daily Quiz ${!current ? "enabled" : "disabled"}`);
+                else toast.error("Failed to update module.");
+              }}
+            >
+              <span className={styles.toggleKnob} />
+            </button>
+          </div>
+
+          <div className={styles.toggleRow}>
+            <div>
+              <span className={styles.toggleLabel}>Daily Quiz — Students Tier</span>
+              <p className={styles.toggleDesc}>10 academic & general quiz questions with timer & streak.</p>
+            </div>
+            <button
+              className={`${styles.toggleSwitch} ${modules.dailyQuiz?.students !== false ? styles.toggleOn : ""}`}
+              onClick={async () => {
+                const current = modules.dailyQuiz?.students !== false;
+                const ok = await updateModules({
+                  ...modules,
+                  dailyQuiz: { ...modules.dailyQuiz, students: !current },
+                });
+                if (ok) toast.success(`Students Daily Quiz ${!current ? "enabled" : "disabled"}`);
+                else toast.error("Failed to update module.");
+              }}
+            >
+              <span className={styles.toggleKnob} />
+            </button>
+          </div>
+
+          <div className={styles.toggleRow}>
+            <div>
+              <span className={styles.toggleLabel}>Daily Quiz — Explorer Tier</span>
+              <p className={styles.toggleDesc}>10 trivia & GK questions with timer & streak.</p>
+            </div>
+            <button
+              className={`${styles.toggleSwitch} ${modules.dailyQuiz?.explorer !== false ? styles.toggleOn : ""}`}
+              onClick={async () => {
+                const current = modules.dailyQuiz?.explorer !== false;
+                const ok = await updateModules({
+                  ...modules,
+                  dailyQuiz: { ...modules.dailyQuiz, explorer: !current },
+                });
+                if (ok) toast.success(`Explorer Daily Quiz ${!current ? "enabled" : "disabled"}`);
+                else toast.error("Failed to update module.");
+              }}
+            >
+              <span className={styles.toggleKnob} />
+            </button>
+          </div>
         </div>
       </section>
 

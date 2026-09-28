@@ -83,10 +83,6 @@ export default function QuizSidebar({
               <span className={styles.navIcon}>←</span>
               <span>{t('common.back')}</span>
             </button>
-            <div className={styles.missionCounter}>
-              <span className={styles.missionLabel}>{t('live.lobby.selection.set')}</span>
-              <span className={styles.missionValue}>Q{currentIndex + 1} / {questions.length}</span>
-            </div>
             <button 
               className={styles.navBtn} 
               onClick={onResume} 

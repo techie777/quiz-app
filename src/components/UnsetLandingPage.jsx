@@ -19,6 +19,8 @@ import {
   GraduationCap,
   Globe,
   Compass,
+  Swords,
+  Heart,
 } from "lucide-react";
 import { useTier, TIERS } from "@/context/TierContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -171,46 +173,61 @@ export default function UnsetLandingPage() {
             : "Fun rapid trivia, school curriculum revision, or competitive exam prep — choose your personalized experience to begin."}
         </motion.p>
 
-        {/* Live Data Stats Strip (Requirement 2) */}
+        {/* Live Data Stats Strip (Requirement 2) & Support Us CTA */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.45, delay: 0.15 }}
-          className={styles.statsStrip}
+          className="flex flex-wrap items-center justify-center gap-3 mt-4"
         >
-          <span className={styles.statItem}>
-            <span>📝</span>
-            <strong>{totalQuestions}+</strong> {isHindi ? "प्रश्न" : "Questions"}
-          </span>
-          <span className={styles.statDot}>·</span>
-          <span className={styles.statItem}>
-            <span>📚</span>
-            <strong>{totalCategories}+</strong> {isHindi ? "विषय" : "Categories"}
-          </span>
-          <span className={styles.statDot}>·</span>
-          <span className={styles.statItem}>
-            <span>🎯</span>
-            <strong>3</strong> {isHindi ? "विशेष मोड्स" : "Tailored Experiences"}
-          </span>
-          <span className={styles.statDot}>·</span>
-          <span className={styles.statItem}>
-            <span>🌐</span>
-            <span>{isHindi ? "द्विभाषी (हिन्दी + English)" : "Bilingual (Hindi + English)"}</span>
-          </span>
+          <div className={styles.statsStrip}>
+            <span className={styles.statItem}>
+              <BookOpen size={14} className="text-[var(--brand-primary)]" />
+              <strong>{totalQuestions}+</strong> {isHindi ? "प्रश्न" : "Questions"}
+            </span>
+            <span className={styles.statDot}>·</span>
+            <span className={styles.statItem}>
+              <Sparkles size={14} className="text-amber-500" />
+              <strong>{totalCategories}+</strong> {isHindi ? "विषय" : "Categories"}
+            </span>
+            <span className={styles.statDot}>·</span>
+            <span className={styles.statItem}>
+              <Compass size={14} className="text-indigo-600" />
+              <strong>4</strong> {isHindi ? "विशेष अनुभव" : "Experiences"}
+            </span>
+            <span className={styles.statDot}>·</span>
+            <span className={styles.statItem}>
+              <Zap size={14} className="text-emerald-500" />
+              <span>{isHindi ? "हर दिन मुफ्त खेलें" : "Free to play every day"}</span>
+            </span>
+          </div>
+
+          <Link
+            href="/donate"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 font-bold text-xs hover:bg-rose-100 transition-all shadow-sm min-h-[38px]"
+          >
+            <Heart size={14} className="fill-rose-500 text-rose-500" />
+            <span>{isHindi ? "हमारा समर्थन करें" : "Support us"}</span>
+          </Link>
         </motion.div>
       </section>
 
       {/* ══════════════════════════════════════════════════════════
-          THREE LARGE VISUAL TIER CARDS (Requirement 3)
-          Preview real look: Kids picture-tiles, Students streak/XP, Adults split
+          FOUR LARGE VISUAL TIER CARDS (Step 2)
+          Kids, Students, Explorer, Quiz Arena (NEW tag)
          ══════════════════════════════════════════════════════════ */}
       <section className={styles.cardsGrid}>
         
         {/* CARD 1: KIDS TIER (5-12 yrs) */}
         <motion.div
-          whileHover={{ y: -6 }}
-          whileTap={{ scale: 0.98 }}
+          whileTap={{ scale: 0.985 }}
           onClick={() => handleSelectTier(TIERS.KIDS)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              handleSelectTier(TIERS.KIDS);
+            }
+          }}
           className={`${styles.tierCard} ${styles.tierCardKids}`}
           role="button"
           tabIndex={0}
@@ -222,7 +239,7 @@ export default function UnsetLandingPage() {
                 className={styles.cardIconCircle}
                 style={{ background: "rgba(245, 158, 11, 0.15)", color: "#d97706" }}
               >
-                🧒
+                <Sparkles size={24} className="text-amber-500" />
               </div>
               <span
                 className={styles.cardAgePill}
@@ -239,35 +256,34 @@ export default function UnsetLandingPage() {
                 : "Playful picture-tiles, 10-question sets, zero timer pressure & star stickers."}
             </p>
 
-            {/* Visual Snippet Box: Preview Kids Real Look */}
+            {/* Visual Snippet Box */}
             <div className={styles.visualSnippetBox}>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-black uppercase tracking-wider text-amber-600">
-                  {isHindi ? "🎨 पिक्चर-टाइल प्रिव्यू" : "🎨 Picture-Tile Style"}
+                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600">
+                  {isHindi ? "पिक्चर-टाइल प्रिव्यू" : "Picture-Tile Style"}
                 </span>
-                <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">
-                  ⭐ 3 Stars
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 flex items-center gap-1">
+                  <Star size={10} className="fill-amber-500 text-amber-500" /> 3 Stars
                 </span>
               </div>
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { emoji: "🦁", label: isHindi ? "जानवर" : "Animals" },
-                  { emoji: "🚀", label: isHindi ? "अंतरिक्ष" : "Space" },
-                  { emoji: "🎨", label: isHindi ? "रंग" : "Colors" },
+                  { label: isHindi ? "जानवर" : "Animals", color: "from-amber-400 to-orange-400" },
+                  { label: isHindi ? "अंतरिक्ष" : "Space", color: "from-indigo-400 to-purple-500" },
+                  { label: isHindi ? "रंग व कला" : "Colors", color: "from-rose-400 to-pink-500" },
                 ].map((item, idx) => (
                   <div
                     key={idx}
-                    className="p-2 rounded-xl bg-gradient-to-br from-amber-400 to-orange-400 text-white text-center shadow-sm"
+                    className={`p-2 rounded-xl bg-gradient-to-br ${item.color} text-white text-center shadow-sm`}
                   >
-                    <span className="text-xl block">{item.emoji}</span>
-                    <span className="text-[10px] font-black truncate block mt-0.5">
+                    <span className="text-[11px] font-bold truncate block">
                       {item.label}
                     </span>
                   </div>
                 ))}
               </div>
               <div className="mt-2 text-center text-[10px] font-bold text-amber-700 dark:text-amber-300">
-                ✨ {isHindi ? "दबाव-मुक्त खेल · 10 प्रश्न प्रति सेट" : "Fun 10 Qs · No Timer Anxiety"}
+                {isHindi ? "दबाव-मुक्त खेल · 10 प्रश्न प्रति सेट" : "Fun 10 Qs · No Timer Anxiety"}
               </div>
             </div>
           </div>
@@ -284,9 +300,14 @@ export default function UnsetLandingPage() {
 
         {/* CARD 2: STUDENTS TIER (Class 6-12) */}
         <motion.div
-          whileHover={{ y: -6 }}
-          whileTap={{ scale: 0.98 }}
+          whileTap={{ scale: 0.985 }}
           onClick={() => handleSelectTier(TIERS.STUDENTS)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              handleSelectTier(TIERS.STUDENTS);
+            }
+          }}
           className={`${styles.tierCard} ${styles.tierCardStudents}`}
           role="button"
           tabIndex={0}
@@ -296,13 +317,13 @@ export default function UnsetLandingPage() {
             <div className={styles.cardHeader}>
               <div
                 className={styles.cardIconCircle}
-                style={{ background: "rgba(14, 165, 233, 0.15)", color: "#0284c7" }}
+                style={{ background: "rgba(13, 148, 136, 0.15)", color: "#0d9488" }}
               >
-                🎒
+                <GraduationCap size={24} className="text-teal-600 dark:text-teal-400" />
               </div>
               <span
                 className={styles.cardAgePill}
-                style={{ background: "#e0f2fe", color: "#0369a1" }}
+                style={{ background: "#ccfbf1", color: "#0f766e" }}
               >
                 {isHindi ? "कक्षा 6-12 · छात्र" : "Class 6–12"}
               </span>
@@ -315,33 +336,33 @@ export default function UnsetLandingPage() {
                 : "Curriculum revision, KBC trivia, daily study streaks & XP progression."}
             </p>
 
-            {/* Visual Snippet Box: Preview Students Real Look */}
+            {/* Visual Snippet Box */}
             <div className={styles.visualSnippetBox}>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-black uppercase tracking-wider text-sky-600">
-                  {isHindi ? "📚 क्लास व बोर्ड चयन" : "📚 Class & Streak Panel"}
+                <span className="text-[10px] font-bold uppercase tracking-wider text-teal-700 dark:text-teal-400">
+                  {isHindi ? "क्लास व बोर्ड चयन" : "Class & Board Tracker"}
                 </span>
-                <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-sky-100 text-sky-800">
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-teal-100 text-teal-900 dark:bg-teal-900/40 dark:text-teal-200">
                   Class 9 ▾
                 </span>
               </div>
               
               <div className="flex items-center justify-between gap-1 p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs mb-2">
                 <span className="font-bold flex items-center gap-1">
-                  <span>🔥</span>
+                  <Flame size={14} className="text-orange-500" />
                   <span>5 Day Streak</span>
                 </span>
-                <span className="font-bold text-sky-600 dark:text-sky-400">
+                <span className="font-bold text-teal-600 dark:text-teal-400">
                   ⚡ 1,250 XP
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-1.5 text-[11px] font-black">
-                <div className="p-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 text-center border border-sky-200/50">
-                  📖 Study Quizzes
+              <div className="grid grid-cols-2 gap-1.5 text-[11px] font-bold">
+                <div className="p-1.5 rounded-lg bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 text-center border border-teal-200/50">
+                  Study Quizzes
                 </div>
                 <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-center border border-indigo-200/50">
-                  ⚡ Fun Zone
+                  Fun Zone
                 </div>
               </div>
             </div>
@@ -350,22 +371,27 @@ export default function UnsetLandingPage() {
           <button
             type="button"
             className={styles.cardCtaButton}
-            style={{ background: "linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%)" }}
+            style={{ background: "linear-gradient(135deg, #0d9488 0%, #0284c7 100%)" }}
           >
             <span>{isHindi ? "स्टूडेंट्स हब में जाएं" : "Enter Students Hub"}</span>
             <ArrowRight size={16} />
           </button>
         </motion.div>
 
-        {/* CARD 3: ADULTS TIER (Age 18+ / General & Govt Aspirants) */}
+        {/* CARD 3: EXPLORER TIER (For everyone / General & Exams) */}
         <motion.div
-          whileHover={{ y: -6 }}
-          whileTap={{ scale: 0.98 }}
+          whileTap={{ scale: 0.985 }}
           onClick={() => handleSelectTier(TIERS.ADULTS)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              handleSelectTier(TIERS.ADULTS);
+            }
+          }}
           className={`${styles.tierCard} ${styles.tierCardAdults}`}
           role="button"
           tabIndex={0}
-          aria-label="Select Adults Tier"
+          aria-label="Select Explorer Tier"
         >
           <div>
             <div className={styles.cardHeader}>
@@ -373,41 +399,41 @@ export default function UnsetLandingPage() {
                 className={styles.cardIconCircle}
                 style={{ background: "rgba(99, 102, 241, 0.15)", color: "#4f46e5" }}
               >
-                🎯
+                <Compass size={24} className="text-indigo-600 dark:text-indigo-400" />
               </div>
               <span
                 className={styles.cardAgePill}
                 style={{ background: "#ede9fe", color: "#6d28d9" }}
               >
-                {isHindi ? "आयु 18+ वर्ष" : "Age 18+"}
+                {isHindi ? "सभी के लिए" : "For everyone"}
               </span>
             </div>
 
-            <h2 className={styles.cardTitle}>{isHindi ? "वयस्क (Adults)" : "Adults"}</h2>
+            <h2 className={styles.cardTitle}>{isHindi ? "एक्सप्लोरर (Explorer)" : "Explorer"}</h2>
             <p className={styles.cardTagline}>
               {isHindi
-                ? "मनोरंजन के लिए ट्रिविया खेलें या एसएससी/बैंकिंग/रेलवे के लिए टीसीएस मॉक टेस्ट दें!"
-                : "Casual trivia, cinema & GK for fun, or full-length TCS pattern exam mock tests."}
+                ? "ट्रिविया, सामान्य ज्ञान, करेंट अफेयर्स व परीक्षा"
+                : "Trivia, GK, Current Affairs & Exams"}
             </p>
 
-            {/* Visual Snippet Box: Preview Adults Real Look */}
+            {/* Visual Snippet Box */}
             <div className={styles.visualSnippetBox}>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-black uppercase tracking-wider text-indigo-600">
-                  {isHindi ? "⚖️ ट्रिविया + परीक्षा स्प्लिट" : "⚖️ Play & Learn + Exam Prep"}
+                <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                  {isHindi ? "ट्रिविया + परीक्षा" : "Play & Learn + Exams"}
                 </span>
-                <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
-                  TCS Live
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                  Live
                 </span>
               </div>
 
               <div className="space-y-1.5">
                 <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 text-xs font-bold border border-emerald-200/50 flex items-center justify-between">
-                  <span>🎮 Play & Learn (Trivia/GK)</span>
+                  <span>Play & Learn (GK)</span>
                   <span className="text-[10px]">Free Sets</span>
                 </div>
                 <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-300 text-xs font-bold border border-indigo-200/50 flex items-center justify-between">
-                  <span>🏛️ Exam Prep (SSC, Banking, RRB)</span>
+                  <span>Exam Prep (SSC, RRB)</span>
                   <span className="text-[10px]">Mocks</span>
                 </div>
               </div>
@@ -419,7 +445,82 @@ export default function UnsetLandingPage() {
             className={styles.cardCtaButton}
             style={{ background: "linear-gradient(135deg, #6366f1 0%, #4338ca 100%)" }}
           >
-            <span>{isHindi ? "वयस्क पोर्टल शुरू करें" : "Enter Adults Portal"}</span>
+            <span>{isHindi ? "एक्सप्लोरर शुरू करें" : "Start Explorer"}</span>
+            <ArrowRight size={16} />
+          </button>
+        </motion.div>
+
+        {/* CARD 4: QUIZ ARENA (Custom Quiz Builder) */}
+        <motion.div
+          whileTap={{ scale: 0.985 }}
+          onClick={() => {
+            setTier(TIERS.ARENA);
+            router.push("/arena");
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setTier(TIERS.ARENA);
+              router.push("/arena");
+            }
+          }}
+          className={`${styles.tierCard} ${styles.tierCardArena}`}
+          role="button"
+          tabIndex={0}
+          aria-label="Select Quiz Arena"
+        >
+          <div>
+            <div className={styles.cardHeader}>
+              <div
+                className={styles.cardIconCircle}
+                style={{ background: "rgba(139, 92, 246, 0.15)", color: "#8b5cf6" }}
+              >
+                <Swords size={24} className="text-purple-600 dark:text-purple-400" />
+              </div>
+              <span
+                className="text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-violet-600 to-pink-500 text-white px-2 py-0.5 rounded-full"
+              >
+                NEW
+              </span>
+            </div>
+
+            <h2 className={styles.cardTitle}>{isHindi ? "क्विज़ एरीना (Quiz Arena)" : "Quiz Arena"}</h2>
+            <p className={styles.cardTagline}>
+              {isHindi
+                ? "अपनी पसंद का क्विज़ बनाएं, कमजोर विषयों का अभ्यास करें और मुकाबला करें!"
+                : "Build custom quiz challenges, filter categories, train weak spots & challenge friends."}
+            </p>
+
+            {/* Visual Snippet Box */}
+            <div className={styles.visualSnippetBox}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">
+                  {isHindi ? "कस्टम क्विज़ इंजन" : "Custom Engine"}
+                </span>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200">
+                  Builder
+                </span>
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 text-xs font-bold border border-purple-200/50 flex items-center justify-between">
+                  <span>Multi-Category Filter</span>
+                  <span className="text-[10px]">10-50 Qs</span>
+                </div>
+                <div className="p-2 rounded-xl bg-pink-50 dark:bg-pink-950/40 text-pink-800 dark:text-pink-300 text-xs font-bold border border-pink-200/50 flex items-center justify-between">
+                  <span>Challenge a Friend</span>
+                  <span className="text-[10px]">VS Mode</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className={styles.cardCtaButton}
+            style={{ background: "linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)" }}
+          >
+            <span>{isHindi ? "एरीना में जाएं" : "Enter Quiz Arena"}</span>
             <ArrowRight size={16} />
           </button>
         </motion.div>
@@ -428,7 +529,6 @@ export default function UnsetLandingPage() {
 
       {/* ══════════════════════════════════════════════════════════
           "HOW QUIZWEB WORKS" STRIP (Requirement 4)
-          Three steps: Pick your mode → Choose a category → Play a set
          ══════════════════════════════════════════════════════════ */}
       <section className={styles.howItWorksStrip}>
         <div className={styles.sectionHeaderSmall}>
@@ -442,14 +542,16 @@ export default function UnsetLandingPage() {
           {/* Step 1 */}
           <div className={styles.stepCard}>
             <div className={styles.stepNumberBadge}>01</div>
-            <div className={styles.stepIcon}>🎯</div>
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center text-indigo-600 mb-2">
+              <Compass size={20} />
+            </div>
             <h4 className={styles.stepTitle}>
               {isHindi ? "अपना मोड चुनें" : "Pick Your Mode"}
             </h4>
             <p className={styles.stepDesc}>
               {isHindi
-                ? "Kids, Students या Adults में से अपनी पसंद चुनें।"
-                : "Choose Kids, Students, or Adults based on who's playing."}
+                ? "Kids, Students, Explorer या Arena में से अपनी पसंद चुनें।"
+                : "Choose Kids, Students, Explorer, or Quiz Arena based on your goal."}
             </p>
           </div>
 
@@ -458,7 +560,9 @@ export default function UnsetLandingPage() {
           {/* Step 2 */}
           <div className={styles.stepCard}>
             <div className={styles.stepNumberBadge}>02</div>
-            <div className={styles.stepIcon}>📚</div>
+            <div className="w-10 h-10 rounded-xl bg-teal-50 dark:bg-teal-950/50 flex items-center justify-center text-teal-600 mb-2">
+              <BookOpen size={20} />
+            </div>
             <h4 className={styles.stepTitle}>
               {isHindi ? "श्रेणी चुनें" : "Choose a Category"}
             </h4>
@@ -474,7 +578,9 @@ export default function UnsetLandingPage() {
           {/* Step 3 */}
           <div className={styles.stepCard}>
             <div className={styles.stepNumberBadge}>03</div>
-            <div className={styles.stepIcon}>⚡</div>
+            <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/50 flex items-center justify-center text-amber-600 mb-2">
+              <Zap size={20} />
+            </div>
             <h4 className={styles.stepTitle}>
               {isHindi ? "क्विज़ सेट खेलें" : "Play a Set of Questions"}
             </h4>
@@ -489,17 +595,17 @@ export default function UnsetLandingPage() {
 
       {/* ══════════════════════════════════════════════════════════
           "LIVE TASTE" SECTION BELOW THE FOLD (Requirement 5)
-          Single real trending question, playable without picking a tier first.
-          Tapping sets tier to Adults and routes into that set.
          ══════════════════════════════════════════════════════════ */}
       <section className={styles.liveTasteSection}>
         <div className={styles.tasteCard}>
           <div className={styles.tasteCardHeader}>
             <div className="flex items-center gap-2">
-              <span className="text-2xl">{sampleCategory?.emoji || "🧠"}</span>
+              <span className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-950/50 flex items-center justify-center text-indigo-600">
+                <Sparkles size={18} />
+              </span>
               <div>
-                <span className="text-xs font-black uppercase tracking-wider text-indigo-600 block">
-                  ⚡ {isHindi ? "तुरंत खेलकर देखें (Live Taste)" : "Try a Question Right Now"}
+                <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 block">
+                  {isHindi ? "तुरंत खेलकर देखें (Live Taste)" : "Try a Question Right Now"}
                 </span>
                 <span className="text-xs text-slate-500 font-bold">
                   {sampleCategory?.topic || "General Knowledge"} · Set 1
@@ -509,7 +615,7 @@ export default function UnsetLandingPage() {
 
             <button
               onClick={handlePlayTasteSet}
-              className="inline-flex items-center gap-1.5 text-xs font-black text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 hover:underline"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 hover:underline"
             >
               <span>{isHindi ? "पूरा सेट खेलें" : "Play Full Set"}</span>
               <ArrowRight size={14} />
@@ -551,38 +657,14 @@ export default function UnsetLandingPage() {
             >
               <span>
                 {selectedOption === liveQuestion.correctAnswer
-                  ? (isHindi ? "🎉 सही उत्तर! आपको एडल्ट्स क्विज़ पोर्टल में ले जाया जा रहा है..." : "🎉 Correct! Uplinking to Adults Quiz Portal...")
-                  : (isHindi ? `💡 सही उत्तर: ${liveQuestion.correctAnswer}. एडल्ट्स पोर्टल में ले जाया जा रहा है...` : `💡 Correct answer: ${liveQuestion.correctAnswer}. Uplinking to Adults portal...`)}
+                  ? (isHindi ? "🎉 सही उत्तर! आपको एक्सप्लोरर क्विज़ हब में ले जाया जा रहा है..." : "🎉 Correct! Uplinking to Explorer Quiz Hub...")
+                  : (isHindi ? `💡 सही उत्तर: ${liveQuestion.correctAnswer}. एक्सप्लोरर हब में ले जाया जा रहा है...` : `💡 Correct answer: ${liveQuestion.correctAnswer}. Uplinking to Explorer Hub...`)}
               </span>
               <ArrowRight size={14} className="animate-pulse" />
             </motion.div>
           )}
         </div>
       </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          THIN FOOTER (Requirement 6)
-          Fast orientation, thin links, no bottom nav
-         ══════════════════════════════════════════════════════════ */}
-      <footer className={styles.thinFooter}>
-        <div className="flex items-center gap-2">
-          <span>🧠</span>
-          <span className="font-extrabold text-slate-800 dark:text-slate-200">QuizWeb</span>
-          <span>© {new Date().getFullYear()}</span>
-        </div>
-
-        <div className="flex items-center gap-4 text-xs">
-          <span>{isHindi ? "हिन्दी और अंग्रेजी में उपलब्ध" : "Available in Hindi & English"}</span>
-          <span>·</span>
-          <Link href="/privacy" className="hover:underline">
-            {isHindi ? "गोपनीयता" : "Privacy"}
-          </Link>
-          <span>·</span>
-          <Link href="/terms" className="hover:underline">
-            {isHindi ? "नियम" : "Terms"}
-          </Link>
-        </div>
-      </footer>
 
     </div>
   );

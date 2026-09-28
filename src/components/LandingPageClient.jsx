@@ -1809,36 +1809,9 @@ export default function LandingPage({ initialCategories = [], defaultAudienceTab
               </div>
             </div>
 
-            {/* Global Difficulty Filter Scoped to Whole Quiz Hub (Requirement 2) */}
-            <div className="flex items-center justify-between gap-3 max-w-5xl mx-auto mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800 flex-wrap">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mr-1 flex items-center gap-1">
-                  <span>⚡</span>
-                  <span>{isHindi ? "कठिनाई:" : "Difficulty:"}</span>
-                </span>
-                {[
-                  { id: "all", label: isHindi ? "सभी स्तर" : "All", icon: "✨" },
-                  { id: "easy", label: isHindi ? "सरल" : "Easy", icon: "🟢" },
-                  { id: "medium", label: isHindi ? "मध्यम" : "Medium", icon: "🟡" },
-                  { id: "hard", label: isHindi ? "कठिन" : "Hard", icon: "🔴" },
-                ].map((diff) => (
-                  <button
-                    key={diff.id}
-                    onClick={() => setDifficultyFilter(diff.id)}
-                    className={`px-3 py-1 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${
-                      difficultyFilter === diff.id
-                        ? "bg-indigo-600 text-white shadow-sm shadow-indigo-500/25 scale-105"
-                        : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-                    }`}
-                  >
-                    <span>{diff.icon}</span>
-                    <span>{diff.label}</span>
-                  </button>
-                ))}
-              </div>
-
-              {/* Requirement 2: Exam-tag filter strictly scoped to Exam Prep / govt tab only */}
-              {audienceTab === "govt" && (
+            {/* Exam-tag filter strictly scoped to Exam Prep / govt tab only */}
+            {audienceTab === "govt" && (
+              <div className="flex items-center justify-between gap-3 max-w-5xl mx-auto mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800 flex-wrap">
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
                   <span className="text-[11px] font-black uppercase tracking-wider text-indigo-500 mr-1 flex items-center gap-1">
                     <span>🏛️</span>
@@ -1865,8 +1838,8 @@ export default function LandingPage({ initialCategories = [], defaultAudienceTab
                     </button>
                   ))}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* 3. Section Chips Directly Below Search Bar (Z-20 layer below z-50 search dropdown) */}

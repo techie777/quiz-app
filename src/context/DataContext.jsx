@@ -1,13 +1,14 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, useEffect } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useMemo } from "react";
 import toast from "react-hot-toast";
+import { DEFAULT_MODULES_CONFIG, parseModulesConfig } from "@/lib/modulesConfig";
 
 const DataContext = createContext(null);
 
 export function DataProvider({ children }) {
   const [quizzes, setQuizzes] = useState([]);
-  const [settings, setSettings] = useState({ difficultyEnabled: false });
+  const [settings, setSettings] = useState({ difficultyEnabled: false, modules: DEFAULT_MODULES_CONFIG });
   const [loaded, setLoaded] = useState(false);
 
   const refreshSettings = useCallback(async () => {
@@ -227,11 +228,32 @@ export function DataProvider({ children }) {
     return { totalQuestions, totalCategories, byDifficulty };
   }, [quizzes]);
 
+  const modules = useMemo(() => {
+    return parseModulesConfig(settings?.modules);
+  }, [settings?.modules]);
+
+  const updateModules = useCallback(
+    async (modulesUpdates) => {
+      const merged = {
+        ...modules,
+        ...modulesUpdates,
+        dailyQuiz: {
+          ...modules.dailyQuiz,
+          ...(modulesUpdates?.dailyQuiz || {}),
+        },
+      };
+      return updateSettings({ modules: merged });
+    },
+    [modules, updateSettings]
+  );
+
   return (
     <DataContext.Provider
       value={{
         quizzes,
         settings,
+        modules,
+        updateModules,
         loaded,
         addCategory,
         updateCategory,
@@ -259,4 +281,9 @@ export function useData() {
   const context = useContext(DataContext);
   if (!context) throw new Error("useData must be used within a DataProvider");
   return context;
+}
+
+export function useModules() {
+  const { modules } = useData();
+  return modules || DEFAULT_MODULES_CONFIG;
 }

@@ -794,3 +794,232 @@
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* ===== Step 12: Explorer Clean Mobile-First Result Screen ===== */
+.explorerWrapper {
+  width: 100%;
+  max-width: 620px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  animation: fadeIn 0.4s ease;
+}
+
+.explorerCard {
+  background: var(--bg-primary);
+  border: 1.5px solid var(--card-border);
+  border-radius: 24px;
+  padding: 36px 24px 28px;
+  text-align: center;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05), 0 4px 12px -2px rgba(0, 0, 0, 0.03);
+  position: relative;
+  overflow: hidden;
+  animation: scaleIn 0.4s ease;
+}
+
+.explorerTrophy {
+  font-size: 3.5rem;
+  margin-bottom: 12px;
+  display: inline-block;
+  animation: bounce 2s ease-in-out infinite;
+}
+
+.explorerTitle {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+.explorerScoreBlock {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.explorerScoreNum {
+  font-size: 3.8rem;
+  font-weight: 900;
+  color: var(--accent);
+  line-height: 1;
+  letter-spacing: -1px;
+}
+
+.explorerScoreDivider {
+  font-size: 2rem;
+  font-weight: 300;
+  color: var(--text-muted);
+}
+
+.explorerScoreTotal {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.explorerPercentage {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  border-radius: 9999px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--accent);
+  margin-bottom: 24px;
+}
+
+.explorerStatsRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.explorerStatBox {
+  background: var(--bg-secondary);
+  border: 1.5px solid var(--card-border);
+  border-radius: 16px;
+  padding: 14px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: transform 0.2s ease;
+}
+
+.explorerStatBox:hover {
+  transform: translateY(-2px);
+}
+
+.explorerStatCorrect {
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.06);
+}
+
+.explorerStatWrong {
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.explorerStatTime {
+  border-color: rgba(99, 102, 241, 0.3);
+  background: rgba(99, 102, 241, 0.06);
+}
+
+.explorerStatLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.explorerStatVal {
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.explorerStatCorrect .explorerStatVal {
+  color: #10b981;
+}
+
+.explorerStatWrong .explorerStatVal {
+  color: #ef4444;
+}
+
+.explorerStatTime .explorerStatVal {
+  color: var(--accent);
+}
+
+.explorerActions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.explorerPrimaryBtn {
+  width: 100%;
+  min-height: 52px;
+  border-radius: 16px;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 1.05rem;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.explorerPrimaryBtn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+}
+
+.explorerPrimaryBtn:active:not(:disabled) {
+  transform: translateY(0);
+  filter: brightness(0.95);
+}
+
+.explorerPrimaryBtn:disabled {
+  opacity: 0.75;
+  cursor: wait;
+}
+
+.explorerSecondaryBtn {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 16px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.98rem;
+  font-weight: 700;
+  border: 1.5px solid var(--card-border);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.explorerSecondaryBtn:hover {
+  background: rgba(99, 102, 241, 0.08);
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.explorerSecondaryBtn:active {
+  transform: translateY(0);
+}
+
+.btnSpinnerSmall {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+.explorerReviewSection {
+  width: 100%;
+  margin-top: 8px;
+  padding-top: 24px;
+  border-top: 1.5px dashed var(--card-border);
+}
+

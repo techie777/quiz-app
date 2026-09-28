@@ -1,0 +1,175 @@
+.wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.pillButton {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: var(--card-bg, #ffffff);
+  border: 1.5px solid rgba(245, 158, 11, 0.4);
+  box-shadow: 0 2px 10px rgba(245, 158, 11, 0.08);
+  cursor: pointer;
+  min-height: 46px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+}
+
+.pillButton:hover {
+  border-color: #f59e0b;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.16);
+}
+
+.pillLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fireIcon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.pillTitle {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--text-primary, #0f172a);
+  white-space: nowrap;
+}
+
+.streakBadge {
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+  white-space: nowrap;
+}
+
+.actionTagPlay {
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--accent, #6366f1);
+  color: #ffffff;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.25);
+}
+
+.actionTagDone {
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.15);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  white-space: nowrap;
+}
+
+.historyButton {
+  min-height: 46px;
+  min-width: 46px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--navbar-border, rgba(0, 0, 0, 0.1));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--text-secondary, #64748b);
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 0.78rem;
+  font-weight: 700;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.historyButton:hover {
+  background: var(--bg-secondary, #f8fafc);
+  color: var(--text-primary, #0f172a);
+  border-color: var(--accent, #6366f1);
+}
+
+/* ── KIDS TIER STYLING ── */
+.kidsWrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin: 12px 0 20px;
+}
+
+.kidsPillButton {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #fbbf24 0%, #f97316 100%);
+  color: #ffffff;
+  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.35);
+  cursor: pointer;
+  min-height: 56px;
+  border: 2px solid #ffffff;
+  text-decoration: none;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.kidsPillButton:hover {
+  transform: translateY(-2px) scale(1.01);
+}
+
+.kidsPillTitle {
+  font-size: 1rem;
+  font-weight: 900;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.kidsPillBadge {
+  background: #ffffff;
+  color: #ea580c;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 900;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.kidsHistoryBtn {
+  min-height: 56px;
+  min-width: 56px;
+  padding: 0 12px;
+  border-radius: 20px;
+  background: #ffffff;
+  border: 2px solid #f97316;
+  color: #ea580c;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  font-size: 0.72rem;
+  font-weight: 900;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.15);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.kidsHistoryBtn:hover {
+  background: #fff7ed;
+  transform: scale(1.04);
+}

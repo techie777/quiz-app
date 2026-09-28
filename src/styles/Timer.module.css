@@ -22,14 +22,14 @@
   stroke: var(--accent);
   stroke-width: 4px;
   stroke-linecap: round;
-  transition: stroke-dashoffset 1s linear, stroke 0.3s ease;
+  transition: stroke-dashoffset 1s linear, stroke 0.4s ease;
 }
 
 .timeDisplay {
   position: absolute;
   font-size: 0.85rem;
-  font-weight: 800;
-  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-family: var(--font-family-base);
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
 }

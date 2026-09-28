@@ -10,7 +10,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useTier } from "@/context/TierContext";
 import { useMonetization } from "@/context/MonetizationContext";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users } from "lucide-react";
+import { Users, Check, ChevronDown, ArrowLeft, Play } from "lucide-react";
 import toast from "react-hot-toast";
 import styles from "@/styles/CategorySets.module.css";
 import ResumeBanner from "@/components/ResumeBanner";
@@ -205,9 +205,18 @@ export default function CategorySetsPage() {
     }
   }, [session?.user, category?.id]);
 
+  const displayedQuestions = useMemo(() => {
+    if (!questions || !Array.isArray(questions)) return [];
+    if (!difficulty || difficulty === "ALL") return questions;
+    return questions.filter(
+      (q) => (q.difficulty || "").toLowerCase() === difficulty.toLowerCase()
+    );
+  }, [questions, difficulty]);
+
   const sets = useMemo(() => {
     if (!category || !effectiveSetSize || effectiveSetSize <= 0) return [];
-    const count = category.questionCount || 0;
+    const pool = tier === "adults" ? displayedQuestions : questions;
+    const count = pool.length;
     const result = [];
 
     for (let i = 0; i < count; i += effectiveSetSize) {
@@ -215,11 +224,77 @@ export default function CategorySetsPage() {
         index: result.length + 1,
         start: i,
         end: Math.min(i + effectiveSetSize, count),
-        questions: questions.slice(i, i + effectiveSetSize),
+        questions: pool.slice(i, i + effectiveSetSize),
       });
     }
     return result;
-  }, [category, questions, effectiveSetSize]);
+  }, [category, displayedQuestions, questions, effectiveSetSize, tier]);
+
+  const getSetCompletionInfo = (set) => {
+    const progress = Array.isArray(userProgress)
+      ? userProgress.find((p) => p.setIndex === set.index)
+      : null;
+
+    if (!progress) {
+      try {
+        const guestScores = JSON.parse(localStorage.getItem("quiz_guest_scores") || "{}");
+        const key = `${category?.id || params.slug}_set_${set.index}`;
+        if (guestScores[key]) {
+          return {
+            isComplete: true,
+            bestScore: guestScores[key].score,
+            total: guestScores[key].total || set.questions.length,
+          };
+        }
+      } catch {}
+      return { isComplete: false, bestScore: null, total: set.questions.length };
+    }
+
+    const isComplete = Boolean(progress.isComplete);
+    let bestScore = progress.score;
+    let total = set.questions.length || 20;
+
+    if (progress.answersJson) {
+      try {
+        const ans = JSON.parse(progress.answersJson);
+        if (Array.isArray(ans)) {
+          const correct = ans.filter((a) => a.isCorrect).length;
+          bestScore = correct;
+          total = ans.length || total;
+        }
+      } catch {}
+    }
+
+    return {
+      isComplete,
+      bestScore: bestScore !== undefined && bestScore !== null ? bestScore : null,
+      total,
+    };
+  };
+
+  const handleTileClick = (set) => {
+    if (!set || !set.questions || set.questions.length === 0) return;
+
+    // Save to recent categories so PLAY centre button knows user's preferred categories
+    try {
+      const recent = JSON.parse(localStorage.getItem("quiz_recent_categories") || "[]");
+      const filtered = recent.filter((id) => id !== category.id && id !== category.slug);
+      filtered.unshift(category.slug || category.id);
+      localStorage.setItem("quiz_recent_categories", JSON.stringify(filtered.slice(0, 5)));
+    } catch {}
+
+    const topicSuffix = ` ${isHindi ? "सेट" : "Set"} ${set.index}`;
+    startQuizSet(
+      category.id,
+      set.questions,
+      30,
+      language || "en",
+      set.index,
+      category.topic + topicSuffix,
+      true
+    );
+    router.push(`/quiz/${category.slug || category.id}?set=${set.index}`);
+  };
 
   const paginatedSets = useMemo(() => {
     return sets.map(set => {
@@ -455,6 +530,102 @@ export default function CategorySetsPage() {
         {/* If Quiz Has No Questions */}
         {questionsLoaded && questions.length === 0 ? (
           <QuizEmptyState topic={category.topic} isHindi={isHindi} />
+        ) : tier === "adults" ? (
+          /* ── Explorer Set List (Step 10): Simple tiles "Set 1 · 20 Qs" with tick & best score, compact difficulty dropdown at top ── */
+          <section className="mt-4 mb-10">
+            {/* Header: Topic Title & Compact Difficulty Dropdown */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-200/80 dark:border-slate-800">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => router.push("/")}
+                  className="p-2 -ml-2 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  title={isHindi ? "होम पर वापस जाएं" : "Back to Home"}
+                  aria-label={isHindi ? "होम पर वापस जाएं" : "Back to Home"}
+                >
+                  <ArrowLeft size={20} />
+                </button>
+                <div>
+                  <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                    <span className="text-2xl">{category.emoji || "📝"}</span>
+                    <span>{category.topic}</span>
+                  </h1>
+                </div>
+              </div>
+
+              {/* Compact Difficulty Dropdown */}
+              <div className="flex items-center gap-2 self-start sm:self-auto">
+                <label htmlFor="explorerDifficultySelect" className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                  {isHindi ? "कठिनाई:" : "Difficulty:"}
+                </label>
+                <div className="relative">
+                  <select
+                    id="explorerDifficultySelect"
+                    value={difficulty}
+                    onChange={(e) => setDifficulty(e.target.value)}
+                    className="appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 pr-8 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[44px] cursor-pointer shadow-sm"
+                  >
+                    <option value="ALL">{isHindi ? "सभी स्तर" : "All"}</option>
+                    <option value="easy">{isHindi ? "सरल" : "Easy"}</option>
+                    <option value="medium">{isHindi ? "मध्यम" : "Medium"}</option>
+                    <option value="hard">{isHindi ? "कठिन" : "Hard"}</option>
+                  </select>
+                  <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
+                </div>
+              </div>
+            </div>
+
+            {/* Simple tiles "Set 1 · 20 Qs" */}
+            {sets.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {sets.map((set) => {
+                  const info = getSetCompletionInfo(set);
+                  return (
+                    <motion.button
+                      key={set.index}
+                      whileHover={{ y: -2, scale: 1.01 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleTileClick(set)}
+                      className="w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-indigo-500/50 dark:hover:border-indigo-500/40 shadow-sm hover:shadow-md transition-all text-left min-h-[52px] select-none"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-black text-xs flex items-center justify-center shrink-0 border border-indigo-100 dark:border-indigo-900/40">
+                          {set.index}
+                        </div>
+                        <span className="text-sm font-extrabold text-slate-900 dark:text-white truncate">
+                          {isHindi ? `सेट ${set.index} · ${set.questions.length} प्रश्न` : `Set ${set.index} · ${set.questions.length} Qs`}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        {info.isComplete ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                            <Check size={13} strokeWidth={3} />
+                            <span>{info.bestScore !== null ? `${info.bestScore}/${info.total}` : (isHindi ? "पूर्ण" : "Done")}</span>
+                          </span>
+                        ) : (
+                          <div className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                            <Play size={12} fill="currentColor" className="translate-x-0.5" />
+                          </div>
+                        )}
+                      </div>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="p-8 text-center rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                  {isHindi ? "इस कठिनाई स्तर के लिए कोई प्रश्न नहीं मिले।" : "No questions found for this difficulty level."}
+                </p>
+                <button
+                  onClick={() => setDifficulty("ALL")}
+                  className="mt-2 text-xs font-extrabold text-indigo-600 dark:text-indigo-400 hover:underline"
+                >
+                  {isHindi ? "सभी स्तर देखें" : "View all levels"}
+                </button>
+              </div>
+            )}
+          </section>
         ) : (
           <>
             {/* Sets Section (Seekho Pattern: Vertical Stack of Set Cards below one short intro line) */}
@@ -517,18 +688,6 @@ export default function CategorySetsPage() {
               <div className={styles.indexHeader}>
                 <div className={styles.indexTitleGroup}>
                   <h2 className={styles.indexTitle}>📑 {isHindi ? 'प्रश्न अनुक्रमणिका और अध्ययन मार्गदर्शिका' : 'Question Index & Study Guide'}</h2>
-                  <div className={styles.indexLangToggle}>
-                    <button
-                      className={language === "en" ? styles.langActive : ""}
-                      onClick={() => handleLanguageToggle("en")}
-                      disabled={isTranslatingIndex}
-                    >{isTranslatingIndex && language !== "en" ? "..." : (isHindi ? 'अंग्रेजी अनुक्रमणिका' : 'English Index')}</button>
-                    <button
-                      className={language === "hi" ? styles.langActive : ""}
-                      onClick={() => handleLanguageToggle("hi")}
-                      disabled={isTranslatingIndex}
-                    >{isTranslatingIndex && language !== "hi" ? "..." : (isHindi ? 'हिंदी अनुक्रमणिका' : 'Hindi Index')}</button>
-                  </div>
                 </div>
                 <div className={styles.searchBar}>
                   <span className={styles.searchIcon}>🔍</span>

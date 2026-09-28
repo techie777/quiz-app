@@ -18,6 +18,8 @@ import { toPng } from "html-to-image";
 import toast from "react-hot-toast";
 import { updateBadgeStats } from "@/lib/badgeManager";
 import { shareResult } from "@/lib/shareImage";
+import { getTodayIST } from "@/lib/dailyQuizHelper";
+import NextUpRecommendations from "@/components/NextUpRecommendations";
 
 function getMotivation(percentage, t) {
   if (percentage === 100) return { text: t('result.motivation.perfect'), emoji: "🌟" };
@@ -51,7 +53,9 @@ export default function ResultPage() {
     isMixedMode,
     mixedSectionName,
     quizSlug,
-    categoryName: quizCategoryName
+    categoryName: quizCategoryName,
+    timeTaken,
+    startTime
   } = useQuiz();
   const { quizzes } = useData();
   const [showReview, setShowReview] = useState(true);
@@ -64,6 +68,85 @@ export default function ResultPage() {
   const [userProfile, setUserProfile] = useState(null);
   const [isLaunchingNextSet, setIsLaunchingNextSet] = useState(false);
   const resultCardRef = useRef(null);
+
+  const isExplorer = tier === "adults" || (tier !== "kids" && tier !== "students");
+  const finalTimeTaken = timeTaken || (startTime ? Math.max(1, Math.round((Date.now() - startTime) / 1000)) : 0);
+
+  const [isDailyQuiz, setIsDailyQuiz] = useState(false);
+
+  useEffect(() => {
+    let meta = null;
+    try {
+      const metaStr = sessionStorage.getItem("current_daily_quiz");
+      if (metaStr) meta = JSON.parse(metaStr);
+    } catch {}
+
+    const isDaily = Boolean(
+      meta ||
+      String(quizId || "").startsWith("daily-") ||
+      String(quizCategoryName || "").includes("Daily Quiz") ||
+      String(quizCategoryName || "").includes("दैनिक क्विज़")
+    );
+
+    setIsDailyQuiz(isDaily);
+
+    if (isDaily && score !== undefined && total > 0) {
+      const quizDate = meta?.date || getTodayIST();
+      const quizTier = meta?.tier || tier;
+      const isToday = meta?.isToday !== false;
+
+      // Save locally to localStorage
+      try {
+        const existing = JSON.parse(localStorage.getItem("quizweb_daily_attempts") || "[]");
+        const filtered = Array.isArray(existing) ? existing.filter(a => !(a.date === quizDate && a.tier === quizTier)) : [];
+        filtered.push({
+          date: quizDate,
+          tier: quizTier,
+          score,
+          total,
+          timeTaken: finalTimeTaken,
+          completedAt: new Date().toISOString(),
+          playedOnDay: isToday,
+        });
+        localStorage.setItem("quizweb_daily_attempts", JSON.stringify(filtered));
+
+        if (isToday) {
+          const streakData = JSON.parse(localStorage.getItem("quizweb_daily_streak") || "{}");
+          const currentCount = streakData.count || 0;
+          if (streakData.lastPlayedDate !== quizDate) {
+            localStorage.setItem("quizweb_daily_streak", JSON.stringify({
+              count: currentCount + 1,
+              lastPlayedDate: quizDate,
+            }));
+          }
+        }
+      } catch {}
+
+      // Send to server
+      fetch("/api/daily-quiz/attempt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tier: quizTier,
+          date: quizDate,
+          dailyQuizId: meta?.dailyQuizId || quizId,
+          score,
+          total,
+          timeTaken: finalTimeTaken,
+        }),
+      }).catch((e) => console.error("Daily attempt post error:", e));
+    }
+  }, [quizId, quizCategoryName, score, total, finalTimeTaken, tier]);
+
+  const formatQuizTime = (seconds, hindiMode) => {
+    if (!seconds || seconds <= 0) return hindiMode ? "0 से." : "0s";
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    if (mins === 0) {
+      return hindiMode ? `${secs} से.` : `${secs}s`;
+    }
+    return hindiMode ? `${mins} मि. ${secs} से.` : `${mins}m ${secs}s`;
+  };
 
   // Instant route prefetching for seamless continuation
   useEffect(() => {
@@ -111,14 +194,14 @@ export default function ResultPage() {
         categoryId: quizId || quizCategoryName || "general"
       });
 
-      if (!showGateAd) {
+      if (!showGateAd && !isExplorer) {
         const timer = setTimeout(() => {
           setShowPostQuizPopup(true);
         }, 7000);
         return () => clearTimeout(timer);
       }
     }
-  }, [questions, showGateAd, score, quizId, quizCategoryName]);
+  }, [questions, showGateAd, score, quizId, quizCategoryName, isExplorer]);
 
   const handleContinueNextSet = async () => {
     if (isLaunchingNextSet) return;
@@ -223,6 +306,41 @@ export default function ResultPage() {
     }
   }, [tier, questions, starCount, percentage]);
 
+  // Record Arena attempts & question history with spaced repetition
+  useEffect(() => {
+    if (!questions || questions.length === 0) return;
+    const isArena = Boolean(
+      String(quizId || "").includes("arena") ||
+      String(quizCategoryName || "").includes("Arena") ||
+      String(quizCategoryName || "").includes("एरिना")
+    );
+
+    if (isArena) {
+      const attempts = questions.map((q) => {
+        const userAns = (answers || []).find((a) => a.questionId === q.id || a.questionId === q._id);
+        const isCorrect = userAns ? Boolean(userAns.isCorrect) : false;
+        return {
+          questionId: q.id || q._id,
+          isCorrect,
+          userAnswer: userAns?.selected,
+          timeTaken: Math.max(1, Math.round(finalTimeTaken / questions.length)) || 1,
+          topicId: q.topicId || q.topic_id,
+          categoryId: q.categoryId || q.category_id,
+        };
+      });
+
+      fetch("/api/arena/history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: authSession?.user?.id || "guest",
+          attempts,
+          quizType: "arena",
+        }),
+      }).catch((e) => console.error("Arena history post error:", e));
+    }
+  }, [questions, answers, quizId, quizCategoryName, finalTimeTaken, authSession]);
+
   // Always call this hook - handle redirection logic inside
   useEffect(() => {
     if (total === 0) {
@@ -309,6 +427,163 @@ export default function ResultPage() {
     doc.save(`Quiz-Report-${quizId || 'General'}.pdf`);
   };
 
+  const renderAnswerReview = () => (
+    <div className={styles.review}>
+      <div className={styles.reviewHeaderMain}>
+        <div className={styles.reviewTitleRow}>
+          <h2 className={styles.reviewTitle}>
+            <span>📋</span>
+            <span>{isHindi ? 'उत्तर समीक्षा' : 'Answer Review'}</span>
+          </h2>
+          
+          {/* Filter Tabs */}
+          <div className={styles.reviewFilterTabs}>
+            <button 
+              className={`${styles.filterBtn} ${reviewFilterTab === 'all' ? styles.filterBtnActive : ''}`}
+              onClick={() => setReviewFilterTab('all')}
+            >
+              {isHindi ? 'सभी' : 'All'} ({questions.length})
+            </button>
+            <button 
+              className={`${styles.filterBtn} ${reviewFilterTab === 'wrong' ? styles.filterBtnActive : ''}`}
+              onClick={() => setReviewFilterTab('wrong')}
+            >
+              ❌ {isHindi ? 'गलत' : 'Wrong'} ({performance?.wrong || 0})
+            </button>
+            <button 
+              className={`${styles.filterBtn} ${reviewFilterTab === 'correct' ? styles.filterBtnActive : ''}`}
+              onClick={() => setReviewFilterTab('correct')}
+            >
+              ✓ {isHindi ? 'सही' : 'Correct'} ({performance?.correct || 0})
+            </button>
+            <button 
+              className={`${styles.filterBtn} ${reviewFilterTab === 'skipped' ? styles.filterBtnActive : ''}`}
+              onClick={() => setReviewFilterTab('skipped')}
+            >
+              ⏱️ {isHindi ? 'छूटे' : 'Skipped'} ({performance?.skipped || 0})
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {questions
+        .map((question, index) => ({ question, originalIndex: index }))
+        .filter(({ question }) => {
+          const answer = answers.find((a) => a.questionId === question.id);
+          const isAnswered = !!answer;
+          const isCorrect = answer?.isCorrect || false;
+          
+          if (reviewFilterTab === 'wrong') return isAnswered && !isCorrect;
+          if (reviewFilterTab === 'correct') return isAnswered && isCorrect;
+          if (reviewFilterTab === 'skipped') return !isAnswered;
+          return true;
+        })
+        .map(({ question, originalIndex }) => {
+          const answer = answers.find((a) => a.questionId === question.id);
+          const isAnswered = !!answer;
+          const isCorrect = answer?.isCorrect || false;
+
+          // Get user selected option text
+          let userSelectedText = "";
+          if (!isAnswered || answer?.selected === null || answer?.selected === undefined) {
+            userSelectedText = isHindi ? "उत्तर नहीं दिया / समय समाप्त" : "Skipped / Timed Out";
+          } else if (isHindi && Array.isArray(question.optionsHi) && question.optionsHi[answer.selected]) {
+            userSelectedText = question.optionsHi[answer.selected];
+          } else if (Array.isArray(question.options) && question.options[answer.selected]) {
+            userSelectedText = question.options[answer.selected];
+          } else {
+            userSelectedText = String(answer.selected);
+          }
+
+          // Get correct option text
+          let correctOptionText = "";
+          if (isHindi && Array.isArray(question.optionsHi)) {
+            const correctIdx = question.options.findIndex(opt => String(opt).trim() === String(question.correctAnswer).trim());
+            if (correctIdx !== -1 && question.optionsHi[correctIdx]) {
+              correctOptionText = question.optionsHi[correctIdx];
+            }
+          }
+          if (!correctOptionText) {
+            correctOptionText = question.correctAnswer || (question.options ? question.options[0] : "");
+          }
+
+          return (
+            <div
+              key={question.id || originalIndex}
+              className={`${styles.reviewItem} ${
+                !isAnswered ? styles.reviewSkipped : (isCorrect ? styles.reviewCorrect : styles.reviewWrong)
+              }`}
+            >
+              {/* Question Top Bar */}
+              <div className={styles.reviewHeader}>
+                <span className={styles.reviewNumPill}>
+                  {isHindi ? `प्रश्न ${originalIndex + 1}` : `Question ${originalIndex + 1}`}
+                </span>
+                
+                <span className={`${styles.statusBadge} ${
+                  !isAnswered 
+                    ? styles.statusBadgeSkipped 
+                    : (isCorrect ? styles.statusBadgeCorrect : styles.statusBadgeWrong)
+                }`}>
+                  {!isAnswered 
+                    ? (isHindi ? '⏱️ छूटा हुआ' : '⏱️ Skipped')
+                    : (isCorrect ? (isHindi ? '✓ सही उत्तर' : '✓ Correct') : (isHindi ? '✕ गलत उत्तर' : '✕ Incorrect'))
+                  }
+                </span>
+              </div>
+
+              {/* Question Body */}
+              <h4 className={styles.reviewQuestion}>
+                {(isHindi && question.textHi) ? question.textHi : question.text}
+              </h4>
+              
+              {/* Answer Comparison Cards */}
+              <div className={styles.answerGrid}>
+                {/* User Answer Card */}
+                <div className={`${styles.answerCard} ${
+                  !isAnswered 
+                    ? styles.answerCardSkipped 
+                    : (isCorrect ? styles.answerCardUserCorrect : styles.answerCardUserWrong)
+                }`}>
+                  <span className={`${styles.answerLabel} ${
+                    !isAnswered 
+                      ? styles.answerLabelSkipped 
+                      : (isCorrect ? styles.answerLabelUserCorrect : styles.answerLabelUserWrong)
+                  }`}>
+                    {!isAnswered 
+                      ? (isHindi ? '⏱️ आपका चयन' : '⏱️ Your Choice')
+                      : (isCorrect ? (isHindi ? '✓ आपका उत्तर (सही)' : '✓ Your Answer (Correct)') : (isHindi ? '❌ आपका उत्तर' : '❌ Your Answer'))
+                    }
+                  </span>
+                  <span className={styles.answerText}>{userSelectedText}</span>
+                </div>
+
+                {/* Correct Answer Card (shown when user was incorrect or skipped) */}
+                {(!isCorrect || !isAnswered) && (
+                  <div className={`${styles.answerCard} ${styles.answerCardCorrect}`}>
+                    <span className={`${styles.answerLabel} ${styles.answerLabelCorrect}`}>
+                      💡 {isHindi ? 'सही उत्तर' : 'Correct Answer'}
+                    </span>
+                    <span className={styles.answerText}>{correctOptionText}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Explanation / Jawab Logic */}
+              {(question.explanation || (isHindi && question.explanationHi)) && (
+                <div className="mt-4 p-4 rounded-xl bg-indigo-50/60 dark:bg-slate-800/80 border border-indigo-100 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                  <span className="font-black text-indigo-600 dark:text-indigo-400 block mb-1 uppercase tracking-wider text-[11px]">
+                    💡 {isHindi ? "व्याख्या:" : "Explanation:"}
+                  </span>
+                  {isHindi && question.explanationHi ? question.explanationHi : question.explanation}
+                </div>
+              )}
+            </div>
+          );
+        })}
+    </div>
+  );
+
   // Always return JSX - never return null or conditionally skip hooks
   return (
     <main className={styles.page}>
@@ -319,8 +594,133 @@ export default function ResultPage() {
           <h1>{showGateAd ? t('result.unlocking') : t('result.loading')}</h1>
           <p>{showGateAd ? t('result.supportUs') : t('result.analyzing')}</p>
         </div>
+      ) : isExplorer ? (
+        // STEP 12: EXPLORER RESULT SCREEN
+        <div className={styles.explorerWrapper}>
+          {/* Confetti */}
+          <div className={styles.confettiContainer}>
+            {confetti.map((piece) => (
+              <div
+                key={piece.id}
+                className={styles.confettiPiece}
+                style={{
+                  left: `${piece.left}%`,
+                  animationDelay: `${piece.delay}s`,
+                  animationDuration: `${piece.duration}s`,
+                  backgroundColor: piece.color,
+                  transform: `rotate(${piece.rotation}deg)`,
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Clean Explorer Score Card */}
+          <div id="result-card" ref={resultCardRef} className={styles.explorerCard}>
+            <div className={styles.explorerTrophy}>🏆</div>
+            <h1 className={styles.explorerTitle}>{t('result.title') || (isHindi ? 'क्विज़ परिणाम' : 'Quiz Results')}</h1>
+
+            {/* Score */}
+            <div className={styles.explorerScoreBlock}>
+              <span className={styles.explorerScoreNum}>{score}</span>
+              <span className={styles.explorerScoreDivider}>/</span>
+              <span className={styles.explorerScoreTotal}>{total}</span>
+            </div>
+
+            <div className={styles.explorerPercentage}>
+              <span>{motivation.emoji}</span>
+              <span>{percentage}%</span>
+            </div>
+
+            {/* Core Stats Row: Correct, Wrong, Time */}
+            <div className={styles.explorerStatsRow}>
+              <div className={`${styles.explorerStatBox} ${styles.explorerStatCorrect}`}>
+                <span className={styles.explorerStatLabel}>
+                  {t('result.stats.correct') || (isHindi ? 'सही' : 'Correct')}
+                </span>
+                <span className={styles.explorerStatVal}>
+                  ✓ {performance?.correct || 0}
+                </span>
+              </div>
+
+              <div className={`${styles.explorerStatBox} ${styles.explorerStatWrong}`}>
+                <span className={styles.explorerStatLabel}>
+                  {t('result.stats.wrong') || (isHindi ? 'गलत' : 'Wrong')}
+                </span>
+                <span className={styles.explorerStatVal}>
+                  ✕ {performance?.wrong || 0}
+                </span>
+              </div>
+
+              <div className={`${styles.explorerStatBox} ${styles.explorerStatTime}`}>
+                <span className={styles.explorerStatLabel}>
+                  {t('result.stats.time') || (isHindi ? 'समय' : 'Time')}
+                </span>
+                <span className={styles.explorerStatVal}>
+                  ⏱️ {formatQuizTime(finalTimeTaken, isHindi)}
+                </span>
+              </div>
+            </div>
+
+            {/* Two Action Buttons: Primary "Next Set", Secondary "Back to Home" */}
+            <div className={styles.explorerActions}>
+              <button
+                id="result-next-set-btn"
+                className={styles.explorerPrimaryBtn}
+                onClick={handleContinueNextSet}
+                disabled={isLaunchingNextSet}
+              >
+                {isLaunchingNextSet ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className={styles.btnSpinnerSmall} />
+                    <span>{isHindi ? 'लोड हो रहा है...' : 'Launching Set...'}</span>
+                  </span>
+                ) : (
+                  <span className="flex items-center justify-center gap-2">
+                    <span>{t('result.actions.nextSet') || (isHindi ? 'अगला सेट' : 'Next Set')}</span>
+                    <ArrowRight size={18} />
+                  </span>
+                )}
+              </button>
+
+              <button
+                id="result-back-home-btn"
+                className={styles.explorerSecondaryBtn}
+                onClick={() => {
+                  resetQuiz();
+                  router.push("/");
+                }}
+              >
+                {t('result.actions.backToHome') || (isHindi ? 'होम पर जाएं' : 'Back to Home')}
+              </button>
+            </div>
+
+            {/* Daily Quiz Extra Links & Guest Streak Hint */}
+            {isDailyQuiz && (
+              <div style={{ marginTop: '16px', textAlign: 'center' }}>
+                <Link
+                  href={`/daily-quiz/past?tier=${tier}`}
+                  className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline inline-flex items-center gap-1.5"
+                >
+                  <span>📅</span>
+                  <span>{isHindi ? "पुराने दैनिक क्विज़ खेलें" : "Play past quizzes"}</span>
+                  <span>→</span>
+                </Link>
+                {!authSession?.user && (
+                  <p style={{ fontSize: '11px', color: '#f59e0b', marginTop: '6px', fontWeight: 'bold' }}>
+                    ⭐ {isHindi ? "अपनी स्ट्रीक सुरक्षित रखने के लिए साइन इन करें" : "Sign in to keep your streak"}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Answer Review Below the Fold */}
+          <div className={styles.explorerReviewSection}>
+            {renderAnswerReview()}
+          </div>
+        </div>
       ) : (
-        // Full results show only after ad is done or if user is Pro
+        // KIDS & STUDENTS ORIGINAL LAYOUT
         <div className={styles.resultContainer}>
           {/* Left Sidebar: You May Like */}
           <aside className={styles.sidebarLeft}>
@@ -498,7 +898,7 @@ export default function ResultPage() {
                   </Link>
                 </div>
               ) : (
-                /* Adults & Students Numeric Scoring Feedback */
+                /* Students Numeric Scoring Feedback */
                 <>
                   <div className={styles.trophy}>🏆</div>
                   <h1 className={styles.heading}>{t('result.title')}</h1>
@@ -519,48 +919,92 @@ export default function ResultPage() {
                     </div>
                     <div className={`${styles.statItem} ${styles.correct}`}>
                       <span className={styles.statLabel}>{t('result.stats.correct')}</span>
-                      <span className={styles.statValue}>{performance.correct}</span>
+                      <span className={styles.statValue}>{performance?.correct}</span>
                     </div>
                     <div className={`${styles.statItem} ${styles.wrong}`}>
                       <span className={styles.statLabel}>{t('result.stats.wrong')}</span>
-                      <span className={styles.statValue}>{performance.wrong}</span>
+                      <span className={styles.statValue}>{performance?.wrong}</span>
                     </div>
                     <div className={`${styles.statItem} ${styles.skipped}`}>
                       <span className={styles.statLabel}>{t('result.stats.skipped')}</span>
-                      <span className={styles.statValue}>{performance.skipped}</span>
+                      <span className={styles.statValue}>{performance?.skipped}</span>
                     </div>
                   </div>
                 </>
               )}
             </div>
 
-            {/* Action Buttons */}
+            {/* Action Buttons: One Primary "Next Set", One Secondary "Back to Home" */}
             <div className={styles.actions}>
               <div className="flex flex-col sm:flex-row gap-3 w-full">
-                <button className="btn-primary flex-1 whitespace-nowrap" onClick={handlePlayAgain}>
-                  🔄 {t('result.actions.playAgain')}
-                </button>
                 <button
-                  className="btn-secondary flex-1 whitespace-nowrap"
+                  className="btn-primary flex-1 whitespace-nowrap text-base font-bold py-3.5 shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2"
+                  onClick={handleContinueNextSet}
+                  disabled={isLaunchingNextSet}
+                >
+                  {isLaunchingNextSet ? (
+                    <span>{isHindi ? "लोड हो रहा है..." : "Launching..."}</span>
+                  ) : (
+                    <span>{isHindi ? "अगला सेट खेलें →" : "Next Set →"}</span>
+                  )}
+                </button>
+
+                <button
+                  className="btn-secondary flex-1 whitespace-nowrap text-base font-semibold py-3.5"
+                  onClick={() => router.push("/")}
+                >
+                  {isHindi ? "होम पर जाएं" : "Back to Home"}
+                </button>
+              </div>
+
+              <div className="flex items-center justify-center gap-3 w-full mt-3">
+                <button
+                  className="text-xs font-semibold text-slate-400 hover:text-indigo-400 py-1 px-3 rounded-lg transition-colors"
                   onClick={() => setShowReview(!showReview)}
                 >
-                  {showReview ? t('result.actions.hideAnswers') : `📋 ${t('result.actions.viewAnswers')}`}
+                  {showReview ? (isHindi ? "समीक्षा छुपाएं" : "Hide Review") : (isHindi ? "📋 उत्तर समीक्षा देखें" : "📋 View Answer Review")}
                 </button>
-                <button className="btn-secondary flex-1 whitespace-nowrap" onClick={handleBackToQuizzes}>
-                  ← {t('result.actions.backToQuizzes')}
+                <span className="text-slate-600">·</span>
+                <button
+                  className="text-xs font-semibold text-slate-400 hover:text-indigo-400 py-1 px-3 rounded-lg transition-colors"
+                  onClick={handlePlayAgain}
+                >
+                  🔄 {isHindi ? "पुनः खेलें" : "Play Again"}
                 </button>
               </div>
-              
-              <div className="flex gap-2 w-full mt-4">
-                 <button 
-                   className={`flex-1 ${styles.exportBtn} ${!isPro ? "opacity-60 cursor-not-allowed" : ""}`} 
-                   onClick={handleExportPDF}
-                 >
-                    {isPro ? <Download size={16} /> : <Lock size={16} />}
-                    {isPro ? t('result.actions.exportPDF') : t('result.actions.unlockExport')}
-                 </button>
-              </div>
+
+              {/* Daily Quiz Extra Links & Guest Streak Hint */}
+              {isDailyQuiz && (
+                <div style={{ marginTop: '16px', textAlign: 'center' }}>
+                  <Link
+                    href={`/daily-quiz/past?tier=${tier}`}
+                    className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline inline-flex items-center gap-1.5"
+                  >
+                    <span>📅</span>
+                    <span>{isHindi ? "पुराने दैनिक क्विज़ खेलें" : "Play past quizzes"}</span>
+                    <span>→</span>
+                  </Link>
+                  {!authSession?.user && (
+                    <p style={{ fontSize: '11px', color: '#f59e0b', marginTop: '6px', fontWeight: 'bold' }}>
+                      ⭐ {isHindi ? "अपनी स्ट्रीक सुरक्षित रखने के लिए साइन इन करें" : "Sign in to keep your streak"}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
+
+            {/* Answer Review below actions */}
+            {showReview && renderAnswerReview()}
+
+            {/* Smart Next Up Recommendations */}
+            <NextUpRecommendations
+              currentTopicId={questions?.[0]?.topicId || questions?.[0]?.topic_id}
+              currentCategoryId={quizId || category?.id}
+              currentSetIndex={selectedSetIndex || 1}
+              score={score}
+              total={total}
+              userId={authSession?.user?.id}
+            />
 
             {/* Post-Quiz Donation Prompt */}
             <Link href="/donate" className="block mt-8 mb-4 p-1 rounded-2xl bg-gradient-to-r from-rose-100 to-rose-50 dark:from-rose-900/20 dark:to-rose-800/10 border border-rose-200 dark:border-rose-800/30 hover:scale-[1.01] transition-transform group">
@@ -577,188 +1021,12 @@ export default function ResultPage() {
                 </div>
               </div>
             </Link>
-
-            {/* Answer Review */}
-            {showReview && (
-              <div className={styles.review}>
-                <div className={styles.reviewHeaderMain}>
-                  <div className={styles.reviewTitleRow}>
-                    <h2 className={styles.reviewTitle}>
-                      <span>📋</span>
-                      <span>{isHindi ? 'उत्तर समीक्षा' : 'Answer Review'}</span>
-                    </h2>
-                    
-                    {/* Filter Tabs */}
-                    <div className={styles.reviewFilterTabs}>
-                      <button 
-                        className={`${styles.filterBtn} ${reviewFilterTab === 'all' ? styles.filterBtnActive : ''}`}
-                        onClick={() => setReviewFilterTab('all')}
-                      >
-                        {isHindi ? 'सभी' : 'All'} ({questions.length})
-                      </button>
-                      <button 
-                        className={`${styles.filterBtn} ${reviewFilterTab === 'wrong' ? styles.filterBtnActive : ''}`}
-                        onClick={() => setReviewFilterTab('wrong')}
-                      >
-                        ❌ {isHindi ? 'गलत' : 'Wrong'} ({performance?.wrong || 0})
-                      </button>
-                      <button 
-                        className={`${styles.filterBtn} ${reviewFilterTab === 'correct' ? styles.filterBtnActive : ''}`}
-                        onClick={() => setReviewFilterTab('correct')}
-                      >
-                        ✓ {isHindi ? 'सही' : 'Correct'} ({performance?.correct || 0})
-                      </button>
-                      <button 
-                        className={`${styles.filterBtn} ${reviewFilterTab === 'skipped' ? styles.filterBtnActive : ''}`}
-                        onClick={() => setReviewFilterTab('skipped')}
-                      >
-                        ⏱️ {isHindi ? 'छूटे' : 'Skipped'} ({performance?.skipped || 0})
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {questions
-                  .map((question, index) => ({ question, originalIndex: index }))
-                  .filter(({ question }) => {
-                    const answer = answers.find((a) => a.questionId === question.id);
-                    const isAnswered = !!answer;
-                    const isCorrect = answer?.isCorrect || false;
-                    
-                    if (reviewFilterTab === 'wrong') return isAnswered && !isCorrect;
-                    if (reviewFilterTab === 'correct') return isAnswered && isCorrect;
-                    if (reviewFilterTab === 'skipped') return !isAnswered;
-                    return true;
-                  })
-                  .map(({ question, originalIndex }) => {
-                    const answer = answers.find((a) => a.questionId === question.id);
-                    const isAnswered = !!answer;
-                    const isCorrect = answer?.isCorrect || false;
-
-                    // Get user selected option text
-                    let userSelectedText = "";
-                    if (!isAnswered || answer?.selected === null || answer?.selected === undefined) {
-                      userSelectedText = isHindi ? "उत्तर नहीं दिया / समय समाप्त" : "Skipped / Timed Out";
-                    } else if (isHindi && Array.isArray(question.optionsHi) && question.optionsHi[answer.selected]) {
-                      userSelectedText = question.optionsHi[answer.selected];
-                    } else if (Array.isArray(question.options) && question.options[answer.selected]) {
-                      userSelectedText = question.options[answer.selected];
-                    } else {
-                      userSelectedText = String(answer.selected);
-                    }
-
-                    // Get correct option text
-                    let correctOptionText = "";
-                    if (isHindi && Array.isArray(question.optionsHi)) {
-                      const correctIdx = question.options.findIndex(opt => String(opt).trim() === String(question.correctAnswer).trim());
-                      if (correctIdx !== -1 && question.optionsHi[correctIdx]) {
-                        correctOptionText = question.optionsHi[correctIdx];
-                      }
-                    }
-                    if (!correctOptionText) {
-                      correctOptionText = question.correctAnswer || (question.options ? question.options[0] : "");
-                    }
-
-                    return (
-                      <div
-                        key={question.id || originalIndex}
-                        className={`${styles.reviewItem} ${
-                          !isAnswered ? styles.reviewSkipped : (isCorrect ? styles.reviewCorrect : styles.reviewWrong)
-                        }`}
-                      >
-                        {/* Question Top Bar */}
-                        <div className={styles.reviewHeader}>
-                          <span className={styles.reviewNumPill}>
-                            {isHindi ? `प्रश्न ${originalIndex + 1}` : `Question ${originalIndex + 1}`}
-                          </span>
-                          
-                          <span className={`${styles.statusBadge} ${
-                            !isAnswered 
-                              ? styles.statusBadgeSkipped 
-                              : (isCorrect ? styles.statusBadgeCorrect : styles.statusBadgeWrong)
-                          }`}>
-                            {!isAnswered 
-                              ? (isHindi ? '⏱️ छूटा हुआ' : '⏱️ Skipped')
-                              : (isCorrect ? (isHindi ? '✓ सही उत्तर' : '✓ Correct') : (isHindi ? '✕ गलत उत्तर' : '✕ Incorrect'))
-                            }
-                          </span>
-                        </div>
-
-                        {/* Question Body */}
-                        <h4 className={styles.reviewQuestion}>
-                          {(isHindi && question.textHi) ? question.textHi : question.text}
-                        </h4>
-                        
-                        {/* Answer Comparison Cards */}
-                        <div className={styles.answerGrid}>
-                          {/* User Answer Card */}
-                          <div className={`${styles.answerCard} ${
-                            !isAnswered 
-                              ? styles.answerCardSkipped 
-                              : (isCorrect ? styles.answerCardUserCorrect : styles.answerCardUserWrong)
-                          }`}>
-                            <span className={`${styles.answerLabel} ${
-                              !isAnswered 
-                                ? styles.answerLabelSkipped 
-                                : (isCorrect ? styles.answerLabelUserCorrect : styles.answerLabelUserWrong)
-                            }`}>
-                              {!isAnswered 
-                                ? (isHindi ? '⏱️ आपका चयन' : '⏱️ Your Choice')
-                                : (isCorrect ? (isHindi ? '✓ आपका उत्तर (सही)' : '✓ Your Answer (Correct)') : (isHindi ? '❌ आपका उत्तर' : '❌ Your Answer'))
-                              }
-                            </span>
-                            <span className={styles.answerText}>{userSelectedText}</span>
-                          </div>
-
-                          {/* Correct Answer Card (shown when user was incorrect or skipped) */}
-                          {(!isCorrect || !isAnswered) && (
-                            <div className={`${styles.answerCard} ${styles.answerCardCorrect}`}>
-                              <span className={`${styles.answerLabel} ${styles.answerLabelCorrect}`}>
-                                💡 {isHindi ? 'सही उत्तर' : 'Correct Answer'}
-                              </span>
-                              <span className={styles.answerText}>{correctOptionText}</span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Explanation / Jawab Logic */}
-                        {(question.explanation || (isHindi && question.explanationHi)) && (
-                          <div className="mt-4 p-4 rounded-xl bg-indigo-50/60 dark:bg-slate-800/80 border border-indigo-100 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
-                            <span className="font-black text-indigo-600 dark:text-indigo-400 block mb-1 uppercase tracking-wider text-[11px]">
-                              💡 {isHindi ? "व्याख्या:" : "Explanation:"}
-                            </span>
-                            {isHindi && question.explanationHi ? question.explanationHi : question.explanation}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-              </div>
-            )}
           </div>
-
-          {/* Right Sidebar: Suggested Quizzes */}
-          <aside className={styles.sidebarRight}>
-            <h3 className={styles.sidebarTitle}>{t('result.sidebar.suggested')}</h3>
-            <div className={styles.suggestedList}>
-              {quizzes.slice(3, 6).map(quiz => (
-                <div key={quiz.id} className={styles.suggestedCard} onClick={() => router.push(`/category/${quiz.slug || quiz.id}`)}>
-                  <span className={styles.suggestedEmoji}>{quiz.emoji || "🔥"}</span>
-                  <div className={styles.suggestedInfo}>
-                    <span className={styles.suggestedName}>
-                      {isHindi && quiz.topicHi ? quiz.topicHi : quiz.topic}
-                    </span>
-                    <span className={styles.suggestedQuestions}>{quiz.questionCount || 0} {isHindi ? 'प्रश्न' : 'Qs'}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </aside>
         </div>
       )}
 
-      {/* Post Quiz Suggestions Popup (shown after a delay) */}
-      {showPostQuizPopup && (
+      {/* Post Quiz Suggestions Popup (shown after a delay, non-explorer only) */}
+      {!isExplorer && showPostQuizPopup && (
         <div className={styles.modalOverlay}>
           <div className={styles.suggestionsPopup}>
             <button className={styles.closeBtn} onClick={() => setShowPostQuizPopup(false)}>✕</button>

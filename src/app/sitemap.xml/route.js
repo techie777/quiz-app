@@ -1,16 +1,34 @@
 import { prisma } from '@/lib/prisma';
+import { getDb } from '@/lib/mongoDb';
 
 export async function GET() {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://quizweb.in';
   
   try {
-    // Get all categories for sitemap
+    const db = await getDb();
+
+    // 1. Get all taxonomy topics with >= 15 questions
+    const topics = await db.collection('TaxonomyTopic')
+      .find({ questionCount: { $gte: 15 } }, { projection: { slug: 1, updatedAt: 1 } })
+      .toArray();
+
+    // 2. Get all exams with sets
+    const examSets = await db.collection('QuizSet').distinct('examSlug', {
+      examSlug: { $ne: null }
+    });
+
+    // 3. Get all states with sets
+    const stateSets = await db.collection('QuizSet').distinct('stateSlug', {
+      stateSlug: { $ne: null }
+    });
+
+    // 4. Get categories for sitemap
     const categories = await prisma.category.findMany({
       where: { hidden: false },
       select: { id: true, updatedAt: true }
     });
     
-    // Get all quizzes for sitemap
+    // 5. Get quizzes for sitemap
     const quizzes = await prisma.question.findMany({
       select: { id: true, updatedAt: true },
       distinct: ['categoryId']
@@ -26,23 +44,44 @@ export async function GET() {
       { url: '/current-affairs', priority: '0.9', changefreq: 'daily' },
       { url: '/daily', priority: '0.9', changefreq: 'daily' },
       { url: '/govt-exams', priority: '0.8', changefreq: 'weekly' },
-      { url: '/govt-exams/upsc', priority: '0.8', changefreq: 'weekly' },
-      { url: '/govt-exams/ssc', priority: '0.8', changefreq: 'weekly' },
-      { url: '/govt-exams/rrb', priority: '0.8', changefreq: 'weekly' },
-      { url: '/govt-exams/ibp', priority: '0.8', changefreq: 'weekly' },
       { url: '/govt-jobs-alerts', priority: '0.8', changefreq: 'daily' },
       { url: '/my-favourites', priority: '0.7', changefreq: 'weekly' },
       { url: '/previous-years-papers', priority: '0.7', changefreq: 'monthly' },
+      { url: '/arena', priority: '0.9', changefreq: 'daily' },
+      { url: '/donate', priority: '0.6', changefreq: 'monthly' },
     ];
+
+    const now = new Date().toISOString();
     
     const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${staticPages.map(page => `
   <url>
     <loc>${baseUrl}${page.url}</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
+    <lastmod>${now}</lastmod>
     <changefreq>${page.changefreq}</changefreq>
     <priority>${page.priority}</priority>
+  </url>`).join('')}
+${topics.map(t => `
+  <url>
+    <loc>${baseUrl}/hub/topic/${t.slug}</loc>
+    <lastmod>${(t.updatedAt ? new Date(t.updatedAt) : new Date()).toISOString()}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>`).join('')}
+${examSets.map(slug => `
+  <url>
+    <loc>${baseUrl}/hub/exam/${slug}</loc>
+    <lastmod>${now}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>`).join('')}
+${stateSets.map(slug => `
+  <url>
+    <loc>${baseUrl}/hub/state/${slug}</loc>
+    <lastmod>${now}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>`).join('')}
 ${categories.map(category => `
   <url>
@@ -67,7 +106,7 @@ ${quizzes.map(quiz => `
       },
     });
   } catch (error) {
-    // Fallback sitemap if database is unavailable
+    console.error('Sitemap generation error:', error);
     const fallbackSitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>

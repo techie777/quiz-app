@@ -5,7 +5,6 @@ import styles from "@/styles/CareerGuide.module.css";
 import { prisma } from "@/lib/prisma";
 import { safeJsonParse } from "@/lib/utils";
 import CareerGuideTOC from "@/components/CareerGuideTOC";
-import LanguageToggle from "@/components/LanguageToggle";
 import FAQAccordion from "@/components/FAQAccordion";
 
 export const dynamic = "force-dynamic";
@@ -130,9 +129,6 @@ export default async function DynamicCareerGuide({ params, searchParams }) {
 
       {/* Basic Info & Short Description */}
       <section className={styles.hero}>
-        <Suspense fallback={<div style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', opacity: 0.5 }}>...</div>}>
-          <LanguageToggle />
-        </Suspense>
         <nav className={styles.breadcrumbs} aria-label="Breadcrumb">
           {crumbs.map((c, idx) => (
             <span key={c.href}>

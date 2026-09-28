@@ -75,6 +75,8 @@ const initialState = {
   totalXP: 0,
   dailyStreak: 0,
   lastPlayedDate: null,
+  startTime: null,
+  timeTaken: 0,
 };
 
 // Key for storage
@@ -121,6 +123,8 @@ function quizReducer(state, action) {
         selectedSetIndex: null,
         categoryName: quiz.topic || quiz.name,
         quizSessionId: Date.now(),
+        startTime: Date.now(),
+        timeTaken: 0,
       };
     }
     case "START_QUIZ_SET": {
@@ -152,6 +156,8 @@ function quizReducer(state, action) {
         selectedSetIndex: setIndex,
         categoryName: categoryName,
         quizSessionId: Date.now(),
+        startTime: Date.now(),
+        timeTaken: 0,
       };
     }
     case "START_MIXED_QUIZ": {
@@ -181,6 +187,8 @@ function quizReducer(state, action) {
         originalQuestions: shuffledQuestions,
         categoryName: sectionName,
         quizSessionId: Date.now(),
+        startTime: Date.now(),
+        timeTaken: 0,
       };
     }
     case "SET_QUESTIONS":
@@ -264,6 +272,15 @@ function quizReducer(state, action) {
         }
       }
 
+      let calculatedTimeTaken = 0;
+      if (state.startTime) {
+        calculatedTimeTaken = Math.max(1, Math.round((Date.now() - state.startTime) / 1000));
+      } else if (typeof window !== "undefined" && window.quizStartTime) {
+        calculatedTimeTaken = Math.max(1, Math.round((Date.now() - window.quizStartTime) / 1000));
+      } else if (state.timeTaken) {
+        calculatedTimeTaken = state.timeTaken;
+      }
+
       // Save global stats to localStorage immediately
       const globalStats = {
         dailyStreak: newStreak,
@@ -275,6 +292,7 @@ function quizReducer(state, action) {
       return { 
         ...state, 
         status: "finished",
+        timeTaken: calculatedTimeTaken,
         dailyStreak: newStreak,
         lastPlayedDate: today,
         isFullscreen: false
@@ -293,13 +311,18 @@ function quizReducer(state, action) {
     case "SET_FULLSCREEN":
       return { ...state, isFullscreen: action.payload };
     case "RESET_QUIZ":
+      if (typeof window !== "undefined") {
+        window.quizStartTime = null;
+      }
       return { ...initialState, soundEnabled: state.soundEnabled, isFullscreen: false, quizSessionId: Date.now() };
     case "LOAD_STATE":
       return { 
         ...state, 
         ...action.payload, 
         status: action.payload.status,
-        originalTotal: action.payload.originalTotal || action.payload.questions?.length || state.originalTotal
+        originalTotal: action.payload.originalTotal || action.payload.questions?.length || state.originalTotal,
+        startTime: action.payload.startTime || state.startTime || null,
+        timeTaken: action.payload.timeTaken !== undefined ? action.payload.timeTaken : state.timeTaken,
       };
     case "SET_RESUMING":
       return { ...state, isResuming: action.payload };

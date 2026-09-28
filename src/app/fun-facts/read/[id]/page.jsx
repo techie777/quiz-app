@@ -440,16 +440,16 @@ export default function FunFactVoyager({ params }) {
         {/* Fact Text - Clear Frame (Removed semi-transparent layer as requested) */}
         <div className="relative max-w-4xl w-full">
            <div className="relative z-10 rounded-[2.5rem] px-8 md:px-16 py-10 md:py-20 text-center">
-              <span className="absolute -top-4 -left-2 md:-top-12 md:-left-12 text-6xl md:text-9xl text-indigo-400/20 font-serif leading-none select-none">&ldquo;</span>
+              <span className="absolute -top-4 -left-2 md:-top-12 md:-left-12 text-6xl md:text-9xl text-indigo-400/20 leading-none select-none">&ldquo;</span>
               <h1 
-                className={`text-xl md:text-3xl lg:text-5xl font-extrabold leading-[1.6] md:leading-[1.4] tracking-tight ${lang === 'HI' ? 'font-serif' : ''} text-white`}
+                className="text-xl md:text-3xl lg:text-5xl font-bold leading-[1.6] md:leading-[1.4] tracking-tight text-white"
                 style={{ 
                   textShadow: '0 2px 4px rgba(0,0,0,0.9), 0 10px 40px rgba(0,0,0,0.7)',
                 }}
               >
                 {highlightFactText(displayText, true)}
               </h1>
-              <span className="absolute -bottom-8 -right-2 md:-bottom-20 md:-right-12 text-6xl md:text-9xl text-indigo-400/20 font-serif leading-none select-none">&rdquo;</span>
+              <span className="absolute -bottom-8 -right-2 md:-bottom-20 md:-right-12 text-6xl md:text-9xl text-indigo-400/20 leading-none select-none">&rdquo;</span>
            </div>
         </div>
 

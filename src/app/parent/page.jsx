@@ -121,7 +121,7 @@ export default function ParentStubPage() {
             onClick={() => setTier(TIERS.ADULTS)}
             className="flex-1 inline-flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-sm transition-all"
           >
-            <span>{isHindi ? "अडल्ट मोड पर जाएं" : "Switch to Adults Tier"}</span>
+            <span>{isHindi ? "एक्सप्लोरर मोड पर जाएं" : "Switch to Explorer Tier"}</span>
           </button>
         </div>
       </div>

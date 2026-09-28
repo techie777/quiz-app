@@ -3,7 +3,7 @@
   max-width: 1200px;
   margin: 0 auto;
   color: #334155;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-family-base);
   background: white;
 }
 

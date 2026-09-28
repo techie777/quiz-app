@@ -52,12 +52,24 @@
   text-decoration: none;
 }
 
-.brandEmoji { font-size: 2.2rem; }
+.brandIconWrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm, 12px);
+  background: linear-gradient(135deg, var(--tier-explorer, #6366f1), var(--tier-arena-start, #8b5cf6));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+}
+
 .brandName {
   font-size: 1.8rem;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--text-primary);
-  letter-spacing: -1px;
+  letter-spacing: -0.5px;
 }
 
 .brandHighlight {
@@ -271,5 +283,47 @@
   margin: 0 auto;
   font-style: italic;
   opacity: 0.8;
+}
+
+/* --- Slim One-Line Footer for Hub/SEO pages --- */
+.slimFooter {
+  width: 100%;
+  padding: 16px 24px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--card-border);
+  grid-area: footer;
+  margin-top: auto;
+}
+
+.slimContainer {
+  max-width: 1320px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: var(--text-meta, 0.875rem);
+  color: var(--text-secondary);
+}
+
+.slimLink {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.15s ease;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.slimLink:hover {
+  color: var(--color-brand-primary, #6366f1);
+  text-decoration: underline;
+}
+
+.slimDot {
+  color: var(--card-border);
+  user-select: none;
 }
 

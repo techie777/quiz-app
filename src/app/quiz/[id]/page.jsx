@@ -12,7 +12,18 @@ import QuizSidebar from "@/components/QuizSidebar";
 import QuizSuggestions from "@/components/QuizSuggestions";
 import ExitConfirmModal from "@/components/ExitConfirmModal";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import { Languages, BookOpen } from "lucide-react";
+import {
+  BookOpen,
+  MoreHorizontal,
+  Users,
+  Volume2,
+  VolumeX,
+  Maximize2,
+  Minimize2,
+  LogOut,
+  ArrowLeft,
+  ArrowRight,
+} from "lucide-react";
 import styles from "@/styles/QuizEngine.module.css";
 import { initSounds, playCorrectSound, playWrongSound, playTickerSound } from "@/lib/sounds";
 import timerStyles from "@/styles/Timer.module.css";
@@ -60,6 +71,14 @@ const QuizTimerComponent = ({ seconds, onExpire, questionKey, isPaused }) => {
   const displayMins = String(Math.floor(timeLeft / 60)).padStart(2, "0");
   const displaySecs = String(timeLeft % 60).padStart(2, "0");
 
+  // Shift colour purple -> amber -> red as time runs low
+  let ringColor = "#8b5cf6"; // purple
+  if (timeLeft <= 5 || (seconds > 0 && timeLeft / seconds <= 0.25)) {
+    ringColor = "#ef4444"; // red
+  } else if (timeLeft <= 10 || (seconds > 0 && timeLeft / seconds <= 0.5)) {
+    ringColor = "#f59e0b"; // amber
+  }
+
   return (
     <div className={`${timerStyles.timerContainer} ${isTimeLow ? timerStyles.low : ""}`}>
       <svg className={timerStyles.timerRing} width="60" height="60">
@@ -68,12 +87,13 @@ const QuizTimerComponent = ({ seconds, onExpire, questionKey, isPaused }) => {
           className={timerStyles.ringFill}
           cx="30" cy="30" r={radius}
           style={{
+            stroke: ringColor,
             strokeDasharray: circumference,
             strokeDashoffset: isNaN(offset) ? 0 : offset
           }}
         />
       </svg>
-      <div className={timerStyles.timeDisplay}>
+      <div className={timerStyles.timeDisplay} style={{ color: ringColor }}>
         {displayMins}:{displaySecs}
       </div>
     </div>
@@ -155,7 +175,6 @@ function QuizEngineContent() {
     setLanguage,
     translateTarget,
     translatedStory,
-    toggleLanguage,
     fontScale,
     toggleFontSize,
     finishQuiz,
@@ -191,6 +210,24 @@ function QuizEngineContent() {
   const [showingAd, setShowingAd] = useState(false);
   const [adCallback, setAdCallback] = useState(null);
   const [lifelineEffect, setLifelineEffect] = useState(null); // '5050' or 'poll'
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const moreMenuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target)) {
+        setShowMoreMenu(false);
+      }
+    };
+    if (showMoreMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("touchstart", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, [showMoreMenu]);
   
   // Prevent body scroll when in fullscreen
   useEffect(() => {
@@ -731,141 +768,190 @@ const QuizEngineTimer = QuizTimerComponent;
             {/* Top Bar */}
             <div className={styles.topBar}>
               <div className={styles.topLeft}>
+                <span className={styles.questionNumberBadge}>
+                  Q{currentIndex + 1}/{questions.length}
+                </span>
                 <div className={styles.scoreInfo}>
                   <span className={styles.streakCount}>
                     {score} {language === "hi" ? "सही" : "Correct"}
                   </span>
                 </div>
               </div>
-            <div className={styles.topCenter}>
-              {tier !== "kids" && timerSetting > 0 && status === "active" && currentQuestion && (
-                <QuizTimerComponent
-                  seconds={timerSetting}
-                  onExpire={handleTimerExpire}
-                  questionKey={currentQuestion.id}
-                  isPaused={isPaused || showStory || showExplanation}
-                />
-              )}
-            </div>
-            <div className={styles.topRight}>
-              <div className={styles.topRightContent}>
-                <span className={styles.questionCounter}>
-                  Q{currentIndex + 1} / {questions.length}
-                </span>
-                <button
-                  className={styles.endQuizBtn}
-                  onClick={handleEndQuiz}
-                  title="End Quiz and see results"
-                >
-                  End Quiz
-                </button>
+
+              <div className={styles.topCenter}>
+                {tier !== "kids" && timerSetting > 0 && status === "active" && currentQuestion && (
+                  <QuizTimerComponent
+                    seconds={timerSetting}
+                    onExpire={handleTimerExpire}
+                    questionKey={currentQuestion.id}
+                    isPaused={isPaused || showStory || showExplanation}
+                  />
+                )}
+              </div>
+
+              <div className={styles.topRight}>
+                <div className={styles.topRightControls}>
+                  {/* 50/50 Core Lifeline Button */}
+                  <button
+                    type="button"
+                    className={`${styles.lifeline5050Btn} ${used5050 ? styles.disabled : ""}`}
+                    onClick={use5050}
+                    disabled={used5050}
+                    title={tier === "kids" ? (language === "hi" ? "50/50 मदद" : "50/50 Helper") : "50/50 Lifeline (-3 points)"}
+                  >
+                    <span className={styles.lifelineIcon}>✂️</span>
+                    <span className={styles.lifelineLabel}>50:50</span>
+                  </button>
+
+                  {/* More Menu (•••) */}
+                  <div className={styles.moreMenuContainer} ref={moreMenuRef}>
+                    <button
+                      type="button"
+                      className={`${styles.moreMenuBtn} ${showMoreMenu ? styles.active : ""}`}
+                      onClick={() => setShowMoreMenu(prev => !prev)}
+                      title="More options"
+                      aria-label="More options"
+                      aria-expanded={showMoreMenu}
+                    >
+                      <MoreHorizontal size={20} />
+                    </button>
+
+                    {showMoreMenu && (
+                      <div className={styles.moreDropdownMenu}>
+                        <button
+                          type="button"
+                          className={styles.menuItem}
+                          onClick={() => {
+                            setShowMoreMenu(false);
+                            useAskAudience();
+                          }}
+                          disabled={usedAskAudience}
+                        >
+                          <Users size={16} />
+                          <span>{language === "hi" ? "ऑडियंस पोल" : "Ask Audience"}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          className={styles.menuItem}
+                          onClick={() => {
+                            setShowMoreMenu(false);
+                            handleGoToReadMode();
+                          }}
+                        >
+                          <BookOpen size={16} />
+                          <span>{language === "hi" ? "रीड मोड" : "Read Mode"}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          className={styles.menuItem}
+                          onClick={() => {
+                            toggleSound();
+                          }}
+                        >
+                          {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+                          <span>{soundEnabled ? (language === "hi" ? "ध्वनि: चालू" : "Sound: On") : (language === "hi" ? "ध्वनि: बंद" : "Sound: Off")}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          className={styles.menuItem}
+                          onClick={() => {
+                            setShowMoreMenu(false);
+                            toggleFullscreen();
+                          }}
+                        >
+                          {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                          <span>{isFullscreen ? (language === "hi" ? "फुलस्क्रीन से बाहर" : "Exit Fullscreen") : (language === "hi" ? "फुलस्क्रीन" : "Fullscreen")}</span>
+                        </button>
+
+                        <div className={styles.menuDivider} />
+
+                        <button
+                          type="button"
+                          className={`${styles.menuItem} ${styles.menuItemDanger}`}
+                          onClick={() => {
+                            setShowMoreMenu(false);
+                            handleEndQuiz();
+                          }}
+                        >
+                          <LogOut size={16} />
+                          <span>{language === "hi" ? "क्विज़ समाप्त करें" : "End Quiz"}</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Controls / Power-Up Dock (The Lifeline Toolbar) */}
-          <div className={styles.toolbarContainer}>
-            <div className={styles.controls}>
-              {/* Read Mode Switcher Button (Placed right before 50/50) */}
+            {/* Progress Bar */}
+            <ProgressBar current={currentIndex} total={questions.length} showPercentage={false} />
+
+            {/* Question */}
+            {currentQuestion && (
+              <div className={`${isPaused || showStory ? styles.pausedContent : ""} ${questionTransition ? styles.transitioning : ""}`}>
+                <QuestionCardV2
+                  key={currentQuestion.id}
+                  question={currentQuestion}
+                  onAnswer={handleSubmitAnswer}
+                  favouriteIds={favouriteIds}
+                  quizId={params?.id}
+                  disabled={isPaused || showStory || status === "finished"}
+                  userAnswer={currentQuestion.userAnswer}
+                  showHint={showHint}
+                  removedOptions={removedOptions}
+                  audienceStats={audienceStats}
+                  showExplanation={showExplanation}
+                  onCloseExplanation={handleCloseExplanation}
+                  explanation={currentQuestion.explanation}
+                  language={language}
+                />
+              </div>
+            )}
+
+            {/* Bottom Bar: ONLY Back and Next */}
+            <div className={styles.quizBottomBar}>
               <button
                 type="button"
-                onClick={handleGoToReadMode}
-                className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white text-xs sm:text-sm font-extrabold flex items-center gap-1.5 shadow-md shadow-emerald-500/20 hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                title={language === "hi" ? "रीड मोड पर जाएं" : "Go to Read Mode"}
+                className={styles.bottomNavBtn}
+                onClick={handleBack}
+                disabled={currentIndex === 0}
+                aria-label={language === "hi" ? "पिछला प्रश्न" : "Previous Question"}
               >
-                <BookOpen size={16} />
-                <span>{language === "hi" ? "रीड मोड" : "Read Mode"}</span>
+                <ArrowLeft size={18} />
+                <span>{language === "hi" ? "पीछे" : "Back"}</span>
               </button>
 
               <button
-                className={`${styles.controlBtn} ${used5050 ? styles.disabled : ""}`}
-                onClick={use5050}
-                disabled={used5050}
-                title={tier === "kids" ? (language === "hi" ? "50/50 मदद" : "50/50 Helper") : "50/50 Lifeline (-3 points)"}
-                data-icon="50/50"
-              />
-              
-              <button
-                className={`${styles.controlBtn} ${usedAskAudience ? styles.disabled : ""}`}
-                onClick={useAskAudience}
-                disabled={usedAskAudience}
-                title={tier === "kids" ? (language === "hi" ? "दोस्तों से पूछें" : "Ask Friends") : "Ask Audience (-3 points)"}
-                data-icon="👥"
-              />
-              
-              <div className={styles.divider} />
-
-              <button
-                 className={`${styles.controlBtn} ${styles.langToggle} ${isTranslating ? styles.loading : ""}`}
-                 onClick={() => toggleLanguage(category?.storyText)}
-                 title={language === "hi" ? "Switch to English" : "Switch to Hindi"}
-                 disabled={isTranslating}
-                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                type="button"
+                className={`${styles.bottomNavBtn} ${styles.bottomNextBtn}`}
+                onClick={moveToNextQuestion}
+                aria-label={currentIndex >= questions.length - 1 ? (language === "hi" ? "समाप्त करें" : "Finish") : (language === "hi" ? "आगे" : "Next")}
               >
-                 <div style={{ position: 'relative', width: '22px', height: '22px', color: '#6366f1' }}>
-                   <span style={{ position: 'absolute', top: '-1px', left: 0, fontSize: '12px', fontWeight: '900', fontFamily: 'Inter, sans-serif' }}>A</span>
-                   <span style={{ position: 'absolute', bottom: '-3px', right: 0, fontSize: '15px', fontWeight: '700' }}>अ</span>
-                 </div>
+                <span>{currentIndex >= questions.length - 1 ? (language === "hi" ? "समाप्त करें" : "Finish") : (language === "hi" ? "आगे" : "Next")}</span>
+                <ArrowRight size={18} />
               </button>
-              
-              <button 
-                className={`${styles.controlBtn} ${!soundEnabled ? styles.disabled : ""}`} 
-                onClick={toggleSound}
-                title={soundEnabled ? "Disable Sound" : "Enable Sound"}
-                data-icon={soundEnabled ? "🔊" : "🔇"}
-              />
-              
-              <button 
-                className={styles.controlBtn} 
-                onClick={toggleFullscreen}
-                title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
-                data-icon={isFullscreen ? "↙️" : "↗️"}
-              />
             </div>
-          </div>
 
-          {/* Progress */}
-          <ProgressBar current={currentIndex} total={questions.length} showPercentage={true} />
-
-          {/* Question */}
-          {currentQuestion && (
-            <div className={`${isPaused || showStory ? styles.pausedContent : ""} ${questionTransition ? styles.transitioning : ""}`}>
-              <QuestionCardV2
-                key={currentQuestion.id}
-                question={currentQuestion}
-                onAnswer={handleSubmitAnswer}
-                favouriteIds={favouriteIds}
-                quizId={params?.id}
-                disabled={isPaused || showStory || status === "finished"}
-                userAnswer={currentQuestion.userAnswer}
-                showHint={showHint}
-                removedOptions={removedOptions}
-                audienceStats={audienceStats}
-                showExplanation={showExplanation}
-                onCloseExplanation={handleCloseExplanation}
-                explanation={currentQuestion.explanation}
-                language={language}
-              />
-            </div>
-          )}
-
-          {/* Celebration Animation */}
-          {celebrationAnimation && (
-            <div className={styles.celebrationOverlay}>
-              <div className={styles.celebrationEffect}>
-                🎉 Correct! 🎉
+            {/* Celebration Animation */}
+            {celebrationAnimation && (
+              <div className={styles.celebrationOverlay}>
+                <div className={styles.celebrationEffect}>
+                  🎉 Correct! 🎉
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Lifeline Animation Effect */}
-          {lifelineEffect && (
-            <div className={styles.lifelineOverlay}>
-              <div className={styles.lifelineAnimation}>
-                {lifelineEffect === '5050' ? '✂️ 50:50 Activated' : '👥 Audience Poll Live'}
+            {/* Lifeline Animation Effect */}
+            {lifelineEffect && (
+              <div className={styles.lifelineOverlay}>
+                <div className={styles.lifelineAnimation}>
+                  {lifelineEffect === '5050' ? '✂️ 50:50 Activated' : '👥 Audience Poll Live'}
+                </div>
               </div>
-            </div>
-          )}
+            )}
         </div>
 
         {/* Quiz Sidebar */}
@@ -949,9 +1035,6 @@ const QuizEngineTimer = QuizTimerComponent;
           </p>
         </div>
       )}
-
-      {/* Quiz Suggestions - Below Console */}
-      <QuizSuggestions currentCategory={category} />
 
       {/* Ad Simulation Overlay */}
       {showingAd && <AdOverlay onComplete={handleAdComplete} />}

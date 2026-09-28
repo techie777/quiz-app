@@ -2,7 +2,7 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
-  font-family: var(--font-family-sans, 'Inter', sans-serif);
+  font-family: var(--font-family-base);
 }
 
 .layout {
@@ -352,7 +352,7 @@
   font-size: 3rem;
   opacity: 0.1;
   color: #3b82f6;
-  font-family: serif;
+  font-family: var(--font-family-base);
 }
 
 .storyBg {

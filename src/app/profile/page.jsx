@@ -1,21 +1,24 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, signIn, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useLanguage } from "@/context/LanguageContext";
 import { Crown, Trophy, ArrowRight, History, CheckCircle2, Clock, FileText } from "lucide-react";
 import styles from "@/styles/Profile.module.css";
 import { useTier } from "@/context/TierContext";
-
 import { useUI } from "@/context/UIContext";
+import { useTheme } from "next-themes";
 
 export default function ProfilePage() {
-  const { t, isHindi } = useLanguage();
+  const { t, isHindi, language, confirmLanguageSelection } = useLanguage();
   const { tier } = useTier();
+  const isExplorer = tier === "adults" || (tier !== "kids" && tier !== "students");
   const { data: session, status } = useSession();
   const { engineTheme, updateEngineTheme } = useUI();
+  const { theme, setTheme } = useTheme();
+  const [mountedTheme, setMountedTheme] = useState(false);
   const router = useRouter();
   const [profile, setProfile] = useState(null);
   const [nickname, setNickname] = useState("");
@@ -51,19 +54,28 @@ export default function ProfilePage() {
   ];
 
   useEffect(() => {
-    if (status === "unauthenticated") router.push("/");
+    setMountedTheme(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isExplorer && status === "unauthenticated") {
+      router.push("/");
+    }
     if (status === "authenticated" && !session?.user?.isAdmin) {
       fetch("/api/user/profile")
         .then((r) => r.json())
         .then((data) => {
-          setProfile(data);
-          setNickname(data.nickname || data.name || "");
-          setAvatarPreview(data.avatar || data.image || "");
-          setSelectedTheme(data.engineTheme || "indigo");
-          if (data.engineTheme) updateEngineTheme(data.engineTheme);
-        });
+          if (data && !data.error) {
+            setProfile(data);
+            setNickname(data.nickname || data.name || "");
+            setAvatarPreview(data.avatar || data.image || "");
+            setSelectedTheme(data.engineTheme || "indigo");
+            if (data.engineTheme) updateEngineTheme(data.engineTheme);
+          }
+        })
+        .catch((err) => console.error("Failed to load profile:", err));
     }
-  }, [status, session, router]);
+  }, [status, session, router, isExplorer]);
 
   useEffect(() => {
     fetch("/api/user/attempts")
@@ -124,10 +136,212 @@ export default function ProfilePage() {
     setSelectedTheme(themeId);
   };
 
-  if (status === "loading" || !profile) {
-    return <div className={styles.page}><p>Loading...</p></div>;
+  // Loading state
+  if (status === "loading" || (!isExplorer && !profile)) {
+    return (
+      <div className={styles.page}>
+        <div style={{ textAlign: "center", padding: "40px 0", color: "#94a3b8", fontWeight: "bold" }}>
+          {isHindi ? "लोड हो रहा है..." : "Loading profile..."}
+        </div>
+      </div>
+    );
   }
 
+  // STEP 14: EXPLORER MINIMAL PROFILE
+  if (isExplorer) {
+    const isDark = mountedTheme && theme === "dark";
+    const completedCount = attempts.filter((a) => a.isComplete).length;
+    const totalScore = attempts.reduce((acc, a) => acc + (Number(a.score) || 0), 0);
+    const isGuest = status === "unauthenticated";
+    const displayAvatar = avatarPreview || session?.user?.image || "/default-avatar.svg";
+    const displayEmail = profile?.email || session?.user?.email || "";
+
+    return (
+      <div className={styles.explorerProfileWrapper}>
+        {/* User Identity Card */}
+        <div className={styles.explorerCard}>
+          <div className={styles.explorerUserHeader}>
+            <div className={styles.explorerAvatarWrapper}>
+              <img
+                src={displayAvatar}
+                alt="Avatar"
+                className={styles.explorerAvatarImg}
+              />
+              {!isGuest && (
+                <label className={styles.explorerAvatarUpload} title={isHindi ? "फोटो बदलें" : "Change photo"}>
+                  📷
+                  <input type="file" accept="image/*" onChange={handleAvatarChange} hidden />
+                </label>
+              )}
+            </div>
+
+            <div className={styles.explorerUserInfo}>
+              {!isGuest ? (
+                <div>
+                  <div className={styles.explorerNameRow}>
+                    <input
+                      id="explorer-nickname-input"
+                      value={nickname}
+                      onChange={(e) => setNickname(e.target.value)}
+                      placeholder={isHindi ? "अपना नाम लिखें" : "Enter your name"}
+                      className={styles.explorerNameInput}
+                    />
+                    {nickname !== (profile?.nickname || profile?.name || session?.user?.name || "") && (
+                      <button
+                        id="explorer-save-profile-btn"
+                        className={styles.explorerSaveBtn}
+                        onClick={handleSave}
+                        disabled={saving}
+                      >
+                        {saving ? (isHindi ? "सेव..." : "Saving...") : (isHindi ? "सेव" : "Save")}
+                      </button>
+                    )}
+                  </div>
+                  {displayEmail && <div className={styles.explorerUserEmail}>{displayEmail}</div>}
+                  {msg && <div className={styles.msg} style={{ marginTop: '8px', padding: '6px 10px', fontSize: '0.8rem' }}>{msg}</div>}
+                </div>
+              ) : (
+                <div>
+                  <div className={styles.explorerNameRow}>
+                    <span className={styles.explorerNameInput} style={{ padding: '0 8px', border: 'none' }}>
+                      {isHindi ? "अतिथि उपयोगकर्ता" : "Guest User"}
+                    </span>
+                  </div>
+                  <div className={styles.explorerUserEmail}>
+                    {isHindi ? "प्रगति सुरक्षित रखने के लिए साइन इन करें" : "Sign in to save your progress"}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Language Selection */}
+        <div className={styles.explorerCard}>
+          <div className={styles.explorerSectionTitle}>
+            {isHindi ? "भाषा / Language" : "Language / भाषा"}
+          </div>
+          <div className={styles.explorerSegmentedControl}>
+            <button
+              id="explorer-lang-en-btn"
+              type="button"
+              className={`${styles.explorerSegmentBtn} ${language === 'en' ? styles.active : ''}`}
+              onClick={() => confirmLanguageSelection('en')}
+            >
+              <span>English</span>
+              {language === 'en' && <span>✓</span>}
+            </button>
+            <button
+              id="explorer-lang-hi-btn"
+              type="button"
+              className={`${styles.explorerSegmentBtn} ${language === 'hi' ? styles.active : ''}`}
+              onClick={() => confirmLanguageSelection('hi')}
+            >
+              <span>हिन्दी</span>
+              {language === 'hi' && <span>✓</span>}
+            </button>
+          </div>
+        </div>
+
+        {/* Theme Selection */}
+        <div className={styles.explorerCard}>
+          <div className={styles.explorerSectionTitle}>
+            {isHindi ? "थीम / Theme" : "Theme / थीम"}
+          </div>
+          <div className={styles.explorerSegmentedControl}>
+            <button
+              id="explorer-theme-light-btn"
+              type="button"
+              className={`${styles.explorerSegmentBtn} ${!isDark ? styles.active : ''}`}
+              onClick={() => setTheme('light')}
+            >
+              <span>☀️ {isHindi ? "लाइट" : "Light"}</span>
+              {!isDark && <span>✓</span>}
+            </button>
+            <button
+              id="explorer-theme-dark-btn"
+              type="button"
+              className={`${styles.explorerSegmentBtn} ${isDark ? styles.active : ''}`}
+              onClick={() => setTheme('dark')}
+            >
+              <span>🌙 {isHindi ? "डार्क" : "Dark"}</span>
+              {isDark && <span>✓</span>}
+            </button>
+          </div>
+        </div>
+
+        {/* Progress Summary */}
+        <div className={styles.explorerCard}>
+          <div className={styles.explorerSectionTitle}>
+            {isHindi ? "प्रगति सारांश" : "Progress Summary"}
+          </div>
+
+          <div className={styles.explorerStatsGrid}>
+            <div className={styles.explorerStatBox}>
+              <div className={styles.explorerStatValue}>{attempts.length}</div>
+              <div className={styles.explorerStatLabel}>{isHindi ? "प्रयास" : "Quizzes"}</div>
+            </div>
+            <div className={styles.explorerStatBox}>
+              <div className={styles.explorerStatValue}>{completedCount}</div>
+              <div className={styles.explorerStatLabel}>{isHindi ? "पूर्ण" : "Completed"}</div>
+            </div>
+            <div className={styles.explorerStatBox}>
+              <div className={styles.explorerStatValue}>{totalScore}</div>
+              <div className={styles.explorerStatLabel}>{isHindi ? "कुल अंक" : "Points"}</div>
+            </div>
+          </div>
+
+          {/* Recent attempts */}
+          {loadingAttempts ? (
+            <div style={{ textAlign: 'center', padding: '16px 0', fontSize: '0.8rem', color: '#94a3b8' }}>
+              {isHindi ? "लोड हो रहा है..." : "Loading..."}
+            </div>
+          ) : attempts.length > 0 ? (
+            <div className={styles.explorerRecentList}>
+              {attempts.slice(0, 5).map((item) => (
+                <Link key={item.id} href={item.href || "#"} className={styles.explorerRecentItem}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                    <span style={{ fontSize: '1rem' }}>{item.emoji || "🎯"}</span>
+                    <span className={styles.explorerRecentTitle}>{item.title}</span>
+                  </div>
+                  <span className={styles.explorerRecentScore}>{item.scoreDisplay || `${item.score || 0} Pts`}</span>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '16px 0', fontSize: '0.8rem', color: '#94a3b8' }}>
+              {isHindi ? "अभी तक कोई क्विज़ हल नहीं किया।" : "No quiz attempts yet."}
+            </div>
+          )}
+        </div>
+
+        {/* Sign Out or Sign In */}
+        <div style={{ marginTop: '8px' }}>
+          {!isGuest ? (
+            <button
+              id="explorer-signout-btn"
+              className={styles.explorerSignOutBtn}
+              onClick={() => signOut({ callbackUrl: "/" })}
+            >
+              <span>🚪</span>
+              <span>{isHindi ? "साइन आउट" : "Sign Out"}</span>
+            </button>
+          ) : (
+            <button
+              id="explorer-signin-btn"
+              className={styles.explorerSignInBtn}
+              onClick={() => signIn("google")}
+            >
+              <span>🔑</span>
+              <span>{isHindi ? "Google से साइन इन करें" : "Sign in with Google"}</span>
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // KIDS & STUDENTS ORIGINAL PROFILE
   return (
     <div className={styles.page}>
       <div className={`${styles.card} glass-card`}>

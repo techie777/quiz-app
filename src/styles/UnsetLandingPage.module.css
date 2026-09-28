@@ -104,61 +104,157 @@
 /* 3 Large Visual Tier Cards Grid */
 .cardsGrid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
-  max-width: 1140px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+  max-width: 1240px;
   width: 100%;
   margin-bottom: 3.5rem;
 }
 
-@media (max-width: 960px) {
+@media (max-width: 1100px) {
+  .cardsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 760px;
+  }
+}
+
+@media (max-width: 640px) {
   .cardsGrid {
     grid-template-columns: 1fr;
-    max-width: 560px;
+    max-width: 440px;
   }
 }
 
 .tierCard {
   position: relative;
   background: var(--card-bg, #ffffff);
-  border: 2px solid var(--card-border, #e2e8f0);
   border-radius: 28px;
   padding: 1.75rem 1.5rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   cursor: pointer;
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
   overflow: hidden;
   text-align: left;
 }
 
-.tierCard:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.12);
-}
-
 [data-theme='dark'] .tierCard {
   background: #111827;
-  border-color: #1f2937;
   box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.3);
 }
 
-/* Tier Card Glow Themes */
-.tierCardKids:hover {
+/* Tier Card Borders - ALWAYS visible in tier accent colour (~40% opacity) */
+.tierCardKids {
+  border: 1.5px solid rgba(245, 158, 11, 0.4);
+}
+
+.tierCardStudents {
+  border: 1.5px solid rgba(13, 148, 136, 0.4);
+}
+
+.tierCardAdults {
+  border: 1.5px solid rgba(99, 102, 241, 0.4);
+}
+
+.tierCardArena {
+  border: 1.5px solid rgba(139, 92, 246, 0.4);
+}
+
+[data-theme='dark'] .tierCardKids {
+  border-color: rgba(245, 158, 11, 0.45);
+}
+
+[data-theme='dark'] .tierCardStudents {
+  border-color: rgba(13, 148, 136, 0.45);
+}
+
+[data-theme='dark'] .tierCardAdults {
+  border-color: rgba(99, 102, 241, 0.45);
+}
+
+[data-theme='dark'] .tierCardArena {
+  border-color: rgba(139, 92, 246, 0.45);
+}
+
+/* Hover effects ONLY on devices that support hover */
+@media (hover: hover) {
+  .tierCard:hover {
+    transform: translateY(-6px);
+  }
+
+  .tierCardKids:hover {
+    border-color: #f59e0b;
+    box-shadow: 0 20px 40px -12px rgba(245, 158, 11, 0.3);
+  }
+
+  .tierCardStudents:hover {
+    border-color: #0d9488;
+    box-shadow: 0 20px 40px -12px rgba(13, 148, 136, 0.3);
+  }
+
+  .tierCardAdults:hover {
+    border-color: #6366f1;
+    box-shadow: 0 20px 40px -12px rgba(99, 102, 241, 0.3);
+  }
+
+  .tierCardArena:hover {
+    border-color: #8b5cf6;
+    box-shadow: 0 20px 40px -12px rgba(139, 92, 246, 0.35);
+  }
+
+  .tierCard:hover .visualSnippetBox {
+    transform: scale(1.02);
+  }
+}
+
+/* Pressed (:active) state for touch and click feedback */
+.tierCard:active {
+  transform: scale(0.985);
+  transition-duration: 0.1s;
+}
+
+.tierCardKids:active {
   border-color: #f59e0b;
-  box-shadow: 0 20px 40px -12px rgba(245, 158, 11, 0.25);
+  background: rgba(245, 158, 11, 0.05);
 }
 
-.tierCardStudents:hover {
-  border-color: #0ea5e9;
-  box-shadow: 0 20px 40px -12px rgba(14, 165, 233, 0.25);
+.tierCardStudents:active {
+  border-color: #0d9488;
+  background: rgba(13, 148, 136, 0.05);
 }
 
-.tierCardAdults:hover {
+.tierCardAdults:active {
   border-color: #6366f1;
-  box-shadow: 0 20px 40px -12px rgba(99, 102, 241, 0.25);
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.tierCardArena:active {
+  border-color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.05);
+}
+
+/* Visible keyboard focus ring */
+.tierCard:focus-visible {
+  outline: 3px solid;
+  outline-offset: 3px;
+}
+
+.tierCardKids:focus-visible {
+  outline-color: #f59e0b;
+}
+
+.tierCardStudents:focus-visible {
+  outline-color: #0d9488;
+}
+
+.tierCardAdults:focus-visible {
+  outline-color: #6366f1;
+}
+
+.tierCardArena:focus-visible {
+  outline-color: #8b5cf6;
 }
 
 .cardHeader {
@@ -219,10 +315,6 @@
   border-color: #1e293b;
 }
 
-.tierCard:hover .visualSnippetBox {
-  transform: scale(1.02);
-}
-
 .cardCtaButton {
   width: 100%;
   padding: 0.85rem 1.25rem;
@@ -239,9 +331,15 @@
   color: #ffffff;
 }
 
-.cardCtaButton:hover {
-  filter: brightness(1.1);
-  transform: translateY(-1px);
+@media (hover: hover) {
+  .cardCtaButton:hover {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+  }
+}
+
+.cardCtaButton:active {
+  transform: scale(0.98);
 }
 
 /* "How QuizWeb Works" Strip */

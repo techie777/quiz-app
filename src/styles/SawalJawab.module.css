@@ -24,15 +24,14 @@
 }
 
 .title {
-  font-family: 'Outfit', sans-serif;
-  font-size: clamp(2.5rem, 8vw, 4rem);
-  font-weight: 900;
+  font-family: var(--font-family-base);
+  font-size: clamp(2rem, 6vw, 2.5rem);
+  font-weight: 700;
   background: linear-gradient(135deg, #a855f7 0%, #3b82f6 50%, #06b6d4 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   margin-bottom: 1rem;
-  letter-spacing: -0.02em;
 }
 
 .subtitle {

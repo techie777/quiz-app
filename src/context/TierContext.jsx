@@ -6,6 +6,7 @@ export const TIERS = {
   KIDS: "kids",
   STUDENTS: "students",
   ADULTS: "adults",
+  ARENA: "arena",
 };
 
 export const TIER_CONFIG = {
@@ -48,12 +49,12 @@ export const TIER_CONFIG = {
     taglineHi: "स्कूल विषय और ज्ञान",
     ageRange: "13-18 yrs",
     icon: "🎒",
-    accentColor: "#0ea5e9", // Sky / Vibrant Cyan
-    accentHover: "#0284c7",
-    accentLight: "rgba(14, 165, 233, 0.14)",
-    accentBorder: "rgba(14, 165, 233, 0.35)",
-    glowColor: "rgba(14, 165, 233, 0.25)",
-    gradient: "linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)",
+    accentColor: "#0d9488", // Teal Accent
+    accentHover: "#0f766e",
+    accentLight: "rgba(13, 148, 136, 0.14)",
+    accentBorder: "rgba(13, 148, 136, 0.35)",
+    glowColor: "rgba(13, 148, 136, 0.25)",
+    gradient: "linear-gradient(135deg, #0d9488 0%, #0284c7 100%)",
     greeting: {
       en: "Study Smart & Level Up! 📚",
       hi: "स्मार्ट पढ़ाई, बेहतर परिणाम! 📚",
@@ -69,13 +70,14 @@ export const TIER_CONFIG = {
   },
   adults: {
     id: "adults",
-    label: "Adults",
-    labelHi: "वयस्क",
-    shortLabel: "Adults",
-    shortLabelHi: "वयस्क",
-    tagline: "Trivia, GK & Exam Prep",
-    taglineHi: "रोचक ट्रिविया व परीक्षा तैयारी",
-    ageRange: "18+ yrs",
+    label: "Explorer",
+    labelHi: "एक्सप्लोरर",
+    shortLabel: "Explorer",
+    shortLabelHi: "एक्सप्लोरर",
+    tagline: "Trivia, GK, Current Affairs & Exams",
+    taglineHi: "ट्रिविया, सामान्य ज्ञान, करेंट अफेयर्स व परीक्षा",
+    ageRange: "For everyone",
+    ageRangeHi: "सभी के लिए",
     icon: "🎯",
     accentColor: "#6366f1", // Flagship Indigo
     accentHover: "#4f46e5",
@@ -84,16 +86,46 @@ export const TIER_CONFIG = {
     glowColor: "rgba(99, 102, 241, 0.25)",
     gradient: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
     greeting: {
-      en: "Play, Learn & Test Your Knowledge 🎯",
-      hi: "खेलें, सीखें और अपना ज्ञान परखें 🎯",
+      en: "Play, Learn & Explore 🎯",
+      hi: "खेलें, सीखें और खोजें 🎯",
     },
     subtitle: {
-      en: "Play trivia for fun, explore curious facts, or practice competitive exam mock tests.",
-      hi: "रोचक ट्रिविया खेलें, नया ज्ञान सीखें या प्रतियोगी परीक्षा मॉक टेस्ट का अभ्यास करें।",
+      en: "Trivia, GK, Current Affairs & Exams",
+      hi: "ट्रिविया, सामान्य ज्ञान, करेंट अफेयर्स व परीक्षा",
     },
     badge: {
-      en: "General Quiz Hub & Exam Prep",
-      hi: "सामान्य क्विज़ व परीक्षा तैयारी",
+      en: "Explorer Hub",
+      hi: "एक्सप्लोरर हब",
+    },
+  },
+  arena: {
+    id: "arena",
+    label: "Quiz Arena",
+    labelHi: "क्विज़ एरीना",
+    shortLabel: "Arena",
+    shortLabelHi: "एरीना",
+    tagline: "Build Your Own Custom Quiz",
+    taglineHi: "अपना कस्टमाइज़्ड क्विज़ खुद बनाएं",
+    ageRange: "All levels",
+    ageRangeHi: "सभी स्तरों के लिए",
+    icon: "⚡",
+    accentColor: "#8b5cf6", // Violet-to-Pink
+    accentHover: "#7c3aed",
+    accentLight: "rgba(139, 92, 246, 0.14)",
+    accentBorder: "rgba(139, 92, 246, 0.35)",
+    glowColor: "rgba(139, 92, 246, 0.3)",
+    gradient: "linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)",
+    greeting: {
+      en: "Quiz Arena ⚡",
+      hi: "क्विज़ एरीना ⚡",
+    },
+    subtitle: {
+      en: "Build your custom quiz, train weak topics and compete with friends.",
+      hi: "अपनी पसंद का क्विज़ बनाएं, कमजोर विषयों का अभ्यास करें और मुकाबला करें।",
+    },
+    badge: {
+      en: "Custom Arena",
+      hi: "कस्टम एरीना",
     },
   },
 };
@@ -185,9 +217,25 @@ export function TierProvider({ children }) {
   // Sync data-tier attribute with document root for styling hooks
   useEffect(() => {
     if (typeof document !== "undefined") {
-      document.documentElement.setAttribute("data-tier", tier);
+      if (hasSavedTier) {
+        document.documentElement.setAttribute("data-tier", tier);
+      } else {
+        document.documentElement.setAttribute("data-tier", "unset");
+      }
     }
-  }, [tier]);
+  }, [tier, hasSavedTier]);
+
+  const clearTier = () => {
+    setHasSavedTier(false);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      if (typeof document !== "undefined") {
+        document.documentElement.setAttribute("data-tier", "unset");
+      }
+    } catch (e) {
+      console.error("[TierContext] Error clearing tier from localStorage:", e);
+    }
+  };
 
   const currentConfig = TIER_CONFIG[tier] || TIER_CONFIG.adults;
 
@@ -197,6 +245,7 @@ export function TierProvider({ children }) {
         tier,
         hasSavedTier,
         setTier: selectTier,
+        clearTier,
         studentGrade,
         setStudentGrade,
         studentGradeOptions: STUDENT_GRADE_OPTIONS,

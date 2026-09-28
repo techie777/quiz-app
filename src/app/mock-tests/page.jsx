@@ -2,10 +2,21 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import styles from '@/styles/MockTestsHub.module.css'; // I will create this new CSS module
+import styles from '@/styles/MockTestsHub.module.css';
+import { useModules } from '@/context/DataContext';
 
 export default function MockTestsHub() {
+  const router = useRouter();
+  const modules = useModules();
+
+  useEffect(() => {
+    if (modules && !modules.mockTests) {
+      router.replace("/");
+    }
+  }, [modules, router]);
+
   const [categories, setCategories] = useState([]);
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);

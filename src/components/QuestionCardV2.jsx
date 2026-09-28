@@ -37,6 +37,16 @@ export default function QuestionCardV2({
   const [loginPrompt, setLoginPrompt] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [shakingType, setShakingType] = useState("");
+
+  const isTestMode = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return sessionStorage.getItem("arena_session_mode") === "test";
+    } catch {
+      return false;
+    }
+  }, [quizSessionId]);
+
   // Smooth explanation centered display without layout shifts or screen scrolling
   useEffect(() => {
     // ScrollIntoView removed to prevent unwanted screen jump on answer selection
@@ -48,12 +58,14 @@ export default function QuestionCardV2({
   useEffect(() => {
     if (userAnswer !== undefined) {
       setSelected(userAnswer);
-      setRevealed(true);
+      if (!isTestMode) {
+        setRevealed(true);
+      }
     } else {
       setSelected(null);
       setRevealed(false);
     }
-  }, [question?.id, userAnswer]);
+  }, [question?.id, userAnswer, isTestMode]);
 
   // Sync fav state
   useEffect(() => {
@@ -143,14 +155,17 @@ export default function QuestionCardV2({
     const isCorrect = selectedOptionText === correctAnswerText;
     
     setSelected(originalIndex);
-    setRevealed(true);
 
-    if (soundEnabled) {
-      if (isCorrect) playCorrectSound(combo);
-      else {
-        playWrongSound();
-        setShakingType("animate-vibrate");
-        setTimeout(() => setShakingType(""), 500);
+    if (!isTestMode) {
+      setRevealed(true);
+
+      if (soundEnabled) {
+        if (isCorrect) playCorrectSound(combo);
+        else {
+          playWrongSound();
+          setShakingType("animate-vibrate");
+          setTimeout(() => setShakingType(""), 500);
+        }
       }
     }
 
@@ -162,6 +177,29 @@ export default function QuestionCardV2({
   return (
     <div className={`${styles.questionSection} ${shakingType ? styles[shakingType] || shakingType : ""}`}>
       <div className={styles.questionCard}>
+        <div className={styles.cardToolbar}>
+          <div className={styles.actionBtns}>
+            <button
+              type="button"
+              className={styles.favBtn}
+              onClick={handleFavClick}
+              title={isHindi ? "पसंदीदा" : "Favourite"}
+              aria-label="Favourite"
+            >
+              <Heart size={18} fill={fav ? "#ef4444" : "none"} color={fav ? "#ef4444" : "currentColor"} />
+            </button>
+            <button
+              type="button"
+              className={styles.shareBtn}
+              onClick={handleShare}
+              disabled={sharing}
+              title={isHindi ? "साझा करें" : "Share this question"}
+              aria-label="Share"
+            >
+              <Share2 size={18} />
+            </button>
+          </div>
+        </div>
         <div className={styles.questionHeader}>
           {!!(isHindi ? (question.textHi || question.text) : question.text) ? (
             <p className={styles.questionText}>
@@ -170,23 +208,6 @@ export default function QuestionCardV2({
           ) : (
             <div style={{ flex: 1 }} />
           )}
-          <div className={styles.actionBtns}>
-            <button
-              className={styles.favBtn}
-              onClick={handleFavClick}
-              title="Favourite"
-            >
-              <Heart size={18} fill={fav ? "#ef4444" : "none"} color={fav ? "#ef4444" : "currentColor"} />
-            </button>
-            <button
-              className={styles.shareBtn}
-              onClick={handleShare}
-              disabled={sharing}
-              title="Share this question"
-            >
-              <Share2 size={18} />
-            </button>
-          </div>
         </div>
         {question.image && (
           <div className={styles.imageWrapper}>
@@ -256,32 +277,46 @@ export default function QuestionCardV2({
           if (isRemoved) return null;
           let className = styles.option;
           let isCorrect = false;
+          const isSelected = selected === originalIndex;
+
+          if (isSelected) {
+            className += ` ${styles.selected}`;
+          }
+
           if (revealed) {
             const selectedOptionText = String(question.options[originalIndex] || "").trim();
             const correctAnswerText = String(question.correctAnswer || "").trim();
             isCorrect = selectedOptionText === correctAnswerText;
             if (isCorrect) className += ` ${styles.correct} correct-answer`;
-            else if (originalIndex === selected && !isCorrect) className += ` ${styles.wrong} wrong-answer`;
+            else if (isSelected && !isCorrect) className += ` ${styles.wrong} wrong-answer`;
           }
+
           return (
             <button
               key={displayIdx}
+              type="button"
               className={`${className} ${audienceStats ? styles.withAudience : ''}`}
               onClick={() => handleSelect(originalIndex)}
               disabled={revealed || disabled}
             >
-              <div className={styles.optionContent}>
-                <span className={styles.hotkey}>{hotkeys[displayIdx]}</span>
-                <p className={styles.optionText}>{opt.text}</p>
+              <div className={styles.optionLeft}>
+                <span className={styles.letterBadge}>{hotkeys[displayIdx]}</span>
+                <span className={styles.optionText}>{opt.text}</span>
               </div>
-              {revealed && (
-                <div className={styles.optionIndicator}>
-                  {isCorrect ? '✓' : (selected === originalIndex ? '✗' : null)}
-                </div>
-              )}
-              {audienceStats && (
-                <span className={styles.audienceBadge}>{audienceStats[originalIndex] || 0}%</span>
-              )}
+              <div className={styles.optionRight}>
+                {revealed ? (
+                  <div className={`${styles.optionIndicator} ${isCorrect ? styles.indicatorCorrect : (isSelected ? styles.indicatorWrong : '')}`}>
+                    {isCorrect ? '✓' : (isSelected ? '✗' : null)}
+                  </div>
+                ) : (
+                  <div className={`${styles.radioCircle} ${isSelected ? styles.radioSelected : ''}`}>
+                    {isSelected && <span className={styles.radioDot} />}
+                  </div>
+                )}
+                {audienceStats && (
+                  <span className={styles.audienceBadge}>{audienceStats[originalIndex] || 0}%</span>
+                )}
+              </div>
             </button>
           );
         })}
