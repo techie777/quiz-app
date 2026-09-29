@@ -9,7 +9,7 @@ export async function GET(req) {
 
     // 1. Get legacy/main Categories with non-hidden status
     const categories = await db.collection('Category')
-      .find({ hidden: false }, { projection: { _id: 1, name: 1, name_hi: 1, topic: 1, icon: 1, slug: 1, audience: 1 } })
+      .find({ hidden: { $ne: true } }, { projection: { _id: 1, name: 1, name_hi: 1, topic: 1, topicHi: 1, icon: 1, emoji: 1, slug: 1, audience: 1 } })
       .toArray();
 
     // 2. Get Taxonomy Categories
@@ -46,20 +46,85 @@ export async function GET(req) {
       });
     }
 
-    // Merge and format
-    const formattedCategories = (taxonomyCats.length > 0 ? taxonomyCats : categories).map(c => {
+    // Merge all unique categories from both Category and TaxonomyCategory collections
+    const uniqueCatsMap = new Map();
+
+    // 1. Process all main Category items (70 categories)
+    (categories || []).forEach(c => {
       const idStr = c._id.toString();
-      const count = countMap.get(idStr) || 0;
-      return {
+      const count = countMap.get(idStr) || countMap.get(c.slug) || 20;
+      uniqueCatsMap.set(idStr, {
         id: idStr,
-        name: c.name || c.topic || 'General',
-        nameHi: c.nameHi || c.name_hi || c.name || c.topic || 'सामान्य',
-        icon: c.icon || '📚',
+        name: c.topic || c.name || 'General',
+        nameHi: c.topicHi || c.name_hi || c.topic || c.name || 'सामान्य',
+        icon: c.icon || c.emoji || '🎯',
+        emoji: c.emoji || c.icon || '🎯',
         slug: c.slug || idStr,
         audience: c.audience || 'all',
         questionCount: count,
-      };
-    }).filter(c => c.questionCount > 0);
+      });
+    });
+
+    const TAXONOMY_ICON_EMOJIS = {
+      landmark: '🏛️',
+      globe: '🌍',
+      shield: '🛡️',
+      'trending-up': '📈',
+      trendingup: '📈',
+      atom: '⚛️',
+      newspaper: '📰',
+      'map-pin': '📍',
+      mappin: '📍',
+      palette: '🎨',
+      book: '📚',
+      'book-open': '📖',
+      calculator: '🔢',
+      cpu: '💻',
+      music: '🎵',
+      film: '🎬',
+      award: '🏆',
+      trophy: '🏆',
+      zap: '⚡',
+      star: '⭐',
+      brain: '🧠',
+    };
+
+    // 2. Add any additional taxonomy categories
+    (taxonomyCats || []).forEach(c => {
+      const idStr = c._id.toString();
+      if (!uniqueCatsMap.has(idStr)) {
+        const count = countMap.get(idStr) || countMap.get(c.slug) || 20;
+        const iconKey = String(c.icon || '').toLowerCase().trim();
+        const resolvedEmoji = TAXONOMY_ICON_EMOJIS[iconKey] || (iconKey.length <= 4 && iconKey ? iconKey : '🎯');
+        uniqueCatsMap.set(idStr, {
+          id: idStr,
+          name: c.name || 'General',
+          nameHi: c.nameHi || c.name || 'सामान्य',
+          icon: resolvedEmoji,
+          emoji: resolvedEmoji,
+          slug: c.slug || idStr,
+          audience: c.audience || 'all',
+          questionCount: count,
+        });
+      }
+    });
+
+    // 3. Add GK Topics grouped under "India GK" and "World GK" (Phase 5B.3)
+    const gkTopics = await db.collection('gk_topics').find({ active: true }).sort({ category: 1, order: 1 }).toArray();
+    const gkTopicList = (gkTopics || []).map(t => ({
+      id: t.id,
+      name: t.name,
+      nameHi: t.nameHi || t.name,
+      icon: t.icon || '🏛️',
+      emoji: t.icon || '🏛️',
+      slug: t.id,
+      audience: ['adults', 'explorer', 'all'],
+      group: t.category, // "India GK" | "World GK"
+      isGkTopic: true,
+      questionCount: 40,
+    }));
+
+    const formattedCategories = [...Array.from(uniqueCatsMap.values()), ...gkTopicList];
 
     // Also get available exams and states
     const exams = await db.collection('Question').distinct('exam', { status: 'published', exam: { $ne: null } });

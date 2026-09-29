@@ -16,6 +16,7 @@ import StudentClassSelector from "@/components/StudentClassSelector";
 import UnsetLandingPage from "@/components/UnsetLandingPage";
 import DailyQuizPill from "@/components/DailyQuizPill";
 import ArenaPromptCard from "@/components/ArenaPromptCard";
+import HotQuizzesRow from "@/components/explorer/HotQuizzesRow";
 
 const KIDS_PICTURE_TILES = [
   {
@@ -192,6 +193,9 @@ export default function MasterHubPage() {
   const explorerCategories = useMemo(() => {
     if (!quizzes || !Array.isArray(quizzes)) return [];
     const withQuestions = quizzes.filter((cat) => {
+      const topicLower = (cat.topic || "").toLowerCase();
+      // Avoid duplicating the dedicated GK parent tiles
+      if (topicLower === "india gk" || topicLower === "world gk") return false;
       const count =
         cat.questionCount ??
         cat._count?.questions ??
@@ -201,28 +205,94 @@ export default function MasterHubPage() {
     return withQuestions.length > 0 ? withQuestions : quizzes;
   }, [quizzes]);
 
-  // Explorer: Filter by active chip and search query
-  const filteredExplorerCategories = useMemo(() => {
-    let list = explorerCategories;
+  // Ensure quizzes are populated if initial mount was empty
+  useEffect(() => {
+    if ((!quizzes || quizzes.length === 0) && typeof refreshQuizzes === "function") {
+      refreshQuizzes();
+    }
+  }, [quizzes, refreshQuizzes]);
 
-    // Filter by selected category chip
-    if (selectedChip !== "all") {
-      list = list.filter((cat) => cat.id === selectedChip);
+  // GK Home Data (Phase 5B)
+  const [gkHomeData, setGkHomeData] = useState(null);
+
+  useEffect(() => {
+    async function loadGkHome() {
+      try {
+        const lang = isHindi ? "hi" : "en";
+        const res = await fetch(`/api/gk/home?language=${lang}`);
+        if (res.ok) {
+          const data = await res.json();
+          setGkHomeData(data);
+        }
+      } catch (e) {
+        console.error("Failed to load GK home data:", e);
+      }
+    }
+    loadGkHome();
+  }, [isHindi]);
+
+  // Explorer: Filter by active chip and search query (Phase 5B integration)
+  const filteredExplorerCategories = useMemo(() => {
+    // 1. If India GK chip is selected -> show all India GK topics
+    if (selectedChip === "india-gk") {
+      const topics = (gkHomeData?.allTopics || []).filter((t) => t.category === "India GK");
+      if (!searchQuery.trim()) return topics;
+      const q = searchQuery.toLowerCase().trim();
+      return topics.filter(
+        (t) => (t.name || "").toLowerCase().includes(q) || (t.nameHi || "").toLowerCase().includes(q)
+      );
     }
 
-    // Filter by search query
+    // 2. If World GK chip is selected -> show all World GK topics
+    if (selectedChip === "world-gk") {
+      const topics = (gkHomeData?.allTopics || []).filter((t) => t.category === "World GK");
+      if (!searchQuery.trim()) return topics;
+      const q = searchQuery.toLowerCase().trim();
+      return topics.filter(
+        (t) => (t.name || "").toLowerCase().includes(q) || (t.nameHi || "").toLowerCase().includes(q)
+      );
+    }
+
+    // 3. If a specific legacy category chip is selected
+    if (selectedChip !== "all") {
+      let list = explorerCategories.filter((cat) => cat.id === selectedChip);
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        list = list.filter((cat) => {
+          const titleEn = (cat.topic || "").toLowerCase();
+          const titleHi = (cat.topicHi || "").toLowerCase();
+          const slug = (cat.slug || "").toLowerCase();
+          return titleEn.includes(q) || titleHi.includes(q) || slug.includes(q);
+        });
+      }
+      return list;
+    }
+
+    // 4. "All" Chip selected:
+    // If search active: search across standard categories AND all 100 GK topics
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
-      list = list.filter((cat) => {
+      const matchedCats = explorerCategories.filter((cat) => {
         const titleEn = (cat.topic || "").toLowerCase();
         const titleHi = (cat.topicHi || "").toLowerCase();
         const slug = (cat.slug || "").toLowerCase();
         return titleEn.includes(q) || titleHi.includes(q) || slug.includes(q);
       });
+
+      const matchedGkTopics = (gkHomeData?.allTopics || []).filter(
+        (t) => (t.name || "").toLowerCase().includes(q) || (t.nameHi || "").toLowerCase().includes(q)
+      );
+
+      return [...matchedCats, ...matchedGkTopics];
     }
 
-    return list;
-  }, [explorerCategories, selectedChip, searchQuery]);
+    // Standard "All" Grid:
+    // 2 Parent GK tiles ("India GK" & "World GK") + Pinned GK topic tiles + Standard categories
+    const parentTiles = gkHomeData?.parentTiles || [];
+    const pinnedTopics = gkHomeData?.pinnedTopics || [];
+
+    return [...parentTiles, ...pinnedTopics, ...explorerCategories];
+  }, [explorerCategories, selectedChip, searchQuery, gkHomeData]);
 
   useEffect(() => {
     setMounted(true);
@@ -774,6 +844,9 @@ export default function MasterHubPage() {
             {/* Quiz Arena compact card for Explorer */}
             <ArenaPromptCard audience="explorer" className="mb-2" />
 
+            {/* 🔥 Phase E1: Hot Quizzes Row */}
+            <HotQuizzesRow />
+
             {/* 3. Horizontally Scrollable Category Chips */}
             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
               <button
@@ -787,6 +860,34 @@ export default function MasterHubPage() {
               >
                 <span>✨</span>
                 <span>{isHindi ? "सभी" : "All"}</span>
+              </button>
+
+              {/* India GK Chip (Phase 5B) */}
+              <button
+                type="button"
+                onClick={() => setSelectedChip(selectedChip === "india-gk" ? "all" : "india-gk")}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all min-h-[36px] flex items-center gap-1.5 shrink-0 ${
+                  selectedChip === "india-gk"
+                    ? "bg-purple-600 text-white font-black shadow-md shadow-purple-500/25"
+                    : "bg-white/90 dark:bg-slate-900/90 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
+                }`}
+              >
+                <span>🏛️</span>
+                <span>{isHindi ? "भारत सामान्य ज्ञान" : "India GK"}</span>
+              </button>
+
+              {/* World GK Chip (Phase 5B) */}
+              <button
+                type="button"
+                onClick={() => setSelectedChip(selectedChip === "world-gk" ? "all" : "world-gk")}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all min-h-[36px] flex items-center gap-1.5 shrink-0 ${
+                  selectedChip === "world-gk"
+                    ? "bg-purple-600 text-white font-black shadow-md shadow-purple-500/25"
+                    : "bg-white/90 dark:bg-slate-900/90 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
+                }`}
+              >
+                <span>🌍</span>
+                <span>{isHindi ? "विश्व सामान्य ज्ञान" : "World GK"}</span>
               </button>
               {explorerCategories.map((cat) => {
                 const isSelected = selectedChip === cat.id;

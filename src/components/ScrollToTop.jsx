@@ -16,19 +16,24 @@ export default function ScrollToTop() {
   // Show button when page is scrolled down
   useEffect(() => {
     const toggleVisibility = () => {
-      if (window.scrollY > 300) {
+      if (window.scrollY > 250) {
         setIsVisible(true);
       } else {
         setIsVisible(false);
       }
     };
 
-    window.addEventListener('scroll', toggleVisibility);
+    window.addEventListener('scroll', toggleVisibility, { passive: true });
     return () => window.removeEventListener('scroll', toggleVisibility);
   }, []);
 
-  // Do not display floating scroll button during live sessions or active quiz play to avoid UI overlap
-  if (pathname?.startsWith('/live') || pathname?.startsWith('/quiz/')) {
+  // Do not display floating scroll button during live sessions, arena wizard, or active quiz play
+  if (
+    pathname?.startsWith('/live') ||
+    pathname?.startsWith('/quiz/') ||
+    pathname?.startsWith('/arena') ||
+    pathname?.startsWith('/admin')
+  ) {
     return null;
   }
 
@@ -39,41 +44,23 @@ export default function ScrollToTop() {
     });
   };
 
+  // Determine if mobile BottomNavBar is present so we float safely above it
+  const isExcluded = pathname?.startsWith('/arena') || pathname?.startsWith('/admin');
+  const hasBottomNav = !isExcluded;
+
   return (
     <button
+      type="button"
       onClick={scrollToTop}
-      style={{
-        position: 'fixed',
-        bottom: '24px',
-        right: '20px',
-        zIndex: 30,
-        background: 'var(--brand-primary, #6366f1)',
-        color: 'white',
-        width: '42px',
-        height: '42px',
-        borderRadius: '50%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        border: 'none',
-        cursor: 'pointer',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-        transition: 'all 0.3s ease',
-        opacity: isVisible ? 1 : 0,
-        pointerEvents: isVisible ? 'auto' : 'none',
-        transform: isVisible ? 'translateY(0)' : 'translateY(20px)',
-      }}
       aria-label="Scroll to top"
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = 'translateY(-3px)';
-        e.currentTarget.style.boxShadow = '0 6px 16px rgba(99,102,241,0.3)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-      }}
+      title="Scroll to top"
+      className={`fixed right-4 sm:right-6 z-[55] w-11 h-11 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30 border border-indigo-400/30 transition-all duration-300 active:scale-90 ${
+        hasBottomNav ? "bottom-[calc(76px+env(safe-area-inset-bottom,0px))] sm:bottom-6" : "bottom-6"
+      } ${
+        isVisible ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 translate-y-4 pointer-events-none"
+      }`}
     >
-      <ArrowUp size={20} />
+      <ArrowUp size={20} strokeWidth={2.5} />
     </button>
   );
 }

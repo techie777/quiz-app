@@ -14,6 +14,10 @@ import { useEffect } from "react";
 import toast from "react-hot-toast";
 
 import { TierProvider } from "@/context/TierContext";
+import { EntitlementProvider } from "@/context/EntitlementContext";
+import LockedSetBottomSheet from "@/components/monetization/LockedSetBottomSheet";
+import RewardedAdModal from "@/components/monetization/RewardedAdModal";
+import AgeGateModal from "@/components/monetization/AgeGateModal";
 
 function AuthToaster() {
   const { status } = useSession();
@@ -43,14 +47,19 @@ export default function Providers({ children }) {
         <Toaster position="top-right" />
         <LanguageProvider>
           <TierProvider>
-            <UIProvider>
-              <DataProvider>
-                <MonetizationProvider>
-                  <QuizProvider>{children}</QuizProvider>
-                </MonetizationProvider>
-              </DataProvider>
-              <GlobalModals />
-            </UIProvider>
+            <EntitlementProvider>
+              <UIProvider>
+                <DataProvider>
+                  <MonetizationProvider>
+                    <QuizProvider>{children}</QuizProvider>
+                  </MonetizationProvider>
+                </DataProvider>
+                <GlobalModals />
+                <LockedSetBottomSheet />
+                <RewardedAdModal />
+                <AgeGateModal />
+              </UIProvider>
+            </EntitlementProvider>
           </TierProvider>
         </LanguageProvider>
       </ThemeProvider>

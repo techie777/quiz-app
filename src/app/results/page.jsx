@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, User, Download, FileText, Lock, Crown, Share2 } from "lucide-react";
+import { ArrowRight, ArrowUp, User, Download, FileText, Lock, Crown, Share2, Swords } from "lucide-react";
 import { useQuiz } from "@/context/QuizContext";
 import { useSession } from "next-auth/react";
 import { useData } from "@/context/DataContext";
@@ -20,6 +20,10 @@ import { updateBadgeStats } from "@/lib/badgeManager";
 import { shareResult } from "@/lib/shareImage";
 import { getTodayIST } from "@/lib/dailyQuizHelper";
 import NextUpRecommendations from "@/components/NextUpRecommendations";
+import { recordQuizCompletion, createChallengeCode } from "@/lib/gameLayer";
+import GameResultsCard from "@/components/game/GameResultsCard";
+import { showRewarded } from "@/lib/adProvider";
+import ResultDonationCard from "@/components/monetization/ResultDonationCard";
 
 function getMotivation(percentage, t) {
   if (percentage === 100) return { text: t('result.motivation.perfect'), emoji: "🌟" };
@@ -55,7 +59,8 @@ export default function ResultPage() {
     quizSlug,
     categoryName: quizCategoryName,
     timeTaken,
-    startTime
+    startTime,
+    maxCombo
   } = useQuiz();
   const { quizzes } = useData();
   const [showReview, setShowReview] = useState(true);
@@ -67,10 +72,21 @@ export default function ResultPage() {
   const [showGateAd, setShowGateAd] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
   const [isLaunchingNextSet, setIsLaunchingNextSet] = useState(false);
+  const [gameResult, setGameResult] = useState(null);
+  const [headToHead, setHeadToHead] = useState(null);
+  const gameRecordedRef = useRef(false);
   const resultCardRef = useRef(null);
 
   const isExplorer = tier === "adults" || (tier !== "kids" && tier !== "students");
+  const isAdTier = tier === "adults" || tier === "explorer";
+  const [reviewGateUnlocked, setReviewGateUnlocked] = useState(false);
+  const totalQuestions = questions?.length || 0;
   const finalTimeTaken = timeTaken || (startTime ? Math.max(1, Math.round((Date.now() - startTime) / 1000)) : 0);
+
+  const category = useMemo(() => {
+    if (isMixedMode) return null;
+    return (quizzes || []).find((q) => q.id === quizId || q.slug === quizSlug || q.slug === quizId);
+  }, [quizzes, quizId, quizSlug, isMixedMode]);
 
   const [isDailyQuiz, setIsDailyQuiz] = useState(false);
 
@@ -90,7 +106,7 @@ export default function ResultPage() {
 
     setIsDailyQuiz(isDaily);
 
-    if (isDaily && score !== undefined && total > 0) {
+    if (isDaily && score !== undefined && totalQuestions > 0) {
       const quizDate = meta?.date || getTodayIST();
       const quizTier = meta?.tier || tier;
       const isToday = meta?.isToday !== false;
@@ -103,7 +119,7 @@ export default function ResultPage() {
           date: quizDate,
           tier: quizTier,
           score,
-          total,
+          total: totalQuestions,
           timeTaken: finalTimeTaken,
           completedAt: new Date().toISOString(),
           playedOnDay: isToday,
@@ -131,12 +147,82 @@ export default function ResultPage() {
           date: quizDate,
           dailyQuizId: meta?.dailyQuizId || quizId,
           score,
-          total,
+          total: totalQuestions,
           timeTaken: finalTimeTaken,
         }),
       }).catch((e) => console.error("Daily attempt post error:", e));
     }
-  }, [quizId, quizCategoryName, score, total, finalTimeTaken, tier]);
+  }, [quizId, quizCategoryName, score, totalQuestions, finalTimeTaken, tier]);
+
+  // Step 9: Game Layer Recording (XP, 5-tier Levels, Streak Freeze, 3-Fact Recap, Weak-Topic Hints)
+  useEffect(() => {
+    if (totalQuestions > 0 && !gameRecordedRef.current) {
+      gameRecordedRef.current = true;
+
+      // Check 1v1 Head-to-Head Duel challenge
+      try {
+        const chalData = JSON.parse(sessionStorage.getItem("quizweb_active_challenge") || "null");
+        if (chalData) {
+          setHeadToHead({
+            challengerName: chalData.challengerName || "Friend",
+            challengerScore: Number(chalData.challengerScore) || 0,
+            userScore: score,
+            totalQuestions: chalData.totalQuestions || totalQuestions,
+            isWin: score > Number(chalData.challengerScore),
+            isTie: score === Number(chalData.challengerScore),
+          });
+          sessionStorage.removeItem("quizweb_active_challenge");
+        }
+      } catch {}
+
+      const res = recordQuizCompletion({
+        score,
+        total: totalQuestions,
+        maxCombo: maxCombo || 0,
+        questions,
+        userAnswers: answers,
+        categoryName: (isHindi && category?.topicHi) ? category.topicHi : (quizCategoryName || category?.topic || (isHindi ? "क्विज़" : "Quiz")),
+        isHindi,
+      });
+      setGameResult(res);
+    }
+  }, [totalQuestions, score, maxCombo, questions, answers, isHindi, quizCategoryName, category]);
+
+  const handleChallengeFriend = async () => {
+    try {
+      const topicSlug = quizSlug || quizId || "general";
+      const topicName = (isHindi && category?.topicHi) ? category.topicHi : (quizCategoryName || category?.topic || "Quiz");
+      const playerName = authSession?.user?.name || (isHindi ? "आपका दोस्त" : "Your Friend");
+      
+      const code = createChallengeCode({
+        categorySlug: topicSlug,
+        categoryName: topicName,
+        score,
+        total: totalQuestions,
+        playerName,
+      });
+      
+      const challengeUrl = `${window.location.origin}/challenge?code=${code}`;
+      const shareText = isHindi
+        ? `🎯 मैंने "${topicName}" क्विज़ में ${totalQuestions} में से ${score} अंक प्राप्त किए! क्या तुम मुझे हरा सकते हो? चुनौती स्वीकार करो:`
+        : `🎯 I scored ${score}/${totalQuestions} in the "${topicName}" quiz! Think you can beat me? Accept the duel:`;
+
+      if (navigator.share) {
+        await navigator.share({
+          title: isHindi ? "क्विज़ मुकाबला चुनौती" : "Quiz Duel Challenge",
+          text: shareText,
+          url: challengeUrl,
+        });
+      } else {
+        await navigator.clipboard.writeText(`${shareText}\n${challengeUrl}`);
+        toast.success(isHindi ? "चुनौती लिंक कॉपी हो गया! व्हाट्सएप पर शेयर करें।" : "Challenge link copied to clipboard!");
+      }
+    } catch (err) {
+      if (err?.name !== "AbortError") {
+        toast.error(isHindi ? "शेयर करने में विफल" : "Failed to share challenge");
+      }
+    }
+  };
 
   const formatQuizTime = (seconds, hindiMode) => {
     if (!seconds || seconds <= 0) return hindiMode ? "0 से." : "0s";
@@ -166,11 +252,6 @@ export default function ResultPage() {
         .catch(() => {});
     }
   }, [authSession]);
-
-  const category = useMemo(() => {
-    if (isMixedMode) return null;
-    return (quizzes || []).find((q) => q.id === quizId || q.slug === quizSlug || q.slug === quizId);
-  }, [quizzes, quizId, quizSlug, isMixedMode]);
 
   const filteredQuizzes = useMemo(() => {
     if (!quizzes || !Array.isArray(quizzes)) return [];
@@ -277,10 +358,56 @@ export default function ResultPage() {
   const motivation = getMotivation(percentage, t);
 
   const starCount = useMemo(() => {
-    if (percentage >= 70) return 3;
-    if (percentage >= 40) return 2;
+    if (percentage >= 80) return 3;
+    if (percentage >= 50) return 2;
     return 1;
   }, [percentage]);
+
+  const [displayScore, setDisplayScore] = useState(0);
+  useEffect(() => {
+    let current = 0;
+    const target = score || 0;
+    if (target === 0) {
+      setDisplayScore(0);
+      return;
+    }
+    const duration = 800;
+    const step = Math.max(16, Math.floor(duration / target));
+    const timer = setInterval(() => {
+      current += 1;
+      setDisplayScore(current);
+      if (current >= target) clearInterval(timer);
+    }, step);
+    return () => clearInterval(timer);
+  }, [score]);
+
+  const friendlyHeadline = useMemo(() => {
+    if (percentage >= 80) return isHindi ? "शानदार प्रदर्शन!" : "Great job!";
+    if (percentage >= 50) return isHindi ? "अच्छा प्रयास!" : "Good effort!";
+    return isHindi ? "अभ्यास जारी रखें!" : "Keep practising!";
+  }, [percentage, isHindi]);
+
+  const difficultyBreakdown = useMemo(() => {
+    const counts = {
+      easy: { correct: 0, total: 0 },
+      medium: { correct: 0, total: 0 },
+      hard: { correct: 0, total: 0 },
+    };
+    (questions || []).forEach((q) => {
+      const rawDiff = String(q?.difficulty || "medium").toLowerCase();
+      const diffKey = (rawDiff === "easy" || q?.difficulty_level === 1)
+        ? "easy"
+        : (rawDiff === "hard" || q?.difficulty_level === 3)
+        ? "hard"
+        : "medium";
+      counts[diffKey].total += 1;
+      const ans = (answers || []).find((a) => a.questionId === q.id || a.questionId === q._id);
+      if (ans?.isCorrect) {
+        counts[diffKey].correct += 1;
+      }
+    });
+    return counts;
+  }, [questions, answers]);
 
   // Award stars and stickers for Kids tier
   useEffect(() => {
@@ -348,19 +475,19 @@ export default function ResultPage() {
     }
   }, [total, router]);
 
-  // Always call this hook - handle confetti logic inside
+  // Confetti triggers for percentage >= 70
   useEffect(() => {
-    if (total === 0) return;
-    const pieces = Array.from({ length: 40 }, (_, i) => ({
+    if (total === 0 || percentage < 70) return;
+    const pieces = Array.from({ length: 45 }, (_, i) => ({
       id: i,
       left: Math.random() * 100,
-      delay: Math.random() * 2,
+      delay: Math.random() * 1.5,
       duration: 2 + Math.random() * 2,
       color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
       rotation: Math.random() * 360,
     }));
     setConfetti(pieces);
-  }, [total]);
+  }, [total, percentage]);
 
   const handlePlayAgain = () => {
     if (isMixedMode) {
@@ -428,7 +555,7 @@ export default function ResultPage() {
   };
 
   const renderAnswerReview = () => (
-    <div className={styles.review}>
+    <div id="review-section" className={styles.review}>
       <div className={styles.reviewHeaderMain}>
         <div className={styles.reviewTitleRow}>
           <h2 className={styles.reviewTitle}>
@@ -516,9 +643,21 @@ export default function ResultPage() {
             >
               {/* Question Top Bar */}
               <div className={styles.reviewHeader}>
-                <span className={styles.reviewNumPill}>
-                  {isHindi ? `प्रश्न ${originalIndex + 1}` : `Question ${originalIndex + 1}`}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={styles.reviewNumPill}>
+                    {isHindi ? `प्रश्न ${originalIndex + 1}` : `Question ${originalIndex + 1}`}
+                  </span>
+                  {question.difficulty && (
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                      question.difficulty.toLowerCase() === 'easy' ? 'bg-[#DCFCE7] text-[#16A34A] border-[#86EFAC]' :
+                      question.difficulty.toLowerCase() === 'hard' ? 'bg-[#FEE2E2] text-[#DC2626] border-[#FCA5A5]' :
+                      question.difficulty.toLowerCase() === 'expert' ? 'bg-[#EDE9FE] text-[#7C3AED] border-[#C4B5FD]' :
+                      'bg-[#FEF3C7] text-[#D97706] border-[#FDE68A]'
+                    }`}>
+                      {question.difficulty.toUpperCase()}
+                    </span>
+                  )}
+                </div>
                 
                 <span className={`${styles.statusBadge} ${
                   !isAnswered 
@@ -575,12 +714,60 @@ export default function ResultPage() {
                   <span className="font-black text-indigo-600 dark:text-indigo-400 block mb-1 uppercase tracking-wider text-[11px]">
                     💡 {isHindi ? "व्याख्या:" : "Explanation:"}
                   </span>
-                  {isHindi && question.explanationHi ? question.explanationHi : question.explanation}
+                  {isAdTier && !isDailyQuiz && !isPro && !reviewGateUnlocked ? (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-2.5 bg-white/90 dark:bg-slate-900/90 rounded-xl border border-indigo-200 dark:border-slate-600 mt-1">
+                      <span className="text-slate-700 dark:text-slate-300 font-semibold text-xs">
+                        🔒 {isHindi ? "पूरी व्याख्याएं लॉक हैं।" : "Full explanations are locked."}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          showRewarded({
+                            trigger: "review",
+                            tier,
+                            setId: quizSlug || quizId,
+                            onReward: () => {
+                              setReviewGateUnlocked(true);
+                              toast.success(isHindi ? "सभी व्याख्याएं अनलॉक हो गईं!" : "Explanations unlocked!");
+                            },
+                          });
+                        }}
+                        className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer min-h-[36px]"
+                      >
+                        {isHindi ? "छोटा विज्ञापन देखें (अनलॉक)" : "Watch short ad to unlock"}
+                      </button>
+                    </div>
+                  ) : (
+                    isHindi && question.explanationHi ? question.explanationHi : question.explanation
+                  )}
+                </div>
+              )}
+
+              {/* Exam Tags */}
+              {((question.examTags && question.examTags.length > 0) || (Array.isArray(question.exam) && question.exam.length > 0)) && (
+                <div className="flex flex-wrap items-center gap-1.5 mt-3">
+                  {(question.examTags || question.exam).map((tag, tIdx) => (
+                    <span key={tIdx} className="px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800 text-[10px] font-bold">
+                      🏷️ {tag}
+                    </span>
+                  ))}
                 </div>
               )}
             </div>
           );
         })}
+
+        {/* Back to top button at the end of review list */}
+        <div className="flex justify-center mt-6 mb-4">
+          <button
+            type="button"
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-extrabold text-xs sm:text-sm border border-indigo-200 dark:border-indigo-800 shadow-sm transition-all active:scale-95 cursor-pointer"
+          >
+            <ArrowUp size={16} />
+            <span>{isHindi ? "वापस ऊपर जाएं (शीर्ष)" : "Back to Top"}</span>
+          </button>
+        </div>
     </div>
   );
 
@@ -591,8 +778,19 @@ export default function ResultPage() {
         // Loading / Gated state
         <div className={styles.loadingContainer}>
           <div className={styles.spinner}></div>
-          <h1>{showGateAd ? t('result.unlocking') : t('result.loading')}</h1>
-          <p>{showGateAd ? t('result.supportUs') : t('result.analyzing')}</p>
+          <h1>{showGateAd ? t('result.unlocking') : (total === 0 ? (isHindi ? "कोई क्विज़ परिणाम नहीं मिला" : "No Quiz Results Found") : t('result.loading'))}</h1>
+          <p>{showGateAd ? t('result.supportUs') : (total === 0 ? (isHindi ? "कृपया होम पेज से कोई नया क्विज़ खेलें।" : "Please start a quiz from the home page.") : t('result.analyzing'))}</p>
+          {total === 0 && (
+            <div className="mt-4">
+              <Link
+                href="/"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+              >
+                <span>{isHindi ? "होम पेज पर जाएं" : "Back to Home"}</span>
+                <ArrowRight size={14} />
+              </Link>
+            </div>
+          )}
         </div>
       ) : isExplorer ? (
         // STEP 12: EXPLORER RESULT SCREEN
@@ -614,89 +812,213 @@ export default function ResultPage() {
             ))}
           </div>
 
-          {/* Clean Explorer Score Card */}
-          <div id="result-card" ref={resultCardRef} className={styles.explorerCard}>
-            <div className={styles.explorerTrophy}>🏆</div>
-            <h1 className={styles.explorerTitle}>{t('result.title') || (isHindi ? 'क्विज़ परिणाम' : 'Quiz Results')}</h1>
-
-            {/* Score */}
-            <div className={styles.explorerScoreBlock}>
-              <span className={styles.explorerScoreNum}>{score}</span>
-              <span className={styles.explorerScoreDivider}>/</span>
-              <span className={styles.explorerScoreTotal}>{total}</span>
+          {/* Phase D5 Redesigned Clean Results Score Card */}
+          <div id="result-card" ref={resultCardRef} className="w-full max-w-xl mx-auto bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-6 sm:p-8 text-center shadow-lg shadow-indigo-500/5 relative overflow-hidden">
+            {/* Top Trophy */}
+            <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 mx-auto flex items-center justify-center text-3xl mb-3 shadow-inner">
+              🏆
             </div>
 
-            <div className={styles.explorerPercentage}>
-              <span>{motivation.emoji}</span>
-              <span>{percentage}%</span>
-            </div>
-
-            {/* Core Stats Row: Correct, Wrong, Time */}
-            <div className={styles.explorerStatsRow}>
-              <div className={`${styles.explorerStatBox} ${styles.explorerStatCorrect}`}>
-                <span className={styles.explorerStatLabel}>
-                  {t('result.stats.correct') || (isHindi ? 'सही' : 'Correct')}
+            {/* Star Rating (1–3) */}
+            <div className="flex items-center justify-center gap-1.5 mb-1 select-none">
+              {[1, 2, 3].map((starIdx) => (
+                <span
+                  key={starIdx}
+                  className={`text-2xl sm:text-3xl transition-all duration-300 ${
+                    starIdx <= starCount
+                      ? "text-amber-400 drop-shadow-sm scale-110"
+                      : "text-slate-300 dark:text-slate-700 opacity-40"
+                  }`}
+                >
+                  ★
                 </span>
-                <span className={styles.explorerStatVal}>
+              ))}
+            </div>
+
+            {/* Friendly Headline by Score Band */}
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mb-2">
+              {friendlyHeadline}
+            </h2>
+
+            {/* Score with Animated Count-up */}
+            <div className="flex items-baseline justify-center gap-2 mb-2 select-none">
+              <span className="text-5xl sm:text-6xl font-black text-indigo-600 dark:text-indigo-400 leading-none">
+                {displayScore}
+              </span>
+              <span className="text-2xl sm:text-3xl font-light text-slate-400">/</span>
+              <span className="text-2xl sm:text-3xl font-bold text-slate-600 dark:text-slate-300">
+                {total}
+              </span>
+            </div>
+
+            {/* Accuracy Badge */}
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 mb-4">
+              <span>{motivation.emoji}</span>
+              <span>{percentage}% {isHindi ? "सटीकता" : "Accuracy"}</span>
+            </div>
+
+            {/* Accuracy Progress Bar & Difficulty Breakdown */}
+            <div className="w-full max-w-sm mx-auto mb-5 space-y-2.5">
+              <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden">
+                <div
+                  className="bg-indigo-600 h-2.5 rounded-full transition-all duration-1000 ease-out"
+                  style={{ width: `${percentage}%` }}
+                />
+              </div>
+
+              {/* Difficulty Breakdown Chips (Section 0 token colors) */}
+              <div className="flex items-center justify-center gap-2 flex-wrap text-[11px] font-bold">
+                {difficultyBreakdown.easy.total > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#DCFCE7] text-[#16A34A] border border-[#86EFAC]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                    <span>{isHindi ? "सरल" : "Easy"}: {difficultyBreakdown.easy.correct}/{difficultyBreakdown.easy.total}</span>
+                  </span>
+                )}
+                {difficultyBreakdown.medium.total > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                    <span>{isHindi ? "मध्यम" : "Medium"}: {difficultyBreakdown.medium.correct}/{difficultyBreakdown.medium.total}</span>
+                  </span>
+                )}
+                {difficultyBreakdown.hard.total > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#FEE2E2] text-[#DC2626] border border-[#FCA5A5]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                    <span>{isHindi ? "कठिन" : "Hard"}: {difficultyBreakdown.hard.correct}/{difficultyBreakdown.hard.total}</span>
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Stat Row of 4 Small Cards: Correct · Wrong · Skipped · Time taken (plus XP for Students) */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-6 text-center">
+              <div className="p-3 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800">
+                <span className="text-[10px] font-extrabold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider block mb-0.5">
+                  {isHindi ? "सही" : "Correct"}
+                </span>
+                <span className="text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400">
                   ✓ {performance?.correct || 0}
                 </span>
               </div>
 
-              <div className={`${styles.explorerStatBox} ${styles.explorerStatWrong}`}>
-                <span className={styles.explorerStatLabel}>
-                  {t('result.stats.wrong') || (isHindi ? 'गलत' : 'Wrong')}
+              <div className="p-3 rounded-2xl bg-rose-50/80 dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-800">
+                <span className="text-[10px] font-extrabold text-rose-700 dark:text-rose-400 uppercase tracking-wider block mb-0.5">
+                  {isHindi ? "गलत" : "Wrong"}
                 </span>
-                <span className={styles.explorerStatVal}>
+                <span className="text-lg sm:text-xl font-black text-rose-600 dark:text-rose-400">
                   ✕ {performance?.wrong || 0}
                 </span>
               </div>
 
-              <div className={`${styles.explorerStatBox} ${styles.explorerStatTime}`}>
-                <span className={styles.explorerStatLabel}>
-                  {t('result.stats.time') || (isHindi ? 'समय' : 'Time')}
+              <div className="p-3 rounded-2xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800">
+                <span className="text-[10px] font-extrabold text-amber-700 dark:text-amber-400 uppercase tracking-wider block mb-0.5">
+                  {isHindi ? "छूटे" : "Skipped"}
                 </span>
-                <span className={styles.explorerStatVal}>
-                  ⏱️ {formatQuizTime(finalTimeTaken, isHindi)}
+                <span className="text-lg sm:text-xl font-black text-amber-600 dark:text-amber-400">
+                  ⏱️ {performance?.skipped || 0}
+                </span>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/30 border border-indigo-200/80 dark:border-indigo-800 flex flex-col justify-center">
+                <span className="text-[10px] font-extrabold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider block mb-0.5">
+                  {tier === "students" ? (isHindi ? "समय / XP" : "Time / XP") : (isHindi ? "समय" : "Time")}
+                </span>
+                <span className="text-sm sm:text-base font-black text-indigo-600 dark:text-indigo-400 truncate">
+                  {formatQuizTime(finalTimeTaken, isHindi)}
+                  {tier === "students" && ` (+${(performance?.correct || 0) * 10} XP)`}
                 </span>
               </div>
             </div>
 
-            {/* Two Action Buttons: Primary "Next Set", Secondary "Back to Home" */}
-            <div className={styles.explorerActions}>
+            {/* Max 3 Buttons: Primary Review Answers, Secondary Next Set / Play Again, Tertiary Share Result */}
+            <div className="flex flex-col gap-2.5">
+              {/* Button 1: Primary Review Answers */}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowReview(true);
+                  const el = document.getElementById("review-section");
+                  if (el) {
+                    el.scrollIntoView({ behavior: "smooth" });
+                  }
+                }}
+                className="w-full min-h-[50px] rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm sm:text-base shadow-md shadow-indigo-600/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+              >
+                <FileText size={18} />
+                <span>{t('result.review.title') || (isHindi ? "उत्तर समीक्षा देखें" : "Review Answers")}</span>
+              </button>
+
+              {/* Button 2: Secondary Next Set / Play Again */}
               <button
                 id="result-next-set-btn"
-                className={styles.explorerPrimaryBtn}
-                onClick={handleContinueNextSet}
+                onClick={selectedSetIndex ? handleContinueNextSet : handlePlayAgain}
                 disabled={isLaunchingNextSet}
+                className="w-full min-h-[46px] rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 font-extrabold text-xs sm:text-sm border border-slate-200 dark:border-slate-700 active:scale-95 transition-all flex items-center justify-center gap-2"
               >
                 {isLaunchingNextSet ? (
                   <span className="flex items-center justify-center gap-2">
                     <span className={styles.btnSpinnerSmall} />
-                    <span>{isHindi ? 'लोड हो रहा है...' : 'Launching Set...'}</span>
+                    <span>{isHindi ? "लोड हो रहा है..." : "Launching..."}</span>
+                  </span>
+                ) : selectedSetIndex ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span>{t('result.actions.nextSet') || (isHindi ? "अगला सेट खेलें" : "Next Set")}</span>
+                    <ArrowRight size={16} />
                   </span>
                 ) : (
                   <span className="flex items-center justify-center gap-2">
-                    <span>{t('result.actions.nextSet') || (isHindi ? 'अगला सेट' : 'Next Set')}</span>
-                    <ArrowRight size={18} />
+                    <ArrowRight size={16} />
+                    <span>{isHindi ? "फिर से खेलें" : "Play Again"}</span>
                   </span>
                 )}
               </button>
 
+              {/* Button 3: Tertiary Share Result */}
               <button
-                id="result-back-home-btn"
-                className={styles.explorerSecondaryBtn}
+                type="button"
+                onClick={async () => {
+                  const performShare = async () => {
+                    const topicName = quizCategoryName || category?.topic || mixedSectionName || "QuizWeb";
+                    await shareResult({
+                      score,
+                      total,
+                      percentage,
+                      topic: topicName,
+                      quizId: quizSlug || quizId,
+                    });
+                  };
+
+                  if (isAdTier && !isDailyQuiz && !isPro) {
+                    showRewarded({
+                      trigger: "share",
+                      tier,
+                      setId: quizSlug || quizId,
+                      onReward: performShare,
+                    });
+                  } else {
+                    await performShare();
+                  }
+                }}
+                className="w-full min-h-[44px] rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs hover:border-indigo-400 transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+              >
+                <Share2 size={15} />
+                <span>{isHindi ? "परिणाम साझा करें" : "Share Result"}</span>
+              </button>
+
+              {/* Small Link: Back to Home */}
+              <button
                 onClick={() => {
                   resetQuiz();
                   router.push("/");
                 }}
+                className="text-xs font-bold text-slate-500 hover:text-indigo-600 transition-colors pt-2"
               >
-                {t('result.actions.backToHome') || (isHindi ? 'होम पर जाएं' : 'Back to Home')}
+                ← {t('result.actions.backToHome') || (isHindi ? "होम पर जाएं" : "Back to Home")}
               </button>
             </div>
 
             {/* Daily Quiz Extra Links & Guest Streak Hint */}
             {isDailyQuiz && (
-              <div style={{ marginTop: '16px', textAlign: 'center' }}>
+              <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-center">
                 <Link
                   href={`/daily-quiz/past?tier=${tier}`}
                   className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline inline-flex items-center gap-1.5"
@@ -706,12 +1028,29 @@ export default function ResultPage() {
                   <span>→</span>
                 </Link>
                 {!authSession?.user && (
-                  <p style={{ fontSize: '11px', color: '#f59e0b', marginTop: '6px', fontWeight: 'bold' }}>
+                  <p className="text-[11px] text-amber-500 font-bold mt-1">
                     ⭐ {isHindi ? "अपनी स्ट्रीक सुरक्षित रखने के लिए साइन इन करें" : "Sign in to keep your streak"}
                   </p>
                 )}
               </div>
             )}
+          </div>
+
+          {/* Dismissible Donation Appeal Card (Students, Explorer, Arena; once a day; never Kids) */}
+          <div className="w-full max-w-xl mx-auto px-2">
+            <ResultDonationCard />
+          </div>
+
+          {/* Game Layer: XP Progression, Streak Freeze, 3-Fact Recap, Weak-Topic Hint, 1v1 Challenge */}
+          <div className="w-full max-w-xl mx-auto">
+            <GameResultsCard
+              gameResult={gameResult}
+              headToHead={headToHead}
+              onChallengeFriend={handleChallengeFriend}
+              isHindi={isHindi}
+              score={score}
+              total={totalQuestions}
+            />
           </div>
 
           {/* Answer Review Below the Fold */}
@@ -991,6 +1330,18 @@ export default function ResultPage() {
                   )}
                 </div>
               )}
+            </div>
+
+            {/* Game Layer: XP Progression, Streak Freeze, 3-Fact Recap, Weak-Topic Hint, 1v1 Challenge */}
+            <div className="w-full max-w-xl mx-auto">
+              <GameResultsCard
+                gameResult={gameResult}
+                headToHead={headToHead}
+                onChallengeFriend={handleChallengeFriend}
+                isHindi={isHindi}
+                score={score}
+                total={totalQuestions}
+              />
             </div>
 
             {/* Answer Review below actions */}

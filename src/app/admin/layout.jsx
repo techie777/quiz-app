@@ -11,6 +11,8 @@ import "./globals.css"; // Import admin-specific globals
 
 const JR_NAV = [
   { href: "/admin", label: "Dashboard", icon: "📊", perm: "dashboard" },
+  { href: "/admin/monetization", label: "Monetization & Ads", icon: "💰", perm: "monetization" },
+  { href: "/admin/hot-quizzes", label: "Hot & Fun Quizzes", icon: "🔥", perm: "hotQuizzes" },
   { href: "/admin/categories", label: "Quiz Categories", icon: "📁", perm: "categories" },
   { href: "/admin/questions", label: "Quiz Questions", icon: "❓", perm: "questions" },
   { href: "/admin/govt-exams", label: "Govt Exams", icon: "🏛️", perm: "govtExams" },
@@ -34,7 +36,10 @@ const JR_NAV = [
 
 const MASTER_NAV_DEFAULT = [
   { href: "/admin", label: "Dashboard", icon: "📊", perm: "dashboard" },
+  { href: "/admin/monetization", label: "Monetization & Ads", icon: "💰", perm: "monetization" },
+  { href: "/admin/hot-quizzes", label: "Hot & Fun Quizzes", icon: "🔥", perm: "hotQuizzes" },
   { href: "/admin/categories", label: "Quiz Categories", icon: "📁", perm: "categories" },
+  { href: "/admin/gk", label: "GK", icon: "🏛️", perm: "gk" },
   { href: "/admin/questions", label: "Quiz Questions", icon: "❓", perm: "questions" },
   { href: "/admin/govt-exams", label: "Govt Exams", icon: "🏛️", perm: "govtExams" },
   { href: "/admin/current-affairs", label: "Current Affairs", icon: "🗞️", perm: "currentAffairs" },

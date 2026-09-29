@@ -16,16 +16,19 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useQuiz } from "@/context/QuizContext";
 import SetCard, { FREE_SETS_QUOTA } from "@/components/SetCard";
 import LearnCard from "@/components/LearnCard";
+import ProBannerStrip from "@/components/monetization/ProBannerStrip";
 import styles from "@/styles/LearnPage.module.css";
 import toast from "react-hot-toast";
+
+let cachedLearnData = null;
 
 export default function LearnDiscoveryPage() {
   const router = useRouter();
   const { isHindi } = useLanguage();
   const { startQuizSet } = useQuiz();
 
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState({
+  const [loading, setLoading] = useState(() => !cachedLearnData);
+  const [data, setData] = useState(() => cachedLearnData || {
     subjects: [],
     todaySets: [],
     thisWeekSets: [],
@@ -44,16 +47,16 @@ export default function LearnDiscoveryPage() {
     let isMounted = true;
     async function fetchLearnData() {
       try {
-        setLoading(true);
-        const res = await fetch("/api/learn", { cache: "no-store" });
+        if (!cachedLearnData) setLoading(true);
+        const res = await fetch("/api/learn");
         if (!res.ok) throw new Error("Failed to fetch discovery feed");
         const json = await res.json();
+        cachedLearnData = json;
         if (isMounted) {
           setData(json);
         }
       } catch (err) {
         console.error("Learn feed fetch error:", err);
-        toast.error(isHindi ? "डेटा लोड करने में विफल" : "Failed to load discovery feed");
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -346,25 +349,28 @@ export default function LearnDiscoveryPage() {
             </div>
 
             {filteredThisWeekSets.length > 0 ? (
-              <div
-                className={
-                  viewMode === "grid"
-                    ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4"
-                    : "flex flex-col gap-3"
-                }
-              >
-                {filteredThisWeekSets.map((set) => (
-                  <SetCard
-                    key={`this_week_${set.id}`}
-                    set={set}
-                    categoryTopic={isHindi && set.categoryTopicHi ? set.categoryTopicHi : set.categoryTopic}
-                    freeQuota={FREE_SETS_QUOTA}
-                    handlePlay={handlePlay}
-                    handleLivePlay={handleLivePlay}
-                    layout={viewMode}
-                  />
-                ))}
-              </div>
+              <>
+                <div
+                  className={
+                    viewMode === "grid"
+                      ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4"
+                      : "flex flex-col gap-3"
+                  }
+                >
+                  {filteredThisWeekSets.map((set) => (
+                    <SetCard
+                      key={`this_week_${set.id}`}
+                      set={set}
+                      categoryTopic={isHindi && set.categoryTopicHi ? set.categoryTopicHi : set.categoryTopic}
+                      freeQuota={FREE_SETS_QUOTA}
+                      handlePlay={handlePlay}
+                      handleLivePlay={handleLivePlay}
+                      layout={viewMode}
+                    />
+                  ))}
+                </div>
+                <ProBannerStrip />
+              </>
             ) : (
               <div className="p-8 text-center rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
                 <p className="text-sm font-bold text-slate-500 dark:text-slate-400">

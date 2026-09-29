@@ -6,27 +6,21 @@ import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Home,
-  Compass,
+  BookOpen,
   Play,
-  FileText,
+  Flame,
   User,
   Sparkles,
-  BookOpen,
-  GraduationCap,
-  Award,
-  Flame,
-  Star,
-  ShieldCheck,
+  Globe,
 } from "lucide-react";
 import { useTier, TIERS } from "@/context/TierContext";
 import { useLanguage } from "@/context/LanguageContext";
-import { useQuiz } from "@/context/QuizContext";
-import { useData } from "@/context/DataContext";
 import { DEFAULT_MODULES_CONFIG } from "@/lib/modulesConfig";
+import { useData } from "@/context/DataContext";
 
 /**
- * Requirement 1: Configurable destinations per tier (max 5 destinations).
- * Kids tier has exactly 4 destinations: Home, Play, Rewards, Parent.
+ * Standard 5-tab destinations: Home · GK · Play · Current · Seekho
+ * Center PLAY button opens Quiz Arena.
  */
 export const TIER_NAVIGATION_CONFIG = {
   [TIERS.ADULTS]: [
@@ -41,25 +35,25 @@ export const TIER_NAVIGATION_CONFIG = {
       matchRegex: /^\/$/,
     },
     {
-      id: "learn",
-      label: "Learn",
-      labelHi: "सीखें",
-      shortLabel: "Learn",
-      shortLabelHi: "सीखें",
-      href: "/learn",
-      icon: BookOpen,
-      matchRegex: /^\/learn/,
+      id: "gk",
+      label: "GK",
+      labelHi: "जीके",
+      shortLabel: "GK",
+      shortLabelHi: "जीके",
+      href: "/gk",
+      icon: Globe,
+      matchRegex: /^\/gk/,
     },
     {
       id: "play",
-      label: "PLAY",
+      label: "Play",
       labelHi: "खेलें",
-      shortLabel: "PLAY",
+      shortLabel: "Play",
       shortLabelHi: "खेलें",
-      href: "/play",
+      href: "/arena",
       icon: Play,
-      isElevated: true, // Visually elevated exact center FAB (3rd of 5)
-      matchRegex: /^\/(quizzes|category|play)/,
+      isElevated: true,
+      matchRegex: /^\/arena/,
     },
     {
       id: "currentAffairs",
@@ -72,24 +66,14 @@ export const TIER_NAVIGATION_CONFIG = {
       matchRegex: /^\/(daily-current-affairs|current-affairs)/,
     },
     {
-      id: "mockTests",
-      label: "Tests",
-      labelHi: "टेस्ट",
-      shortLabel: "Tests",
-      shortLabelHi: "टेस्ट",
-      href: "/mock-tests",
-      icon: FileText,
-      matchRegex: /^\/mock-tests/,
-    },
-    {
-      id: "profile",
-      label: "Profile",
-      labelHi: "प्रोफ़ाइल",
-      shortLabel: "Profile",
-      shortLabelHi: "प्रोफ़ाइल",
-      href: "/profile",
-      icon: User,
-      matchRegex: /^\/(profile|wallet|settings)/,
+      id: "seekho",
+      label: "Seekho",
+      labelHi: "सीखो",
+      shortLabel: "Seekho",
+      shortLabelHi: "सीखो",
+      href: "/learn",
+      icon: BookOpen,
+      matchRegex: /^\/learn/,
     },
   ],
   [TIERS.STUDENTS]: [
@@ -97,33 +81,39 @@ export const TIER_NAVIGATION_CONFIG = {
       id: "home",
       label: "Home",
       labelHi: "होम",
+      shortLabel: "Home",
+      shortLabelHi: "होम",
       href: "/",
       icon: Home,
       matchRegex: /^\/$/,
     },
     {
-      id: "study",
+      id: "learn",
       label: "Study",
       labelHi: "पढ़ाई",
+      shortLabel: "Study",
+      shortLabelHi: "पढ़ाई",
       href: "/school-study",
       icon: BookOpen,
       matchRegex: /^\/(school-study|learn)/,
     },
     {
-      id: "funZone",
-      label: "Fun Zone",
-      labelHi: "फन ज़ोन",
-      shortLabel: "Fun",
-      shortLabelHi: "फन",
-      href: "/quizzes",
-      icon: Sparkles,
+      id: "play",
+      label: "Play",
+      labelHi: "खेलें",
+      shortLabel: "Play",
+      shortLabelHi: "खेलें",
+      href: "/arena?audience=students",
+      icon: Play,
       isElevated: true,
-      matchRegex: /^\/(quizzes|category)/,
+      matchRegex: /^\/arena/,
     },
     {
       id: "currentAffairs",
-      label: "Current Affairs",
-      labelHi: "करंट अफेयर्स",
+      label: "Current",
+      labelHi: "करंट",
+      shortLabel: "Current",
+      shortLabelHi: "करंट",
       href: "/daily-current-affairs",
       icon: Flame,
       matchRegex: /^\/(daily-current-affairs|current-affairs)/,
@@ -132,6 +122,8 @@ export const TIER_NAVIGATION_CONFIG = {
       id: "profile",
       label: "Profile",
       labelHi: "प्रोफ़ाइल",
+      shortLabel: "Profile",
+      shortLabelHi: "प्रोफ़ाइल",
       href: "/profile",
       icon: User,
       matchRegex: /^\/(profile|wallet|settings|leaderboard)/,
@@ -142,224 +134,175 @@ export const TIER_NAVIGATION_CONFIG = {
       id: "home",
       label: "Home",
       labelHi: "होम",
+      shortLabel: "Home",
+      shortLabelHi: "होम",
       href: "/",
       icon: Home,
       matchRegex: /^\/$/,
     },
     {
-      id: "rewards",
-      label: "Rewards",
-      labelHi: "इनाम",
-      href: "/rewards",
-      icon: Star,
-      matchRegex: /^\/rewards/,
+      id: "learn",
+      label: "Explore",
+      labelHi: "सैर",
+      shortLabel: "Explore",
+      shortLabelHi: "सैर",
+      href: "/learn",
+      icon: Sparkles,
+      matchRegex: /^\/learn/,
     },
     {
-      id: "quizzes",
+      id: "play",
       label: "Play",
       labelHi: "खेलें",
       shortLabel: "Play",
       shortLabelHi: "खेलें",
-      href: "/quizzes",
+      href: "/arena?audience=kids",
       icon: Play,
       isElevated: true,
-      matchRegex: /^\/(quizzes|category)/,
+      matchRegex: /^\/arena/,
     },
     {
-      id: "parent",
-      label: "Parent",
-      labelHi: "पैरेंट",
-      href: "/parent",
-      icon: ShieldCheck,
-      matchRegex: /^\/parent/,
+      id: "profile",
+      label: "Profile",
+      labelHi: "प्रोफ़ाइल",
+      shortLabel: "Profile",
+      shortLabelHi: "प्रोफ़ाइल",
+      href: "/profile",
+      icon: User,
+      matchRegex: /^\/profile/,
     },
   ],
 };
 
 export default function BottomNavBar() {
-  const router = useRouter();
   const pathname = usePathname();
-  const { tier, hasSavedTier, mounted: tierMounted, currentConfig } = useTier();
+  const router = useRouter();
+  const { tier, hasSavedTier, mounted: tierMounted } = useTier();
   const { isHindi } = useLanguage();
-  const { isFullscreen, startMixedQuiz } = useQuiz();
   const { modules } = useData();
 
-  // Handle direct quick play for centre PLAY button (no extra screen)
-  const handleQuickPlay = async (e) => {
-    e.preventDefault();
-    try {
-      let preferredCats = "";
-      try {
-        const stored = localStorage.getItem("quiz_recent_categories");
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            preferredCats = parsed.join(",");
-          }
-        }
-      } catch {}
-
-      const res = await fetch(`/api/quiz/quick-play?count=10&categories=${encodeURIComponent(preferredCats)}`, {
-        cache: "no-store",
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        if (data.questions && data.questions.length > 0) {
-          const title = isHindi ? "क्विक क्विज़" : "Quick Quiz";
-          startMixedQuiz(data.questions, title, 30, "ALL", isHindi ? "hi" : "en");
-          router.push("/quiz/quick");
-          return;
-        }
-      }
-    } catch (err) {
-      console.error("Quick play error:", err);
-    }
-    // Fallback directly to /play
-    router.push("/play");
-  };
-
-  // Requirement: Don't add a bottom nav bar to the unset landing page at root
+  // Hide on Unset Landing Page (root with no saved tier)
   if (pathname === "/" && (!tierMounted || !hasSavedTier)) {
     return null;
   }
 
-  // Requirement: While playing quizzes or mock tests, do not show bottom navigation bar
+  // Hide during quiz play, timed exam, admin, or dedicated Quiz Arena 2-step wizard
   const isQuizPlaying = pathname?.startsWith("/quiz") || pathname?.startsWith("/live");
   const isTimedExam = pathname?.includes("/mock-tests/paper/");
   const isAdmin = pathname?.startsWith("/admin");
+  const isArena = pathname?.startsWith("/arena");
 
-  if (isAdmin || isTimedExam || isQuizPlaying) {
+  if (isAdmin || isTimedExam || isQuizPlaying || isArena) {
     return null;
   }
 
-  // Get current tier's destinations (defaults to Adults if undefined)
   const allDestinations = TIER_NAVIGATION_CONFIG[tier] || TIER_NAVIGATION_CONFIG[TIERS.ADULTS];
   const activeModules = modules || DEFAULT_MODULES_CONFIG;
   const destinations = allDestinations.filter((item) => {
     if (item.id === "home" && activeModules.home === false) return false;
-    if ((item.id === "learn" || item.id === "study") && activeModules.learn === false) return false;
-    if ((item.id === "quizzes" || item.id === "funZone" || item.id === "play") && activeModules.play === false) return false;
-    if (item.id === "mockTests" && !activeModules.mockTests) return false;
+    if (item.id === "learn" && activeModules.learn === false) return false;
+    if (item.id === "play" && activeModules.arena === false && activeModules.play === false) return false;
     if (item.id === "currentAffairs" && activeModules.currentAffairs === false) return false;
     if (item.id === "profile" && activeModules.profile === false) return false;
-    if (item.id === "careerGuide" && !activeModules.careerGuide) return false;
     return true;
   });
 
-  // Helper to determine if a destination tab is active
   const isTabActive = (item) => {
-    if (item.href === "/") {
-      return pathname === "/";
-    }
-    if (item.matchRegex) {
-      return item.matchRegex.test(pathname);
-    }
+    if (item.href === "/") return pathname === "/";
+    if (item.matchRegex) return item.matchRegex.test(pathname);
     return pathname.startsWith(item.href);
+  };
+
+  const handlePlayClick = (e, item) => {
+    e.preventDefault();
+    router.push(item.href || "/arena");
   };
 
   return (
     <nav
       aria-label="Bottom Navigation"
       role="navigation"
-      className="fixed bottom-0 inset-x-0 z-50 pointer-events-none pb-[max(0.5rem,env(safe-area-inset-bottom,0px))]"
+      className="fixed bottom-0 left-0 right-0 w-full z-50 bg-[#FFFFFF] border-t border-[#EEF0F4] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] select-none pb-[env(safe-area-inset-bottom,0px)]"
     >
-      <div className="w-full max-w-lg mx-auto px-3 sm:px-4">
-        {/* Floating Capsule Bar (Native app feel matching Seekho screenshots) */}
-        <div className="pointer-events-auto relative w-full h-[62px] sm:h-[66px] bg-slate-950/95 dark:bg-slate-950/95 backdrop-blur-2xl border border-white/10 dark:border-slate-800/90 rounded-full px-2 shadow-[0_10px_35px_rgba(0,0,0,0.45)] flex items-center justify-between select-none">
-          {destinations.map((item) => {
-            const isActive = isTabActive(item);
-            const Icon = item.icon;
-            const label = isHindi ? (item.labelHi || item.label) : item.label;
-            const shortLabel = isHindi
-              ? (item.shortLabelHi || item.labelHi || item.label)
-              : (item.shortLabel || item.label);
+      {/* 100% width full responsive bar, centered content on tablet/desktop */}
+      <div className="w-full max-w-lg md:max-w-2xl mx-auto h-[62px] sm:h-[66px] px-2 sm:px-6 flex items-center justify-between relative">
+        {destinations.map((item) => {
+          const isActive = isTabActive(item);
+          const Icon = item.icon;
+          const label = isHindi ? item.labelHi || item.label : item.label;
+          const shortLabel = isHindi
+            ? item.shortLabelHi || item.labelHi || item.label
+            : item.shortLabel || item.label;
 
-            // ── Visually Elevated Most-Used Tab (PLAY center highlighted FAB) ──
-            if (item.isElevated) {
-              return (
-                <div key={item.id} className="relative flex-1 flex flex-col items-center justify-center">
-                  <Link
-                    href={item.href}
-                    onClick={handleQuickPlay}
-                    title={label}
-                    className="group relative -top-4 sm:-top-5 focus:outline-none min-w-[48px] min-h-[48px] flex items-center justify-center"
-                    aria-label={label}
-                  >
-                    <motion.div
-                      whileTap={{ scale: 0.94 }}
-                      transition={{ type: "spring", stiffness: 450, damping: 25 }}
-                      style={{
-                        background: currentConfig?.gradient || "var(--brand-gradient)",
-                        boxShadow: isActive
-                          ? `0 8px 25px ${currentConfig?.glowColor || "rgba(99,102,241,0.5)"}`
-                          : `0 6px 20px ${currentConfig?.glowColor || "rgba(79,70,229,0.35)"}`,
-                      }}
-                      className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-2xl sm:rounded-full flex flex-col items-center justify-center text-white transition-all ${
-                        isActive
-                          ? "ring-4 ring-white/40"
-                          : "border-2 border-slate-950 hover:brightness-110"
-                      }`}
-                    >
-                      <Play
-                        size={22}
-                        fill="currentColor"
-                        className="translate-x-0.5 group-hover:scale-110 transition-transform"
-                      />
-                      <span className="text-[10px] font-black uppercase tracking-wider mt-0.5 leading-none">
-                        {shortLabel}
-                      </span>
-                    </motion.div>
-                  </Link>
-                </div>
-              );
-            }
-
-            // ── Standard Destinations with Filled Pill Active Highlight ──
+          // ── Visually Elevated Center PLAY button ──
+          if (item.isElevated) {
             return (
-              <Link
+              <div
                 key={item.id}
-                href={item.href}
-                className="relative flex-1 h-full min-h-[44px] min-w-[44px] flex flex-col items-center justify-center focus:outline-none"
-                aria-label={label}
+                className="relative flex-1 flex flex-col items-center justify-center"
               >
-                {/* Requirement 2: Active tab gets a filled rounded pill */}
-                {isActive && (
+                <Link
+                  href={item.href}
+                  prefetch={true}
+                  title={label}
+                  className="group relative -top-4 sm:-top-5 focus:outline-none min-w-[52px] min-h-[52px] flex items-center justify-center"
+                  aria-label={label}
+                >
                   <motion.div
-                    layoutId="bottomNavActivePill"
-                    className="absolute inset-y-1.5 inset-x-1 sm:inset-x-2 bg-white text-slate-950 rounded-full shadow-md pointer-events-none"
-                    transition={{
-                      type: "spring",
-                      stiffness: 500,
-                      damping: 34,
-                    }}
-                  />
-                )}
+                    whileTap={{ scale: 0.94 }}
+                    transition={{ type: "spring", stiffness: 450, damping: 25 }}
+                    className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-2xl sm:rounded-full bg-gradient-to-tr from-[#6366F1] to-[#8B5CF6] flex flex-col items-center justify-center text-white ring-4 ring-white shadow-lg shadow-indigo-500/30 transition-transform"
+                  >
+                    <Play
+                      size={22}
+                      fill="currentColor"
+                      className="translate-x-0.5 group-hover:scale-110 transition-transform"
+                    />
+                    <span className="text-[10px] font-black uppercase tracking-wider mt-0.5 leading-none">
+                      {shortLabel}
+                    </span>
+                  </motion.div>
+                </Link>
+              </div>
+            );
+          }
 
+          // ── Standard Destinations with soft tinted pill behind icon on active ──
+          return (
+            <Link
+              key={item.id}
+              href={item.href}
+              prefetch={true}
+              className="relative flex-1 h-full min-h-[44px] min-w-[44px] flex flex-col items-center justify-center focus:outline-none"
+              aria-label={label}
+            >
+              <div className="relative flex flex-col items-center justify-center">
                 <div
-                  className={`relative z-10 flex flex-col items-center justify-center transition-colors duration-200 ${
+                  className={`flex items-center justify-center rounded-full transition-all duration-200 ${
                     isActive
-                      ? "text-slate-950 font-black"
-                      : "text-slate-400 hover:text-white"
+                      ? "bg-[#EEF2FF] text-[#6366F1] px-3 py-1"
+                      : "text-[#94A3B8] hover:text-slate-700 py-1"
                   }`}
                 >
                   <Icon
-                    size={19}
-                    strokeWidth={isActive ? 2.6 : 2}
+                    size={20}
+                    strokeWidth={isActive ? 2.5 : 2}
                     className="transition-transform duration-200"
                   />
-                  <span
-                    className={`text-[10.5px] sm:text-[11px] leading-tight mt-0.5 tracking-tight ${
-                      isActive ? "font-black" : "font-semibold opacity-90"
-                    }`}
-                  >
-                    {label}
-                  </span>
                 </div>
-              </Link>
-            );
-          })}
-        </div>
+                <span
+                  className={`text-[10.5px] sm:text-[11px] leading-tight mt-0.5 tracking-tight ${
+                    isActive
+                      ? "text-[#6366F1] font-bold"
+                      : "text-[#94A3B8] font-medium"
+                  }`}
+                >
+                  {label}
+                </span>
+              </div>
+            </Link>
+          );
+        })}
       </div>
     </nav>
   );

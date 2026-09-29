@@ -2,11 +2,12 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { Users, Play, CheckCircle2, Lock } from "lucide-react";
+import { Users, Play, CheckCircle2, Lock, Eye, Clock } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTier } from "@/context/TierContext";
+import { useEntitlement } from "@/context/EntitlementContext";
 
-export const FREE_SETS_QUOTA = 3;
+export const FREE_SETS_QUOTA = 2;
 
 export default function SetCard({
   set,
@@ -15,6 +16,7 @@ export default function SetCard({
   handlePlay,
   handleLivePlay,
   handleLockedClick,
+  onPreviewSet,
   isMix = false,
   handlePlayMix,
   mixQuestions = [],
@@ -70,8 +72,11 @@ export default function SetCard({
   }
 
   // Standard Set Card
+  const { isSetLocked, countdownFormatted, countdownFormattedHi, openLockedSheet, isPro, freeSetsPerWindow } = useEntitlement();
   const setIndex = set?.index || 1;
-  const isLocked = setIndex > freeQuota;
+  const effectiveFreeQuota = typeof freeSetsPerWindow === "number" ? freeSetsPerWindow : (freeQuota || FREE_SETS_QUOTA);
+  const isLocked = isSetLocked ? isSetLocked(setIndex) : (setIndex > effectiveFreeQuota && !isPro);
+  const onLockedClick = handleLockedClick || (() => openLockedSheet(set));
   const defaultCount = tier === "kids" ? 10 : 20;
   const qCount = set?.questions?.length || defaultCount;
   const isComplete = Boolean(set?.progress?.isComplete);
@@ -88,8 +93,8 @@ export default function SetCard({
         whileTap={{ scale: 0.98 }}
         transition={{ duration: 0.2 }}
         onClick={() => {
-          if (isLocked && handleLockedClick) {
-            handleLockedClick(set);
+          if (isLocked) {
+            onLockedClick(set);
           } else {
             handlePlay?.(set);
           }
@@ -106,10 +111,15 @@ export default function SetCard({
           <div className="flex items-center justify-between w-full z-10">
             {isLocked ? (
               <div
-                className="w-7 h-7 rounded-xl bg-slate-950/85 backdrop-blur-md text-amber-400 flex items-center justify-center border border-amber-400/30 shadow-md"
+                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-xl bg-slate-950/85 backdrop-blur-md text-amber-400 border border-amber-400/30 shadow-md"
                 title={isHindi ? "प्रीमियम सेट" : "Premium Set"}
               >
                 <Lock size={12} strokeWidth={2.5} />
+                {countdownFormatted && (
+                  <span className="text-[10px] font-black text-amber-300">
+                    {countdownFormatted}
+                  </span>
+                )}
               </div>
             ) : (
               <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 backdrop-blur-md">
@@ -181,6 +191,21 @@ export default function SetCard({
                 : (isHindi ? "खेलें" : "Play")}
             </span>
           </button>
+
+          {onPreviewSet && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onPreviewSet(set);
+              }}
+              title={isHindi ? "प्रश्न देखें (प्रिव्यू)" : "Preview Questions"}
+              className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all shrink-0"
+              aria-label="Preview questions"
+            >
+              <Eye size={13} />
+            </button>
+          )}
 
           {handleLivePlay && (
             <button
@@ -263,10 +288,18 @@ export default function SetCard({
               </span>
             )}
             {isLocked && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200/70 dark:border-amber-800/50">
-                <Lock size={10} />
-                <span>PRO</span>
-              </span>
+              <>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200/70 dark:border-amber-800/50">
+                  <Lock size={10} />
+                  <span>PRO</span>
+                </span>
+                {countdownFormatted && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/60">
+                    <Clock size={10} className="animate-pulse" />
+                    <span>{isHindi ? `मुफ्त वापसी: ${countdownFormattedHi}` : `Free in: ${countdownFormatted}`}</span>
+                  </span>
+                )}
+              </>
             )}
           </div>
 
@@ -277,13 +310,28 @@ export default function SetCard({
       </div>
 
       {/* Right: Identical CTAs in the same position on EVERY card */}
-      <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-2.5 shrink-0 w-full md:w-auto pt-2 md:pt-0 border-t md:border-t-0 border-slate-100 dark:border-slate-800">
+      <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 w-full md:w-auto pt-2 md:pt-0 border-t md:border-t-0 border-slate-100 dark:border-slate-800">
+        {onPreviewSet && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onPreviewSet(set);
+            }}
+            title={isHindi ? "प्रश्न देखें (प्रिव्यू)" : "Preview Questions"}
+            className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200/90 dark:border-slate-700 transition-all shrink-0 flex items-center justify-center"
+            aria-label="Preview questions"
+          >
+            <Eye size={16} />
+          </button>
+        )}
+
         {/* Primary CTA: "क्विज़ खेलें" */}
         <button
           onClick={(e) => {
             e.stopPropagation();
-            if (isLocked && handleLockedClick) {
-              handleLockedClick(set);
+            if (isLocked) {
+              onLockedClick(set);
             } else {
               handlePlay(set);
             }

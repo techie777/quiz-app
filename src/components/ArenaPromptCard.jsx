@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Zap, ArrowRight, SlidersHorizontal, Sparkles } from "lucide-react";
+import { Zap, ArrowRight } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 
 export default function ArenaPromptCard({ audience = "all", className = "" }) {
@@ -17,63 +17,34 @@ export default function ArenaPromptCard({ audience = "all", className = "" }) {
   return (
     <Link
       href={href}
-      className={`group relative block w-full overflow-hidden rounded-3xl border transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 shadow-lg ${
-        isKids
-          ? "bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/5 border-amber-500/30 hover:border-amber-400 shadow-orange-500/10"
-          : isStudents
-          ? "bg-gradient-to-r from-emerald-500/15 via-teal-500/10 to-emerald-500/5 border-emerald-500/30 hover:border-emerald-400 shadow-emerald-500/10"
-          : "bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-slate-900 border-amber-500/30 hover:border-amber-400 shadow-amber-500/10"
-      } ${className}`}
+      className={`group relative block w-full overflow-hidden rounded-2xl border border-[#C7D2FE] bg-gradient-to-r from-[#EEF2FF] to-[#F5F3FF] p-4 sm:p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:border-indigo-300 active:scale-[0.99] ${className}`}
     >
-      <div className="p-4 sm:p-5 flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3.5">
-          <div
-            className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 text-xl font-black shadow-inner ${
-              isKids
-                ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-                : isStudents
-                ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-            }`}
-          >
-            <Zap className="w-6 h-6 fill-current" />
+          {/* Amber lightning icon tile */}
+          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-amber-100 border border-amber-200/80 flex items-center justify-center flex-shrink-0 text-amber-600 shadow-sm">
+            <Zap className="w-5 h-5 sm:w-6 sm:h-6 fill-amber-500 text-amber-500" />
           </div>
 
           <div>
             <div className="flex items-center gap-2 mb-0.5">
-              <span className="text-sm sm:text-base font-extrabold text-white tracking-tight">
-                {isHindi ? "क्विज़ एरिना: अपनी खुद की क्विज़ बनाएं" : "Quiz Arena: Build Your Own Quiz"}
+              <span className="text-sm sm:text-base font-extrabold text-[#1E1B4B] tracking-tight">
+                {isHindi ? "क्विज़ एरिना" : "Quiz Arena"}
               </span>
-              <span
-                className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                  isKids
-                    ? "bg-amber-500/20 text-amber-300"
-                    : isStudents
-                    ? "bg-emerald-500/20 text-emerald-300"
-                    : "bg-amber-500/20 text-amber-300"
-                }`}
-              >
+              <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#EDE9FE] text-[#6D28D9] border border-violet-200/60">
                 {isHindi ? "नया" : "NEW"}
               </span>
             </div>
-            <p className="text-xs text-slate-300">
-              {isKids
-                ? isHindi
-                  ? "अपनी पसंद के विषय, आसान प्रश्न और मजेदार टाइमर चुनें!"
-                  : "Pick your favourite topics, easy questions, and fun mode!"
-                : isStudents
-                ? isHindi
-                  ? "कठिनाई स्तर, परीक्षा और प्रश्नों की संख्या अपनी आवश्यकतानुसार सेट करें।"
-                  : "Custom question count, difficulty & practice or exam test mode."
-                : isHindi
-                ? "मिश्रित श्रेणियां, परीक्षा स्तर और टेस्ट या प्रैक्टिस मोड सेट करें।"
-                : "Custom categories, exam levels, timer & instant practice or test modes."}
+            <p className="text-xs text-[#475569] font-medium line-clamp-1 sm:line-clamp-none">
+              {isHindi
+                ? "2 टैप में अपनी क्विज़ बनाएं"
+                : "Build your own quiz in 2 taps"}
             </p>
           </div>
         </div>
 
-        <div className="flex-shrink-0 hidden sm:flex items-center gap-1 text-xs font-bold text-amber-400 group-hover:translate-x-1 transition-transform">
-          <span>{isHindi ? "शुरू करें" : "Customize"}</span>
+        <div className="flex-shrink-0 flex items-center gap-1 text-xs font-bold text-indigo-600 group-hover:translate-x-1 transition-transform">
+          <span className="hidden xs:inline">{isHindi ? "शुरू करें" : "Build"}</span>
           <ArrowRight className="w-4 h-4" />
         </div>
       </div>

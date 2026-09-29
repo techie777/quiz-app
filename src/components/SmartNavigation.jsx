@@ -19,10 +19,13 @@ import {
   Shield,
   Mail,
   Check,
+  HelpCircle,
 } from "lucide-react";
 import { useUI } from "@/context/UIContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useData } from "@/context/DataContext";
+import { useTier } from "@/context/TierContext";
+import { useMonetization } from "@/context/MonetizationContext";
 import LanguageToggle from "./LanguageToggle";
 import ThemeToggle from "./ThemeToggle";
 import styles from "@/styles/SmartNavigation.module.css";
@@ -38,8 +41,10 @@ const fallbackNavigationItems = [
 ];
 
 export default function SmartNavigation() {
-  const { isMobileMenuOpen, closeMobileMenu } = useUI();
+  const { isMobileMenuOpen, closeMobileMenu, openTutorial } = useUI();
   const { isHindi } = useLanguage();
+  const { tier } = useTier();
+  const { isPro } = useMonetization();
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const { modules } = useData();
@@ -123,7 +128,24 @@ export default function SmartNavigation() {
                 <div className={styles.userInfo}>
                   <div className={styles.userAvatar}>{userInitial}</div>
                   <div className={styles.userMeta}>
-                    <p className={styles.userName}>{session.user.name || "QuizWeb User"}</p>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <p className={styles.userName}>{session.user.name || "QuizWeb User"}</p>
+                      {isPro && (
+                        <span
+                          style={{
+                            background: "linear-gradient(135deg, #F59E0B, #D97706)",
+                            color: "#FFFFFF",
+                            fontSize: "10px",
+                            fontWeight: 800,
+                            padding: "2px 6px",
+                            borderRadius: "6px",
+                            letterSpacing: "0.5px",
+                          }}
+                        >
+                          PRO
+                        </span>
+                      )}
+                    </div>
                     {session.user.email && (
                       <p className={styles.userEmail}>{session.user.email}</p>
                     )}
@@ -210,20 +232,40 @@ export default function SmartNavigation() {
                   );
                 })}
 
-                {status === "authenticated" && (
+                <li>
+                  <Link
+                    href="/my-favourites"
+                    className={`${styles.menuLink} ${pathname === "/my-favourites" ? styles.activeLink : ""}`}
+                    onClick={closeMobileMenu}
+                  >
+                    <span className={styles.menuLinkIcon}>
+                      <Heart size={18} />
+                    </span>
+                    <span className={styles.menuLinkLabel}>
+                      {isHindi ? "पसंदीदा" : "My Favourites"}
+                    </span>
+                    {pathname === "/my-favourites" && (
+                      <span className={styles.activeCheck}>
+                        <Check size={16} />
+                      </span>
+                    )}
+                  </Link>
+                </li>
+
+                {status !== "authenticated" && (
                   <li>
                     <Link
-                      href="/my-favourites"
-                      className={`${styles.menuLink} ${pathname === "/my-favourites" ? styles.activeLink : ""}`}
+                      href="/profile"
+                      className={`${styles.menuLink} ${pathname === "/profile" ? styles.activeLink : ""}`}
                       onClick={closeMobileMenu}
                     >
                       <span className={styles.menuLinkIcon}>
-                        <Heart size={18} />
+                        <User size={18} />
                       </span>
                       <span className={styles.menuLinkLabel}>
-                        {isHindi ? "पसंदीदा" : "My Favourites"}
+                        {isHindi ? "प्रोफ़ाइल" : "Profile"}
                       </span>
-                      {pathname === "/my-favourites" && (
+                      {pathname === "/profile" && (
                         <span className={styles.activeCheck}>
                           <Check size={16} />
                         </span>
@@ -231,6 +273,35 @@ export default function SmartNavigation() {
                     </Link>
                   </li>
                 )}
+                <li>
+                  <Link
+                    href="/pro"
+                    className={`${styles.menuLink} ${pathname === "/pro" ? styles.activeLink : ""}`}
+                    onClick={closeMobileMenu}
+                  >
+                    <span className={styles.menuLinkIcon}>
+                      <span style={{ fontSize: "16px" }}>👑</span>
+                    </span>
+                    <span className={styles.menuLinkLabel} style={{ fontWeight: 700, color: "#4F46E5" }}>
+                      {isHindi ? "क्विज़वेब प्रो (बिना विज्ञापन)" : "QuizWeb Pro (No Ads)"}
+                    </span>
+                    {isPro && (
+                      <span
+                        style={{
+                          background: "#10B981",
+                          color: "#FFF",
+                          fontSize: "10px",
+                          fontWeight: 800,
+                          padding: "2px 6px",
+                          borderRadius: "4px",
+                          marginLeft: "auto",
+                        }}
+                      >
+                        ACTIVE
+                      </span>
+                    )}
+                  </Link>
+                </li>
               </ul>
             </div>
 
@@ -240,6 +311,22 @@ export default function SmartNavigation() {
                 {isHindi ? "कानूनी और सहायता" : "Legal & Support"}
               </div>
               <ul className={styles.legalLinksList}>
+                <li>
+                  <button
+                    type="button"
+                    className={styles.legalLink}
+                    onClick={() => {
+                      closeMobileMenu();
+                      openTutorial();
+                    }}
+                    style={{ background: "none", border: "none", width: "100%", textAlign: "left", cursor: "pointer", padding: "8px 0" }}
+                  >
+                    <HelpCircle size={16} className="text-indigo-600" />
+                    <span className="font-semibold text-indigo-600 dark:text-indigo-400">
+                      {isHindi ? "क्विज़वेब कैसे काम करता है" : "How QuizWeb works"}
+                    </span>
+                  </button>
+                </li>
                 <li>
                   <Link href="/privacy" className={styles.legalLink} onClick={closeMobileMenu}>
                     <Shield size={16} />
@@ -252,12 +339,21 @@ export default function SmartNavigation() {
                     <span>{isHindi ? "सेवा की शर्तें" : "Terms of Service"}</span>
                   </Link>
                 </li>
-                <li>
-                  <Link href="/donate" className={styles.legalLink} onClick={closeMobileMenu}>
-                    <Heart size={16} style={{ color: "var(--tier-kids, #f59e0b)" }} />
-                    <span>{isHindi ? "हमारा समर्थन करें" : "Support Us"}</span>
-                  </Link>
-                </li>
+                {tier !== "kids" && (
+                  <li>
+                    <Link href="/support" className={styles.legalLink} onClick={closeMobileMenu}>
+                      <Heart size={16} style={{ color: "#E11D48" }} />
+                      <div style={{ display: "flex", flexDirection: "column" }}>
+                        <span>{isHindi ? "हमारा समर्थन करें" : "Support Us"}</span>
+                        {tier === "students" && (
+                          <span style={{ fontSize: "10px", color: "#94A3B8" }}>
+                            {isHindi ? "(अभिभावक से पूछें)" : "(Ask a parent or guardian)"}
+                          </span>
+                        )}
+                      </div>
+                    </Link>
+                  </li>
+                )}
                 <li>
                   <Link href="/contact" className={styles.legalLink} onClick={closeMobileMenu}>
                     <Mail size={16} />

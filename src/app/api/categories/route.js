@@ -10,8 +10,10 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request) {
   try {
-    const rl = enforceRateLimit(rateLimitKey(request, "api:categories:get"), { windowMs: 60_000, max: 120 });
-    if (!rl.ok) return rateLimitResponse(rl.retryAfterSeconds);
+    if (process.env.NODE_ENV === "production") {
+      const rl = enforceRateLimit(rateLimitKey(request, "api:categories:get"), { windowMs: 60_000, max: 240 });
+      if (!rl.ok) return rateLimitResponse(rl.retryAfterSeconds);
+    }
 
     const { searchParams } = new URL(request.url);
     const limitRaw = parseInt(searchParams.get("limit")) || 0;

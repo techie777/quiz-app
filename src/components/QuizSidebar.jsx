@@ -121,11 +121,6 @@ export default function QuizSidebar({
             );
           })}
         </div>
-        {tier !== "kids" && (
-          <div className={styles.mapFooter}>
-            <span className={styles.mapTime}>⌛ {displayTime}</span>
-          </div>
-        )}
       </div>
 
     </aside>

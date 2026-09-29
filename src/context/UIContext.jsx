@@ -8,6 +8,7 @@ const UIContext = createContext(null);
 export function UIProvider({ children }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const [engineTheme, setEngineTheme] = useState("indigo");
   const pathname = usePathname();
 
@@ -31,6 +32,9 @@ export function UIProvider({ children }) {
   const openOnboarding = () => setIsOnboardingOpen(true);
   const closeOnboarding = () => setIsOnboardingOpen(false);
 
+  const openTutorial = () => setIsTutorialOpen(true);
+  const closeTutorial = () => setIsTutorialOpen(false);
+
   const updateEngineTheme = (theme) => {
     setEngineTheme(theme);
     localStorage.setItem("quizEngineTheme", theme);
@@ -45,6 +49,9 @@ export function UIProvider({ children }) {
         isOnboardingOpen,
         openOnboarding,
         closeOnboarding,
+        isTutorialOpen,
+        openTutorial,
+        closeTutorial,
         engineTheme,
         updateEngineTheme,
       }}

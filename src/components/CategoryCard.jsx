@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/context/LanguageContext";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ChevronRight } from "lucide-react";
 
 export default function CategoryCard({ category, onClick, customCountText, hideViewSets = false }) {
   const router = useRouter();
@@ -13,10 +13,18 @@ export default function CategoryCard({ category, onClick, customCountText, hideV
 
   if (!category) return null;
 
-  const title = (isHindi && category.topicHi) ? category.topicHi : category.topic;
+  const title = isHindi && (category.topicHi || category.nameHi)
+    ? category.topicHi || category.nameHi
+    : category.topic || category.name;
   const qCount = category.questionCount ?? category._count?.questions ?? (Array.isArray(category.questions) ? category.questions.length : 0);
   const countDisplay = customCountText || `${qCount} ${isHindi ? "प्रश्न" : "Qs"}`;
-  const targetHref = `/category/${category.slug || category.id}`;
+  
+  let targetHref = `/category/${category.slug || category.id}`;
+  if (category.isGkParent) {
+    targetHref = `/gk?category=${category.categorySlug || "india"}`;
+  } else if (category.isGkTopic) {
+    targetHref = `/gk/${category.categorySlug || "india"}/topic/${category.id}`;
+  }
 
   const handleClick = (e) => {
     if (onClick) {
@@ -32,44 +40,56 @@ export default function CategoryCard({ category, onClick, customCountText, hideV
       whileTap={{ scale: 0.98 }}
       transition={{ duration: 0.15 }}
       onClick={handleClick}
-      className="group relative cursor-pointer bg-white/95 dark:bg-slate-900/90 hover:bg-white dark:hover:bg-slate-800/95 border border-slate-200/80 dark:border-slate-800/80 hover:border-indigo-500/50 dark:hover:border-indigo-500/50 rounded-2xl p-3.5 sm:p-4 shadow-sm hover:shadow-lg hover:shadow-indigo-500/10 transition-all duration-200 flex flex-col justify-between select-none min-h-[110px]"
+      className="group relative cursor-pointer bg-white hover:bg-[#FAFAFE] border border-slate-200/90 hover:border-indigo-400/90 rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md hover:shadow-indigo-500/10 transition-all duration-200 flex flex-col justify-between select-none min-h-[120px] sm:min-h-[135px]"
     >
-      {/* Top: Icon + Single Count Chip ("50 Qs") */}
-      <div className="flex items-center justify-between gap-2 mb-2.5">
-        <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100/80 dark:border-indigo-900/40 flex items-center justify-center text-xl sm:text-2xl group-hover:scale-105 transition-transform shrink-0">
+      {/* Top: Premium Icon + Question Count Badge */}
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-indigo-50 to-violet-50/70 border border-indigo-100/90 flex items-center justify-center text-2xl group-hover:scale-105 transition-transform shrink-0 shadow-2xs">
           {category.image ? (
             <img
               src={category.image}
               alt={title}
-              className="w-full h-full object-cover rounded-xl"
+              className="w-full h-full object-cover rounded-2xl"
               loading="lazy"
             />
           ) : (
-            category.emoji || "📝"
+            category.emoji || category.icon || "📝"
           )}
         </div>
 
-        {/* Single Scannable Count Chip: e.g. "50 Qs" */}
-        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10.5px] sm:text-xs font-black bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/50 tracking-tight shrink-0">
-          {countDisplay}
-        </span>
+        {/* Elevated Question Count Badge with Optional GK badge */}
+        <div className="flex items-center gap-1 shrink-0">
+          {category.isGkParent && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black bg-purple-100 text-purple-700 border border-purple-200 uppercase">
+              GK
+            </span>
+          )}
+          {category.isGkTopic && (
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[9.5px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+              {category.category === "World GK" ? "World GK" : "India GK"}
+            </span>
+          )}
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100/90 tracking-tight shadow-2xs">
+            {countDisplay}
+          </span>
+        </div>
       </div>
 
-      {/* Middle: Clean Category Name */}
-      <div className="min-w-0 flex-1 flex flex-col justify-center">
+      {/* Middle: Prominent Category Title with Larger, Crisp Font */}
+      <div className="min-w-0 flex-1 flex flex-col justify-end">
         <h3
           title={title}
-          className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-2 leading-tight"
+          className="text-sm sm:text-base md:text-lg font-black text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-2 leading-snug tracking-tight"
         >
           {title}
         </h3>
       </div>
 
-      {/* Bottom: Subtle Arrow Action (Hidden when hideViewSets is true) */}
+      {/* Bottom: Subtle Action Link (when not hidden) */}
       {!hideViewSets && (
-        <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between text-xs font-bold text-slate-400 dark:text-slate-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+        <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-slate-500 group-hover:text-indigo-600 transition-colors">
           <span>{isHindi ? "सेट देखें" : "View Sets"}</span>
-          <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+          <ChevronRight size={15} className="group-hover:translate-x-1 transition-transform" />
         </div>
       )}
     </motion.div>

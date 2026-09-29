@@ -11,6 +11,7 @@ import ProgressBar from "@/components/ProgressBar";
 import QuizSidebar from "@/components/QuizSidebar";
 import QuizSuggestions from "@/components/QuizSuggestions";
 import ExitConfirmModal from "@/components/ExitConfirmModal";
+import EndQuizConfirmModal from "@/components/EndQuizConfirmModal";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import {
   BookOpen,
@@ -25,10 +26,13 @@ import {
   ArrowRight,
 } from "lucide-react";
 import styles from "@/styles/QuizEngine.module.css";
-import { initSounds, playCorrectSound, playWrongSound, playTickerSound } from "@/lib/sounds";
 import timerStyles from "@/styles/Timer.module.css";
+import { initSounds, playCorrectSound, playWrongSound, playTickerSound } from "@/lib/sounds";
 import toast from "react-hot-toast";
 import { useTier } from "@/context/TierContext";
+import { useEntitlement } from "@/context/EntitlementContext";
+import Link from "next/link";
+import { showRewarded } from "@/lib/adProvider";
 
 // Persistent-Fix Local Timer Component
 const QuizTimerComponent = ({ seconds, onExpire, questionKey, isPaused }) => {
@@ -149,9 +153,12 @@ function QuizEngineContent() {
   const router = useRouter();
   console.log("Quiz Console Initializing...");
   const params = useParams();
+  const searchParams = useSearchParams();
+  const setQueryParam = searchParams?.get("set");
   const { data: session } = useSession();
   const { quizzes } = useData();
   const { tier } = useTier();
+  const { recordFirstAnswer } = useEntitlement();
   
   const {
     quizId,
@@ -209,6 +216,10 @@ function QuizEngineContent() {
   const [searchQuestion, setSearchQuestion] = useState("");
   const [showingAd, setShowingAd] = useState(false);
   const [adCallback, setAdCallback] = useState(null);
+  const [showMidQuizGate, setShowMidQuizGate] = useState(false);
+  const [showResultGate, setShowResultGate] = useState(false);
+  const [midQuizPassed, setMidQuizPassed] = useState(false);
+  const [resultGatePassed, setResultGatePassed] = useState(false);
   const [lifelineEffect, setLifelineEffect] = useState(null); // '5050' or 'poll'
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const moreMenuRef = useRef(null);
@@ -329,15 +340,41 @@ function QuizEngineContent() {
     return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, [setFullscreen]);
 
-const QuizEngineTimer = QuizTimerComponent;
+  const activeSet = selectedSetIndex || Number(setQueryParam) || Math.floor((currentIndex || 0) / 20) + 1 || 1;
+  const effectiveSetId = `${category?.slug || params?.id || "set"}_${activeSet}`;
+  const isAdTier = tier === "explorer" || tier === "adults";
+  const isDaily = String(quizId || "").startsWith("daily-") || String(category?.topic || "").includes("Daily");
+  const isLockedSet = typeof window !== 'undefined' && (
+    sessionStorage.getItem(`quiz_unlocked_via_ad_${effectiveSetId}`) === "true" ||
+    sessionStorage.getItem("quiz_unlocked_via_ad") === effectiveSetId ||
+    sessionStorage.getItem("current_quiz_is_locked") === "true" ||
+    activeSet > 2
+  );
+  const requiresAdGates = isAdTier && !isDaily && isLockedSet;
+
+  const QuizEngineTimer = QuizTimerComponent;
   const moveToNextQuestion = useCallback(() => {
-    if (currentIndex < (questions?.length || 0) - 1) {
+    const totalQ = questions?.length || 0;
+    const isHalfway = totalQ >= 10 && currentIndex === Math.floor(totalQ / 2) - 1;
+
+    if (isHalfway && requiresAdGates && !midQuizPassed) {
+      if (pauseQuiz) pauseQuiz();
+      setShowMidQuizGate(true);
+      return;
+    }
+
+    if (currentIndex < totalQ - 1) {
       goToQuestion(currentIndex + 1);
     } else {
+      if (requiresAdGates && !resultGatePassed) {
+        if (pauseQuiz) pauseQuiz();
+        setShowResultGate(true);
+        return;
+      }
       finishQuiz();
-      router.replace("/results"); // Replace to prevent back button returning here
+      router.replace("/results");
     }
-  }, [currentIndex, questions?.length, goToQuestion, finishQuiz, router]);
+  }, [currentIndex, questions?.length, goToQuestion, finishQuiz, router, requiresAdGates, midQuizPassed, resultGatePassed, pauseQuiz]);
 
   // Initialize quiz start time
   useEffect(() => {
@@ -425,9 +462,6 @@ const QuizEngineTimer = QuizTimerComponent;
       else router.push('/');
     }
   }, [resetQuiz, referrer, router, params?.id, category]);
-
-  const searchParams = useSearchParams();
-  const setQueryParam = searchParams?.get("set");
 
   const handleGoToReadMode = useCallback(() => {
     const categorySlug = category?.slug || quizSlug || params?.id || quizId;
@@ -635,6 +669,13 @@ const QuizEngineTimer = QuizTimerComponent;
     setShowExplanation(true);
     submitAnswer(currentQuestion.id, answerIndex);
 
+    // Master prompt Step 10: "A set counts once the user answers its first question. Daily Quiz and Learn content are exempt."
+    if ((answers || []).length === 0) {
+      const activeSet = selectedSetIndex || Number(setQueryParam) || Math.floor((currentIndex || 0) / 20) + 1 || 1;
+      const targetSetId = `${quizSlug || params?.id || quizId}-${activeSet}`;
+      recordFirstAnswer?.({ setId: targetSetId, categoryId: quizSlug || params?.id, setIndex: activeSet });
+    }
+
     // Play sounds if enabled
     if (soundEnabled) {
       if (isCorrect) {
@@ -655,11 +696,11 @@ const QuizEngineTimer = QuizTimerComponent;
       );
     }
 
-    // Auto skip dialogue after 2.7 seconds if not closed manually earlier
+    // Auto skip dialogue after 5 seconds if not closed manually earlier via "Next Question"
     if (explanationTimerRef.current) clearTimeout(explanationTimerRef.current);
     explanationTimerRef.current = setTimeout(() => {
       handleCloseExplanation();
-    }, 2700);
+    }, 5000);
   }, [currentIndex, questions, submitAnswer, soundEnabled, isSubmitting, language, handleCloseExplanation]);
 
   const handleToggleStory = () => {
@@ -1008,24 +1049,13 @@ const QuizEngineTimer = QuizTimerComponent;
       />
 
       {/* End Quiz Confirmation Modal */}
-      {showEndConfirmModal && (
-        <div className={styles.modalOverlay} style={{ zIndex: 10000 }}>
-          <div className={styles.exitModal}>
-            <h2 className={styles.exitModalTitle}>End Quiz Early?</h2>
-            <p className={styles.exitModalText}>
-              You haven&apos;t finished all questions. Are you sure you want to end the quiz and see your results?
-            </p>
-            <div className={styles.exitModalActions}>
-              <button className={styles.exitModalCancel} onClick={() => setShowEndConfirmModal(false)}>
-                Cancel
-              </button>
-              <button className={styles.exitModalConfirm} onClick={confirmEndQuiz}>
-                Yes, End Quiz
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <EndQuizConfirmModal
+        isOpen={showEndConfirmModal}
+        onClose={() => setShowEndConfirmModal(false)}
+        onConfirm={confirmEndQuiz}
+        answeredCount={answers ? answers.filter((a) => a !== undefined && a !== null).length : 0}
+        totalQuestions={questions?.length || 20}
+      />
 
       {isEnding && (
         <div className={styles.modalOverlay} style={{ zIndex: 10005, flexDirection: 'column', gap: '16px' }}>
@@ -1033,6 +1063,226 @@ const QuizEngineTimer = QuizTimerComponent;
           <p style={{ fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--text-primary)' }}>
             Processing results...
           </p>
+        </div>
+      )}
+
+      {/* Mid-Quiz Rewarded Ad Gate */}
+      {showMidQuizGate && (
+        <div
+          role="dialog"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 99999,
+            background: "rgba(15, 23, 42, 0.8)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px",
+          }}
+        >
+          <div
+            style={{
+              background: "#FFFFFF",
+              borderRadius: "20px",
+              padding: "24px",
+              maxWidth: "360px",
+              width: "100%",
+              textAlign: "center",
+              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.2)",
+            }}
+          >
+            <div style={{ fontSize: "36px", marginBottom: "12px" }}>🎯</div>
+            <h3 style={{ fontSize: "18px", fontWeight: 700, color: "#1E293B", marginBottom: "6px" }}>
+              {language === "hi" ? "आधा रास्ता तय हुआ!" : "Halfway There!"}
+            </h3>
+            <p style={{ fontSize: "13px", color: "#64748B", marginBottom: "20px", lineHeight: 1.5 }}>
+              {language === "hi"
+                ? "क्विज़ जारी रखने के लिए एक छोटा विज्ञापन देखें।"
+                : "Watch a short ad to continue this quiz set."}
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <button
+                type="button"
+                onClick={() => {
+                  showRewarded({
+                    trigger: "mid",
+                    tier,
+                    setId: effectiveSetId,
+                    onReward: () => {
+                      setShowMidQuizGate(false);
+                      setMidQuizPassed(true);
+                      if (resumeQuiz) resumeQuiz();
+                      goToQuestion(currentIndex + 1);
+                    },
+                    onDismiss: () => {
+                      setShowMidQuizGate(false);
+                      setMidQuizPassed(true);
+                      if (resumeQuiz) resumeQuiz();
+                      goToQuestion(currentIndex + 1);
+                    },
+                  });
+                }}
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  background: "#4F46E5",
+                  color: "#FFFFFF",
+                  border: "none",
+                  borderRadius: "12px",
+                  fontWeight: 600,
+                  fontSize: "14px",
+                  cursor: "pointer",
+                  minHeight: "44px",
+                }}
+              >
+                {language === "hi" ? "छोटा विज्ञापन देखें (5s)" : "Watch a short ad to continue"}
+              </button>
+
+              <Link
+                href="/pro"
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  background: "#EEF2FF",
+                  color: "#4F46E5",
+                  border: "1px solid #C7D2FE",
+                  borderRadius: "12px",
+                  fontWeight: 600,
+                  fontSize: "14px",
+                  textAlign: "center",
+                  textDecoration: "none",
+                  minHeight: "44px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {language === "hi" ? "गो प्रो, कोई विज्ञापन नहीं" : "Go Pro, no ads"}
+              </Link>
+
+              <button
+                type="button"
+                onClick={confirmExitQuiz}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "#94A3B8",
+                  fontSize: "12px",
+                  cursor: "pointer",
+                  padding: "8px",
+                }}
+              >
+                {language === "hi" ? "क्विज़ छोड़ें" : "Exit Quiz"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Result Rewarded Ad Gate */}
+      {showResultGate && (
+        <div
+          role="dialog"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 99999,
+            background: "rgba(15, 23, 42, 0.8)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px",
+          }}
+        >
+          <div
+            style={{
+              background: "#FFFFFF",
+              borderRadius: "20px",
+              padding: "24px",
+              maxWidth: "360px",
+              width: "100%",
+              textAlign: "center",
+              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.2)",
+            }}
+          >
+            <div style={{ fontSize: "36px", marginBottom: "12px" }}>🏆</div>
+            <h3 style={{ fontSize: "18px", fontWeight: 700, color: "#1E293B", marginBottom: "6px" }}>
+              {language === "hi" ? "क्विज़ संपन्न!" : "Quiz Complete!"}
+            </h3>
+            <p style={{ fontSize: "13px", color: "#64748B", marginBottom: "20px", lineHeight: 1.5 }}>
+              {language === "hi"
+                ? "अपना परिणाम देखने के लिए एक छोटा विज्ञापन देखें।"
+                : "Watch a short ad to see your result."}
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <button
+                type="button"
+                onClick={() => {
+                  showRewarded({
+                    trigger: "result",
+                    tier,
+                    setId: effectiveSetId,
+                    onReward: async () => {
+                      await fetch("/api/attempts/verify-result", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ setId: effectiveSetId, tier, passGate: "result" }),
+                      }).catch(() => {});
+                      setShowResultGate(false);
+                      setResultGatePassed(true);
+                      finishQuiz();
+                      router.replace("/results");
+                    },
+                    onDismiss: async () => {
+                      setShowResultGate(false);
+                      setResultGatePassed(true);
+                      finishQuiz();
+                      router.replace("/results");
+                    },
+                  });
+                }}
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  background: "#10B981",
+                  color: "#FFFFFF",
+                  border: "none",
+                  borderRadius: "12px",
+                  fontWeight: 600,
+                  fontSize: "14px",
+                  cursor: "pointer",
+                  minHeight: "44px",
+                }}
+              >
+                {language === "hi" ? "परिणाम देखने के लिए विज्ञापन देखें" : "Watch a short ad to see your result"}
+              </button>
+
+              <Link
+                href="/pro"
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  background: "#EEF2FF",
+                  color: "#4F46E5",
+                  border: "1px solid #C7D2FE",
+                  borderRadius: "12px",
+                  fontWeight: 600,
+                  fontSize: "14px",
+                  textAlign: "center",
+                  textDecoration: "none",
+                  minHeight: "44px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {language === "hi" ? "गो प्रो, कोई विज्ञापन नहीं" : "Go Pro, no ads"}
+              </Link>
+            </div>
+          </div>
         </div>
       )}
 

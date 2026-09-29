@@ -10,15 +10,18 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useTier } from "@/context/TierContext";
 import { useMonetization } from "@/context/MonetizationContext";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Check, ChevronDown, ArrowLeft, Play } from "lucide-react";
+import { Users, Check, ChevronDown, ArrowLeft, Play, Eye, Lock, Clock, Sparkles } from "lucide-react";
 import toast from "react-hot-toast";
 import styles from "@/styles/CategorySets.module.css";
 import ResumeBanner from "@/components/ResumeBanner";
 import QuizEmptyState from "@/components/QuizEmptyState";
 import SetCard, { FREE_SETS_QUOTA } from "@/components/SetCard";
+import SetPreviewModal from "@/components/SetPreviewModal";
 import CategoryCard from "@/components/CategoryCard";
 import UnifiedPaywallModal from "@/components/UnifiedPaywallModal";
 import StickyPaywallCTA from "@/components/StickyPaywallCTA";
+import ProBannerStrip from "@/components/monetization/ProBannerStrip";
+import { useEntitlement } from "@/context/EntitlementContext";
 
 // Helper function to detect if text is Hindi
 function isHindiText(text) {
@@ -58,6 +61,7 @@ export default function CategorySetsPage() {
   const [questionsLoaded, setQuestionsLoaded] = useState(false);
   const [setSize, setSetSize] = useState(20);
   const [activeModalSet, setActiveModalSet] = useState(null);
+  const [previewSet, setPreviewSet] = useState(null);
   const [page, setPage] = useState(1);
 
   // Scroll to top when page changes
@@ -79,13 +83,33 @@ export default function CategorySetsPage() {
   const [isMixMode, setIsMixMode] = useState(false);
   const [numQuestions, setNumQuestions] = useState(20);
   const [difficulty, setDifficulty] = useState("ALL");
-  const { isPro } = useMonetization();
+  const { isPro: isMonetizationPro } = useMonetization();
+  const {
+    isSetLocked,
+    countdownFormatted,
+    countdownFormattedHi,
+    openLockedSheet,
+    isPro: isEntitlementPro,
+    freeSetsPerWindow,
+  } = useEntitlement();
+  const isPro = isEntitlementPro || isMonetizationPro;
+
   const [paywallModalOpen, setPaywallModalOpen] = useState(false);
   const [paywallItemTitle, setPaywallItemTitle] = useState("");
 
   const handleLockedClick = (set) => {
-    setPaywallItemTitle(`${category?.topic || "Quiz"} Set ${set?.index || ""}`);
-    setPaywallModalOpen(true);
+    const targetSetId = `${category?.slug || category?.id || params?.slug}-${set?.index || 1}`;
+    openLockedSheet(
+      {
+        ...set,
+        categorySlug: category?.slug || category?.id || params?.slug,
+        id: targetSetId,
+        topic: category?.topic,
+      },
+      () => {
+        handlePlay(set);
+      }
+    );
   };
   
   const [isMounted, setIsMounted] = useState(false);
@@ -272,9 +296,7 @@ export default function CategorySetsPage() {
     };
   };
 
-  const handleTileClick = (set) => {
-    if (!set || !set.questions || set.questions.length === 0) return;
-
+  const startQuizDirectly = (set) => {
     // Save to recent categories so PLAY centre button knows user's preferred categories
     try {
       const recent = JSON.parse(localStorage.getItem("quiz_recent_categories") || "[]");
@@ -294,6 +316,30 @@ export default function CategorySetsPage() {
       true
     );
     router.push(`/quiz/${category.slug || category.id}?set=${set.index}`);
+  };
+
+  const handleTileClick = (set) => {
+    if (!set || !set.questions || set.questions.length === 0) return;
+
+    const targetSetId = `${category?.slug || category?.id || params?.slug}-${set.index}`;
+    const isLocked = isSetLocked ? isSetLocked(set.index, targetSetId) : (set.index > (freeSetsPerWindow || 2) && !isPro);
+
+    if (isLocked) {
+      openLockedSheet(
+        {
+          ...set,
+          categorySlug: category?.slug || category?.id || params?.slug,
+          id: targetSetId,
+          topic: category?.topic,
+        },
+        () => {
+          startQuizDirectly(set);
+        }
+      );
+      return;
+    }
+
+    startQuizDirectly(set);
   };
 
   const paginatedSets = useMemo(() => {
@@ -576,42 +622,104 @@ export default function CategorySetsPage() {
 
             {/* Simple tiles "Set 1 · 20 Qs" */}
             {sets.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {sets.map((set) => {
-                  const info = getSetCompletionInfo(set);
-                  return (
-                    <motion.button
-                      key={set.index}
-                      whileHover={{ y: -2, scale: 1.01 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => handleTileClick(set)}
-                      className="w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-indigo-500/50 dark:hover:border-indigo-500/40 shadow-sm hover:shadow-md transition-all text-left min-h-[52px] select-none"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-black text-xs flex items-center justify-center shrink-0 border border-indigo-100 dark:border-indigo-900/40">
-                          {set.index}
-                        </div>
-                        <span className="text-sm font-extrabold text-slate-900 dark:text-white truncate">
-                          {isHindi ? `सेट ${set.index} · ${set.questions.length} प्रश्न` : `Set ${set.index} · ${set.questions.length} Qs`}
-                        </span>
-                      </div>
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {sets.map((set) => {
+                    const info = getSetCompletionInfo(set);
+                    const targetSetId = `${category?.slug || category?.id || params?.slug}-${set.index}`;
+                    const isLocked = isSetLocked ? isSetLocked(set.index, targetSetId) : (set.index > (freeSetsPerWindow || 2) && !isPro);
 
-                      <div className="flex items-center gap-2 shrink-0">
-                        {info.isComplete ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                            <Check size={13} strokeWidth={3} />
-                            <span>{info.bestScore !== null ? `${info.bestScore}/${info.total}` : (isHindi ? "पूर्ण" : "Done")}</span>
-                          </span>
-                        ) : (
-                          <div className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                            <Play size={12} fill="currentColor" className="translate-x-0.5" />
+                    return (
+                      <div
+                        key={set.index}
+                        onClick={() => handleTileClick(set)}
+                        className={`w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border transition-all text-left min-h-[52px] select-none cursor-pointer group shadow-sm hover:shadow-md ${
+                          isLocked
+                            ? "bg-amber-50/30 dark:bg-amber-950/20 border-amber-200/80 dark:border-amber-900/40 hover:border-amber-400 dark:hover:border-amber-700"
+                            : "bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:border-indigo-500/50 dark:hover:border-indigo-500/40"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div
+                            className={`w-8 h-8 rounded-xl font-black text-xs flex items-center justify-center shrink-0 border ${
+                              isLocked
+                                ? "bg-amber-100/80 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/60"
+                                : "bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-900/40"
+                            }`}
+                          >
+                            {isLocked ? <Lock size={13} strokeWidth={2.5} /> : set.index}
                           </div>
-                        )}
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-sm font-extrabold text-slate-900 dark:text-white truncate flex items-center gap-1.5">
+                              <span>{isHindi ? `सेट ${set.index} · ${set.questions.length} प्रश्न` : `Set ${set.index} · ${set.questions.length} Qs`}</span>
+                              {isLocked && (
+                                <span className="px-1.5 py-0.2 rounded text-[10px] font-black uppercase tracking-wider bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40">
+                                  PRO
+                                </span>
+                              )}
+                            </span>
+                            {isLocked && (countdownFormatted || countdownFormattedHi) && (
+                              <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1 mt-0.5 sm:hidden">
+                                <Clock size={10} /> {isHindi ? countdownFormattedHi : countdownFormatted}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          {/* Eye Preview Button (Phase D1) */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPreviewSet(set);
+                            }}
+                            title={isHindi ? "प्रश्न देखें (प्रिव्यू)" : "Preview Questions"}
+                            aria-label="Preview questions"
+                            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors flex items-center justify-center shadow-2xs"
+                          >
+                            <Eye size={16} />
+                          </button>
+
+                          {isLocked ? (
+                            <div className="flex items-center gap-1.5">
+                              {(countdownFormatted || countdownFormattedHi) && (
+                                <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full border border-amber-200/60 dark:border-amber-900/40">
+                                  <Clock size={11} /> {isHindi ? countdownFormattedHi : countdownFormatted}
+                                </span>
+                              )}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleTileClick(set);
+                                }}
+                                title={isHindi ? "विज्ञापन देखकर अनलॉक करें" : "Watch ad to unlock"}
+                                className="h-8 px-2.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center justify-center gap-1.5 hover:bg-amber-500 hover:text-white transition-all shadow-xs"
+                              >
+                                <Lock size={12} strokeWidth={2.5} />
+                                <span className="text-[11px] font-black uppercase tracking-wider">AD</span>
+                              </button>
+                            </div>
+                          ) : info.isComplete ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                              <Check size={13} strokeWidth={3} />
+                              <span>{info.bestScore !== null ? `${info.bestScore}/${info.total}` : (isHindi ? "पूर्ण" : "Done")}</span>
+                            </span>
+                          ) : (
+                            <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center group-hover:bg-indigo-700 transition-colors shadow-xs">
+                              <Play size={12} fill="currentColor" className="translate-x-0.5" />
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </motion.button>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-6">
+                  <ProBannerStrip />
+                </div>
+              </>
             ) : (
               <div className="p-8 text-center rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
                 <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
@@ -655,6 +763,7 @@ export default function CategorySetsPage() {
                     categoryTopic={category.topic} 
                     handlePlayMix={handlePlayMix} 
                     mixQuestions={questions}
+                    onPreviewSet={() => setPreviewSet({ index: "Mix", questions: questions.slice(0, 20) })}
                   />
                 )}
                 {paginatedSets.map((set) => (
@@ -666,9 +775,13 @@ export default function CategorySetsPage() {
                     handlePlay={handlePlay}
                     handleLivePlay={handleLivePlay}
                     handleLockedClick={handleLockedClick}
+                    onPreviewSet={(s) => setPreviewSet(s)}
                   />
                 ))}
               </div>
+
+              {/* Step 10: Compact Pro strip at bottom of set list */}
+              <ProBannerStrip />
 
               {totalPages > 1 && (
                 <div className={styles.paginationArea}>
@@ -1060,6 +1173,22 @@ export default function CategorySetsPage() {
         onClose={() => setPaywallModalOpen(false)}
         itemTitle={paywallItemTitle}
         itemType="quiz"
+      />
+
+      {/* Set Question Preview Modal (Phase D1) */}
+      <SetPreviewModal
+        isOpen={Boolean(previewSet)}
+        onClose={() => setPreviewSet(null)}
+        set={previewSet}
+        categoryTopic={category?.topic || ""}
+        onStartSet={(s) => {
+          setPreviewSet(null);
+          if (s?.index === "Mix") {
+            handlePlayMix();
+          } else {
+            handlePlay(s);
+          }
+        }}
       />
 
       <ResumeBanner />

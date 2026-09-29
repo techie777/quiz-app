@@ -5,8 +5,9 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useQuiz } from "@/context/QuizContext";
 import { playCorrectSound, playWrongSound } from "@/lib/sounds";
-import { shareQuestion } from "@/lib/shareImage";
-import { Share2, Heart, X } from "lucide-react";
+import { shareQuestion } from "@/lib/shareHelper";
+import { toggleQuestionFavourite, isQuestionFavourited } from "@/lib/favouritesHelper";
+import { Share2, Heart, X, ArrowRight } from "lucide-react";
 import Image from "next/image";
 import styles from "@/styles/QuizEngine.module.css";
 import { getDynamicExplanation } from "@/lib/explanationGenerator";
@@ -37,6 +38,7 @@ export default function QuestionCardV2({
   const [loginPrompt, setLoginPrompt] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [shakingType, setShakingType] = useState("");
+  const [zoomedImage, setZoomedImage] = useState(false);
 
   const isTestMode = useMemo(() => {
     if (typeof window === "undefined") return false;
@@ -67,12 +69,16 @@ export default function QuestionCardV2({
     }
   }, [question?.id, userAnswer, isTestMode]);
 
-  // Sync fav state
+  // Sync fav state (supports authenticated set & local guest storage)
   useEffect(() => {
-    if (favouriteIds && typeof favouriteIds.has === 'function' && question?.id) {
-      setFav(favouriteIds.has(question.id));
+    if (!question) return;
+    const qId = question.id || question._id;
+    if (favouriteIds && typeof favouriteIds.has === "function" && qId) {
+      setFav(favouriteIds.has(qId));
+    } else if (qId) {
+      setFav(isQuestionFavourited(qId));
     }
-  }, [favouriteIds, question?.id]);
+  }, [favouriteIds, question]);
 
   // Options parsing & shuffling
   const shuffledOptions = useMemo(() => {
@@ -117,30 +123,19 @@ export default function QuestionCardV2({
 
   const handleFavClick = async () => {
     if (disabled || !question) return;
-    if (status !== "authenticated" || !isUser) {
-      setLoginPrompt(true);
-      return;
-    }
-    try {
-      const res = await fetch("/api/favourites", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ questionId: question.id }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setFav(data.favourited);
-      }
-    } catch {
-      // Silently fail
-    }
+    await toggleQuestionFavourite({
+      question,
+      isAuthenticated: status === "authenticated" && isUser,
+      isHindi,
+      onStateChange: (newFav) => setFav(newFav),
+    });
   };
 
   const handleShare = async () => {
     if (sharing || disabled || !question) return;
     setSharing(true);
     try {
-      await shareQuestion(question, quizId);
+      await shareQuestion({ question, isHindi });
     } catch {
       // Silently fail
     }
@@ -174,32 +169,74 @@ export default function QuestionCardV2({
 
   if (!question) return null;
 
+  const rawDiff = String(question?.difficulty || "medium").toLowerCase();
+  const isEasy = rawDiff === "easy" || rawDiff === "1";
+  const isHard = rawDiff === "hard" || rawDiff === "3";
+  const isExpert = rawDiff === "expert" || rawDiff === "4";
+  const diffLabel = isExpert
+    ? (isHindi ? "विशेषज्ञ" : "Expert")
+    : isEasy
+    ? (isHindi ? "सरल" : "Easy")
+    : isHard
+    ? (isHindi ? "कठिन" : "Hard")
+    : (isHindi ? "मध्यम" : "Medium");
+  const diffBadgeStyle = isExpert
+    ? "bg-[#EDE9FE] text-[#7C3AED] border-[#C4B5FD]"
+    : isEasy
+    ? "bg-[#DCFCE7] text-[#16A34A] border-[#86EFAC]"
+    : isHard
+    ? "bg-[#FEE2E2] text-[#DC2626] border-[#FCA5A5]"
+    : "bg-[#FEF3C7] text-[#D97706] border-[#FDE68A]";
+
   return (
     <div className={`${styles.questionSection} ${shakingType ? styles[shakingType] || shakingType : ""}`}>
       <div className={styles.questionCard}>
-        <div className={styles.cardToolbar}>
-          <div className={styles.actionBtns}>
+        {/* Top Difficulty Badge Row + Favourite & Share Actions (Right-aligned) */}
+        <div className="flex items-center justify-between w-full mb-3 gap-2">
+          {/* Difficulty Badge & Dynamic Combo Multiplier */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border shrink-0 ${diffBadgeStyle}`}>
+              <span className="w-1.5 h-1.5 rounded-full bg-current" />
+              <span>{diffLabel}</span>
+            </span>
+
+            {combo >= 2 && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-black bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm animate-pulse">
+                <span>🔥</span>
+                <span>{combo}x {isHindi ? "कॉम्बो" : "Combo"}</span>
+                <span className="text-[10px] opacity-90 hidden sm:inline">(+{combo * 5} XP)</span>
+              </span>
+            )}
+          </div>
+
+          {/* Favourite & Share Actions in the same row */}
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               type="button"
-              className={styles.favBtn}
               onClick={handleFavClick}
-              title={isHindi ? "पसंदीदा" : "Favourite"}
-              aria-label="Favourite"
+              title={isHindi ? (fav ? "पसंदीदा से हटाएं" : "पसंदीदा में जोड़ें") : (fav ? "Remove from favourites" : "Add to favourites")}
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold border transition-all active:scale-95 ${
+                fav
+                  ? "bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800"
+                  : "bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 border-slate-200/80 dark:border-slate-700 hover:text-rose-500 hover:border-rose-200"
+              }`}
             >
-              <Heart size={18} fill={fav ? "#ef4444" : "none"} color={fav ? "#ef4444" : "currentColor"} />
+              <Heart size={13} fill={fav ? "#ef4444" : "none"} color={fav ? "#ef4444" : "currentColor"} />
+              <span>{isHindi ? "पसंदीदा" : "Fav"}</span>
             </button>
             <button
               type="button"
-              className={styles.shareBtn}
               onClick={handleShare}
               disabled={sharing}
               title={isHindi ? "साझा करें" : "Share this question"}
-              aria-label="Share"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 border border-slate-200/80 dark:border-slate-700 hover:text-indigo-600 hover:border-indigo-200 active:scale-95 transition-all"
             >
-              <Share2 size={18} />
+              <Share2 size={13} />
+              <span>{isHindi ? "साझा करें" : "Share"}</span>
             </button>
           </div>
         </div>
+
         <div className={styles.questionHeader}>
           {!!(isHindi ? (question.textHi || question.text) : question.text) ? (
             <p className={styles.questionText}>
@@ -209,20 +246,66 @@ export default function QuestionCardV2({
             <div style={{ flex: 1 }} />
           )}
         </div>
-        {question.image && (
-          <div className={styles.imageWrapper}>
-            <Image 
-              src={question.image} 
-              alt={question.text || "Question image"} 
-              width={600}
-              height={300}
-              className={styles.questionImage}
-              style={{ objectFit: 'contain', width: '100%', height: 'auto' }}
-              priority={true}
+        {/* Fixed Aspect Ratio Frame (16:10) for Question Media with Tap-to-Zoom (Phase E4) */}
+        {(() => {
+          const mediaObj = question.media || (question.image ? { type: "image", url: question.image, alt: question.text } : null);
+          if (!mediaObj?.url) return null;
+
+          return (
+            <div className="relative w-full aspect-[16/10] max-h-[260px] rounded-2xl bg-slate-100 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 overflow-hidden my-3 flex items-center justify-center group/img select-none">
+              <img
+                src={mediaObj.url}
+                alt={mediaObj.alt || question.text || "Question visual"}
+                className="w-full h-full object-contain p-2 transition-transform duration-300 group-hover/img:scale-[1.02] cursor-zoom-in"
+                onClick={() => setZoomedImage(true)}
+                loading="lazy"
+              />
+              <button
+                type="button"
+                onClick={() => setZoomedImage(true)}
+                className="absolute bottom-2 right-2 px-2.5 py-1 rounded-lg bg-black/65 hover:bg-black/85 backdrop-blur-md text-white text-[11px] font-black uppercase tracking-wider flex items-center gap-1 shadow-md transition-all cursor-pointer"
+                aria-label={isHindi ? "ज़ूम करें" : "Zoom image"}
+              >
+                <span>🔍</span>
+                <span>{isHindi ? "ज़ूम करें" : "Zoom"}</span>
+              </button>
+              {mediaObj.credit && (
+                <span className="absolute bottom-2 left-2 text-[9px] text-slate-500 dark:text-slate-400 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xs px-2 py-0.5 rounded shadow-2xs">
+                  © {mediaObj.credit}
+                </span>
+              )}
+            </div>
+          );
+        })()}
+      </div>
+
+      {/* Lightbox Fullscreen Zoom Modal (Phase E4) */}
+      {zoomedImage && (() => {
+        const mediaObj = question.media || (question.image ? { type: "image", url: question.image, alt: question.text } : null);
+        if (!mediaObj?.url) return null;
+
+        return (
+          <div
+            className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 select-none animate-in fade-in duration-200"
+            onClick={() => setZoomedImage(false)}
+          >
+            <button
+              type="button"
+              onClick={() => setZoomedImage(false)}
+              className="absolute top-4 right-4 p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-lg transition-colors cursor-pointer"
+              aria-label="Close zoom"
+            >
+              <X size={22} />
+            </button>
+            <img
+              src={mediaObj.url}
+              alt={mediaObj.alt || "Question zoomed image"}
+              className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
             />
           </div>
-        )}
-      </div>
+        );
+      })()}
 
       {loginPrompt && (
         <div className={styles.loginPrompt}>
@@ -269,58 +352,123 @@ export default function QuestionCardV2({
         </div>
       )}
 
-      <div className={styles.optionsGrid}>
-        {shuffledOptions.map((opt, displayIdx) => {
-          const originalIndex = opt.originalIndex;
-          const isRemoved = removedOptions.includes(originalIndex);
-          const hotkeys = ['A', 'B', 'C', 'D'];
-          if (isRemoved) return null;
-          let className = styles.option;
-          let isCorrect = false;
-          const isSelected = selected === originalIndex;
+      {/* Options: Support image-grid layout (Phase E4) or default text layout */}
+      {question.optionLayout === "image-grid" ? (
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          {shuffledOptions.map((opt, displayIdx) => {
+            const originalIndex = opt.originalIndex;
+            const isRemoved = removedOptions.includes(originalIndex);
+            const hotkeys = ['A', 'B', 'C', 'D'];
+            if (isRemoved) return null;
+            const isSelected = selected === originalIndex;
+            let isCorrect = false;
 
-          if (isSelected) {
-            className += ` ${styles.selected}`;
-          }
+            let borderClass = "border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-indigo-500/60 shadow-xs";
+            if (isSelected) {
+              borderClass = "border-indigo-600 ring-2 ring-indigo-500/40 bg-indigo-50/30 dark:bg-indigo-950/30";
+            }
 
-          if (revealed) {
-            const selectedOptionText = String(question.options[originalIndex] || "").trim();
-            const correctAnswerText = String(question.correctAnswer || "").trim();
-            isCorrect = selectedOptionText === correctAnswerText;
-            if (isCorrect) className += ` ${styles.correct} correct-answer`;
-            else if (isSelected && !isCorrect) className += ` ${styles.wrong} wrong-answer`;
-          }
+            if (revealed) {
+              const selectedOptionText = String(question.options[originalIndex] || "").trim();
+              const correctAnswerText = String(question.correctAnswer || "").trim();
+              isCorrect = selectedOptionText === correctAnswerText;
+              if (isCorrect) {
+                borderClass = "border-emerald-500 ring-2 ring-emerald-500/40 bg-emerald-50/30 dark:bg-emerald-950/30";
+              } else if (isSelected && !isCorrect) {
+                borderClass = "border-rose-500 ring-2 ring-rose-500/40 bg-rose-50/30 dark:bg-rose-950/30";
+              }
+            }
 
-          return (
-            <button
-              key={displayIdx}
-              type="button"
-              className={`${className} ${audienceStats ? styles.withAudience : ''}`}
-              onClick={() => handleSelect(originalIndex)}
-              disabled={revealed || disabled}
-            >
-              <div className={styles.optionLeft}>
-                <span className={styles.letterBadge}>{hotkeys[displayIdx]}</span>
-                <span className={styles.optionText}>{opt.text}</span>
-              </div>
-              <div className={styles.optionRight}>
-                {revealed ? (
-                  <div className={`${styles.optionIndicator} ${isCorrect ? styles.indicatorCorrect : (isSelected ? styles.indicatorWrong : '')}`}>
-                    {isCorrect ? '✓' : (isSelected ? '✗' : null)}
+            return (
+              <button
+                key={displayIdx}
+                type="button"
+                className={`relative rounded-2xl border p-2 flex flex-col items-center justify-between text-center transition-all duration-200 cursor-pointer overflow-hidden active:scale-98 ${borderClass}`}
+                onClick={() => handleSelect(originalIndex)}
+                disabled={revealed || disabled}
+              >
+                <span className="absolute top-2 left-2 w-6 h-6 rounded-full bg-slate-900/80 text-white text-[11px] font-black flex items-center justify-center shadow-xs z-10">
+                  {hotkeys[displayIdx]}
+                </span>
+
+                {revealed && (
+                  <span className="absolute top-2 right-2 z-10">
+                    {isCorrect ? (
+                      <span className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-black shadow-xs">✓</span>
+                    ) : isSelected ? (
+                      <span className="w-6 h-6 rounded-full bg-rose-500 text-white flex items-center justify-center text-xs font-black shadow-xs">✗</span>
+                    ) : null}
+                  </span>
+                )}
+
+                {opt.imageUrl ? (
+                  <div className="w-full aspect-[4/3] rounded-xl bg-slate-100 dark:bg-slate-800 overflow-hidden mb-2 flex items-center justify-center">
+                    <img src={opt.imageUrl} alt={opt.text} className="w-full h-full object-contain p-1" />
                   </div>
                 ) : (
-                  <div className={`${styles.radioCircle} ${isSelected ? styles.radioSelected : ''}`}>
-                    {isSelected && <span className={styles.radioDot} />}
+                  <div className="w-full aspect-[4/3] rounded-xl bg-slate-100 dark:bg-slate-800/80 mb-2 flex items-center justify-center text-base sm:text-lg font-black text-slate-800 dark:text-slate-100">
+                    {opt.text}
                   </div>
                 )}
-                {audienceStats && (
-                  <span className={styles.audienceBadge}>{audienceStats[originalIndex] || 0}%</span>
-                )}
-              </div>
-            </button>
-          );
-        })}
-      </div>
+                <span className="text-xs font-bold text-slate-900 dark:text-white line-clamp-1">{opt.text}</span>
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <div className={styles.optionsGrid}>
+          {shuffledOptions.map((opt, displayIdx) => {
+            const originalIndex = opt.originalIndex;
+            const isRemoved = removedOptions.includes(originalIndex);
+            const hotkeys = ['A', 'B', 'C', 'D'];
+            if (isRemoved) return null;
+            let className = styles.option;
+            let isCorrect = false;
+            const isSelected = selected === originalIndex;
+
+            if (isSelected) {
+              className += ` ${styles.selected}`;
+            }
+
+            if (revealed) {
+              const selectedOptionText = String(question.options[originalIndex] || "").trim();
+              const correctAnswerText = String(question.correctAnswer || "").trim();
+              isCorrect = selectedOptionText === correctAnswerText;
+              if (isCorrect) className += ` ${styles.correct} correct-answer`;
+              else if (isSelected && !isCorrect) className += ` ${styles.wrong} wrong-answer`;
+            }
+
+            return (
+              <button
+                key={displayIdx}
+                type="button"
+                className={`${className} ${audienceStats ? styles.withAudience : ''}`}
+                onClick={() => handleSelect(originalIndex)}
+                disabled={revealed || disabled}
+              >
+                <div className={styles.optionLeft}>
+                  <span className={styles.letterBadge}>{hotkeys[displayIdx]}</span>
+                  <span className={styles.optionText}>{opt.text}</span>
+                </div>
+                <div className={styles.optionRight}>
+                  {revealed ? (
+                    <div className={`${styles.optionIndicator} ${isCorrect ? styles.indicatorCorrect : (isSelected ? styles.indicatorWrong : '')}`}>
+                      {isCorrect ? '✓' : (isSelected ? '✗' : null)}
+                    </div>
+                  ) : (
+                    <div className={`${styles.radioCircle} ${isSelected ? styles.radioSelected : ''}`}>
+                      {isSelected && <span className={styles.radioDot} />}
+                    </div>
+                  )}
+                  {audienceStats && (
+                    <span className={styles.audienceBadge}>{audienceStats[originalIndex] || 0}%</span>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {revealed && !showExplanation && (
         <div className="mt-6 p-5 rounded-2xl bg-indigo-50/80 dark:bg-slate-800/90 border border-indigo-200/60 dark:border-indigo-900/40 shadow-sm animate-in fade-in duration-300">
@@ -336,20 +484,32 @@ export default function QuestionCardV2({
       {showExplanation && (
         <div className={styles.explanationOverlay} onClick={() => onCloseExplanation?.()}>
           <div className={styles.centeredExplanationCard} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.explanationHeader} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-              <span className={styles.explanationTitle}>
-                💡 {isHindi ? "स्पष्टीकरण" : "Explanation"}
+            <div className="flex items-center justify-between gap-3 mb-2.5 pb-2 border-b border-slate-100 dark:border-slate-800">
+              <span className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white flex items-center gap-1.5">
+                <span>💡</span>
+                <span>{isHindi ? "स्पष्टीकरण" : "Explanation"}</span>
               </span>
-              <button
-                onClick={() => onCloseExplanation?.()}
-                className={styles.explanationCloseBtn}
-                title={isHindi ? "बंद करें" : "Close"}
-                aria-label="Close"
-              >
-                <X size={16} />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => onCloseExplanation?.()}
+                  className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-transform active:scale-95"
+                >
+                  <span>{isHindi ? "अगला प्रश्न" : "Next Question"}</span>
+                  <ArrowRight size={13} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onCloseExplanation?.()}
+                  className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 flex items-center justify-center transition-colors"
+                  title={isHindi ? "बंद करें" : "Close"}
+                  aria-label="Close"
+                >
+                  <X size={15} />
+                </button>
+              </div>
             </div>
-            <p className={styles.explanationText} style={{ margin: 0, fontSize: "0.9rem", lineHeight: "1.4" }}>
+            <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-200 leading-relaxed font-medium m-0">
               {getDynamicExplanation(question, isHindi)}
             </p>
           </div>

@@ -1039,3 +1039,76 @@ model ForumReport {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 }
+
+// ── Step 10: Entitlement & Access Control Models ──
+
+model AccessSetting {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  key               String   @unique @default("default")
+  freeSetsPerWindow Int      @default(2)
+  windowMode        String   @default("rolling24h") // "rolling24h", "midnightIST"
+  limitScope        String   @default("global")     // "global", "perTier"
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model Plan {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  code         String   @unique // "1m", "3m", "6m", "1y"
+  name         String
+  nameHi       String?
+  price        Int      // 49, 99, 149, 249
+  durationDays Int      // 30, 90, 180, 365
+  isBestValue  Boolean  @default(false)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Subscription {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  planCode  String
+  start     DateTime @default(now())
+  end       DateTime
+  source    String   @default("razorpay") // "razorpay", "admin", "promo"
+  status    String   @default("active")   // "active", "expired", "cancelled"
+  paymentId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Payment {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String?  @db.ObjectId
+  orderId   String   @unique
+  paymentId String?
+  amount    Int
+  currency  String   @default("INR")
+  status    String   @default("created") // "created", "captured", "failed"
+  planCode  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Attempt {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userOrDeviceId  String
+  setId           String
+  tier            String   @default("adults")
+  moduleId        String   @default("quiz") // "quiz", "arena", "learn", "daily"
+  gatesPassed     String[] @default([]) // ["start", "mid", "result", "review"]
+  firstAnsweredAt DateTime @default(now())
+  completedAt     DateTime?
+  createdAt       DateTime @default(now())
+}
+
+model AdEvent {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  trigger        String   // "start", "mid", "result", "review", "share"
+  tier           String   // "explorer", "arena"
+  status         String   // "shown", "completed", "dismissed", "failed"
+  userOrDeviceId String
+  createdAt      DateTime @default(now())
+}
+

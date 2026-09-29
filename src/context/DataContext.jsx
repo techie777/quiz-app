@@ -19,6 +19,7 @@ export function DataProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    let isMounted = true;
     async function load() {
       try {
         const [catRes, setRes] = await Promise.all([
@@ -27,18 +28,22 @@ export function DataProvider({ children }) {
         ]);
         if (catRes.ok) {
           const data = await catRes.json();
-          // Handle both array (old) and { categories, total } (new) formats
-          if (Array.isArray(data)) {
-            setQuizzes(data);
-          } else if (data && Array.isArray(data.categories)) {
-            setQuizzes(data.categories);
+          const items = Array.isArray(data) ? data : (data?.categories || []);
+          if (isMounted && items.length > 0) {
+            setQuizzes(items);
           }
         }
-        if (setRes.ok) setSettings(await setRes.json());
-      } catch {}
-      setLoaded(true);
+        if (setRes.ok && isMounted) setSettings(await setRes.json());
+      } catch (err) {
+        console.error("[DataContext] Initial load error:", err);
+      } finally {
+        if (isMounted) setLoaded(true);
+      }
     }
     load();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const refreshQuizzes = useCallback(async () => {

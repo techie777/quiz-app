@@ -16,6 +16,7 @@ import Header from '@/components/Header';
 import SmartNavigation from '@/components/SmartNavigation';
 import BottomNavBar from '@/components/BottomNavBar';
 import ModuleRouteGuard from '@/components/ModuleRouteGuard';
+import MainContentWrapper from '@/components/MainContentWrapper';
 
 const poppins = Poppins({ 
   subsets: ['latin', 'latin-ext'],
@@ -147,11 +148,11 @@ export default function RootLayout({ children }) {
           <div className="hidden md:block">
             <Breadcrumbs />
           </div>
-          <main style={{ flex: 1, paddingBottom: 'calc(5.5rem + env(safe-area-inset-bottom, 0px))' }}>
+          <MainContentWrapper>
             <ErrorBoundary>
               {children}
             </ErrorBoundary>
-          </main>
+          </MainContentWrapper>
           <Footer />
           <BottomNavBar />
           <PwaInstallPrompt />

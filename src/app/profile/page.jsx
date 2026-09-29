@@ -5,18 +5,20 @@ import { useSession, signIn, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useLanguage } from "@/context/LanguageContext";
-import { Crown, Trophy, ArrowRight, History, CheckCircle2, Clock, FileText } from "lucide-react";
+import { Crown, Trophy, ArrowRight, History, CheckCircle2, Clock, FileText, Sparkles } from "lucide-react";
 import styles from "@/styles/Profile.module.css";
 import { useTier } from "@/context/TierContext";
 import { useUI } from "@/context/UIContext";
 import { useTheme } from "next-themes";
+import { useMonetization } from "@/context/MonetizationContext";
 
 export default function ProfilePage() {
   const { t, isHindi, language, confirmLanguageSelection } = useLanguage();
   const { tier } = useTier();
+  const { isPro } = useMonetization();
   const isExplorer = tier === "adults" || (tier !== "kids" && tier !== "students");
   const { data: session, status } = useSession();
-  const { engineTheme, updateEngineTheme } = useUI();
+  const { engineTheme, updateEngineTheme, openTutorial } = useUI();
   const { theme, setTheme } = useTheme();
   const [mountedTheme, setMountedTheme] = useState(false);
   const router = useRouter();
@@ -27,6 +29,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
   const [attempts, setAttempts] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [loadingAttempts, setLoadingAttempts] = useState(true);
   const [attemptFilter, setAttemptFilter] = useState("ALL"); // ALL, QUIZ_SET, MOCK_EXAM
 
@@ -87,6 +90,15 @@ export default function ProfilePage() {
       })
       .catch((err) => console.error("Failed to load attempts:", err))
       .finally(() => setLoadingAttempts(false));
+
+    fetch("/api/user/orders")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.subscriptions) {
+          setOrders(data.subscriptions);
+        }
+      })
+      .catch(() => {});
   }, [session]);
 
   const handleAvatarChange = (e) => {
@@ -179,13 +191,31 @@ export default function ProfilePage() {
               {!isGuest ? (
                 <div>
                   <div className={styles.explorerNameRow}>
-                    <input
-                      id="explorer-nickname-input"
-                      value={nickname}
-                      onChange={(e) => setNickname(e.target.value)}
-                      placeholder={isHindi ? "अपना नाम लिखें" : "Enter your name"}
-                      className={styles.explorerNameInput}
-                    />
+                    <div className="flex items-center gap-2">
+                      <input
+                        id="explorer-nickname-input"
+                        value={nickname}
+                        onChange={(e) => setNickname(e.target.value)}
+                        placeholder={isHindi ? "अपना नाम लिखें" : "Enter your name"}
+                        className={styles.explorerNameInput}
+                      />
+                      {isPro && (
+                        <span
+                          style={{
+                            background: "linear-gradient(135deg, #F59E0B, #D97706)",
+                            color: "#FFFFFF",
+                            fontSize: "11px",
+                            fontWeight: 800,
+                            padding: "2px 8px",
+                            borderRadius: "6px",
+                            letterSpacing: "0.5px",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          👑 PRO
+                        </span>
+                      )}
+                    </div>
                     {nickname !== (profile?.nickname || profile?.name || session?.user?.name || "") && (
                       <button
                         id="explorer-save-profile-btn"
@@ -490,6 +520,33 @@ export default function ProfilePage() {
           </Link>
         </div>
 
+        {/* Onboarding Tutorial Guide (Phase B2) */}
+        <div className="mt-6 p-4 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+              <Sparkles size={20} />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                {isHindi ? "क्विज़वेब कैसे काम करता है?" : "How QuizWeb Works"}
+              </h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {isHindi
+                  ? "बच्चों, विद्यार्थियों, एक्सप्लोरर व एरिना के सभी फीचर्स का 5-स्टेप गाइड देखें।"
+                  : "View the 5-step quick onboarding tour covering Kids, Students, Explorer & Arena."}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={openTutorial}
+            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950 text-xs font-bold transition-all shadow-2xs shrink-0 flex items-center justify-center gap-1.5"
+          >
+            <span>{isHindi ? "गाइड देखें" : "View Guide"}</span>
+            <ArrowRight size={13} />
+          </button>
+        </div>
+
         {/* Unified Attempt History Section (Requirement 3) */}
         <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
@@ -610,6 +667,59 @@ export default function ProfilePage() {
                     </div>
                   </Link>
                 ))}
+            </div>
+          )}
+        </div>
+
+        {/* Pro Subscription & Order History (Step 12) */}
+        <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <div>
+              <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <span>👑</span>
+                <span>{isHindi ? "प्रो सदस्यता व ऑर्डर इतिहास" : "Pro Membership & Orders"}</span>
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {isHindi ? "आपकी सक्रिय सदस्यता और भुगतान रसीदें।" : "Your active passes and payment receipts."}
+              </p>
+            </div>
+            <Link
+              href="/pro"
+              className="px-3.5 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-bold text-xs hover:bg-indigo-100 transition-colors shrink-0 self-start sm:self-auto"
+            >
+              {isPro ? (isHindi ? "प्लान प्रबंधित करें" : "Manage Plans") : (isHindi ? "गो प्रो (बिना विज्ञापन)" : "Get Pro (No Ads)")}
+            </Link>
+          </div>
+
+          {orders.length === 0 ? (
+            <div className="py-6 px-4 text-center rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-dashed border-slate-200 dark:border-slate-800">
+              <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                {isHindi ? "कोई सक्रिय प्रो प्लान या पूर्व भुगतान नहीं मिला।" : "No active Pro pass or past orders found."}
+              </p>
+              <Link href="/pro" className="inline-block mt-2 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
+                {isHindi ? "सभी 4 मॉड्यूल के लिए प्रो प्लान देखें →" : "View Pro Plans for all 4 modules →"}
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {orders.map((o) => (
+                <div key={o._id || o.id} className="p-3.5 rounded-2xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                  <div>
+                    <div className="font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                      <span>{o.planName || "QuizWeb Pro Pass"}</span>
+                      <span className="px-2 py-0.5 rounded-md text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-black uppercase">
+                        {o.status || "Active"}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">
+                      {new Date(o.createdAt || o.startDate).toLocaleDateString()} • Ref: {String(o.orderId || o.paymentId).slice(0, 16)}
+                    </div>
+                  </div>
+                  <div className="text-right font-black text-slate-900 dark:text-white text-sm">
+                    ₹{o.amount}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>

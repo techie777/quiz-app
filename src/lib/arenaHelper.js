@@ -60,6 +60,9 @@ export async function buildArenaFilter(db, params = {}) {
     query.$or = [
       { categoryId: { $in: catObjectIds } },
       { category_id: { $in: catObjectIds } },
+      { topicId: { $in: categories } },
+      { topic_id: { $in: categories } },
+      { category: { $in: categories } }
     ];
   }
 
@@ -68,12 +71,21 @@ export async function buildArenaFilter(db, params = {}) {
     const topicObjectIds = topics.map(t => {
       try { return new ObjectId(t); } catch { return t; }
     });
-    query.topic_id = { $in: topicObjectIds };
+    const topicConditions = [
+      { topic_id: { $in: topicObjectIds } },
+      { topicId: { $in: topics } }
+    ];
+    if (query.$or) {
+      query.$and = [{ $or: query.$or }, { $or: topicConditions }];
+      delete query.$or;
+    } else {
+      query.$or = topicConditions;
+    }
   }
 
-  // 3. Difficulties (multi-select: easy, medium, hard or 1, 2, 3)
+  // 3. Difficulties (multi-select: easy, medium, hard, expert or 1, 2, 3, 4)
   if (Array.isArray(difficulties) && difficulties.length > 0 && !difficulties.includes('all')) {
-    const levelMap = { easy: 1, medium: 2, hard: 3 };
+    const levelMap = { easy: 1, medium: 2, hard: 3, expert: 4 };
     const levels = [];
     const strings = [];
 
