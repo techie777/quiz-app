@@ -1,0 +1,244 @@
+{
+  "sharma_sir": {
+    "id": "sharma_sir",
+    "name": "Sharma Sir",
+    "states": {
+      "idle": {
+        "webm": "/mascots/sharma_sir/idle.webm",
+        "mp4": "/mascots/sharma_sir/idle.mp4",
+        "poster": "/mascots/sharma_sir/idle.webp",
+        "fallbackPoster": "/assets/characters/sharma-sir/idle.webp",
+        "loop": true
+      },
+      "thinking": {
+        "webm": "/mascots/sharma_sir/thinking.webm",
+        "mp4": "/mascots/sharma_sir/thinking.mp4",
+        "poster": "/mascots/sharma_sir/thinking.webp",
+        "fallbackPoster": "/assets/characters/sharma-sir/thinking.webp",
+        "loop": false
+      },
+      "correct": {
+        "webm": "/mascots/sharma_sir/correct.webm",
+        "mp4": "/mascots/sharma_sir/correct.mp4",
+        "poster": "/mascots/sharma_sir/correct.webp",
+        "fallbackPoster": "/assets/characters/sharma-sir/clapping.webp",
+        "loop": false,
+        "hasVideo": true,
+        "videoUrl": "/mascots/sharma_sir/correct.mp4"
+      },
+      "wrong": {
+        "webm": "/mascots/sharma_sir/wrong.webm",
+        "mp4": "/mascots/sharma_sir/wrong.mp4",
+        "poster": "/mascots/sharma_sir/wrong.webp",
+        "fallbackPoster": "/assets/characters/sharma-sir/disappointed.webp",
+        "loop": false
+      },
+      "celebrate": {
+        "webm": "/mascots/sharma_sir/celebrate.webm",
+        "mp4": "/mascots/sharma_sir/celebrate.mp4",
+        "poster": "/mascots/sharma_sir/celebrate.webp",
+        "fallbackPoster": "/assets/characters/sharma-sir/celebrating.webp",
+        "loop": false
+      },
+      "talking": {
+        "webm": "/mascots/sharma_sir/talking.webm",
+        "mp4": "/mascots/sharma_sir/talking.mp4",
+        "poster": "/mascots/sharma_sir/talking.webp",
+        "fallbackPoster": "/assets/characters/sharma-sir/clapping.webp",
+        "loop": true
+      }
+    }
+  },
+  "didi": {
+    "id": "didi",
+    "name": "Didi",
+    "states": {
+      "idle": {
+        "webm": "/mascots/didi/idle.webm",
+        "mp4": "/mascots/didi/idle.mp4",
+        "poster": "/mascots/didi/idle.webp",
+        "fallbackPoster": "/assets/characters/didi/idle.webp",
+        "loop": true
+      },
+      "thinking": {
+        "webm": "/mascots/didi/thinking.webm",
+        "mp4": "/mascots/didi/thinking.mp4",
+        "poster": "/mascots/didi/thinking.webp",
+        "fallbackPoster": "/assets/characters/didi/thinking.webp",
+        "loop": false
+      },
+      "correct": {
+        "webm": "/mascots/didi/correct.webm",
+        "mp4": "/mascots/didi/correct.mp4",
+        "poster": "/mascots/didi/correct.webp",
+        "fallbackPoster": "/assets/characters/didi/clapping.webp",
+        "loop": false
+      },
+      "wrong": {
+        "webm": "/mascots/didi/wrong.webm",
+        "mp4": "/mascots/didi/wrong.mp4",
+        "poster": "/mascots/didi/wrong.webp",
+        "fallbackPoster": "/assets/characters/didi/disappointed.webp",
+        "loop": false
+      },
+      "celebrate": {
+        "webm": "/mascots/didi/celebrate.webm",
+        "mp4": "/mascots/didi/celebrate.mp4",
+        "poster": "/mascots/didi/celebrate.webp",
+        "fallbackPoster": "/assets/characters/didi/celebrating.webp",
+        "loop": false
+      },
+      "talking": {
+        "webm": "/mascots/didi/talking.webm",
+        "mp4": "/mascots/didi/talking.mp4",
+        "poster": "/mascots/didi/talking.webp",
+        "fallbackPoster": "/assets/characters/didi/clapping.webp",
+        "loop": true
+      }
+    }
+  },
+  "filmy_raj": {
+    "id": "filmy_raj",
+    "name": "Filmy Raj",
+    "states": {
+      "idle": {
+        "webm": "/mascots/filmy_raj/idle.webm",
+        "mp4": "/mascots/filmy_raj/idle.mp4",
+        "poster": "/mascots/filmy_raj/idle.webp",
+        "fallbackPoster": "/assets/characters/filmy-raj/idle.webp",
+        "loop": true
+      },
+      "thinking": {
+        "webm": "/mascots/filmy_raj/thinking.webm",
+        "mp4": "/mascots/filmy_raj/thinking.mp4",
+        "poster": "/mascots/filmy_raj/thinking.webp",
+        "fallbackPoster": "/assets/characters/filmy-raj/thinking.webp",
+        "loop": false
+      },
+      "correct": {
+        "webm": "/mascots/filmy_raj/correct.webm",
+        "mp4": "/mascots/filmy_raj/correct.mp4",
+        "poster": "/mascots/filmy_raj/correct.webp",
+        "fallbackPoster": "/assets/characters/filmy-raj/clapping.webp",
+        "loop": false
+      },
+      "wrong": {
+        "webm": "/mascots/filmy_raj/wrong.webm",
+        "mp4": "/mascots/filmy_raj/wrong.mp4",
+        "poster": "/mascots/filmy_raj/wrong.webp",
+        "fallbackPoster": "/assets/characters/filmy-raj/disappointed.webp",
+        "loop": false
+      },
+      "celebrate": {
+        "webm": "/mascots/filmy_raj/celebrate.webm",
+        "mp4": "/mascots/filmy_raj/celebrate.mp4",
+        "poster": "/mascots/filmy_raj/celebrate.webp",
+        "fallbackPoster": "/assets/characters/filmy-raj/celebrating.webp",
+        "loop": false
+      },
+      "talking": {
+        "webm": "/mascots/filmy_raj/talking.webm",
+        "mp4": "/mascots/filmy_raj/talking.mp4",
+        "poster": "/mascots/filmy_raj/talking.webp",
+        "fallbackPoster": "/assets/characters/filmy-raj/clapping.webp",
+        "loop": true
+      }
+    }
+  },
+  "coach_vikram": {
+    "id": "coach_vikram",
+    "name": "Coach Vikram",
+    "states": {
+      "idle": {
+        "webm": "/mascots/coach_vikram/idle.webm",
+        "mp4": "/mascots/coach_vikram/idle.mp4",
+        "poster": "/mascots/coach_vikram/idle.webp",
+        "fallbackPoster": "/assets/characters/coach-vikram/idle.webp",
+        "loop": true
+      },
+      "thinking": {
+        "webm": "/mascots/coach_vikram/thinking.webm",
+        "mp4": "/mascots/coach_vikram/thinking.mp4",
+        "poster": "/mascots/coach_vikram/thinking.webp",
+        "fallbackPoster": "/assets/characters/coach-vikram/thinking.webp",
+        "loop": false
+      },
+      "correct": {
+        "webm": "/mascots/coach_vikram/correct.webm",
+        "mp4": "/mascots/coach_vikram/correct.mp4",
+        "poster": "/mascots/coach_vikram/correct.webp",
+        "fallbackPoster": "/assets/characters/coach-vikram/clapping.webp",
+        "loop": false
+      },
+      "wrong": {
+        "webm": "/mascots/coach_vikram/wrong.webm",
+        "mp4": "/mascots/coach_vikram/wrong.mp4",
+        "poster": "/mascots/coach_vikram/wrong.webp",
+        "fallbackPoster": "/assets/characters/coach-vikram/disappointed.webp",
+        "loop": false
+      },
+      "celebrate": {
+        "webm": "/mascots/coach_vikram/celebrate.webm",
+        "mp4": "/mascots/coach_vikram/celebrate.mp4",
+        "poster": "/mascots/coach_vikram/celebrate.webp",
+        "fallbackPoster": "/assets/characters/coach-vikram/celebrating.webp",
+        "loop": false
+      },
+      "talking": {
+        "webm": "/mascots/coach_vikram/talking.webm",
+        "mp4": "/mascots/coach_vikram/talking.mp4",
+        "poster": "/mascots/coach_vikram/talking.webp",
+        "fallbackPoster": "/assets/characters/coach-vikram/clapping.webp",
+        "loop": true
+      }
+    }
+  },
+  "dr_cosmo": {
+    "id": "dr_cosmo",
+    "name": "Dr Cosmo",
+    "states": {
+      "idle": {
+        "webm": "/mascots/dr_cosmo/idle.webm",
+        "mp4": "/mascots/dr_cosmo/idle.mp4",
+        "poster": "/mascots/dr_cosmo/idle.webp",
+        "fallbackPoster": "/assets/characters/dr-cosmo/idle.webp",
+        "loop": true
+      },
+      "thinking": {
+        "webm": "/mascots/dr_cosmo/thinking.webm",
+        "mp4": "/mascots/dr_cosmo/thinking.mp4",
+        "poster": "/mascots/dr_cosmo/thinking.webp",
+        "fallbackPoster": "/assets/characters/dr-cosmo/thinking.webp",
+        "loop": false
+      },
+      "correct": {
+        "webm": "/mascots/dr_cosmo/correct.webm",
+        "mp4": "/mascots/dr_cosmo/correct.mp4",
+        "poster": "/mascots/dr_cosmo/correct.webp",
+        "fallbackPoster": "/assets/characters/dr-cosmo/clapping.webp",
+        "loop": false
+      },
+      "wrong": {
+        "webm": "/mascots/dr_cosmo/wrong.webm",
+        "mp4": "/mascots/dr_cosmo/wrong.mp4",
+        "poster": "/mascots/dr_cosmo/wrong.webp",
+        "fallbackPoster": "/assets/characters/dr-cosmo/disappointed.webp",
+        "loop": false
+      },
+      "celebrate": {
+        "webm": "/mascots/dr_cosmo/celebrate.webm",
+        "mp4": "/mascots/dr_cosmo/celebrate.mp4",
+        "poster": "/mascots/dr_cosmo/celebrate.webp",
+        "fallbackPoster": "/assets/characters/dr-cosmo/celebrating.webp",
+        "loop": false
+      },
+      "talking": {
+        "webm": "/mascots/dr_cosmo/talking.webm",
+        "mp4": "/mascots/dr_cosmo/talking.mp4",
+        "poster": "/mascots/dr_cosmo/talking.webp",
+        "fallbackPoster": "/assets/characters/dr-cosmo/clapping.webp",
+        "loop": true
+      }
+    }
+  }
+}

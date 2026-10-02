@@ -70,6 +70,20 @@ export async function GET(req) {
             }
           } else if (Array.isArray(q.options)) {
             opts = q.options;
+          } else if (Array.isArray(q.options_list)) {
+            opts = q.options_list.map(o => typeof o === 'object' && o !== null ? (o.text || o.text_hi || o.text_en || '') : String(o));
+          }
+
+          let optsHi = q.optionsHi;
+          if (typeof optsHi === "string") {
+            try {
+              optsHi = JSON.parse(optsHi);
+            } catch {
+              optsHi = undefined;
+            }
+          }
+          if (!Array.isArray(optsHi) && Array.isArray(q.options_list)) {
+            optsHi = q.options_list.map(o => typeof o === 'object' && o !== null ? (o.text_hi || o.text || '') : String(o));
           }
 
           return {
@@ -77,15 +91,15 @@ export async function GET(req) {
             _id: String(q._id),
             text: language === "hi" && q.textHi ? q.textHi : q.text || q.text_en,
             textHi: q.textHi,
-            options: language === "hi" && q.optionsHi ? q.optionsHi : opts,
-            optionsHi: q.optionsHi,
+            options: language === "hi" && Array.isArray(optsHi) && optsHi.length > 0 ? optsHi : opts,
+            optionsHi: Array.isArray(optsHi) ? optsHi : undefined,
             correctAnswer: q.correctAnswer,
             correctIndex: q.correctIndex !== undefined ? q.correctIndex : q.correct_index,
             difficulty: q.difficulty,
             difficulty_level: q.difficulty_level,
             explanation: language === "hi" && q.explanationHi ? q.explanationHi : q.explanation,
             explanationHi: q.explanationHi,
-            examTags: q.examTags || q.exam || [],
+            examTags: Array.isArray(q.examTags) ? q.examTags : (Array.isArray(q.exam) ? q.exam : []),
             subTopic: q.subTopic,
             questionType: q.questionType,
           };
@@ -94,23 +108,55 @@ export async function GET(req) {
       return NextResponse.json({ set: setDoc, questions: orderedQuestions });
     }
 
-    // ── IF REQUESTING TOPIC SETS LIST ──
-    if (!topicId) {
-      return NextResponse.json({ error: "Missing topicId" }, { status: 400 });
+    // ── IF REQUESTING TOPIC OR SUBJECT SETS LIST ──
+    const subjectId = searchParams.get("subjectId");
+    if (!topicId && !subjectId) {
+      return NextResponse.json({ error: "Missing topicId or subjectId" }, { status: 400 });
     }
 
     const topicsCol = db.collection("gk_topics");
-    const topicDoc = await topicsCol.findOne({ id: topicId });
+    const subjectsCol = db.collection("gk_subjects");
+
+    let topicDoc = null;
+    let subjectDoc = null;
+
+    if (subjectId) {
+      subjectDoc = await subjectsCol.findOne({ $or: [{ id: subjectId }, { slug: subjectId }] });
+      if (subjectDoc?.topicId) {
+        topicDoc = await topicsCol.findOne({ id: subjectDoc.topicId });
+      }
+    }
+
+    if (!topicDoc && topicId) {
+      topicDoc = await topicsCol.findOne({ $or: [{ id: topicId }, { slug: topicId }] });
+    }
+
+    // Filter sets by subjectId or topicId without restrictive scope
+    const setFilter = {
+      language,
+      status: "published",
+    };
+
+    if (subjectDoc) {
+      setFilter.$or = [{ subjectId: subjectDoc.id }, { subjectId: subjectId }];
+    } else if (topicDoc) {
+      setFilter.$or = [{ topicId: topicDoc.id }, { topicId: topicId }];
+    }
 
     const sets = await setsCol
-      .find({
-        topicId,
-        language,
-        scope: "topic",
-        status: "published",
-      })
+      .find(setFilter)
+      .project({ questions: 0 })
       .sort({ number: 1 })
       .toArray();
+
+    // Fetch subjects under this topic if available
+    let subjects = [];
+    if (topicDoc) {
+      subjects = await subjectsCol
+        .find({ topicId: topicDoc.id, status: "published" })
+        .sort({ order: 1, name: 1 })
+        .toArray();
+    }
 
     // Fetch User Progress
     const userProgressFilter = userId
@@ -128,8 +174,12 @@ export async function GET(req) {
       return {
         id: s.id,
         number: s.number,
+        title: s.title || `Set ${s.number}`,
+        subjectId: s.subjectId,
+        subjectName: s.subjectName,
         tags: s.tags || [],
         mix: s.mix,
+        badge: s.badge || "Standard",
         questionCount: (s.questionIds || []).length || 20,
         stars: p?.stars || 0,
         bestScore: p?.bestScore || 0,
@@ -140,6 +190,8 @@ export async function GET(req) {
 
     return NextResponse.json({
       topic: topicDoc,
+      subject: subjectDoc,
+      subjects,
       sets: enrichedSets,
       totalSets: enrichedSets.length,
     });

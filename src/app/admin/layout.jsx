@@ -31,6 +31,7 @@ const JR_NAV = [
   { href: "/admin/career-guides", label: "Career Guides", icon: "🧭", perm: "careerGuides" },
   { href: "/admin/forum", label: "Community Forum", icon: "💬", perm: "forum" },
   { href: "/admin/school-study", label: "School Study", icon: "🏫", perm: "schoolStudy" },
+  { href: "/admin/mascots", label: "Mascots & Hosts", icon: "🎭", perm: "settings" },
   { href: "/admin/settings", label: "Settings", icon: "⚙️", perm: "settings" },
 ];
 
@@ -61,6 +62,7 @@ const MASTER_NAV_DEFAULT = [
   { href: "/admin/career-guides", label: "Career Guides", icon: "🧭", perm: "careerGuides" },
   { href: "/admin/forum", label: "Community Forum", icon: "💬", perm: "forum" },
   { href: "/admin/school-study", label: "School Study", icon: "🏫", perm: "schoolStudy" },
+  { href: "/admin/mascots", label: "Mascots & Hosts", icon: "🎭", perm: "settings" },
   { href: "/admin/settings", label: "Settings", icon: "⚙️", perm: "settings" },
 ];
 

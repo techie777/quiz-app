@@ -3,6 +3,7 @@
 import { createContext, useContext, useReducer, useCallback, useEffect } from "react";
 import { useData } from "@/context/DataContext";
 import toast from "react-hot-toast";
+import { createMulberry32, shuffleArrayWithRng, shuffleQuestionOptions } from "@/lib/prng";
 
 const QuizContext = createContext(null);
 
@@ -70,6 +71,9 @@ const initialState = {
   mixedSectionName: null,
   categoryName: null,
   quizSessionId: null,
+  seed: null,
+  subjectId: null,
+  topicId: null,
   combo: 0,
   maxCombo: 0,
   totalXP: 0,
@@ -85,24 +89,49 @@ const STORAGE_KEY = 'global_quiz_state';
 // Client-side translation cache (0ms instant language swap)
 const clientTranslationCache = new Map();
 
+function normalizeQuestion(q) {
+  if (!q) return q;
+  let opts = q.options;
+  if (typeof opts === "string") {
+    try { opts = JSON.parse(opts); } catch { opts = [opts]; }
+  }
+  if (!Array.isArray(opts) && Array.isArray(q.options_list)) {
+    opts = q.options_list.map(o => typeof o === 'object' && o !== null ? (o.text || o.text_hi || o.text_en || '') : String(o));
+  }
+  let optsHi = q.optionsHi;
+  if (typeof optsHi === "string") {
+    try { optsHi = JSON.parse(optsHi); } catch { optsHi = undefined; }
+  }
+  const qId = q.id || q._id ? String(q.id || q._id) : undefined;
+  return {
+    ...q,
+    id: qId,
+    _id: qId,
+    options: Array.isArray(opts) ? opts : [],
+    optionsHi: Array.isArray(optsHi) ? optsHi : (Array.isArray(q.optionsHi) ? q.optionsHi : undefined),
+  };
+}
+
 function quizReducer(state, action) {
   switch (action.type) {
     case "START_QUIZ": {
-      const { quiz, difficulty, timer, language } = action.payload;
+      const { quiz, difficulty, timer, language, seed, subjectId, topicId } = action.payload;
       if (!quiz) return state;
 
-      const filtered = quiz.questions.filter(
+      const filtered = (quiz.questions || []).filter(
         (q) => q.difficulty === difficulty
       );
-      const raw = filtered.length > 0 ? filtered : quiz.questions;
+      const raw = filtered.length > 0 ? filtered : (quiz.questions || []);
+      const normalizedRaw = raw.map(normalizeQuestion);
       
-      // Deep shuffle and sanitize (strip userAnswer)
-      const shuffledQuestions = shuffleArray(raw).map(q => {
+      const quizSeed = seed !== undefined && seed !== null ? seed : Math.floor(100000 + Math.random() * 900000);
+      const rng = createMulberry32(quizSeed);
+
+      // Deep shuffle questions and options deterministically using Mulberry32
+      const shuffledQuestions = shuffleArrayWithRng(normalizedRaw, rng).map(q => {
         const { userAnswer, ...pristineQ } = q;
-        return {
-          ...pristineQ,
-          options: shuffleArray(q.options)
-        };
+        const qRng = createMulberry32(String(quizSeed) + "_" + String(q.id || q._id || q.text));
+        return shuffleQuestionOptions(pristineQ, qRng);
       });
 
       return {
@@ -117,26 +146,31 @@ function quizReducer(state, action) {
         isFullscreen: state.isFullscreen,
         language: language || detectQuizLanguage(shuffledQuestions),
         originalLanguage: detectQuizLanguage(shuffledQuestions),
-        originalQuestions: shuffledQuestions,
+        originalQuestions: quiz.questions || shuffledQuestions,
         originalStory: quiz.storyText || null,
         translatedStory: null,
         selectedSetIndex: null,
         categoryName: quiz.topic || quiz.name,
-        quizSessionId: Date.now(),
+        quizSessionId: quizSeed,
+        seed: quizSeed,
+        subjectId: subjectId || null,
+        topicId: topicId || null,
         startTime: Date.now(),
         timeTaken: 0,
       };
     }
     case "START_QUIZ_SET": {
-      const { quizId, quizSlug, questions, timer, language, setIndex, categoryName } = action.payload;
+      const { quizId, quizSlug, questions, timer, language, setIndex, categoryName, seed, subjectId, topicId } = action.payload;
       
-      // Deep shuffle and sanitize (strip userAnswer)
-      const shuffledQuestions = shuffleArray(questions).map(q => {
+      const setSeed = seed !== undefined && seed !== null ? seed : Math.floor(100000 + Math.random() * 900000);
+      const rng = createMulberry32(setSeed);
+      const normalizedQs = (questions || []).map(normalizeQuestion);
+
+      // Rule 5: Deep shuffle BOTH question order and option order deterministically
+      const shuffledQuestions = shuffleArrayWithRng(normalizedQs, rng).map(q => {
         const { userAnswer, ...pristineQ } = q;
-        return {
-          ...pristineQ,
-          options: Array.isArray(q.options) ? shuffleArray(q.options) : []
-        };
+        const qRng = createMulberry32(String(setSeed) + "_" + String(q.id || q._id || q.text));
+        return shuffleQuestionOptions(pristineQ, qRng);
       });
 
       return {
@@ -150,26 +184,31 @@ function quizReducer(state, action) {
         isFullscreen: state.isFullscreen,
         language: language || detectQuizLanguage(shuffledQuestions),
         originalLanguage: detectQuizLanguage(shuffledQuestions),
-        originalQuestions: shuffledQuestions,
+        originalQuestions: questions,
         originalStory: null,
         translatedStory: null,
         selectedSetIndex: setIndex,
         categoryName: categoryName,
-        quizSessionId: Date.now(),
+        quizSessionId: setSeed,
+        seed: setSeed,
+        subjectId: subjectId || null,
+        topicId: topicId || null,
         startTime: Date.now(),
         timeTaken: 0,
       };
     }
     case "START_MIXED_QUIZ": {
-      const { questions, sectionName, timer, difficulty, language } = action.payload;
+      const { questions, sectionName, timer, difficulty, language, seed } = action.payload;
       
-      // Deep shuffle and sanitize (strip userAnswer)
-      const shuffledQuestions = shuffleArray(questions).map(q => {
+      const mixSeed = seed !== undefined && seed !== null ? seed : Math.floor(100000 + Math.random() * 900000);
+      const rng = createMulberry32(mixSeed);
+      const normalizedQs = (questions || []).map(normalizeQuestion);
+
+      // Deep shuffle questions and options deterministically
+      const shuffledQuestions = shuffleArrayWithRng(normalizedQs, rng).map(q => {
         const { userAnswer, ...pristineQ } = q;
-        return {
-          ...pristineQ,
-          options: Array.isArray(q.options) ? shuffleArray(q.options) : []
-        };
+        const qRng = createMulberry32(String(mixSeed) + "_" + String(q.id || q._id || q.text));
+        return shuffleQuestionOptions(pristineQ, qRng);
       });
 
       return {
@@ -184,15 +223,16 @@ function quizReducer(state, action) {
         isFullscreen: state.isFullscreen,
         language: language || detectQuizLanguage(shuffledQuestions),
         originalLanguage: detectQuizLanguage(shuffledQuestions),
-        originalQuestions: shuffledQuestions,
+        originalQuestions: questions,
         categoryName: sectionName,
-        quizSessionId: Date.now(),
+        quizSessionId: mixSeed,
+        seed: mixSeed,
         startTime: Date.now(),
         timeTaken: 0,
       };
     }
     case "SET_QUESTIONS":
-      return { ...state, questions: action.payload, isTranslating: false };
+      return { ...state, questions: (action.payload || []).map(normalizeQuestion), isTranslating: false };
     case "SET_TRANSLATED_STORY":
       return { ...state, translatedStory: action.payload };
     case "SET_TRANSLATING":
@@ -205,16 +245,17 @@ function quizReducer(state, action) {
       return { ...state, fontScale: action.payload };
     case "SUBMIT_ANSWER": {
       const { questionId, selected } = action.payload;
-      const question = state.questions.find((q) => q.id === questionId);
+      const question = state.questions.find((q) => q.id === questionId || q._id === questionId);
       if (!question) return state;
 
       // Normalize comparison for score calculation
-      const selectedOptionText = String(question.options[selected] || "").trim();
+      const opts = Array.isArray(question.options) ? question.options : [];
+      const selectedOptionText = String(opts[selected] || "").trim();
       const correctAnswerText = String(question.correctAnswer || "").trim();
       const isCorrect = selectedOptionText === correctAnswerText;
       
       // Update answers array, replacing if already exists for this question
-      const existingAnswerIndex = state.answers.findIndex(a => a.questionId === questionId);
+      const existingAnswerIndex = state.answers.findIndex(a => a.questionId === questionId || a.questionId === question.id || a.questionId === question._id);
       let newAnswers = [...state.answers];
       
       const answerData = { questionId, selected, correct: question.correctAnswer, isCorrect };
@@ -667,7 +708,7 @@ export function QuizProvider({ children }) {
     dispatch({ type: "SET_FONT_SCALE", payload: next });
   }, [state.fontScale]);
 
-  const startQuiz = useCallback(async (quizId, difficulty, timer, language = "en", skipTranslation = true) => {
+  const startQuiz = useCallback(async (quizId, difficulty, timer, language = "en", skipTranslation = true, seed = null, subjectId = null, topicId = null) => {
     const quiz = quizzes.find((q) => q.id === quizId);
     if (!quiz) return;
     
@@ -680,7 +721,7 @@ export function QuizProvider({ children }) {
     const detectedLang = detectQuizLanguage(quizQuestions);
     const originalLang = quiz?.originalLang || detectedLang;
     
-    dispatch({ type: "START_QUIZ", payload: { quiz, difficulty, timer, language } });
+    dispatch({ type: "START_QUIZ", payload: { quiz, difficulty, timer, language, seed, subjectId, topicId } });
     
     console.log(`[Quiz] Start. User selected: ${language}, Original data lang: ${originalLang}, Detected: ${detectedLang}`);
     
@@ -698,9 +739,9 @@ export function QuizProvider({ children }) {
     }
   }, [quizzes, translateQuiz]);
 
-  const startQuizSet = useCallback(async (quizId, questions, timer, language = "en", setIndex = null, categoryName = null, skipTranslation = true) => {
+  const startQuizSet = useCallback(async (quizId, questions, timer, language = "en", setIndex = null, categoryName = null, skipTranslation = true, seed = null, subjectId = null, topicId = null) => {
     const quiz = quizzes.find(q => q.id === quizId);
-    dispatch({ type: "START_QUIZ_SET", payload: { quizId, quizSlug: quiz?.slug, questions, timer, language, setIndex, categoryName } });
+    dispatch({ type: "START_QUIZ_SET", payload: { quizId, quizSlug: quiz?.slug, questions, timer, language, setIndex, categoryName, seed, subjectId, topicId } });
     
     if (skipTranslation) {
       console.log(`[QuizSet] skipTranslation is true. Bypassing translation API.`);

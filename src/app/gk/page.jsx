@@ -223,7 +223,9 @@ export default function GkHubPage() {
                 {isHindi ? "सामान्य ज्ञान (जीके)" : "General Knowledge (GK)"}
               </h1>
               <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
-                {isHindi ? "50,000+ सत्यापित प्रश्न संग्रह" : "50,000+ Verified Question Bank"}
+                {gkData?.stats?.totalQuestions
+                  ? `${gkData.stats.totalQuestions.toLocaleString("en-IN")}+ ${isHindi ? "सत्यापित प्रश्न" : "Verified Questions"}`
+                  : (isHindi ? "सत्यापित प्रश्न संग्रह" : "Verified Question Bank")}
               </span>
             </div>
           </div>

@@ -82,10 +82,12 @@ export function DataProvider({ children }) {
       } else {
         const errData = await res.json().catch(() => ({}));
         console.error("[DataContext] addCategory failed:", errData);
+        toast.error(errData.error || "Failed to create category");
         return false;
       }
     } catch (error) {
       console.error("[DataContext] addCategory fetch error:", error);
+      toast.error(error.message || "Network error while creating category");
       return false;
     }
   }, [refreshQuizzes]);
@@ -112,7 +114,7 @@ export function DataProvider({ children }) {
       }
     } catch (error) {
       console.error("[DataContext] updateCategory fetch error:", error);
-      toast.error("Network error while updating category");
+      toast.error(error.message || "Network error while updating category");
       return false;
     }
   }, [refreshQuizzes]);

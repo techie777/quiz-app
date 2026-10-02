@@ -93,6 +93,23 @@ export default function TrueFalseHub() {
   return (
     <div className={styles.page}>
       <div className={styles.container}>
+        {/* Module Switcher: Fun Facts | True / False (Rule D3) */}
+        <div className="flex items-center gap-2 mb-5">
+          <Link
+            href="/fun-facts"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-white border border-slate-200 text-slate-700 font-black text-xs hover:border-indigo-300 transition-all shadow-2xs"
+          >
+            <Sparkles size={14} />
+            <span>{globalAppLang === "hi" ? "रोचक तथ्य (Fun Facts)" : "Fun Facts"}</span>
+          </Link>
+          <Link
+            href="/true-false"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-indigo-600 text-white font-black text-xs shadow-sm shadow-indigo-500/20"
+          >
+            <span>✓✗</span>
+            <span>{globalAppLang === "hi" ? "सही या गलत (True/False)" : "True / False"}</span>
+          </Link>
+        </div>
 
         {/* Voyager Play Button */}
         <div className={styles.voyagerPlayWrapper}>

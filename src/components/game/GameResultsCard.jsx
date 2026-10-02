@@ -30,16 +30,33 @@ export default function GameResultsCard({
   if (!gameResult) return null;
 
   const {
-    earnedXP,
-    breakdown,
-    totalXP,
-    newLevel,
-    leveledUp,
-    streak,
-    isDailyGoalMet,
+    earnedXP = 0,
+    breakdown = {},
+    totalXP = 0,
+    newLevel: rawNewLevel,
+    leveledUp = false,
+    streak: rawStreak,
+    isDailyGoalMet = false,
     recapFacts = [],
-    weakTopicHint,
+    weakTopicHint = null,
   } = gameResult;
+
+  const newLevel = {
+    id: rawNewLevel?.id || 1,
+    name: rawNewLevel?.name || "जिज्ञासु",
+    nameEn: rawNewLevel?.nameEn || "Curious",
+    color: rawNewLevel?.color || "#10B981",
+    icon: rawNewLevel?.icon || "🌱",
+    progressPct: typeof rawNewLevel?.progressPct === "number" ? rawNewLevel.progressPct : 0,
+    xpToNext: rawNewLevel?.xpToNext ?? 500,
+    isMaxLevel: Boolean(rawNewLevel?.isMaxLevel),
+  };
+  const streak = {
+    count: rawStreak?.count ?? 1,
+    freezes: rawStreak?.freezes ?? 1,
+    protectedWithFreeze: Boolean(rawStreak?.protectedWithFreeze),
+  };
+  const safeRecapFacts = Array.isArray(recapFacts) ? recapFacts : [];
 
   const handleShareClick = async () => {
     if (onChallengeFriend) {
@@ -196,7 +213,7 @@ export default function GameResultsCard({
       </div>
 
       {/* 3. 3-Fact Recap ("३ रोचक तथ्य / 3 Key Takeaways") */}
-      {recapFacts.length > 0 && (
+      {safeRecapFacts.length > 0 && (
         <div className="p-5 rounded-2xl bg-gradient-to-br from-indigo-50/70 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800/80 border border-indigo-100 dark:border-slate-800 shadow-sm text-left">
           <div className="flex items-center gap-2 mb-3">
             <span className="p-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400">
@@ -208,7 +225,7 @@ export default function GameResultsCard({
           </div>
 
           <div className="space-y-2">
-            {recapFacts.slice(0, 3).map((fact, idx) => (
+            {safeRecapFacts.slice(0, 3).map((fact, idx) => (
               <div 
                 key={idx}
                 className="flex items-start gap-2.5 p-3 rounded-xl bg-white/90 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/60 text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium"

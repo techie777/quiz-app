@@ -66,14 +66,14 @@ export const TIER_NAVIGATION_CONFIG = {
       matchRegex: /^\/(daily-current-affairs|current-affairs)/,
     },
     {
-      id: "seekho",
-      label: "Seekho",
-      labelHi: "सीखो",
-      shortLabel: "Seekho",
-      shortLabelHi: "सीखो",
-      href: "/learn",
-      icon: BookOpen,
-      matchRegex: /^\/learn/,
+      id: "facts",
+      label: "Fun Facts & T/F",
+      labelHi: "रोचक तथ्य",
+      shortLabel: "Facts",
+      shortLabelHi: "तथ्य",
+      href: "/fun-facts",
+      icon: Sparkles,
+      matchRegex: /^\/(fun-facts|true-false)/,
     },
   ],
   [TIERS.STUDENTS]: [
@@ -200,7 +200,7 @@ export default function BottomNavBar() {
   const activeModules = modules || DEFAULT_MODULES_CONFIG;
   const destinations = allDestinations.filter((item) => {
     if (item.id === "home" && activeModules.home === false) return false;
-    if (item.id === "learn" && activeModules.learn === false) return false;
+    if ((item.id === "learn" || item.id === "facts") && activeModules.learn === false && activeModules.facts === false) return false;
     if (item.id === "play" && activeModules.arena === false && activeModules.play === false) return false;
     if (item.id === "currentAffairs" && activeModules.currentAffairs === false) return false;
     if (item.id === "profile" && activeModules.profile === false) return false;

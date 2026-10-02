@@ -13,17 +13,21 @@ export default function ResultDonationCard() {
     // 1. Strictly NEVER show in Kids
     if (tier === "kids") return;
 
-    // 2. Check if shown today (at most once a day)
-    const today = new Date().toISOString().split("T")[0];
-    const lastShown = localStorage.getItem("quizweb_last_donation_appeal_date");
-    if (lastShown === today) return;
+    try {
+      // 2. Check if shown today (at most once a day)
+      const today = new Date().toISOString().split("T")[0];
+      const lastShown = localStorage.getItem("quizweb_last_donation_appeal_date");
+      if (lastShown === today) return;
 
-    setVisible(true);
+      setVisible(true);
+    } catch {}
   }, [tier]);
 
   const handleDismiss = () => {
-    const today = new Date().toISOString().split("T")[0];
-    localStorage.setItem("quizweb_last_donation_appeal_date", today);
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      localStorage.setItem("quizweb_last_donation_appeal_date", today);
+    } catch {}
     setVisible(false);
   };
 

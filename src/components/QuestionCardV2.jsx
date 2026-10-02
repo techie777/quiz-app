@@ -4,13 +4,16 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useQuiz } from "@/context/QuizContext";
-import { playCorrectSound, playWrongSound } from "@/lib/sounds";
+import { playCorrectSound, playWrongSound, playTapSound, playStreakSound } from "@/lib/sounds";
 import { shareQuestion } from "@/lib/shareHelper";
 import { toggleQuestionFavourite, isQuestionFavourited } from "@/lib/favouritesHelper";
 import { Share2, Heart, X, ArrowRight } from "lucide-react";
 import Image from "next/image";
 import styles from "@/styles/QuizEngine.module.css";
 import { getDynamicExplanation } from "@/lib/explanationGenerator";
+import ExplanationCard from "@/components/quiz/ExplanationCard";
+import { useTier } from "@/context/TierContext";
+import confetti from "canvas-confetti";
 
 export default function QuestionCardV2({
   question,
@@ -31,6 +34,7 @@ export default function QuestionCardV2({
   const { data: session, status } = useSession();
   const router = useRouter();
   const { soundEnabled, quizSessionId, combo } = useQuiz();
+  const { tier } = useTier();
   
   const [selected, setSelected] = useState(null);
   const [revealed, setRevealed] = useState(false);
@@ -80,7 +84,7 @@ export default function QuestionCardV2({
     }
   }, [favouriteIds, question]);
 
-  // Options parsing & shuffling
+  // Options parsing: options are deterministically shuffled by QuizContext with the seed
   const shuffledOptions = useMemo(() => {
     if (!question) return [];
     
@@ -89,22 +93,12 @@ export default function QuestionCardV2({
       ? question.optionsHi
       : (question.options || []);
       
-    // Create an array of indices based on the ACTUAL length of display options
-    const indices = displayOpts.map((_, i) => i);
-    
-    // Shuffle the indices
-    const shuffled = [...indices];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    
-    // Return mapped options with their original index for correct answer checking
-    return shuffled.map(idx => ({
-      text: displayOpts[idx] || "",
+    // Maintain the synchronized, seeded option order from QuizContext
+    return displayOpts.map((text, idx) => ({
+      text: text || "",
       originalIndex: idx
     }));
-  }, [question?.id, isHindi]); // Re-shuffle ONLY when question changes
+  }, [question?.id, isHindi, question?.options, question?.optionsHi]);
 
   // Hotkey Listener
   useEffect(() => {
@@ -145,6 +139,9 @@ export default function QuestionCardV2({
   const handleSelect = (originalIndex) => {
     if (revealed || disabled || !question) return;
     
+    // Task 3.5: Tap bubble sound on selection
+    if (soundEnabled) playTapSound();
+
     const selectedOptionText = String(question.options[originalIndex] || "").trim();
     const correctAnswerText = String(question.correctAnswer || "").trim();
     const isCorrect = selectedOptionText === correctAnswerText;
@@ -154,13 +151,27 @@ export default function QuestionCardV2({
     if (!isTestMode) {
       setRevealed(true);
 
-      if (soundEnabled) {
-        if (isCorrect) playCorrectSound(combo);
-        else {
-          playWrongSound();
-          setShakingType("animate-vibrate");
-          setTimeout(() => setShakingType(""), 500);
+      if (isCorrect) {
+        if (soundEnabled) {
+          if (combo >= 2) {
+            playStreakSound(combo);
+          } else {
+            playCorrectSound();
+          }
         }
+        try {
+          confetti({
+            particleCount: 65,
+            spread: 75,
+            origin: { y: 0.65 },
+            colors: ["#22C55E", "#3B82F6", "#F59E0B", "#EC4899", "#8B5CF6", "#10B981"],
+            disableForReducedMotion: true,
+          });
+        } catch {}
+      } else {
+        if (soundEnabled) playWrongSound();
+        setShakingType("animate-vibrate");
+        setTimeout(() => setShakingType(""), 500);
       }
     }
 
@@ -482,38 +493,15 @@ export default function QuestionCardV2({
       )}
 
       {showExplanation && (
-        <div className={styles.explanationOverlay} onClick={() => onCloseExplanation?.()}>
-          <div className={styles.centeredExplanationCard} onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between gap-3 mb-2.5 pb-2 border-b border-slate-100 dark:border-slate-800">
-              <span className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white flex items-center gap-1.5">
-                <span>💡</span>
-                <span>{isHindi ? "स्पष्टीकरण" : "Explanation"}</span>
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => onCloseExplanation?.()}
-                  className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-transform active:scale-95"
-                >
-                  <span>{isHindi ? "अगला प्रश्न" : "Next Question"}</span>
-                  <ArrowRight size={13} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onCloseExplanation?.()}
-                  className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 flex items-center justify-center transition-colors"
-                  title={isHindi ? "बंद करें" : "Close"}
-                  aria-label="Close"
-                >
-                  <X size={15} />
-                </button>
-              </div>
-            </div>
-            <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-200 leading-relaxed font-medium m-0">
-              {getDynamicExplanation(question, isHindi)}
-            </p>
-          </div>
-        </div>
+        <ExplanationCard
+          question={question}
+          userAnswerIndex={selected}
+          onNextQuestion={onCloseExplanation}
+          onClose={onCloseExplanation}
+          categoryOrSlug={quizId}
+          tier={tier}
+          isHindi={isHindi}
+        />
       )}
     </div>
   );

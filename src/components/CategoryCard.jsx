@@ -17,7 +17,8 @@ export default function CategoryCard({ category, onClick, customCountText, hideV
     ? category.topicHi || category.nameHi
     : category.topic || category.name;
   const qCount = category.questionCount ?? category._count?.questions ?? (Array.isArray(category.questions) ? category.questions.length : 0);
-  const countDisplay = customCountText || `${qCount} ${isHindi ? "प्रश्न" : "Qs"}`;
+  const isComingSoon = qCount === 0;
+  const countDisplay = customCountText || (isComingSoon ? (isHindi ? "जल्द आ रहा है" : "Coming soon") : `${qCount} ${isHindi ? "प्रश्न" : "Qs"}`);
   
   let targetHref = `/category/${category.slug || category.id}`;
   if (category.isGkParent) {
@@ -27,6 +28,7 @@ export default function CategoryCard({ category, onClick, customCountText, hideV
   }
 
   const handleClick = (e) => {
+    if (isComingSoon) return;
     if (onClick) {
       onClick(category, e);
     } else {
@@ -36,21 +38,28 @@ export default function CategoryCard({ category, onClick, customCountText, hideV
 
   return (
     <motion.div
-      whileHover={{ y: -3, scale: 1.01 }}
-      whileTap={{ scale: 0.98 }}
+      whileHover={isComingSoon ? {} : { y: -3, scale: 1.01 }}
+      whileTap={isComingSoon ? {} : { scale: 0.98 }}
       transition={{ duration: 0.15 }}
       onClick={handleClick}
-      className="group relative cursor-pointer bg-white hover:bg-[#FAFAFE] border border-slate-200/90 hover:border-indigo-400/90 rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md hover:shadow-indigo-500/10 transition-all duration-200 flex flex-col justify-between select-none min-h-[120px] sm:min-h-[135px]"
+      className={`group relative bg-white hover:bg-[#FAFAFE] border rounded-2xl p-4 sm:p-5 shadow-sm transition-all duration-200 flex flex-col justify-between select-none min-h-[120px] sm:min-h-[135px] ${
+        isComingSoon
+          ? "border-slate-200 dark:border-slate-800 opacity-80 cursor-default"
+          : "cursor-pointer border-slate-200/90 hover:border-indigo-400/90 hover:shadow-md hover:shadow-indigo-500/10"
+      }`}
     >
       {/* Top: Premium Icon + Question Count Badge */}
       <div className="flex items-center justify-between gap-2 mb-3">
-        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-indigo-50 to-violet-50/70 border border-indigo-100/90 flex items-center justify-center text-2xl group-hover:scale-105 transition-transform shrink-0 shadow-2xs">
+        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-indigo-50 to-violet-50/70 border border-indigo-100/90 flex items-center justify-center text-2xl group-hover:scale-105 transition-transform shrink-0 shadow-2xs overflow-hidden">
           {category.image ? (
             <img
               src={category.image}
               alt={title}
               className="w-full h-full object-cover rounded-2xl"
               loading="lazy"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
             />
           ) : (
             category.emoji || category.icon || "📝"
@@ -69,7 +78,13 @@ export default function CategoryCard({ category, onClick, customCountText, hideV
               {category.category === "World GK" ? "World GK" : "India GK"}
             </span>
           )}
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100/90 tracking-tight shadow-2xs">
+          <span
+            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold tracking-tight shadow-2xs ${
+              isComingSoon
+                ? "bg-amber-50 text-amber-700 border border-amber-200/80"
+                : "bg-indigo-50 text-indigo-700 border border-indigo-100/90"
+            }`}
+          >
             {countDisplay}
           </span>
         </div>

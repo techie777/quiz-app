@@ -268,7 +268,7 @@ export async function POST(request) {
   try {
     const body = await request.json();
     console.log("[API/categories] Request body topic:", body.topic);
-    const { topic, emoji, description, categoryClass, hidden, image, parentId, showSubCategoriesOnHome, storyText, storyImage, originalLang, isTrending, chips } = body;
+    const { topic, topicHi, emoji, description, descriptionHi, categoryClass, hidden, image, parentId, showSubCategoriesOnHome, storyText, storyImage, originalLang, isTrending, chips } = body;
     
     if (!topic) {
       console.warn("[API/categories] Missing topic");
@@ -280,14 +280,23 @@ export async function POST(request) {
     const maxSort = await prisma.category.aggregate({ _max: { sortOrder: true } });
     console.log("[API/categories] maxSort:", maxSort._max.sortOrder);
 
-    const slug = body.slug || topic.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]+/g, '').replace(/--+/g, '-');
+    // Generate unique slug with automatic deduplication
+    const rawBaseSlug = (body.slug || topic).toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]+/g, '').replace(/--+/g, '-') || "category";
+    let slug = rawBaseSlug;
+    let suffix = 1;
+    while (await prisma.category.findUnique({ where: { slug } })) {
+      suffix++;
+      slug = `${rawBaseSlug}-${suffix}`;
+    }
 
     const category = await prisma.category.create({
       data: {
         topic,
+        topicHi: topicHi || null,
         slug,
         emoji: emojiStr,
         description: description || "",
+        descriptionHi: descriptionHi || null,
         categoryClass: categoryClass || `category-${topic.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")}`,
         hidden: !!hidden,
         image: image || null,

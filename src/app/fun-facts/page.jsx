@@ -121,7 +121,23 @@ export default function FunFactsHub() {
   return (
     <div className={styles.page}>
       <div className={styles.container}>
-        {/* Hero section removed as per request */}
+        {/* Module Switcher: Fun Facts | True / False (Rule D3) */}
+        <div className="flex items-center gap-2 mb-5">
+          <Link
+            href="/fun-facts"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-indigo-600 text-white font-black text-xs shadow-sm shadow-indigo-500/20"
+          >
+            <Sparkles size={14} />
+            <span>{globalAppLang === "hi" ? "रोचक तथ्य (Fun Facts)" : "Fun Facts"}</span>
+          </Link>
+          <Link
+            href="/true-false"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-white border border-slate-200 text-slate-700 font-black text-xs hover:border-indigo-300 transition-all shadow-2xs"
+          >
+            <span>✓✗</span>
+            <span>{globalAppLang === "hi" ? "सही या गलत (True/False)" : "True / False"}</span>
+          </Link>
+        </div>
 
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8 bg-white p-4 rounded-2xl shadow-sm border border-indigo-50">
           <div className="flex gap-2 p-1 bg-indigo-50/50 border border-indigo-100 rounded-xl overflow-x-auto w-full md:w-auto">

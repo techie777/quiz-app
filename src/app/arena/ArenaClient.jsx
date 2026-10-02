@@ -78,7 +78,7 @@ function renderSafeCategoryIcon(iconOrEmoji) {
 
 let cachedArenaMeta = null;
 
-export default function ArenaClient() {
+export default function ArenaClient({ initialSelectedCategoryIds = null, embedded = false }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { startMixedQuiz } = useQuiz();
@@ -86,12 +86,20 @@ export default function ArenaClient() {
   const { tier } = useTier();
   const { quizzes } = useData();
 
+  const topicParam = searchParams?.get("topic");
+  const catParam = searchParams?.get("category");
+  const subjectParam = searchParams?.get("subject");
+
   // 2-Step Flow: Step 1 (Categories) | Step 2 (Setup)
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(() => {
+    if (initialSelectedCategoryIds && initialSelectedCategoryIds.length > 0) return 2;
+    if (topicParam || catParam || subjectParam) return 2;
+    return 1;
+  });
 
   // Audience context
   const urlAudience =
-    searchParams.get("audience") ||
+    searchParams?.get("audience") ||
     (tier === "kids" ? "kids" : tier === "students" ? "students" : "all");
 
   // Metadata & categories state (instant from cache if available)
@@ -101,7 +109,13 @@ export default function ArenaClient() {
 
   // Step 1: Category selection state
   const [catSearch, setCatSearch] = useState("");
-  const [selectedCats, setSelectedCats] = useState([]);
+  const [selectedCats, setSelectedCats] = useState(() => {
+    if (initialSelectedCategoryIds && initialSelectedCategoryIds.length > 0) {
+      return initialSelectedCategoryIds;
+    }
+    const preIds = [topicParam, catParam, subjectParam].filter(Boolean);
+    return preIds.length > 0 ? preIds : [];
+  });
 
   // Step 2: Single-screen quiz setup state
   const [difficulty, setDifficulty] = useState("all"); // 'all' | 'easy' | 'medium' | 'hard'
@@ -118,6 +132,18 @@ export default function ArenaClient() {
         cachedArenaMeta = data;
         setMeta(data);
 
+        // Pre-filter takes precedence
+        if (initialSelectedCategoryIds && initialSelectedCategoryIds.length > 0) {
+          setSelectedCats(initialSelectedCategoryIds);
+          return;
+        }
+
+        const preIds = [topicParam, catParam, subjectParam].filter(Boolean);
+        if (preIds.length > 0) {
+          setSelectedCats(preIds);
+          return;
+        }
+
         // Load saved preferences if available
         let saved = null;
         try {
@@ -125,7 +151,7 @@ export default function ArenaClient() {
           if (raw) saved = JSON.parse(raw);
         } catch {}
 
-        if (saved && !searchParams.get("audience")) {
+        if (saved && !searchParams?.get("audience")) {
           if (Array.isArray(saved.selectedCats) && saved.selectedCats.length > 0) {
             setSelectedCats(saved.selectedCats);
           }
@@ -150,7 +176,7 @@ export default function ArenaClient() {
       }
     }
     loadMeta();
-  }, [searchParams, urlAudience]);
+  }, [searchParams, urlAudience, initialSelectedCategoryIds, topicParam, catParam, subjectParam]);
 
   // 2. Persist preferences
   useEffect(() => {

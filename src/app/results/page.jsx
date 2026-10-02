@@ -24,6 +24,43 @@ import { recordQuizCompletion, createChallengeCode } from "@/lib/gameLayer";
 import GameResultsCard from "@/components/game/GameResultsCard";
 import { showRewarded } from "@/lib/adProvider";
 import ResultDonationCard from "@/components/monetization/ResultDonationCard";
+import MascotPlayer from "@/components/quiz/MascotPlayer";
+import { getMascotForCategory } from "@/config/mascots";
+
+function parseOptions(opts) {
+  if (Array.isArray(opts)) {
+    return opts.map(opt => {
+      if (typeof opt === 'object' && opt !== null) {
+        return opt.text || opt.text_hi || opt.text_en || '';
+      }
+      return String(opt);
+    });
+  }
+  if (typeof opts === 'string') {
+    try {
+      const parsed = JSON.parse(opts);
+      if (Array.isArray(parsed)) {
+        return parseOptions(parsed);
+      }
+    } catch {}
+  }
+  return [];
+}
+
+function parseExamTags(tags) {
+  if (Array.isArray(tags)) return tags.filter(Boolean).map(String);
+  if (typeof tags === 'string') {
+    try {
+      const parsed = JSON.parse(tags);
+      if (Array.isArray(parsed)) return parsed.filter(Boolean).map(String);
+    } catch {}
+    if (tags.includes(',')) {
+      return tags.split(',').map(s => s.trim()).filter(Boolean);
+    }
+    return [tags.trim()].filter(Boolean);
+  }
+  return [];
+}
 
 function getMotivation(percentage, t) {
   if (percentage === 100) return { text: t('result.motivation.perfect'), emoji: "🌟" };
@@ -60,7 +97,10 @@ export default function ResultPage() {
     categoryName: quizCategoryName,
     timeTaken,
     startTime,
-    maxCombo
+    maxCombo,
+    seed,
+    subjectId,
+    topicId,
   } = useQuiz();
   const { quizzes } = useData();
   const [showReview, setShowReview] = useState(true);
@@ -87,6 +127,39 @@ export default function ResultPage() {
     if (isMixedMode) return null;
     return (quizzes || []).find((q) => q.id === quizId || q.slug === quizSlug || q.slug === quizId);
   }, [quizzes, quizId, quizSlug, isMixedMode]);
+
+  const mascot = useMemo(() => {
+    return getMascotForCategory(category || quizCategoryName || quizSlug || quizId, tier);
+  }, [category, quizCategoryName, quizSlug, quizId, tier]);
+
+  const performance = useMemo(() => {
+    if (!questions || !Array.isArray(questions) || questions.length === 0) return null;
+    const qTotal = questions.length;
+    const correct = Math.max(0, score || 0);
+    const ansCount = Array.isArray(answers) ? answers.length : 0;
+    const skipped = Math.max(0, qTotal - ansCount);
+    const wrong = Math.max(0, qTotal - correct - skipped);
+    const accuracy = qTotal > 0 ? Math.round((correct / qTotal) * 100) : 0;
+
+    return { correct, wrong, skipped, total: qTotal, accuracy };
+  }, [questions, score, answers]);
+
+  const total = performance?.total || 0;
+  const percentage = performance?.accuracy || 0;
+  const motivation = getMotivation(percentage, t);
+
+  // Step 2 Requirement: Result screen: celebrate if score is 70% or more, wrong/encouraging if 40% or less, otherwise correct.
+  const mascotResultState = useMemo(() => {
+    if (percentage >= 70) return "celebrate";
+    if (percentage <= 40) return "wrong"; // empathetic / encouraging
+    return "correct";
+  }, [percentage]);
+
+  const starCount = useMemo(() => {
+    if (percentage >= 80) return 3;
+    if (percentage >= 50) return 2;
+    return 1;
+  }, [percentage]);
 
   const [isDailyQuiz, setIsDailyQuiz] = useState(false);
 
@@ -188,34 +261,79 @@ export default function ResultPage() {
     }
   }, [totalQuestions, score, maxCombo, questions, answers, isHindi, quizCategoryName, category]);
 
+  // Task 3.2: Record Static GK Set Progress (Client storage + MongoDB persistence)
+  useEffect(() => {
+    if (quizId && totalQuestions > 0 && !isDailyQuiz) {
+      let deviceId = "";
+      try {
+        deviceId = localStorage.getItem("quizweb_device_id") || "";
+        if (!deviceId) {
+          deviceId = "dev_" + Math.random().toString(36).substring(2, 12);
+          localStorage.setItem("quizweb_device_id", deviceId);
+        }
+      } catch {}
+
+      const computedStars = percentage >= 90 ? 3 : percentage >= 70 ? 2 : percentage >= 50 ? 1 : 0;
+
+      // 1. Instant local storage update for fast offline & UI sync
+      try {
+        const raw = localStorage.getItem("quizweb_set_progress");
+        const localProg = raw ? JSON.parse(raw) : {};
+        if (typeof localProg === 'object' && localProg !== null) {
+          localProg[quizId] = {
+            setId: quizId,
+            score,
+            totalQuestions,
+            stars: Math.max(localProg[quizId]?.stars || 0, computedStars),
+            bestScore: Math.max(localProg[quizId]?.bestScore || 0, score),
+            completed: true,
+            completedAt: new Date().toISOString(),
+          };
+          localStorage.setItem("quizweb_set_progress", JSON.stringify(localProg));
+        }
+      } catch {}
+
+      // 2. Persist to MongoDB via /api/gk/progress
+      fetch("/api/gk/progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          setId: quizId,
+          subjectId: subjectId || category?.subjectId || null,
+          topicId: topicId || category?.topicId || null,
+          score,
+          totalQuestions,
+          stars: computedStars,
+          deviceId,
+          language: isHindi ? "hi" : "en",
+          status: "completed",
+        }),
+      }).catch((e) => console.error("GK Progress post error:", e));
+    }
+  }, [quizId, totalQuestions, isDailyQuiz, score, percentage, isHindi, subjectId, topicId, category]);
+
+  // Task 3.7: Challenge a Friend with Seeded Shuffle and Direct Link
   const handleChallengeFriend = async () => {
     try {
-      const topicSlug = quizSlug || quizId || "general";
       const topicName = (isHindi && category?.topicHi) ? category.topicHi : (quizCategoryName || category?.topic || "Quiz");
       const playerName = authSession?.user?.name || (isHindi ? "आपका दोस्त" : "Your Friend");
+      const challengeSeed = seed || Math.floor(100000 + Math.random() * 900000);
       
-      const code = createChallengeCode({
-        categorySlug: topicSlug,
-        categoryName: topicName,
-        score,
-        total: totalQuestions,
-        playerName,
-      });
+      const targetUrl = `${window.location.origin}/quiz/${quizId || quizSlug || "quiz"}?seed=${challengeSeed}&challengerScore=${score}&challengerName=${encodeURIComponent(playerName)}`;
       
-      const challengeUrl = `${window.location.origin}/challenge?code=${code}`;
       const shareText = isHindi
-        ? `🎯 मैंने "${topicName}" क्विज़ में ${totalQuestions} में से ${score} अंक प्राप्त किए! क्या तुम मुझे हरा सकते हो? चुनौती स्वीकार करो:`
-        : `🎯 I scored ${score}/${totalQuestions} in the "${topicName}" quiz! Think you can beat me? Accept the duel:`;
+        ? `⚔️ मैंने QuizWeb पर "${topicName}" में ${totalQuestions} में से ${score} अंक प्राप्त किए! क्या आप मुझे हरा सकते हैं? चुनौती स्वीकार करें:\n${targetUrl}`
+        : `⚔️ I scored ${score}/${totalQuestions} on "${topicName}" on QuizWeb! Think you can beat me? Accept my challenge:\n${targetUrl}`;
 
       if (navigator.share) {
         await navigator.share({
           title: isHindi ? "क्विज़ मुकाबला चुनौती" : "Quiz Duel Challenge",
           text: shareText,
-          url: challengeUrl,
+          url: targetUrl,
         });
       } else {
-        await navigator.clipboard.writeText(`${shareText}\n${challengeUrl}`);
-        toast.success(isHindi ? "चुनौती लिंक कॉपी हो गया! व्हाट्सएप पर शेयर करें।" : "Challenge link copied to clipboard!");
+        const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
+        window.open(waUrl, "_blank");
       }
     } catch (err) {
       if (err?.name !== "AbortError") {
@@ -335,33 +453,11 @@ export default function ResultPage() {
     }
   };
 
-   const handleSuggestionClick = (suggestionId) => {
-     setShowPostQuizPopup(false);
-      const suggestion = quizzes.find(q => q.id === suggestionId);
-      router.push(`/category/${suggestion?.slug || suggestionId}`);
-
-   };
-
-  const performance = useMemo(() => {
-    if (!questions || questions.length === 0) return null;
-    const total = questions.length;
-    const correct = score;
-    const skipped = total - answers.length;
-    const wrong = total - correct - skipped;
-    const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
-
-    return { correct, wrong, skipped, total, accuracy };
-  }, [questions, score, answers]);
-
-  const total = performance?.total || 0;
-  const percentage = performance?.accuracy || 0;
-  const motivation = getMotivation(percentage, t);
-
-  const starCount = useMemo(() => {
-    if (percentage >= 80) return 3;
-    if (percentage >= 50) return 2;
-    return 1;
-  }, [percentage]);
+  const handleSuggestionClick = (suggestionId) => {
+    setShowPostQuizPopup(false);
+    const suggestion = (quizzes || []).find((q) => q && (q.id === suggestionId || q._id === suggestionId));
+    router.push(`/category/${suggestion?.slug || suggestionId}`);
+  };
 
   const [displayScore, setDisplayScore] = useState(0);
   useEffect(() => {
@@ -394,6 +490,7 @@ export default function ResultPage() {
       hard: { correct: 0, total: 0 },
     };
     (questions || []).forEach((q) => {
+      if (!q) return;
       const rawDiff = String(q?.difficulty || "medium").toLowerCase();
       const diffKey = (rawDiff === "easy" || q?.difficulty_level === 1)
         ? "easy"
@@ -401,7 +498,7 @@ export default function ResultPage() {
         ? "hard"
         : "medium";
       counts[diffKey].total += 1;
-      const ans = (answers || []).find((a) => a.questionId === q.id || a.questionId === q._id);
+      const ans = (answers || []).find((a) => a && (a.questionId === q.id || a.questionId === q._id));
       if (ans?.isCorrect) {
         counts[diffKey].correct += 1;
       }
@@ -413,22 +510,24 @@ export default function ResultPage() {
   useEffect(() => {
     if (tier === "kids" && questions && questions.length > 0) {
       if (typeof window !== "undefined") {
-        const curStars = parseInt(localStorage.getItem("kids_stars_count") || "12", 10);
-        const newStars = curStars + starCount;
-        localStorage.setItem("kids_stars_count", String(newStars));
-        
-        let curStickers = ["super_star", "rocket_kid", "dino_explorer"];
         try {
-          const parsed = JSON.parse(localStorage.getItem("kids_stickers_unlocked") || "[]");
-          if (Array.isArray(parsed)) {
-            curStickers = Array.from(new Set([...curStickers, ...parsed]));
-          }
-        } catch (e) {}
+          const curStars = parseInt(localStorage.getItem("kids_stars_count") || "12", 10);
+          const newStars = curStars + starCount;
+          localStorage.setItem("kids_stars_count", String(newStars));
+          
+          let curStickers = ["super_star", "rocket_kid", "dino_explorer"];
+          try {
+            const parsed = JSON.parse(localStorage.getItem("kids_stickers_unlocked") || "[]");
+            if (Array.isArray(parsed)) {
+              curStickers = Array.from(new Set([...curStickers, ...parsed]));
+            }
+          } catch (e) {}
 
-        if (starCount === 3 && !curStickers.includes("super_star")) curStickers.push("super_star");
-        if (percentage >= 50 && !curStickers.includes("lion_champ")) curStickers.push("lion_champ");
-        if (percentage === 100 && !curStickers.includes("golden_cup")) curStickers.push("golden_cup");
-        localStorage.setItem("kids_stickers_unlocked", JSON.stringify(curStickers));
+          if (starCount === 3 && !curStickers.includes("super_star")) curStickers.push("super_star");
+          if (percentage >= 50 && !curStickers.includes("lion_champ")) curStickers.push("lion_champ");
+          if (percentage === 100 && !curStickers.includes("golden_cup")) curStickers.push("golden_cup");
+          localStorage.setItem("kids_stickers_unlocked", JSON.stringify(curStickers));
+        } catch (e) {}
       }
     }
   }, [tier, questions, starCount, percentage]);
@@ -531,231 +630,255 @@ export default function ResultPage() {
 
     const doc = new jsPDF();
     doc.setFontSize(22);
-    doc.text(t('result.export.reportTitle'), 105, 20, { align: "center" });
+    doc.text(t('result.export.reportTitle') || "Quiz Report", 105, 20, { align: "center" });
     
     doc.setFontSize(14);
-    doc.text(`${t('result.export.category')}: ${category?.topic || "General"}`, 20, 40);
-    doc.text(`${t('result.stats.total')}: ${score} / ${total}`, 20, 50);
-    doc.text(`${t('result.accuracy')}: ${percentage}%`, 20, 60);
+    doc.text(`${t('result.export.category') || "Category"}: ${category?.topic || "General"}`, 20, 40);
+    doc.text(`${t('result.stats.total') || "Total"}: ${score || 0} / ${total || 0}`, 20, 50);
+    doc.text(`${t('result.accuracy') || "Accuracy"}: ${percentage || 0}%`, 20, 60);
 
     const tableData = [];
-    questions.forEach((q, i) => {
-        const answer = answers.find(a => a.questionId === q.id);
-        const selected = answer && answer.selected !== null ? q.options[answer.selected] : "N/A";
-        tableData.push([i + 1, q.text, q.correctAnswer, selected, answer?.isCorrect ? t('result.review.badgeCorrect') : t('result.review.badgeWrong')]);
+    (questions || []).forEach((q, i) => {
+        if (!q) return;
+        const answer = (answers || []).find(a => a && (a.questionId === q.id || a.questionId === q._id));
+        const qOpts = parseOptions(q.options);
+        const selected = answer && answer.selected !== null && answer.selected !== undefined ? (qOpts[answer.selected] || String(answer.selected)) : "N/A";
+        tableData.push([i + 1, q.text || q.textHi || "", q.correctAnswer || "", selected, answer?.isCorrect ? (t('result.review.badgeCorrect') || "Correct") : (t('result.review.badgeWrong') || "Wrong")]);
     });
 
     autoTable(doc, {
         startY: 70,
-        head: [['#', t('result.review.question'), t('result.review.correct'), t('result.review.yourAnswer'), t('result.status')]],
+        head: [['#', t('result.review.question') || "Question", t('result.review.correct') || "Correct", t('result.review.yourAnswer') || "Your Answer", t('result.status') || "Status"]],
         body: tableData,
     });
 
     doc.save(`Quiz-Report-${quizId || 'General'}.pdf`);
   };
 
-  const renderAnswerReview = () => (
-    <div id="review-section" className={styles.review}>
-      <div className={styles.reviewHeaderMain}>
-        <div className={styles.reviewTitleRow}>
-          <h2 className={styles.reviewTitle}>
-            <span>📋</span>
-            <span>{isHindi ? 'उत्तर समीक्षा' : 'Answer Review'}</span>
-          </h2>
-          
-          {/* Filter Tabs */}
-          <div className={styles.reviewFilterTabs}>
-            <button 
-              className={`${styles.filterBtn} ${reviewFilterTab === 'all' ? styles.filterBtnActive : ''}`}
-              onClick={() => setReviewFilterTab('all')}
-            >
-              {isHindi ? 'सभी' : 'All'} ({questions.length})
-            </button>
-            <button 
-              className={`${styles.filterBtn} ${reviewFilterTab === 'wrong' ? styles.filterBtnActive : ''}`}
-              onClick={() => setReviewFilterTab('wrong')}
-            >
-              ❌ {isHindi ? 'गलत' : 'Wrong'} ({performance?.wrong || 0})
-            </button>
-            <button 
-              className={`${styles.filterBtn} ${reviewFilterTab === 'correct' ? styles.filterBtnActive : ''}`}
-              onClick={() => setReviewFilterTab('correct')}
-            >
-              ✓ {isHindi ? 'सही' : 'Correct'} ({performance?.correct || 0})
-            </button>
-            <button 
-              className={`${styles.filterBtn} ${reviewFilterTab === 'skipped' ? styles.filterBtnActive : ''}`}
-              onClick={() => setReviewFilterTab('skipped')}
-            >
-              ⏱️ {isHindi ? 'छूटे' : 'Skipped'} ({performance?.skipped || 0})
-            </button>
+  const renderAnswerReview = () => {
+    const qList = Array.isArray(questions) ? questions : [];
+    const ansList = Array.isArray(answers) ? answers : [];
+    if (qList.length === 0) return null;
+
+    return (
+      <div id="review-section" className={styles.review}>
+        <div className={styles.reviewHeaderMain}>
+          <div className={styles.reviewTitleRow}>
+            <h2 className={styles.reviewTitle}>
+              <span>📋</span>
+              <span>{isHindi ? 'उत्तर समीक्षा' : 'Answer Review'}</span>
+            </h2>
+            
+            {/* Filter Tabs */}
+            <div className={styles.reviewFilterTabs}>
+              <button 
+                className={`${styles.filterBtn} ${reviewFilterTab === 'all' ? styles.filterBtnActive : ''}`}
+                onClick={() => setReviewFilterTab('all')}
+              >
+                {isHindi ? 'सभी' : 'All'} ({qList.length})
+              </button>
+              <button 
+                className={`${styles.filterBtn} ${reviewFilterTab === 'wrong' ? styles.filterBtnActive : ''}`}
+                onClick={() => setReviewFilterTab('wrong')}
+              >
+                ❌ {isHindi ? 'गलत' : 'Wrong'} ({performance?.wrong || 0})
+              </button>
+              <button 
+                className={`${styles.filterBtn} ${reviewFilterTab === 'correct' ? styles.filterBtnActive : ''}`}
+                onClick={() => setReviewFilterTab('correct')}
+              >
+                ✓ {isHindi ? 'सही' : 'Correct'} ({performance?.correct || 0})
+              </button>
+              <button 
+                className={`${styles.filterBtn} ${reviewFilterTab === 'skipped' ? styles.filterBtnActive : ''}`}
+                onClick={() => setReviewFilterTab('skipped')}
+              >
+                ⏱️ {isHindi ? 'छूटे' : 'Skipped'} ({performance?.skipped || 0})
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {questions
-        .map((question, index) => ({ question, originalIndex: index }))
-        .filter(({ question }) => {
-          const answer = answers.find((a) => a.questionId === question.id);
-          const isAnswered = !!answer;
-          const isCorrect = answer?.isCorrect || false;
-          
-          if (reviewFilterTab === 'wrong') return isAnswered && !isCorrect;
-          if (reviewFilterTab === 'correct') return isAnswered && isCorrect;
-          if (reviewFilterTab === 'skipped') return !isAnswered;
-          return true;
-        })
-        .map(({ question, originalIndex }) => {
-          const answer = answers.find((a) => a.questionId === question.id);
-          const isAnswered = !!answer;
-          const isCorrect = answer?.isCorrect || false;
+        {qList
+          .map((question, index) => ({ question, originalIndex: index }))
+          .filter(({ question }) => {
+            if (!question) return false;
+            const qId = question.id || question._id;
+            const answer = ansList.find((a) => a && (a.questionId === qId || a.questionId === question.id || a.questionId === question._id));
+            const isAnswered = !!answer;
+            const isCorrect = answer?.isCorrect || false;
+            
+            if (reviewFilterTab === 'wrong') return isAnswered && !isCorrect;
+            if (reviewFilterTab === 'correct') return isAnswered && isCorrect;
+            if (reviewFilterTab === 'skipped') return !isAnswered;
+            return true;
+          })
+          .map(({ question, originalIndex }) => {
+            if (!question) return null;
+            const qId = question.id || question._id || originalIndex;
+            const answer = ansList.find((a) => a && (a.questionId === qId || a.questionId === question.id || a.questionId === question._id));
+            const isAnswered = !!answer;
+            const isCorrect = answer?.isCorrect || false;
 
-          // Get user selected option text
-          let userSelectedText = "";
-          if (!isAnswered || answer?.selected === null || answer?.selected === undefined) {
-            userSelectedText = isHindi ? "उत्तर नहीं दिया / समय समाप्त" : "Skipped / Timed Out";
-          } else if (isHindi && Array.isArray(question.optionsHi) && question.optionsHi[answer.selected]) {
-            userSelectedText = question.optionsHi[answer.selected];
-          } else if (Array.isArray(question.options) && question.options[answer.selected]) {
-            userSelectedText = question.options[answer.selected];
-          } else {
-            userSelectedText = String(answer.selected);
-          }
+            const parsedOptsEn = parseOptions(question.options);
+            const parsedOptsHi = parseOptions(question.optionsHi);
+            const parsedOptsList = parseOptions(question.options_list);
 
-          // Get correct option text
-          let correctOptionText = "";
-          if (isHindi && Array.isArray(question.optionsHi)) {
-            const correctIdx = question.options.findIndex(opt => String(opt).trim() === String(question.correctAnswer).trim());
-            if (correctIdx !== -1 && question.optionsHi[correctIdx]) {
-              correctOptionText = question.optionsHi[correctIdx];
+            const optsToUse = isHindi
+              ? (parsedOptsHi.length > 0 ? parsedOptsHi : (parsedOptsEn.length > 0 ? parsedOptsEn : parsedOptsList))
+              : (parsedOptsEn.length > 0 ? parsedOptsEn : (parsedOptsHi.length > 0 ? parsedOptsHi : parsedOptsList));
+
+            // Get user selected option text
+            let userSelectedText = "";
+            if (!isAnswered || answer?.selected === null || answer?.selected === undefined) {
+              userSelectedText = isHindi ? "उत्तर नहीं दिया / समय समाप्त" : "Skipped / Timed Out";
+            } else if (optsToUse[answer.selected] !== undefined) {
+              userSelectedText = optsToUse[answer.selected];
+            } else if (parsedOptsEn[answer.selected] !== undefined) {
+              userSelectedText = parsedOptsEn[answer.selected];
+            } else {
+              userSelectedText = String(answer.selected);
             }
-          }
-          if (!correctOptionText) {
-            correctOptionText = question.correctAnswer || (question.options ? question.options[0] : "");
-          }
 
-          return (
-            <div
-              key={question.id || originalIndex}
-              className={`${styles.reviewItem} ${
-                !isAnswered ? styles.reviewSkipped : (isCorrect ? styles.reviewCorrect : styles.reviewWrong)
-              }`}
-            >
-              {/* Question Top Bar */}
-              <div className={styles.reviewHeader}>
-                <div className="flex items-center gap-2">
-                  <span className={styles.reviewNumPill}>
-                    {isHindi ? `प्रश्न ${originalIndex + 1}` : `Question ${originalIndex + 1}`}
-                  </span>
-                  {question.difficulty && (
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                      question.difficulty.toLowerCase() === 'easy' ? 'bg-[#DCFCE7] text-[#16A34A] border-[#86EFAC]' :
-                      question.difficulty.toLowerCase() === 'hard' ? 'bg-[#FEE2E2] text-[#DC2626] border-[#FCA5A5]' :
-                      question.difficulty.toLowerCase() === 'expert' ? 'bg-[#EDE9FE] text-[#7C3AED] border-[#C4B5FD]' :
-                      'bg-[#FEF3C7] text-[#D97706] border-[#FDE68A]'
-                    }`}>
-                      {question.difficulty.toUpperCase()}
+            // Get correct option text
+            let correctOptionText = "";
+            if (isHindi && parsedOptsHi.length > 0) {
+              const correctIdx = parsedOptsEn.findIndex(opt => String(opt).trim().toLowerCase() === String(question.correctAnswer).trim().toLowerCase());
+              if (correctIdx !== -1 && parsedOptsHi[correctIdx]) {
+                correctOptionText = parsedOptsHi[correctIdx];
+              }
+            }
+            if (!correctOptionText) {
+              correctOptionText = question.correctAnswer || (optsToUse.length > 0 ? optsToUse[0] : "");
+            }
+
+            const examTagList = [
+              ...parseExamTags(question.examTags),
+              ...parseExamTags(question.exam)
+            ];
+
+            return (
+              <div
+                key={qId}
+                className={`${styles.reviewItem} ${
+                  !isAnswered ? styles.reviewSkipped : (isCorrect ? styles.reviewCorrect : styles.reviewWrong)
+                }`}
+              >
+                {/* Question Top Bar */}
+                <div className={styles.reviewHeader}>
+                  <div className="flex items-center gap-2">
+                    <span className={styles.reviewNumPill}>
+                      {isHindi ? `प्रश्न ${originalIndex + 1}` : `Question ${originalIndex + 1}`}
                     </span>
-                  )}
-                </div>
-                
-                <span className={`${styles.statusBadge} ${
-                  !isAnswered 
-                    ? styles.statusBadgeSkipped 
-                    : (isCorrect ? styles.statusBadgeCorrect : styles.statusBadgeWrong)
-                }`}>
-                  {!isAnswered 
-                    ? (isHindi ? '⏱️ छूटा हुआ' : '⏱️ Skipped')
-                    : (isCorrect ? (isHindi ? '✓ सही उत्तर' : '✓ Correct') : (isHindi ? '✕ गलत उत्तर' : '✕ Incorrect'))
-                  }
-                </span>
-              </div>
-
-              {/* Question Body */}
-              <h4 className={styles.reviewQuestion}>
-                {(isHindi && question.textHi) ? question.textHi : question.text}
-              </h4>
-              
-              {/* Answer Comparison Cards */}
-              <div className={styles.answerGrid}>
-                {/* User Answer Card */}
-                <div className={`${styles.answerCard} ${
-                  !isAnswered 
-                    ? styles.answerCardSkipped 
-                    : (isCorrect ? styles.answerCardUserCorrect : styles.answerCardUserWrong)
-                }`}>
-                  <span className={`${styles.answerLabel} ${
+                    {question.difficulty && (
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                        String(question.difficulty).toLowerCase() === 'easy' ? 'bg-[#DCFCE7] text-[#16A34A] border-[#86EFAC]' :
+                        String(question.difficulty).toLowerCase() === 'hard' ? 'bg-[#FEE2E2] text-[#DC2626] border-[#FCA5A5]' :
+                        String(question.difficulty).toLowerCase() === 'expert' ? 'bg-[#EDE9FE] text-[#7C3AED] border-[#C4B5FD]' :
+                        'bg-[#FEF3C7] text-[#D97706] border-[#FDE68A]'
+                      }`}>
+                        {String(question.difficulty).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  
+                  <span className={`${styles.statusBadge} ${
                     !isAnswered 
-                      ? styles.answerLabelSkipped 
-                      : (isCorrect ? styles.answerLabelUserCorrect : styles.answerLabelUserWrong)
+                      ? styles.statusBadgeSkipped 
+                      : (isCorrect ? styles.statusBadgeCorrect : styles.statusBadgeWrong)
                   }`}>
                     {!isAnswered 
-                      ? (isHindi ? '⏱️ आपका चयन' : '⏱️ Your Choice')
-                      : (isCorrect ? (isHindi ? '✓ आपका उत्तर (सही)' : '✓ Your Answer (Correct)') : (isHindi ? '❌ आपका उत्तर' : '❌ Your Answer'))
+                      ? (isHindi ? '⏱️ छूटा हुआ' : '⏱️ Skipped')
+                      : (isCorrect ? (isHindi ? '✓ सही उत्तर' : '✓ Correct') : (isHindi ? '✕ गलत उत्तर' : '✕ Incorrect'))
                     }
                   </span>
-                  <span className={styles.answerText}>{userSelectedText}</span>
                 </div>
 
-                {/* Correct Answer Card (shown when user was incorrect or skipped) */}
-                {(!isCorrect || !isAnswered) && (
-                  <div className={`${styles.answerCard} ${styles.answerCardCorrect}`}>
-                    <span className={`${styles.answerLabel} ${styles.answerLabelCorrect}`}>
-                      💡 {isHindi ? 'सही उत्तर' : 'Correct Answer'}
+                {/* Question Body */}
+                <h4 className={styles.reviewQuestion}>
+                  {(isHindi && question.textHi) ? question.textHi : question.text}
+                </h4>
+                
+                {/* Answer Comparison Cards */}
+                <div className={styles.answerGrid}>
+                  {/* User Answer Card */}
+                  <div className={`${styles.answerCard} ${
+                    !isAnswered 
+                      ? styles.answerCardSkipped 
+                      : (isCorrect ? styles.answerCardUserCorrect : styles.answerCardUserWrong)
+                  }`}>
+                    <span className={`${styles.answerLabel} ${
+                      !isAnswered 
+                        ? styles.answerLabelSkipped 
+                        : (isCorrect ? styles.answerLabelUserCorrect : styles.answerLabelUserWrong)
+                    }`}>
+                      {!isAnswered 
+                        ? (isHindi ? '⏱️ आपका चयन' : '⏱️ Your Choice')
+                        : (isCorrect ? (isHindi ? '✓ आपका उत्तर (सही)' : '✓ Your Answer (Correct)') : (isHindi ? '❌ आपका उत्तर' : '❌ Your Answer'))
+                      }
                     </span>
-                    <span className={styles.answerText}>{correctOptionText}</span>
+                    <span className={styles.answerText}>{userSelectedText}</span>
+                  </div>
+
+                  {/* Correct Answer Card (shown when user was incorrect or skipped) */}
+                  {(!isCorrect || !isAnswered) && (
+                    <div className={`${styles.answerCard} ${styles.answerCardCorrect}`}>
+                      <span className={`${styles.answerLabel} ${styles.answerLabelCorrect}`}>
+                        💡 {isHindi ? 'सही उत्तर' : 'Correct Answer'}
+                      </span>
+                      <span className={styles.answerText}>{correctOptionText}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Explanation / Jawab Logic */}
+                {(question.explanation || (isHindi && question.explanationHi)) && (
+                  <div className="mt-4 p-4 rounded-xl bg-indigo-50/60 dark:bg-slate-800/80 border border-indigo-100 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                    <span className="font-black text-indigo-600 dark:text-indigo-400 block mb-1 uppercase tracking-wider text-[11px]">
+                      💡 {isHindi ? "व्याख्या:" : "Explanation:"}
+                    </span>
+                    {isAdTier && !isDailyQuiz && !isPro && !reviewGateUnlocked ? (
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-2.5 bg-white/90 dark:bg-slate-900/90 rounded-xl border border-indigo-200 dark:border-slate-600 mt-1">
+                        <span className="text-slate-700 dark:text-slate-300 font-semibold text-xs">
+                          🔒 {isHindi ? "पूरी व्याख्याएं लॉक हैं।" : "Full explanations are locked."}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            showRewarded({
+                              trigger: "review",
+                              tier,
+                              setId: quizSlug || quizId,
+                              onReward: () => {
+                                setReviewGateUnlocked(true);
+                                toast.success(isHindi ? "सभी व्याख्याएं अनलॉक हो गईं!" : "Explanations unlocked!");
+                              },
+                            });
+                          }}
+                          className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer min-h-[36px]"
+                        >
+                          {isHindi ? "छोटा विज्ञापन देखें (अनलॉक)" : "Watch short ad to unlock"}
+                        </button>
+                      </div>
+                    ) : (
+                      isHindi && question.explanationHi ? question.explanationHi : question.explanation
+                    )}
+                  </div>
+                )}
+
+                {/* Exam Tags */}
+                {examTagList.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5 mt-3">
+                    {examTagList.map((tag, tIdx) => (
+                      <span key={tIdx} className="px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800 text-[10px] font-bold">
+                        🏷️ {tag}
+                      </span>
+                    ))}
                   </div>
                 )}
               </div>
-
-              {/* Explanation / Jawab Logic */}
-              {(question.explanation || (isHindi && question.explanationHi)) && (
-                <div className="mt-4 p-4 rounded-xl bg-indigo-50/60 dark:bg-slate-800/80 border border-indigo-100 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
-                  <span className="font-black text-indigo-600 dark:text-indigo-400 block mb-1 uppercase tracking-wider text-[11px]">
-                    💡 {isHindi ? "व्याख्या:" : "Explanation:"}
-                  </span>
-                  {isAdTier && !isDailyQuiz && !isPro && !reviewGateUnlocked ? (
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-2.5 bg-white/90 dark:bg-slate-900/90 rounded-xl border border-indigo-200 dark:border-slate-600 mt-1">
-                      <span className="text-slate-700 dark:text-slate-300 font-semibold text-xs">
-                        🔒 {isHindi ? "पूरी व्याख्याएं लॉक हैं।" : "Full explanations are locked."}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          showRewarded({
-                            trigger: "review",
-                            tier,
-                            setId: quizSlug || quizId,
-                            onReward: () => {
-                              setReviewGateUnlocked(true);
-                              toast.success(isHindi ? "सभी व्याख्याएं अनलॉक हो गईं!" : "Explanations unlocked!");
-                            },
-                          });
-                        }}
-                        className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer min-h-[36px]"
-                      >
-                        {isHindi ? "छोटा विज्ञापन देखें (अनलॉक)" : "Watch short ad to unlock"}
-                      </button>
-                    </div>
-                  ) : (
-                    isHindi && question.explanationHi ? question.explanationHi : question.explanation
-                  )}
-                </div>
-              )}
-
-              {/* Exam Tags */}
-              {((question.examTags && question.examTags.length > 0) || (Array.isArray(question.exam) && question.exam.length > 0)) && (
-                <div className="flex flex-wrap items-center gap-1.5 mt-3">
-                  {(question.examTags || question.exam).map((tag, tIdx) => (
-                    <span key={tIdx} className="px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800 text-[10px] font-bold">
-                      🏷️ {tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
+            );
+          })}
 
         {/* Back to top button at the end of review list */}
         <div className="flex justify-center mt-6 mb-4">
@@ -768,8 +891,9 @@ export default function ResultPage() {
             <span>{isHindi ? "वापस ऊपर जाएं (शीर्ष)" : "Back to Top"}</span>
           </button>
         </div>
-    </div>
-  );
+      </div>
+    );
+  };
 
   // Always return JSX - never return null or conditionally skip hooks
   return (
@@ -814,9 +938,16 @@ export default function ResultPage() {
 
           {/* Phase D5 Redesigned Clean Results Score Card */}
           <div id="result-card" ref={resultCardRef} className="w-full max-w-xl mx-auto bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-6 sm:p-8 text-center shadow-lg shadow-indigo-500/5 relative overflow-hidden">
-            {/* Top Trophy */}
-            <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 mx-auto flex items-center justify-center text-3xl mb-3 shadow-inner">
-              🏆
+            {/* Step 2: Animated Result Host Mascot */}
+            <div className="flex flex-col items-center justify-center mb-3">
+              <MascotPlayer
+                characterId={mascot?.id || "sharma_sir"}
+                state={mascotResultState}
+                width={110}
+                height={140}
+                isMuted={true}
+                language={isHindi ? "hi" : "en"}
+              />
             </div>
 
             {/* Star Rating (1–3) */}
@@ -972,6 +1103,17 @@ export default function ResultPage() {
                 )}
               </button>
 
+              {/* Task 3.7: Highlighted Challenge a Friend Button */}
+              <button
+                type="button"
+                id="result-challenge-friend-btn"
+                onClick={handleChallengeFriend}
+                className="w-full min-h-[46px] rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-orange-500/25 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer border border-amber-300/40"
+              >
+                <Swords size={18} />
+                <span>{isHindi ? "⚔️ दोस्त को चुनौती दें (1v1 मुकाबला)" : "⚔️ Challenge a Friend (1v1 Duel)"}</span>
+              </button>
+
               {/* Button 3: Tertiary Share Result */}
               <button
                 type="button"
@@ -1065,8 +1207,8 @@ export default function ResultPage() {
           <aside className={styles.sidebarLeft}>
             <h3 className={styles.sidebarTitle}>{t('result.sidebar.youMayLike')}</h3>
             <div className={styles.suggestedList}>
-              {quizzes.slice(0, 3).map(quiz => (
-                <div key={quiz.id} className={styles.suggestedCard} onClick={() => router.push(`/category/${quiz.slug || quiz.id}`)}>
+              {(quizzes || []).slice(0, 3).map(quiz => (
+                <div key={quiz.id || quiz._id} className={styles.suggestedCard} onClick={() => router.push(`/category/${quiz.slug || quiz.id || quiz._id}`)}>
                   <span className={styles.suggestedEmoji}>{quiz.emoji || "📝"}</span>
                   <div className={styles.suggestedInfo}>
                     <span className={styles.suggestedName}>
@@ -1174,10 +1316,17 @@ export default function ResultPage() {
               )}
 
               {tier === "kids" ? (
-                /* Kids Scoring Feedback: Stars & Sticker Celebration (Requirement 5) */
-                <div className="flex flex-col items-center justify-center my-6 select-none text-center">
-                  <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-950/40 flex items-center justify-center text-3xl mb-3 shadow-inner">
-                    ⭐
+                /* Kids Scoring Feedback: Animated Host Mascot (Didi) */
+                <div className="flex flex-col items-center justify-center my-4 select-none text-center">
+                  <div className="mb-2">
+                    <MascotPlayer
+                      characterId="didi"
+                      state={mascotResultState}
+                      width={110}
+                      height={140}
+                      isMuted={true}
+                      language={isHindi ? "hi" : "en"}
+                    />
                   </div>
 
                   <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mb-2">
@@ -1412,9 +1561,9 @@ export default function ResultPage() {
                 <div className={styles.miniSuggestionsGrid}>
                   {filteredQuizzes.map(quiz => (
                     <div 
-                      key={quiz.id} 
+                      key={quiz.id || quiz._id} 
                       className={styles.miniSuggestionCard}
-                      onClick={() => handleSuggestionClick(quiz.id)}
+                      onClick={() => handleSuggestionClick(quiz.id || quiz._id)}
                     >
                       <span className={styles.miniSuggestionEmoji}>{quiz.emoji || '📚'}</span>
                       <span className={styles.miniSuggestionTitle}>

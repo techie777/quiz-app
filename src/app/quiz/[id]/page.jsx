@@ -31,11 +31,16 @@ import { initSounds, playCorrectSound, playWrongSound, playTickerSound } from "@
 import toast from "react-hot-toast";
 import { useTier } from "@/context/TierContext";
 import { useEntitlement } from "@/context/EntitlementContext";
+import MascotAvatar from "@/components/quiz/MascotAvatar";
+import MascotPlayer from "@/components/quiz/MascotPlayer";
+import MascotStreakToast from "@/components/quiz/MascotStreakToast";
+import { getMascotForCategory, stopMascotSpeech } from "@/config/mascots";
 import Link from "next/link";
 import { showRewarded } from "@/lib/adProvider";
+import SetPreviewModal from "@/components/SetPreviewModal";
 
 // Persistent-Fix Local Timer Component
-const QuizTimerComponent = ({ seconds, onExpire, questionKey, isPaused }) => {
+const QuizTimerComponent = ({ seconds, onExpire, onTimeLow, questionKey, isPaused }) => {
   const [timeLeft, setTimeLeft] = useState(seconds);
   const timerRef = useRef(null);
 
@@ -60,6 +65,7 @@ const QuizTimerComponent = ({ seconds, onExpire, questionKey, isPaused }) => {
         }
         if (prev <= 6) { // Plays at 5, 4, 3, 2, 1
           playTickerSound();
+          onTimeLow?.();
         }
         return prev - 1;
       });
@@ -166,9 +172,12 @@ function QuizEngineContent() {
     selectedSetIndex,
     status,
     questions,
+    originalQuestions,
     currentIndex,
     score,
     timerSetting,
+    startQuiz,
+    startQuizSet,
     submitAnswer,
     isPaused,
     pauseQuiz,
@@ -196,6 +205,7 @@ function QuizEngineContent() {
   const [favouriteIds, setFavouriteIds] = useState(null);
   const [showStory, setShowStory] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
+  const [showReadModal, setShowReadModal] = useState(false);
   const [referrer, setReferrer] = useState(null);
   
   // New feature states
@@ -223,6 +233,11 @@ function QuizEngineContent() {
   const [lifelineEffect, setLifelineEffect] = useState(null); // '5050' or 'poll'
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const moreMenuRef = useRef(null);
+
+  // Mascot interactive host state (Step 2: State Logic)
+  const [mascotState, setMascotState] = useState('idle');
+  const [consecutiveStreak, setConsecutiveStreak] = useState(0);
+  const [showStreakToast, setShowStreakToast] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -262,6 +277,10 @@ function QuizEngineContent() {
     if (isMixedMode) return null;
     return (quizzes || []).find((q) => q.id === params?.id || q.slug === params?.id);
   }, [quizzes, params?.id, isMixedMode]);
+
+  const mascot = useMemo(() => {
+    return getMascotForCategory(category || quizSlug || params?.id, tier);
+  }, [category, quizSlug, params?.id, tier]);
 
   const storyTextToDisplay = useMemo(() => {
     return translatedStory || category?.storyText;
@@ -319,17 +338,118 @@ function QuizEngineContent() {
     }
   }, [session]);
 
-  // Redirect if quiz is finished or idle
+  const seedParam = searchParams?.get("seed");
+  const challengerScoreParam = searchParams?.get("challengerScore");
+  const challengerNameParam = searchParams?.get("challengerName") || "Friend";
+
+  const [activeChallengeScore, setActiveChallengeScore] = useState(() => {
+    if (challengerScoreParam) return Number(challengerScoreParam);
+    if (typeof window !== "undefined") {
+      try {
+        const stored = JSON.parse(sessionStorage.getItem("quizweb_active_challenge") || "null");
+        return stored?.challengerScore !== undefined ? Number(stored.challengerScore) : null;
+      } catch { return null; }
+    }
+    return null;
+  });
+
+  const [isAutoLoading, setIsAutoLoading] = useState(false);
+  const [autoLoadFailed, setAutoLoadFailed] = useState(false);
+
+  // Auto-load set or quiz if accessed directly via URL, challenge link, or after browser refresh
   useEffect(() => {
-    // Only redirect if status is idle and we're not just mounting
-    const timer = setTimeout(() => {
-      if (status === "idle") {
-        router.replace("/");
+    if (status !== "idle" || (questions && questions.length > 0) || isAutoLoading || autoLoadFailed || !params?.id) {
+      return;
+    }
+
+    let isMounted = true;
+    async function loadQuizDirectly() {
+      setIsAutoLoading(true);
+      try {
+        const lang = language || "en";
+        // 1. Try fetching set questions
+        const setRes = await fetch(`/api/gk/topic-sets?setId=${encodeURIComponent(params.id)}&language=${lang}`);
+        if (setRes.ok) {
+          const setData = await setRes.json();
+          if (setData.questions && setData.questions.length > 0 && isMounted) {
+            const seedNum = seedParam ? Number(seedParam) : undefined;
+            if (challengerScoreParam) {
+              try {
+                sessionStorage.setItem("quizweb_active_challenge", JSON.stringify({
+                  challengerScore: Number(challengerScoreParam),
+                  challengerName: challengerNameParam,
+                  totalQuestions: setData.questions.length,
+                  setId: params.id,
+                }));
+                setActiveChallengeScore(Number(challengerScoreParam));
+              } catch {}
+            }
+            startQuizSet(
+              setData.set.id,
+              setData.questions,
+              30,
+              lang,
+              setData.set.number,
+              setData.set.title || `Set ${setData.set.number}`,
+              true,
+              seedNum,
+              setData.set.subjectId,
+              setData.set.topicId
+            );
+            return;
+          }
+        }
+
+        // 2. Try fetching category quiz questions
+        const catRes = await fetch(`/api/categories/${encodeURIComponent(params.id)}`);
+        if (catRes.ok) {
+          const catData = await catRes.json();
+          if (catData.questions && catData.questions.length > 0 && isMounted) {
+            const seedNum = seedParam ? Number(seedParam) : undefined;
+            if (setQueryParam) {
+              const setIdx = Math.max(1, parseInt(setQueryParam, 10) || 1);
+              const setSize = 20;
+              const sliceStart = (setIdx - 1) * setSize;
+              const setQuestions = catData.questions.slice(sliceStart, sliceStart + setSize);
+              startQuizSet(
+                catData.id || params.id,
+                setQuestions.length > 0 ? setQuestions : catData.questions,
+                30,
+                lang,
+                setIdx,
+                `${catData.topic || "Quiz"} Set ${setIdx}`,
+                true,
+                seedNum
+              );
+            } else {
+              startQuiz(params.id, "easy", 0, lang, true, seedNum);
+            }
+            return;
+          }
+        }
+
+        if (isMounted) setAutoLoadFailed(true);
+      } catch (err) {
+        console.error("Direct quiz load error:", err);
+        if (isMounted) setAutoLoadFailed(true);
+      } finally {
+        if (isMounted) setIsAutoLoading(false);
       }
-    }, 2000); 
-    
-    return () => clearTimeout(timer);
-  }, [status, router]);
+    }
+
+    loadQuizDirectly();
+    return () => { isMounted = false; };
+  }, [status, questions, params?.id, language, setQueryParam, seedParam, challengerScoreParam, challengerNameParam, startQuizSet, startQuiz, isAutoLoading, autoLoadFailed]);
+
+  // Only redirect if status is idle, not currently auto-loading, and auto-load failed
+  useEffect(() => {
+    if (status === "idle" && autoLoadFailed) {
+      const timer = setTimeout(() => {
+        router.replace("/");
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [status, autoLoadFailed, router]);
 
   // Fullscreen effect
   useEffect(() => {
@@ -404,7 +524,20 @@ function QuizEngineContent() {
   useEffect(() => {
     setQuestionStartTime(Date.now());
     setIsSubmitting(false);
+    setShowExplanation(false);
+    if (explanationTimerRef.current) {
+      clearTimeout(explanationTimerRef.current);
+      explanationTimerRef.current = null;
+    }
+    setMascotState('idle');
+    stopMascotSpeech();
   }, [currentIndex]);
+
+  useEffect(() => {
+    return () => {
+      stopMascotSpeech();
+    };
+  }, []);
 
   // Capture referrer on component mount
   useEffect(() => {
@@ -464,15 +597,15 @@ function QuizEngineContent() {
   }, [resetQuiz, referrer, router, params?.id, category]);
 
   const handleGoToReadMode = useCallback(() => {
-    const categorySlug = category?.slug || quizSlug || params?.id || quizId;
-    const setNumber = selectedSetIndex || Number(setQueryParam) || Math.floor((currentIndex || 0) / 20) + 1;
-    resetQuiz();
-    if (categorySlug) {
-      router.push(`/quizzes?mode=read&cat=${encodeURIComponent(categorySlug)}&set=${setNumber}`);
-    } else {
-      router.push(`/quizzes?mode=read`);
+    setShowReadModal(true);
+  }, []);
+
+  // Open read mode if mode=read is in URL
+  useEffect(() => {
+    if (searchParams?.get("mode") === "read") {
+      setShowReadModal(true);
     }
-  }, [resetQuiz, category, quizSlug, params?.id, quizId, selectedSetIndex, setQueryParam, currentIndex, router]);
+  }, [searchParams]);
 
   // Ensure set query parameter is always visible in the URL bar for Quiz Mode
   useEffect(() => {
@@ -586,7 +719,7 @@ function QuizEngineContent() {
   };
 
   // Ask Audience
-  const useAskAudience = () => {
+  const handleAskAudience = () => {
     if (usedAskAudience) return;
     
     const executePoll = () => {
@@ -637,6 +770,8 @@ function QuizEngineContent() {
   }, []);
 
   const handleCloseExplanation = useCallback(() => {
+    stopMascotSpeech();
+    setMascotState('idle');
     if (explanationTimerRef.current) {
       clearTimeout(explanationTimerRef.current);
       explanationTimerRef.current = null;
@@ -666,8 +801,41 @@ function QuizEngineContent() {
     const correctAnswerText = String(currentQuestion.correctAnswer || "").trim();
     const isCorrect = selectedOptionText === correctAnswerText;
     
-    setShowExplanation(true);
+    // Step 2 State Logic:
+    // 5-correct streak: celebrate (once)
+    // Correct answer: correct (play once), then talking while explanation is read, then idle
+    // Wrong answer: wrong (play once, encouraging not mocking), then talking, then idle
+    if (isCorrect) {
+      setConsecutiveStreak(prev => {
+        const next = prev + 1;
+        if (next >= 5) {
+          setMascotState('celebrate');
+          setShowStreakToast(true);
+        } else {
+          setMascotState('correct');
+          if (next >= 3) {
+            setShowStreakToast(true);
+          }
+        }
+        return next;
+      });
+    } else {
+      setMascotState('wrong');
+      setConsecutiveStreak(0);
+    }
+
     submitAnswer(currentQuestion.id, answerIndex);
+
+    // Allow user to clearly see the green/red answer feedback and confetti on the card first
+    if (explanationTimerRef.current) clearTimeout(explanationTimerRef.current);
+    explanationTimerRef.current = setTimeout(() => {
+      setShowExplanation(true);
+      // Mascot state transition to talking/idle is handled naturally by onStateComplete when video ends
+      // Auto skip dialogue after 12 seconds if not closed manually earlier via "Next Question"
+      explanationTimerRef.current = setTimeout(() => {
+        handleCloseExplanation();
+      }, 12000);
+    }, 1100);
 
     // Master prompt Step 10: "A set counts once the user answers its first question. Daily Quiz and Learn content are exempt."
     if ((answers || []).length === 0) {
@@ -695,12 +863,6 @@ function QuizEngineContent() {
         { icon: "🏁", duration: 2500 }
       );
     }
-
-    // Auto skip dialogue after 5 seconds if not closed manually earlier via "Next Question"
-    if (explanationTimerRef.current) clearTimeout(explanationTimerRef.current);
-    explanationTimerRef.current = setTimeout(() => {
-      handleCloseExplanation();
-    }, 5000);
   }, [currentIndex, questions, submitAnswer, soundEnabled, isSubmitting, language, handleCloseExplanation]);
 
   const handleToggleStory = () => {
@@ -754,14 +916,35 @@ function QuizEngineContent() {
     emerald: "theme-pattern-emerald",
   };
 
-  // Early return ONLY while initial loading or redirecting
+  // Task 3.6: Themed loading screen with animations
   if (status === "idle" || !questions || questions.length === 0) {
-    const loadingText = language === "hi" ? "प्रश्नोत्तरी लोड हो रही है..." : "Loading quiz...";
+    const loadingText = language === "hi" ? "प्रश्नोत्तरी लोड हो रही है..." : "Loading Quiz Arena...";
+    const subText = language === "hi" ? "प्रश्नों को तैयार और शफल किया जा रहा है" : "Preparing questions & shuffling options...";
     return (
       <div className={`min-h-screen w-full flex flex-col items-center justify-center p-4 transition-all duration-500 ${themeClasses[engineTheme] || themeClasses.indigo}`}>
-        <div className="flex flex-col items-center justify-center p-8 rounded-3xl bg-slate-900/90 border border-slate-800/80 backdrop-blur-md shadow-2xl space-y-4 max-w-sm w-full text-center">
-          <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
-          <p className="text-base font-bold text-white tracking-wide">{loadingText}</p>
+        <div className="relative flex flex-col items-center justify-center p-8 rounded-3xl bg-slate-900/95 border border-indigo-500/30 backdrop-blur-xl shadow-2xl space-y-5 max-w-sm w-full text-center overflow-hidden">
+          {/* Ambient Glow */}
+          <div className="absolute -top-12 -left-12 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl" />
+          <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-purple-500/20 rounded-full blur-2xl" />
+          
+          {/* Animated Themed Icon / Ring */}
+          <div className="relative w-20 h-20 flex items-center justify-center">
+            <div className="absolute inset-0 rounded-full border-4 border-indigo-500/20 border-t-indigo-500 animate-spin" />
+            <div className="absolute inset-2 rounded-full border-2 border-purple-500/20 border-b-purple-400 animate-spin" style={{ animationDirection: "reverse", animationDuration: "1.5s" }} />
+            <span className="text-3xl select-none animate-pulse">🎯</span>
+          </div>
+
+          <div className="space-y-1 z-10">
+            <h3 className="text-lg font-black text-white tracking-wide">{loadingText}</h3>
+            <p className="text-xs font-medium text-slate-400">{subText}</p>
+          </div>
+
+          {/* Bouncing dots */}
+          <div className="flex items-center justify-center gap-1.5 pt-1">
+            <div className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: "0ms" }} />
+            <div className="w-2 h-2 rounded-full bg-purple-500 animate-bounce" style={{ animationDelay: "150ms" }} />
+            <div className="w-2 h-2 rounded-full bg-pink-500 animate-bounce" style={{ animationDelay: "300ms" }} />
+          </div>
         </div>
       </div>
     );
@@ -806,6 +989,19 @@ function QuizEngineContent() {
       >
         <div className={styles.mainLayout}>
           <div className={styles.quizArea}>
+            {/* Task 3.7: 1v1 Challenger Banner */}
+            {activeChallengeScore !== null && (
+              <div className="w-full max-w-xl mx-auto mb-3 p-3 bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-red-500/20 border border-amber-500/40 rounded-2xl flex items-center justify-between gap-3 text-amber-200 text-xs sm:text-sm font-black shadow-lg backdrop-blur-md animate-pulse">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">⚔️</span>
+                  <span>{language === "hi" ? `दोस्त की चुनौती: ${activeChallengeScore}/${questions.length} स्कोर किया!` : `Friend's Challenge: Scored ${activeChallengeScore}/${questions.length}!`}</span>
+                </div>
+                <span className="px-2.5 py-1 bg-amber-500 text-slate-950 font-black rounded-lg text-xs uppercase tracking-wider shrink-0">
+                  {language === "hi" ? "हराओ इन्हें!" : "Beat Them!"}
+                </span>
+              </div>
+            )}
+
             {/* Top Bar */}
             <div className={styles.topBar}>
               <div className={styles.topLeft}>
@@ -819,14 +1015,41 @@ function QuizEngineContent() {
                 </div>
               </div>
 
-              <div className={styles.topCenter}>
+              <div className={styles.topCenter} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexShrink: 0 }}>
+                {mascot && (
+                  <div className="shrink-0 flex items-center justify-center cursor-pointer" title={`${mascot.name} - Tap to hear voice`}>
+                    <MascotPlayer
+                      characterId={mascot.id}
+                      state={mascotState}
+                      size={38}
+                      isMuted={true}
+                      allowAudioClick={true}
+                      speechText={mascot.dialogues[mascotState === 'correct' ? 'clapping' : mascotState === 'wrong' ? 'disappointed' : mascotState === 'celebrate' ? 'celebrating' : mascotState] || mascot.dialogues.idle}
+                      language={language}
+                      onStateComplete={(completed) => {
+                        if (completed === 'correct' || completed === 'wrong' || completed === 'celebrate') {
+                          if (!showExplanation) {
+                            setMascotState('idle');
+                          }
+                        }
+                      }}
+                    />
+                  </div>
+                )}
                 {tier !== "kids" && timerSetting > 0 && status === "active" && currentQuestion && (
-                  <QuizTimerComponent
-                    seconds={timerSetting}
-                    onExpire={handleTimerExpire}
-                    questionKey={currentQuestion.id}
-                    isPaused={isPaused || showStory || showExplanation}
-                  />
+                  <div className="shrink-0 flex items-center">
+                    <QuizTimerComponent
+                      seconds={timerSetting}
+                      onExpire={handleTimerExpire}
+                      onTimeLow={() => {
+                        if (!showExplanation && !isSubmitting) {
+                          setMascotState('thinking');
+                        }
+                      }}
+                      questionKey={currentQuestion.id}
+                      isPaused={isPaused || showStory || showExplanation}
+                    />
+                  </div>
                 )}
               </div>
 
@@ -864,7 +1087,7 @@ function QuizEngineContent() {
                           className={styles.menuItem}
                           onClick={() => {
                             setShowMoreMenu(false);
-                            useAskAudience();
+                            handleAskAudience();
                           }}
                           disabled={usedAskAudience}
                         >
@@ -1181,6 +1404,17 @@ function QuizEngineContent() {
         </div>
       )}
 
+      {/* Mascot Streak Celebration Toast */}
+      {showStreakToast && (
+        <MascotStreakToast
+          streak={consecutiveStreak}
+          categoryOrSlug={category || params?.id}
+          tier={tier}
+          soundEnabled={soundEnabled}
+          onDismiss={() => setShowStreakToast(false)}
+        />
+      )}
+
       {/* Result Rewarded Ad Gate */}
       {showResultGate && (
         <div
@@ -1288,6 +1522,19 @@ function QuizEngineContent() {
 
       {/* Ad Simulation Overlay */}
       {showingAd && <AdOverlay onComplete={handleAdComplete} />}
+
+      {/* Read Mode (Sheet Order Questions Preview & Reader) */}
+      {showReadModal && (
+        <SetPreviewModal
+          isOpen={showReadModal}
+          onClose={() => setShowReadModal(false)}
+          set={{
+            index: selectedSetIndex || Number(setQueryParam) || 1,
+            questions: originalQuestions && originalQuestions.length > 0 ? originalQuestions : questions,
+          }}
+          categoryTopic={category?.topic || mixedSectionName || "Quiz"}
+        />
+      )}
     </main>
     </div>
   );

@@ -26,11 +26,12 @@ import {
   Layers,
   ChevronDown,
   ChevronUp,
+  ExternalLink,
 } from "lucide-react";
 
 const DIFFICULTIES = ["easy", "medium", "hard", "expert"];
 
-// Generate New GK Sample Template (.xlsx with 2 sheets)
+// Generate New GK Sample Template (.xlsx with 2 sheets) - Rule 3 compliant
 async function generateGkSampleXlsx() {
   const XLSX = await import("xlsx");
   const questionsData = [
@@ -44,12 +45,12 @@ async function generateGkSampleXlsx() {
       "Question Type": "Explore",
       "Master Category": "GK",
       "Category": "India GK",
-      "Topic": "Ancient Indian History",
+      "Topic": "History",
+      "Subject": "Ancient India",
       "Difficulty": "Medium",
       "Explanation": "लोथल गुजरात के भाल क्षेत्र में स्थित प्राचीन सिंधु घाटी सभ्यता का एक प्रमुख बंदरगाह शहर था।",
       "Language": "hi",
       "Exam Tags": "SSC CGL, State PSC, Railway",
-      "Sub Topic": "Indus Valley Civilization",
     },
     {
       "Question": "What is the capital city of France?",
@@ -62,11 +63,11 @@ async function generateGkSampleXlsx() {
       "Master Category": "GK",
       "Category": "World GK",
       "Topic": "World Geography",
+      "Subject": "European Capitals",
       "Difficulty": "Easy",
       "Explanation": "Paris is the capital and largest city of France, situated on the Seine River.",
       "Language": "en",
       "Exam Tags": "SSC, Railway, UPSC",
-      "Sub Topic": "European Capitals",
     },
     {
       "Question": "Which celestial body in our solar system has the highest count of confirmed moons?",
@@ -79,31 +80,31 @@ async function generateGkSampleXlsx() {
       "Master Category": "GK",
       "Category": "World GK",
       "Topic": "Space & Astronomy",
+      "Subject": "Solar System",
       "Difficulty": "Expert",
       "Explanation": "Saturn currently holds the lead with 146 discovered and designated moons.",
       "Language": "en",
       "Exam Tags": "NDA, CDS, SSC",
-      "Sub Topic": "Solar System",
     },
   ];
 
   const allowedValues = [
-    { "Field": "Category", "Allowed Values": "India GK, World GK", "Description": "Must be India GK or World GK" },
-    { "Field": "Difficulty", "Allowed Values": "Easy, Medium, Hard, Expert", "Description": "Case-insensitive difficulty level" },
+    { "Field": "Category", "Allowed Values": "India GK, World GK", "Description": "Sub Category under Master Category" },
+    { "Field": "Topic", "Allowed Values": "History, Geography, Polity, Science...", "Description": "Main topic" },
+    { "Field": "Subject", "Allowed Values": "Ancient India, Medieval India...", "Description": "Specific subject under topic (Rule 3)" },
+    { "Field": "Difficulty", "Allowed Values": "Easy, Medium, Hard, Expert", "Description": "7 Easy + 7 Medium + 6 Hard/Expert per set" },
     { "Field": "Language", "Allowed Values": "Hindi, English, hi, en", "Description": "Language of the question" },
     { "Field": "Correct Answer", "Allowed Values": "A, B, C, D (or 1, 2, 3, 4, or exact option text)", "Description": "Normalized automatically to 0..3 index" },
-    { "Field": "Question Type", "Allowed Values": "Learn, Rapid Fire, Quick Choice, Explore, Guess the..., Timeline, Compare", "Description": "Free text stored as-is" },
+    { "Field": "Question Type", "Allowed Values": "Learn, Rapid Fire, Quick Choice, Explore, MCQ", "Description": "Stored as question type" },
     { "Field": "Master Category", "Allowed Values": "GK", "Description": "Always 'GK' for GK bank" },
-    { "Field": "Topic", "Allowed Values": "Topic Name (EN or HI)", "Description": "Matched to GK topics or auto-created" },
     { "Field": "Exam Tags", "Allowed Values": "SSC, Railway, PSC, UPSC...", "Description": "Comma-separated exam keywords" },
-    { "Field": "Sub Topic", "Allowed Values": "Any sub-topic string", "Description": "Used for generating set tags" },
   ];
 
   const wsQuestions = XLSX.utils.json_to_sheet(questionsData);
   wsQuestions["!cols"] = [
     { wch: 45 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 },
-    { wch: 16 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 24 },
-    { wch: 14 }, { wch: 45 }, { wch: 12 }, { wch: 25 }, { wch: 22 },
+    { wch: 16 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 20 },
+    { wch: 20 }, { wch: 14 }, { wch: 45 }, { wch: 12 }, { wch: 25 },
   ];
 
   const wsAllowed = XLSX.utils.json_to_sheet(allowedValues);
@@ -183,8 +184,10 @@ export default function AdminUploadPage() {
   // Validation response from server
   const [validationResult, setValidationResult] = useState(null);
   const [isValidating, setIsValidating] = useState(false);
-  const [missingTopics, setMissingTopics] = useState([]);
-  const [isCreatingTopics, setIsCreatingTopics] = useState(false);
+
+  // Target Category Selection (Selected by Admin)
+  const [selectedCategoryId, setSelectedCategoryId] = useState("");
+  const [selectedCategoryName, setSelectedCategoryName] = useState("");
 
   // Import configuration
   const [importMode, setImportMode] = useState("add_new"); // "add_new" | "update_existing"
@@ -227,6 +230,7 @@ export default function AdminUploadPage() {
       lowerHeaders.includes("question type") ||
       lowerHeaders.includes("master category") ||
       lowerHeaders.includes("exam tags") ||
+      lowerHeaders.includes("subject") ||
       lowerHeaders.includes("sub topic");
     return isGk ? "gk" : "legacy";
   };
@@ -234,35 +238,44 @@ export default function AdminUploadPage() {
   // Generate initial column mapping
   const buildInitialMapping = (headers, tType) => {
     const mapping = {};
-    const lowerMap = {};
-    headers.forEach((h) => {
-      lowerMap[String(h).toLowerCase().trim()] = h;
-    });
+
+    const findHeader = (...candidates) => {
+      for (const cand of candidates) {
+        const normCand = cand.toLowerCase().replace(/[\s_\-]/g, "");
+        for (const h of headers) {
+          if (String(h).toLowerCase().replace(/[\s_\-]/g, "") === normCand) {
+            return h;
+          }
+        }
+      }
+      return "";
+    };
 
     if (tType === "gk") {
-      mapping.question = lowerMap["question"] || headers[0] || "";
-      mapping.optionA = lowerMap["option a"] || lowerMap["option 1"] || headers[1] || "";
-      mapping.optionB = lowerMap["option b"] || lowerMap["option 2"] || headers[2] || "";
-      mapping.optionC = lowerMap["option c"] || lowerMap["option 3"] || headers[3] || "";
-      mapping.optionD = lowerMap["option d"] || lowerMap["option 4"] || headers[4] || "";
-      mapping.correctAnswer = lowerMap["correct answer"] || lowerMap["correct answer (1-4)"] || lowerMap["answer"] || headers[5] || "";
-      mapping.questionType = lowerMap["question type"] || "";
-      mapping.masterCategory = lowerMap["master category"] || "";
-      mapping.category = lowerMap["category"] || "";
-      mapping.topic = lowerMap["topic"] || "";
-      mapping.difficulty = lowerMap["difficulty"] || "";
-      mapping.explanation = lowerMap["explanation"] || "";
-      mapping.language = lowerMap["language"] || "";
-      mapping.examTags = lowerMap["exam tags"] || lowerMap["exam"] || "";
-      mapping.subTopic = lowerMap["sub topic"] || lowerMap["subtopic"] || "";
+      mapping.question = findHeader("question", "text", "qtext") || headers[0] || "";
+      mapping.optionA = findHeader("option a", "option 1", "opt a", "opt1", "a") || headers[1] || "";
+      mapping.optionB = findHeader("option b", "option 2", "opt b", "opt2", "b") || headers[2] || "";
+      mapping.optionC = findHeader("option c", "option 3", "opt c", "opt3", "c") || headers[3] || "";
+      mapping.optionD = findHeader("option d", "option 4", "opt d", "opt4", "d") || headers[4] || "";
+      mapping.correctAnswer = findHeader("correct answer", "correct answer (1-4)", "answer", "correct", "ans") || headers[5] || "";
+      mapping.questionType = findHeader("question type", "type");
+      mapping.masterCategory = findHeader("master category", "mastercategory");
+      mapping.category = findHeader("category", "sub category", "subcategory");
+      mapping.topic = findHeader("topic", "topic name");
+      mapping.subject = findHeader("subject", "subject name", "sub topic", "subtopic");
+      mapping.difficulty = findHeader("difficulty", "level", "diff");
+      mapping.explanation = findHeader("explanation", "exp", "solution", "notes");
+      mapping.language = findHeader("language", "lang");
+      mapping.examTags = findHeader("exam tags", "exam", "tags");
+      mapping.subTopic = findHeader("sub topic", "subtopic");
     } else {
-      mapping.question = lowerMap["question"] || headers[0] || "";
-      mapping.optionA = lowerMap["option 1"] || headers[1] || "";
-      mapping.optionB = lowerMap["option 2"] || headers[2] || "";
-      mapping.optionC = lowerMap["option 3"] || headers[3] || "";
-      mapping.optionD = lowerMap["option 4"] || headers[4] || "";
-      mapping.correctAnswer = lowerMap["correct answer (1-4)"] || lowerMap["correct answer"] || headers[5] || "";
-      mapping.difficulty = lowerMap["difficulty"] || headers[6] || "";
+      mapping.question = findHeader("question", "text") || headers[0] || "";
+      mapping.optionA = findHeader("option 1", "option a", "opt 1", "a") || headers[1] || "";
+      mapping.optionB = findHeader("option 2", "option b", "opt 2", "b") || headers[2] || "";
+      mapping.optionC = findHeader("option 3", "option c", "opt 3", "c") || headers[3] || "";
+      mapping.optionD = findHeader("option 4", "option d", "opt 4", "d") || headers[4] || "";
+      mapping.correctAnswer = findHeader("correct answer (1-4)", "correct answer", "answer") || headers[5] || "";
+      mapping.difficulty = findHeader("difficulty", "level") || headers[6] || "";
     }
     return mapping;
   };
@@ -276,7 +289,6 @@ export default function AdminUploadPage() {
 
     setImportSummary(null);
     setValidationResult(null);
-    setMissingTopics([]);
 
     const reader = new FileReader();
     reader.onload = async (ev) => {
@@ -305,10 +317,29 @@ export default function AdminUploadPage() {
         const initialMap = buildInitialMapping(headers, activeTType);
         setColumnMapping(initialMap);
 
-        toast.success(`Loaded ${rawJson.length} rows! Detected template: ${detected.toUpperCase()}`);
+        // Auto-match file name with existing categories if none selected yet
+        let activeCatId = selectedCategoryId;
+        let activeCatName = selectedCategoryName;
+
+        if (!activeCatId && Array.isArray(quizzes) && quizzes.length > 0) {
+          const fnClean = file.name.toLowerCase().replace(/[^a-z0-9]/g, "");
+          const match = quizzes.find((q) => {
+            const topicClean = (q.topic || q.name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+            return topicClean && (fnClean.includes(topicClean) || topicClean.includes(fnClean));
+          });
+          if (match) {
+            activeCatId = match.id || match._id;
+            activeCatName = match.topic || match.name;
+            setSelectedCategoryId(activeCatId);
+            setSelectedCategoryName(activeCatName);
+            toast.success(`Selected Category: "${activeCatName}"`);
+          }
+        }
+
+        toast.success(`Loaded ${rawJson.length} rows! Template: ${detected.toUpperCase()}`);
 
         // Trigger server-side validation preview
-        await runServerValidation(rawJson, initialMap, activeTType);
+        await runServerValidation(rawJson, initialMap, activeTType, activeCatId, activeCatName);
       } catch (err) {
         console.error("Excel parse error:", err);
         toast.error("Failed to read spreadsheet: " + err.message);
@@ -317,9 +348,24 @@ export default function AdminUploadPage() {
     reader.readAsArrayBuffer(file);
   };
 
+  // Category select change handler
+  const handleSelectTargetCategory = (catId) => {
+    setSelectedCategoryId(catId);
+    const found = quizzes.find((q) => (q.id || q._id) === catId);
+    const catName = found ? (found.topic || found.name) : "";
+    setSelectedCategoryName(catName);
+    if (rawRows.length > 0) {
+      const activeTType = templateType === "auto" ? detectedTemplate || "gk" : templateType;
+      runServerValidation(rawRows, columnMapping, activeTType, catId, catName);
+    }
+  };
+
   // Server-side validation preview
-  const runServerValidation = async (rows, mapping, tType) => {
+  const runServerValidation = async (rows, mapping, tType, overrideCatId, overrideCatName) => {
     setIsValidating(true);
+    const activeCatId = overrideCatId !== undefined ? overrideCatId : selectedCategoryId;
+    const activeCatName = overrideCatName !== undefined ? overrideCatName : selectedCategoryName;
+
     try {
       // Map rows according to column mapping
       const mappedRows = rows.map((r) => {
@@ -329,15 +375,22 @@ export default function AdminUploadPage() {
           optionB: r[mapping.optionB] || "",
           optionC: r[mapping.optionC] || "",
           optionD: r[mapping.optionD] || "",
+          "Option A": r[mapping.optionA] || "",
+          "Option B": r[mapping.optionB] || "",
+          "Option C": r[mapping.optionC] || "",
+          "Option D": r[mapping.optionD] || "",
           correctAnswer: r[mapping.correctAnswer] || "",
+          "Correct Answer": r[mapping.correctAnswer] || "",
           difficulty: r[mapping.difficulty] || "medium",
-          category: tType === "gk" ? r[mapping.category] : legacyCategory,
-          topic: tType === "gk" ? r[mapping.topic] : "",
-          language: tType === "gk" ? r[mapping.language] : "en",
-          explanation: tType === "gk" ? r[mapping.explanation] : "",
-          examTags: tType === "gk" ? r[mapping.examTags] : "",
-          subTopic: tType === "gk" ? r[mapping.subTopic] : "",
-          questionType: tType === "gk" ? r[mapping.questionType] : "Explore",
+          masterCategory: "GK",
+          category: activeCatName || "General Knowledge",
+          topic: r[mapping.topic] || activeCatName || "General Knowledge",
+          subject: r[mapping.subject] || r[mapping.subTopic] || activeCatName || "General Knowledge",
+          language: r[mapping.language] || "hi",
+          explanation: r[mapping.explanation] || "",
+          examTags: r[mapping.examTags] || "",
+          subTopic: r[mapping.subTopic] || "",
+          questionType: r[mapping.questionType] || "MCQ",
         };
       });
 
@@ -347,7 +400,8 @@ export default function AdminUploadPage() {
         body: JSON.stringify({
           action: "validate",
           rows: mappedRows,
-          defaultCategory: legacyCategory,
+          categoryId: activeCatId,
+          defaultCategory: activeCatName,
         }),
       });
 
@@ -357,7 +411,6 @@ export default function AdminUploadPage() {
       }
 
       setValidationResult(data);
-      setMissingTopics(data.missingTopics || []);
 
       if (data.errorCount > 0) {
         toast(`Validation complete: ${data.validCount} valid, ${data.errorCount} errors`, {
@@ -373,42 +426,15 @@ export default function AdminUploadPage() {
     }
   };
 
-  // One-click create missing topics
-  const handleCreateMissingTopics = async () => {
-    if (!missingTopics || missingTopics.length === 0 || isCreatingTopics) return;
-    setIsCreatingTopics(true);
-
-    try {
-      const res = await fetch("/api/admin/gk/upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "create_topics",
-          newTopics: missingTopics,
-          category: legacyCategory || "India GK",
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to create topics");
-
-      toast.success(`Successfully created ${data.createdCount} new topics!`);
-      setMissingTopics([]);
-
-      // Re-run validation so topicIds are assigned
-      const activeTType = templateType === "auto" ? detectedTemplate || "gk" : templateType;
-      await runServerValidation(rawRows, columnMapping, activeTType);
-    } catch (err) {
-      toast.error("Error creating topics: " + err.message);
-    } finally {
-      setIsCreatingTopics(false);
-    }
-  };
-
   // Batch import execution
   const handleExecuteImport = async () => {
     if (!validationResult || !validationResult.allValidated || validationResult.allValidated.length === 0) {
       toast.error("No valid questions to import");
+      return;
+    }
+
+    if (!selectedCategoryId && !selectedCategoryName) {
+      toast.error("Please select a target Category before importing");
       return;
     }
 
@@ -421,52 +447,85 @@ export default function AdminUploadPage() {
     setUploadTotal(total);
     setUploadCurrent(0);
 
-    const CHUNK_SIZE = 50;
-    let totalInserted = 0;
-    let totalUpdated = 0;
-    let totalSkipped = 0;
-    let allErrors = [];
+    const BATCH_SIZE = 50;
+    let accumulatedInserted = 0;
+    let accumulatedSkipped = 0;
+    let accumulatedRejected = 0;
+    const allCreatedSets = [];
+    const allWarnings = [];
+    const allErrors = [];
+    let finalRemainderCount = 0;
+    let lastViewUrl = "/gk";
+    let lastVerified = true;
 
     try {
-      for (let i = 0; i < total; i += CHUNK_SIZE) {
-        const chunk = questionsToImport.slice(i, i + CHUNK_SIZE);
+      for (let i = 0; i < total; i += BATCH_SIZE) {
+        const chunk = questionsToImport.slice(i, i + BATCH_SIZE);
+        const chunkNum = Math.floor(i / BATCH_SIZE) + 1;
+        const totalChunks = Math.ceil(total / BATCH_SIZE);
+
+        const currentStartProgress = Math.round((i / total) * 100);
+        setUploadProgress(currentStartProgress);
+        setUploadCurrent(i);
+
         const res = await fetch("/api/admin/gk/upload", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             action: "import",
             questions: chunk,
+            categoryId: selectedCategoryId,
+            category: selectedCategoryName,
             mode: importMode,
+            fileName: excelInputRef.current?.files?.[0]?.name || "bulk_upload.xlsx",
           }),
         });
 
         const resData = await res.json();
         if (!res.ok) {
-          throw new Error(resData.error || `Failed on batch starting at row ${i + 1}`);
+          throw new Error(resData.error || `Failed to import batch ${chunkNum} of ${totalChunks}`);
         }
 
-        totalInserted += resData.insertedCount || 0;
-        totalUpdated += resData.updatedCount || 0;
-        totalSkipped += resData.skippedCount || 0;
-        if (resData.errors && resData.errors.length > 0) {
-          allErrors = [...allErrors, ...resData.errors];
+        accumulatedInserted += resData.rowsImported || 0;
+        accumulatedSkipped += resData.skippedCount || 0;
+        accumulatedRejected += resData.rowsRejected || 0;
+        if (Array.isArray(resData.setsCreated)) {
+          allCreatedSets.push(...resData.setsCreated);
         }
+        if (Array.isArray(resData.warnings)) {
+          allWarnings.push(...resData.warnings);
+        }
+        if (Array.isArray(resData.errors)) {
+          allErrors.push(...resData.errors);
+        }
+        finalRemainderCount = resData.remainderCount || 0;
+        if (resData.viewUrl) lastViewUrl = resData.viewUrl;
+        if (resData.verified === false) lastVerified = false;
 
-        const currentCount = Math.min(i + CHUNK_SIZE, total);
-        setUploadCurrent(currentCount);
-        setUploadProgress(Math.floor((currentCount / total) * 100));
+        const currentDone = Math.min(i + BATCH_SIZE, total);
+        setUploadCurrent(currentDone);
+        setUploadProgress(Math.round((currentDone / total) * 100));
       }
 
       setImportSummary({
         totalProcessed: total,
-        inserted: totalInserted,
-        updated: totalUpdated,
-        skipped: totalSkipped,
+        inserted: accumulatedInserted,
+        updated: 0,
+        skipped: accumulatedSkipped,
+        rejected: accumulatedRejected,
+        setsCreated: allCreatedSets,
+        setsCreatedCount: allCreatedSets.length,
+        warnings: allWarnings,
+        remainderCount: finalRemainderCount,
+        viewUrl: lastViewUrl,
+        verified: lastVerified,
         errors: allErrors,
       });
 
       await refreshQuizzes();
-      toast.success(`Import complete! ${totalInserted} inserted, ${totalUpdated} updated, ${totalSkipped} skipped.`);
+      toast.success(
+        `Import complete! ${accumulatedInserted} questions imported, ${allCreatedSets.length} sets created and published.`
+      );
     } catch (err) {
       console.error("Batch import error:", err);
       toast.error("Import error: " + err.message);
@@ -727,47 +786,34 @@ export default function AdminUploadPage() {
             </div>
           </div>
 
-          {/* Legacy Category Choice (for legacy template or fallback) */}
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 p-5 shadow-sm">
-            <span className="text-[11px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 block mb-2">
-              2. Default Category / Legacy Target
-            </span>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* 1. Target Category Choice */}
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border-2 border-indigo-500/20 dark:border-indigo-500/30 p-5 shadow-sm space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 block">
-                  Select GK Category Default
-                </label>
-                <div className="flex items-center gap-2">
-                  {["India GK", "World GK"].map((cat) => (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => setLegacyCategory(cat)}
-                      className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold border transition-all ${
-                        legacyCategory === cat
-                          ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-                          : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200"
-                      }`}
-                    >
-                      {cat}
-                    </button>
-                  ))}
-                </div>
+                <span className="text-[11px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 block mb-0.5">
+                  1. Select Target Category
+                </span>
+                <h3 className="text-sm font-black text-slate-900 dark:text-white">
+                  Choose the Category where questions will be uploaded & published
+                </h3>
               </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 block">
-                  Or Target Quiz Category (Legacy System)
-                </label>
-                <CategorySearchSelect
-                  categories={quizzes}
-                  value={legacySelectedCatId}
-                  onChange={(val) => setLegacySelectedCatId(val)}
-                  emptyLabel="-- Choose Quiz Category (Optional) --"
-                  placeholder="🔍 Search category..."
-                />
-              </div>
+              {selectedCategoryName && (
+                <span className="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold shrink-0">
+                  Target: {selectedCategoryName}
+                </span>
+              )}
             </div>
+
+            <CategorySearchSelect
+              categories={quizzes}
+              value={selectedCategoryId}
+              onChange={handleSelectTargetCategory}
+              emptyLabel="-- Select Target Category (e.g. Indore GK, India GK, Biology...) --"
+              placeholder="🔍 Search category..."
+            />
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              Questions in your sheet will automatically attach to this category and be packaged into playable sets of 20 questions each.
+            </p>
           </div>
 
           {/* Drag & Drop Upload Zone */}
@@ -891,31 +937,6 @@ export default function AdminUploadPage() {
                 </div>
               )}
 
-              {/* Missing Topics Banner & Auto-Create Button */}
-              {missingTopics.length > 0 && (
-                <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                  <div>
-                    <h4 className="text-xs font-black text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
-                      <AlertTriangle size={15} className="text-amber-600" />
-                      <span>{missingTopics.length} New Topics Found in Spreadsheet</span>
-                    </h4>
-                    <p className="text-[11px] text-amber-700 dark:text-amber-300 mt-0.5">
-                      Topics: {missingTopics.slice(0, 5).join(", ")}
-                      {missingTopics.length > 5 ? ` and ${missingTopics.length - 5} more...` : ""}
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleCreateMissingTopics}
-                    disabled={isCreatingTopics}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-sm transition-all active:scale-95 shrink-0"
-                  >
-                    <PlusCircle size={14} />
-                    <span>{isCreatingTopics ? "Creating..." : `Create ${missingTopics.length} New Topics`}</span>
-                  </button>
-                </div>
-              )}
 
               {/* Validation Preview Table (First 50 Rows) */}
               {validationResult?.previewRows && (
@@ -1061,55 +1082,132 @@ export default function AdminUploadPage() {
                 </div>
               )}
 
-              {/* Result Summary */}
+              {/* Rule 1 Result Summary */}
               {importSummary && (
-                <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-black text-emerald-800 dark:text-emerald-200 flex items-center gap-1.5">
-                      <CheckCircle2 size={16} className="text-emerald-600" />
-                      <span>Import Successfully Completed!</span>
-                    </h4>
+                <div className="p-5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border-2 border-emerald-500/30 space-y-4 shadow-sm">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-emerald-200 dark:border-emerald-800">
+                    <div>
+                      <h4 className="text-base font-black text-emerald-900 dark:text-emerald-100 flex items-center gap-2">
+                        <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
+                        <span>Upload & Auto-Publish Completed!</span>
+                      </h4>
+                      <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-0.5">
+                        {importSummary.verified
+                          ? "✅ Verified: Sets have been automatically generated and are live on the customer site."
+                          : "⚠️ Questions saved. Awaiting set publication confirmation."}
+                      </p>
+                    </div>
 
-                    {importSummary.errors.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={handleDownloadErrorReport}
-                        className="text-xs font-bold text-rose-600 underline flex items-center gap-1"
-                      >
-                        <Download size={13} />
-                        <span>Download Error Report ({importSummary.errors.length})</span>
-                      </button>
-                    )}
+                    <div className="flex items-center gap-2 shrink-0">
+                      {importSummary.viewUrl && (
+                        <a
+                          href={importSummary.viewUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-md shadow-emerald-600/20 transition-all active:scale-95"
+                        >
+                          <ExternalLink size={14} />
+                          <span>View on Website</span>
+                        </a>
+                      )}
+
+                      {importSummary.errors.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={handleDownloadErrorReport}
+                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold text-xs"
+                        >
+                          <Download size={13} />
+                          <span>Errors ({importSummary.errors.length})</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-bold">
-                    <div className="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80">
-                      Total: {importSummary.totalProcessed}
+                  {/* Summary Metric Counters */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs font-bold">
+                    <div className="p-3 rounded-xl bg-white/90 dark:bg-slate-900/90 border border-slate-200/60 dark:border-slate-800">
+                      <div className="text-[10.5px] uppercase tracking-wider text-slate-500 font-extrabold">Rows Read</div>
+                      <div className="text-lg font-black text-slate-900 dark:text-white mt-0.5">{importSummary.totalProcessed}</div>
                     </div>
-                    <div className="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 text-emerald-600">
-                      Inserted: {importSummary.inserted}
+                    <div className="p-3 rounded-xl bg-white/90 dark:bg-slate-900/90 border border-slate-200/60 dark:border-slate-800 text-emerald-600">
+                      <div className="text-[10.5px] uppercase tracking-wider text-emerald-600 font-extrabold">Imported</div>
+                      <div className="text-lg font-black mt-0.5">{importSummary.inserted}</div>
                     </div>
-                    <div className="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 text-blue-600">
-                      Updated: {importSummary.updated}
+                    <div className="p-3 rounded-xl bg-white/90 dark:bg-slate-900/90 border border-slate-200/60 dark:border-slate-800 text-indigo-600">
+                      <div className="text-[10.5px] uppercase tracking-wider text-indigo-600 font-extrabold">Sets Created</div>
+                      <div className="text-lg font-black mt-0.5">{importSummary.setsCreatedCount || importSummary.setsCreated?.length || 0}</div>
                     </div>
-                    <div className="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 text-amber-600">
-                      Skipped: {importSummary.skipped}
+                    <div className="p-3 rounded-xl bg-white/90 dark:bg-slate-900/90 border border-slate-200/60 dark:border-slate-800 text-amber-600">
+                      <div className="text-[10.5px] uppercase tracking-wider text-amber-600 font-extrabold">Pending Remainder</div>
+                      <div className="text-lg font-black mt-0.5">{importSummary.remainderCount || 0} Qs</div>
                     </div>
                   </div>
 
-                  {/* Regenerate GK sets shortcut */}
-                  <div className="pt-2 flex items-center justify-between border-t border-emerald-200 dark:border-emerald-800">
-                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                      Next Step: Generate or refresh GK sets with the new questions
-                    </span>
-                    <Link
-                      href="/admin/gk?tab=builder"
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-black text-xs shadow-sm"
-                    >
-                      <Sparkles size={14} />
-                      <span>Regenerate GK Sets →</span>
-                    </Link>
-                  </div>
+                  {/* Sets Created Breakdown */}
+                  {importSummary.setsCreated && importSummary.setsCreated.length > 0 && (
+                    <div className="p-3.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-emerald-200 dark:border-emerald-800/60 space-y-2">
+                      <div className="text-xs font-black uppercase text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                        <span>🎯 Published Sets (Sheet Order, 20/set)</span>
+                        <span className="text-[11px] font-bold text-emerald-600">
+                          {importSummary.setsCreated.length} sets live
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {importSummary.setsCreated.map((s, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-black border border-emerald-300 dark:border-emerald-700/60 shadow-xs"
+                          >
+                            <span>⚡</span>
+                            <span>{s.title || `Set ${s.number}`}</span>
+                            <span className="text-[10px] opacity-75 font-normal">({s.questionCount || 20} Qs)</span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Remainder Explanation (Rule 4) */}
+                  {importSummary.remainderCount > 0 && (
+                    <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2">
+                      <AlertTriangle size={15} className="text-amber-600 shrink-0" />
+                      <span>
+                        <strong>{importSummary.remainderCount} questions</strong> are pending as remainder (&lt; 20). They will be automatically combined into the next upload for this Subject.
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Warnings (7/7/6 mix or Subject defaults) */}
+                  {importSummary.warnings && importSummary.warnings.length > 0 && (
+                    <div className="p-3 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 space-y-1.5 text-xs text-amber-900 dark:text-amber-200">
+                      <div className="font-black text-[11px] uppercase tracking-wider text-amber-800 dark:text-amber-400">
+                        ⚠️ Warnings / 7/7/6 Mismatch Notice
+                      </div>
+                      <ul className="list-disc list-inside space-y-0.5 text-[11.5px]">
+                        {importSummary.warnings.map((w, idx) => (
+                          <li key={idx}>{w}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Rows Rejected with Reasons */}
+                  {importSummary.errors && importSummary.errors.length > 0 && (
+                    <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 space-y-1.5 text-xs text-rose-900 dark:text-rose-200">
+                      <div className="font-black text-[11px] uppercase tracking-wider text-rose-800 dark:text-rose-400">
+                        ❌ Rows Rejected ({importSummary.errors.length})
+                      </div>
+                      <div className="max-h-36 overflow-y-auto space-y-1 divide-y divide-rose-100 dark:divide-rose-900/30 text-[11.5px]">
+                        {importSummary.errors.map((err, idx) => (
+                          <div key={idx} className="pt-1 flex items-start gap-2">
+                            <span className="font-bold text-rose-600">Row {err.row}:</span>
+                            <span>{err.reason}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

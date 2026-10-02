@@ -17,7 +17,6 @@ export function initSounds() {
 }
 
 function getAudioContext() {
-  // We now expect initSounds() to have been called, but we can still have a fallback.
   if (typeof window === 'undefined') return null;
   if (!audioCtx) {
     initSounds();
@@ -51,6 +50,38 @@ function playTone(frequency, duration, type = "sine", volume = 0.3) {
     oscillator.stop(ctx.currentTime + duration);
   } catch (e) {
     console.warn("Sound playback error:", e);
+  }
+}
+
+/**
+ * Task 3.5: Tap/bubble sound effect for option selection
+ */
+export function playTapSound() {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.type = "sine";
+    // Quick pitch sweep giving a pleasant water bubble pop
+    osc.frequency.setValueAtTime(320, now);
+    osc.frequency.exponentialRampToValueAtTime(700, now + 0.04);
+    
+    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.start(now);
+    osc.stop(now + 0.05);
+  } catch (e) {
+    console.warn("Tap sound error:", e);
   }
 }
 
@@ -92,6 +123,36 @@ export function playWrongSound() {
   } catch {}
   // Low buzzer tone
   playTone(200, 0.35, "square", 0.15);
+}
+
+/**
+ * Task 3.5: Celebratory streak sound fanfare
+ */
+export function playStreakSound(streakCount = 3) {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+    const now = ctx.currentTime;
+    // Ascending arpeggio (C5, E5, G5, C6)
+    const notes = [523.25, 659.25, 783.99, 1046.5];
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(freq, now + i * 0.09);
+      gain.gain.setValueAtTime(0.25, now + i * 0.09);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.09 + 0.25);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + i * 0.09);
+      osc.stop(now + i * 0.09 + 0.25);
+    });
+  } catch (e) {
+    console.warn("Streak sound error:", e);
+  }
 }
 
 export function playTickerSound() {

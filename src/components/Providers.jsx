@@ -19,6 +19,35 @@ import LockedSetBottomSheet from "@/components/monetization/LockedSetBottomSheet
 import RewardedAdModal from "@/components/monetization/RewardedAdModal";
 import AgeGateModal from "@/components/monetization/AgeGateModal";
 
+function ProgressSyncHandler() {
+  const { data: session, status } = useSession();
+
+  useEffect(() => {
+    if (status === "authenticated" && session?.user?.id) {
+      try {
+        const deviceId = localStorage.getItem("quizweb_device_id");
+        const alreadySynced = sessionStorage.getItem("quizweb_device_synced");
+        if (deviceId && !alreadySynced) {
+          fetch("/api/gk/progress", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "sync", deviceId }),
+          })
+            .then((r) => r.json())
+            .then((res) => {
+              if (res.success) {
+                sessionStorage.setItem("quizweb_device_synced", "true");
+              }
+            })
+            .catch(() => {});
+        }
+      } catch {}
+    }
+  }, [status, session]);
+
+  return null;
+}
+
 function AuthToaster() {
   const { status } = useSession();
 
@@ -43,6 +72,7 @@ export default function Providers({ children }) {
   return (
     <SessionProvider>
       <AuthToaster />
+      <ProgressSyncHandler />
       <ThemeProvider attribute="data-theme" defaultTheme="light">
         <Toaster position="top-right" />
         <LanguageProvider>

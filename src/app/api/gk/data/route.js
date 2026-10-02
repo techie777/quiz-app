@@ -45,10 +45,16 @@ export async function GET(req) {
       .sort({ order: 1 })
       .toArray();
 
+    // Category matching variants (e.g. "India GK", "India")
+    const categoryFilter =
+      category === GK_CATEGORIES.WORLD
+        ? { $in: [GK_CATEGORIES.WORLD, "World GK", "World", "world-gk", "world"] }
+        : { $in: [GK_CATEGORIES.INDIA, "India GK", "India", "india-gk", "india"] };
+
     // 3. Aggregate question counts and published sets counts per topic
     const topicSetsAgg = await setsCol
       .aggregate([
-        { $match: { category, language, scope: "topic", status: "published" } },
+        { $match: { category: categoryFilter, language, status: "published" } },
         { $group: { _id: "$topicId", count: { $sum: 1 } } },
       ])
       .toArray();
@@ -64,11 +70,10 @@ export async function GET(req) {
         {
           $match: {
             $or: [
-              { category },
-              { masterCategory: "GK", categoryName: category },
+              { category: categoryFilter },
+              { masterCategory: "GK" },
             ],
-            language,
-            status: "published",
+            status: { $ne: "hidden" },
           },
         },
         { $group: { _id: "$topicId", count: { $sum: 1 } } },

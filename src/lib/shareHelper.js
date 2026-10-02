@@ -109,13 +109,13 @@ export async function shareQuizResult({ score, total, isHindi = false }) {
   }
 }
 
-export async function shareQuiz({ title, url, isHindi = false }) {
+export async function shareQuiz({ title, url, id, isHindi = false }) {
   const origin = typeof window !== "undefined" ? window.location.origin : "https://quizweb.in";
-  const targetUrl = url || origin;
+  const targetUrl = url || (id ? `${origin}/quiz/${id}` : origin);
   const shareTitle = title || (isHindi ? "QuizWeb क्विज़" : "QuizWeb Quiz");
   const text = isHindi
-    ? `QuizWeb पर "${shareTitle}" क्विज़ खेलें!`
-    : `Play the "${shareTitle}" quiz on QuizWeb!`;
+    ? `QuizWeb पर "${shareTitle}" क्विज़ खेलें!\n${targetUrl}`
+    : `Play the "${shareTitle}" quiz on QuizWeb!\n${targetUrl}`;
 
   if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
     try {
@@ -133,4 +133,38 @@ export async function shareQuiz({ title, url, isHindi = false }) {
     return copyToClipboard(targetUrl, isHindi);
   }
 }
+
+/**
+ * Task 3.7 & Rule 5: Challenge a friend with identical seed-based shuffle
+ */
+export async function shareSetChallenge({ setId, setTitle, seed, score, total, isHindi = false }) {
+  const origin = typeof window !== "undefined" ? window.location.origin : "https://quizweb.in";
+  const challengeSeed = seed || Math.floor(100000 + Math.random() * 900000);
+  const targetUrl = `${origin}/quiz/${setId}?seed=${challengeSeed}${score !== undefined ? `&challengerScore=${score}` : ""}`;
+  
+  const text = isHindi
+    ? `⚔️ मैंने QuizWeb पर "${setTitle}" क्विज़ में चुनौती दी है! क्या आप मुझे हरा सकते हैं? अभी खेलें:\n${targetUrl}`
+    : `⚔️ I challenge you on "${setTitle}" on QuizWeb! Can you beat my score? Play now:\n${targetUrl}`;
+
+  if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+    try {
+      await navigator.share({
+        title: `${setTitle} - Quiz Duel`,
+        text: text,
+        url: targetUrl,
+      });
+      return true;
+    } catch (err) {
+      if (err.name === "AbortError") return false;
+      const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+      window.open(waUrl, "_blank");
+      return true;
+    }
+  } else {
+    const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+    window.open(waUrl, "_blank");
+    return true;
+  }
+}
+
 

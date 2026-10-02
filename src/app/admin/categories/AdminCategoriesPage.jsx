@@ -23,7 +23,7 @@ async function submitPending(type, payload) {
   }
 }
 
-const EditForm = ({ category, onSave, onCancel, isNew = false, quizzes = [], settings = {}, editingId }) => {
+const EditForm = ({ category, onSave, onCancel, isNew = false, quizzes = [], settings = {}, editingId, isSubmitting = false }) => {
   const [form, setForm] = useState(category);
 
   const handleImageUpload = async (e) => {
@@ -248,11 +248,11 @@ const EditForm = ({ category, onSave, onCancel, isNew = false, quizzes = [], set
       </div>
 
       <div className={styles.formActions}>
-        <button className="actionBtnSecondary" onClick={onCancel}>
+        <button className="actionBtnSecondary" onClick={onCancel} disabled={isSubmitting}>
           Cancel
         </button>
-        <button className="actionBtnPrimary" onClick={() => onSave(form, isNew)}>
-          {isNew ? "Create Category" : "Save Changes"}
+        <button className="actionBtnPrimary" disabled={isSubmitting} onClick={() => onSave(form, isNew)}>
+          {isSubmitting ? (isNew ? "Creating..." : "Saving...") : isNew ? "Create Category" : "Save Changes"}
         </button>
       </div>
     </div>
@@ -266,6 +266,7 @@ export default function AdminCategoriesPage() {
   const allowed = adminUser?.role === "master" || adminUser?.permissions?.categories !== false;
 
   const [editingId, setEditingId] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirm, setConfirm] = useState(null);
   const [activeTab, setActiveTab] = useState("quizzes"); // "quizzes", "govt-exams", "image-quizzes"
   const [healthFilter, setHealthFilter] = useState("all"); // "all", "ready", "progress", "empty"
@@ -331,11 +332,13 @@ export default function AdminCategoriesPage() {
   const openEdit = (cat) => setEditingId(cat.id);
 
   const handleSave = async (formData, isNew) => {
+    if (isSubmitting) return;
     try {
       if (!formData || !formData.topic) {
         toast.error("Topic title is required!");
         return;
       }
+      setIsSubmitting(true);
 
       const topicStr = String(formData.topic).trim();
       const emojiStr = formData.emoji ? String(formData.emoji).trim() : "📁";
@@ -367,8 +370,6 @@ export default function AdminCategoriesPage() {
           if (success) {
             toast.success("Category updated successfully!");
             setEditingId(null);
-          } else {
-            toast.error("Failed to update category.");
           }
         }
       } else {
@@ -380,14 +381,14 @@ export default function AdminCategoriesPage() {
           if (success) {
             toast.success("Category created successfully!");
             setEditingId(null);
-          } else {
-            toast.error("Failed to create category.");
           }
         }
       }
     } catch (error) {
       console.error("[AdminCategories] handleSave error:", error);
       toast.error("An error occurred: " + error.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -516,6 +517,7 @@ export default function AdminCategoriesPage() {
             quizzes={quizzes}
             settings={settings}
             editingId={editingId}
+            isSubmitting={isSubmitting}
           />
         )}
 
@@ -628,6 +630,7 @@ export default function AdminCategoriesPage() {
                   quizzes={quizzes}
                   settings={settings}
                   editingId={editingId}
+                  isSubmitting={isSubmitting}
                 />
               )}
 
@@ -705,6 +708,7 @@ export default function AdminCategoriesPage() {
                           quizzes={quizzes}
                           settings={settings}
                           editingId={editingId}
+                          isSubmitting={isSubmitting}
                         />
                       )}
                     </div>

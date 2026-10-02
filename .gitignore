@@ -15,3 +15,6 @@ build/
 
 # TypeScript build info
 *.tsbuildinfo
+
+# Scratch test files
+scratch/

@@ -716,9 +716,6 @@ export default function CategorySetsPage() {
                     );
                   })}
                 </div>
-                <div className="mt-6">
-                  <ProBannerStrip />
-                </div>
               </>
             ) : (
               <div className="p-8 text-center rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
