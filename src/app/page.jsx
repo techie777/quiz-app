@@ -332,19 +332,8 @@ export default function MasterHubPage() {
     }
   };
 
-  // Hydration safety: while checking client storage on initial load
-  if (!mounted || !tierMounted) {
-    return (
-      <div className={styles.container} style={{ minHeight: "65vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-        </div>
-      </div>
-    );
-  }
-
-  // Requirement 1: If no tier is saved in storage, render standalone landing page at root
-  if (!hasSavedTier) {
+  // Default to UnsetLandingPage for clean SSR and first-paint without hydration mismatch
+  if (!hasSavedTier || !mounted || !tierMounted) {
     return <UnsetLandingPage />;
   }
 

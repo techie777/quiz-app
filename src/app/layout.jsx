@@ -136,7 +136,7 @@ export default function RootLayout({ children }) {
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
         <link rel="manifest" href="/site.webmanifest" />
       </head>
-      <body style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }} className="antialiased">
+      <body style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }} className="antialiased" suppressHydrationWarning>
         <Suspense fallback={null}>
         </Suspense>
         <ScrollToTop />
