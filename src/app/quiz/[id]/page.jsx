@@ -24,6 +24,7 @@ import {
   LogOut,
   ArrowLeft,
   ArrowRight,
+  Heart,
 } from "lucide-react";
 import styles from "@/styles/QuizEngine.module.css";
 import timerStyles from "@/styles/Timer.module.css";
@@ -1055,6 +1056,20 @@ function QuizEngineContent() {
 
               <div className={styles.topRight}>
                 <div className={styles.topRightControls}>
+                  {/* Small Support Us tab at the top while playing (Rule E3 / Task 5.3) */}
+                  {tier !== "kids" && (
+                    <a
+                      href="/support"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-black text-rose-500 hover:text-rose-600 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-all shadow-2xs mr-1"
+                      title={language === "hi" ? "QuizWeb का समर्थन करें" : "Support QuizWeb"}
+                    >
+                      <Heart size={11} fill="currentColor" />
+                      <span>{language === "hi" ? "सहयोग" : "Support"}</span>
+                    </a>
+                  )}
+
                   {/* 50/50 Core Lifeline Button */}
                   <button
                     type="button"

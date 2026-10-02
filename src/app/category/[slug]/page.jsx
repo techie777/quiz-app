@@ -22,6 +22,7 @@ import UnifiedPaywallModal from "@/components/UnifiedPaywallModal";
 import StickyPaywallCTA from "@/components/StickyPaywallCTA";
 import ProBannerStrip from "@/components/monetization/ProBannerStrip";
 import { useEntitlement } from "@/context/EntitlementContext";
+import ArenaClient from "@/app/arena/ArenaClient";
 
 // Helper function to detect if text is Hindi
 function isHindiText(text) {
@@ -83,6 +84,7 @@ export default function CategorySetsPage() {
   const [isMixMode, setIsMixMode] = useState(false);
   const [numQuestions, setNumQuestions] = useState(20);
   const [difficulty, setDifficulty] = useState("ALL");
+  const [activeLayer, setActiveLayer] = useState("standard"); // Rule 6: 'standard' | 'arena'
   const { isPro: isMonetizationPro } = useMonetization();
   const {
     isSetLocked,
@@ -573,10 +575,48 @@ export default function CategorySetsPage() {
           </section>
         )}
 
-        {/* If Quiz Has No Questions */}
-        {questionsLoaded && questions.length === 0 ? (
-          <QuizEmptyState topic={category.topic} isHindi={isHindi} />
-        ) : tier === "adults" ? (
+        {/* Rule 6: Two Layers (Standard Sets | Quiz Arena) Switch */}
+        <div className="flex items-center justify-center mb-6">
+          <div className="inline-flex p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/90 border border-slate-200/90 dark:border-slate-700 shadow-2xs">
+            <button
+              type="button"
+              onClick={() => setActiveLayer("standard")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${
+                activeLayer === "standard"
+                  ? "bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-300 shadow-sm"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              }`}
+            >
+              <span>📚</span>
+              <span>{isHindi ? "स्टैंडर्ड सेट्स" : "Standard Sets"}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveLayer("arena")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${
+                activeLayer === "arena"
+                  ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-sm"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              }`}
+            >
+              <span>⚔️</span>
+              <span>{isHindi ? "क्विज़ अखाड़ा (Arena)" : "Quiz Arena"}</span>
+            </button>
+          </div>
+        </div>
+
+        {activeLayer === "arena" ? (
+          <div className="mb-12">
+            <ArenaClient
+              initialSelectedCategoryIds={[category?.id || category?._id || params?.slug]}
+              embedded={true}
+            />
+          </div>
+        ) : (
+          <>
+            {questionsLoaded && questions.length === 0 ? (
+              <QuizEmptyState topic={category.topic} isHindi={isHindi} />
+            ) : tier === "adults" ? (
           /* ── Explorer Set List (Step 10): Simple tiles "Set 1 · 20 Qs" with tick & best score, compact difficulty dropdown at top ── */
           <section className="mt-4 mb-10">
             {/* Header: Topic Title & Compact Difficulty Dropdown */}
@@ -886,14 +926,13 @@ export default function CategorySetsPage() {
                     );
                   })
                 )}
-                {questionsLoaded && sets.every(s => s.questions.filter(q => !searchQuestion.trim() || q.text.toLowerCase().includes(searchQuestion.toLowerCase()) || (q.options && q.options.some(opt => opt.toLowerCase().includes(searchQuestion.toLowerCase())))).length === 0) && (
-                  <p className={styles.noResults}>{isHindi ? 'आपकी खोज से मेल खाने वाला कोई प्रश्न नहीं मिला।' : 'No questions found matching your search.'}</p>
-                )}
               </div>
             </section>
           </>
         )}
-      </div>
+      </>
+    )}
+  </div>
 
       {/* Timer Modal (unchanged logic, updated UI) */}
       {/* Practice Set Configuration Modal (Refined, Sleek, Compact UI) */}

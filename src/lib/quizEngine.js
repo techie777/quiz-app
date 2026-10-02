@@ -25,6 +25,9 @@ export const quizEngine = {
     audience = "all",
     seed,
     userId,
+    onlyWrong = false,
+    skipCorrect = false,
+    style = "practice",
   }) {
     if (!categories || categories.length === 0) {
       throw new Error("At least one category must be selected");
@@ -43,6 +46,9 @@ export const quizEngine = {
         language: language === "all" ? null : language,
         seed: seed || undefined,
         userId,
+        onlyWrong,
+        skipCorrect,
+        style,
       }),
     });
 

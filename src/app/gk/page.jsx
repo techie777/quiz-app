@@ -29,6 +29,7 @@ import { GK_CATEGORIES } from "@/lib/gkData";
 import { shareQuiz } from "@/lib/shareHelper";
 import { isFavourite, toggleFavourite } from "@/lib/favouritesHelper";
 import SetPreviewModal from "@/components/SetPreviewModal";
+import ArenaClient from "@/app/arena/ArenaClient";
 import toast, { Toaster } from "react-hot-toast";
 
 export default function GkHubPage() {
@@ -36,6 +37,10 @@ export default function GkHubPage() {
   const searchParams = useSearchParams();
   const { isHindi, setLanguage: setGlobalLang } = useLanguage();
   const { startQuizSet } = useQuiz();
+
+  // Layer: "standard" | "arena" (Rule 6)
+  const initialModeParam = searchParams.get("mode") || searchParams.get("layer");
+  const [activeLayer, setActiveLayer] = useState(initialModeParam === "arena" ? "arena" : "standard");
 
   // Category: India GK | World GK (remember last choice in localStorage)
   const initialCategoryParam = searchParams.get("category");
@@ -242,8 +247,51 @@ export default function GkHubPage() {
       </header>
 
       <div className="max-w-4xl mx-auto px-4 py-4 space-y-4">
-        {/* ── SEARCH BAR ── */}
-        <div className="relative w-full">
+        {/* Top Two-Tab Switch: Standard Sets | Quiz Arena (Rule 6) */}
+        <div className="flex items-center justify-center my-2">
+          <div className="inline-flex p-1 rounded-2xl bg-slate-200/70 dark:bg-slate-900 border border-slate-300/60 dark:border-slate-800 shadow-2xs">
+            <button
+              type="button"
+              onClick={() => setActiveLayer("standard")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${
+                activeLayer === "standard"
+                  ? "bg-white dark:bg-slate-800 text-purple-600 dark:text-purple-400 shadow-sm"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              }`}
+            >
+              <span>📚</span>
+              <span>{isHindi ? "स्टैंडर्ड सेट्स" : "Standard Sets"}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveLayer("arena")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${
+                activeLayer === "arena"
+                  ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-sm"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              }`}
+            >
+              <span>⚔️</span>
+              <span>{isHindi ? "क्विज़ अखाड़ा (Arena)" : "Quiz Arena"}</span>
+            </button>
+          </div>
+        </div>
+
+        {activeLayer === "arena" ? (
+          <div className="mt-2 mb-12">
+            <ArenaClient
+              initialSelectedCategoryIds={
+                gkData?.topics?.length > 0
+                  ? gkData.topics.map((t) => t.id)
+                  : [category === GK_CATEGORIES.WORLD ? "world-gk" : "india-gk"]
+              }
+              embedded={true}
+            />
+          </div>
+        ) : (
+          <>
+            {/* ── SEARCH BAR ── */}
+            <div className="relative w-full">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
@@ -567,7 +615,9 @@ export default function GkHubPage() {
             )}
           </>
         )}
-      </div>
+      </>
+    )}
+  </div>
 
       {/* Set Questions Preview Modal */}
       {previewModalData && (

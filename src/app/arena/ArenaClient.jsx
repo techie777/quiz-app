@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles,
@@ -18,6 +19,9 @@ import {
   Flame,
   Loader2,
   BookOpen,
+  RotateCcw,
+  GraduationCap,
+  Award,
 } from "lucide-react";
 import { useQuiz } from "@/context/QuizContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -117,10 +121,47 @@ export default function ArenaClient({ initialSelectedCategoryIds = null, embedde
     return preIds.length > 0 ? preIds : [];
   });
 
+  const { data: authSession } = useSession();
+
   // Step 2: Single-screen quiz setup state
-  const [difficulty, setDifficulty] = useState("all"); // 'all' | 'easy' | 'medium' | 'hard'
+  const [difficulty, setDifficulty] = useState("all"); // 'all' | 'easy' | 'medium' | 'hard' | 'expert'
   const [questionCount, setQuestionCount] = useState(20); // 10 | 20 | 30 | 50
   const [timerSeconds, setTimerSeconds] = useState(20); // 0 (off) | 10 | 20 | 30
+  const [questionPool, setQuestionPool] = useState("unseen"); // 'unseen' | 'all' | 'wrong'
+  const [quizStyle, setQuizStyle] = useState("practice"); // 'practice' | 'exam'
+
+  // Quick Preset Handler (Rule 6)
+  const handleApplyPreset = (presetId) => {
+    if (presetId === "5min") {
+      setQuestionCount(10);
+      setTimerSeconds(20);
+      setDifficulty("all");
+      setQuestionPool("unseen");
+      setQuizStyle("practice");
+      toast.success(isHindi ? "⚡ 5-मिनट जीके प्रीसेट लागू!" : "⚡ 5-Minute GK preset applied!");
+    } else if (presetId === "hard") {
+      setQuestionCount(20);
+      setTimerSeconds(15);
+      setDifficulty("hard");
+      setQuestionPool("unseen");
+      setQuizStyle("practice");
+      toast.success(isHindi ? "🔥 कठिन चुनौती प्रीसेट लागू!" : "🔥 Hard Challenge preset applied!");
+    } else if (presetId === "revision") {
+      setQuestionCount(20);
+      setTimerSeconds(0);
+      setDifficulty("all");
+      setQuestionPool("wrong");
+      setQuizStyle("practice");
+      toast.success(isHindi ? "🔄 रिवीज़न (गलत प्रश्न) प्रीसेट लागू!" : "🔄 Revision (Wrong Questions) applied!");
+    } else if (presetId === "exam") {
+      setQuestionCount(50);
+      setTimerSeconds(30);
+      setDifficulty("all");
+      setQuestionPool("all");
+      setQuizStyle("exam");
+      toast.success(isHindi ? "📝 परीक्षा मोड प्रीसेट लागू!" : "📝 Exam Mode preset applied!");
+    }
+  };
 
   // 1. Fetch metadata on mount
   useEffect(() => {
@@ -332,6 +373,10 @@ export default function ArenaClient({ initialSelectedCategoryIds = null, embedde
           timer: timerSeconds,
           audience: urlAudience,
           language: isHindi ? "hi" : "en",
+          onlyWrong: questionPool === "wrong",
+          skipCorrect: questionPool === "unseen",
+          style: quizStyle,
+          userId: authSession?.user?.id || authSession?.user?.email || "guest",
         });
         if (result && Array.isArray(result.questions)) {
           quizQuestions = result.questions;
@@ -358,21 +403,22 @@ export default function ArenaClient({ initialSelectedCategoryIds = null, embedde
       if (quizQuestions.length === 0) {
         toast.error(
           isHindi
-            ? "चयनित श्रेणियों में कोई प्रश्न नहीं मिला। कृपया अन्य श्रेणी चुनें।"
-            : "No questions match your current settings. Please choose other categories."
+            ? "चयनित सेटिंग्स में कोई प्रश्न नहीं मिला। कृपया अन्य विकल्प चुनें।"
+            : "No questions match your current settings. Please relax filters or choose other categories."
         );
         setIsStarting(false);
         return;
       }
 
       // Configure QuizContext
-      const title = isHindi ? "क्विज़ एरीना" : "Quiz Arena";
+      const title = isHindi ? "क्विज़ अखाड़ा (Arena)" : "Quiz Arena";
       startMixedQuiz(
         quizQuestions,
         title,
         timerSeconds,
         difficulty.toUpperCase(),
-        isHindi ? "hi" : "en"
+        isHindi ? "hi" : "en",
+        quizStyle
       );
 
       router.push("/quiz/arena");
@@ -411,14 +457,24 @@ export default function ArenaClient({ initialSelectedCategoryIds = null, embedde
       ? (isHindi ? "टाइमर बंद" : "No Timer")
       : `${timerSeconds}s ${isHindi ? "प्रति प्रश्न" : "each"}`;
 
+  const poolLabel =
+    questionPool === "wrong"
+      ? (isHindi ? "गलत उत्तर (रिवीज़न)" : "Wrong Qs (Revision)")
+      : questionPool === "all"
+      ? (isHindi ? "सभी प्रश्न" : "All Qs")
+      : (isHindi ? "केवल अनदेखे" : "Unseen Qs");
+
+  const styleLabel =
+    quizStyle === "exam"
+      ? (isHindi ? "परीक्षा मोड" : "Exam Mode")
+      : (isHindi ? "अभ्यास" : "Practice");
+
   const summaryText = `${Math.min(questionCount, totalAvailableQuestions || questionCount)} ${
     isHindi ? "प्रश्न" : "questions"
-  } · ${diffLabel} · ${timerLabel} · ${selectedCats.length} ${
-    isHindi ? "श्रेणियां" : "categories"
-  }`;
+  } · ${diffLabel} · ${timerLabel} · ${poolLabel} · ${styleLabel}`;
 
   return (
-    <div className="w-full max-w-2xl mx-auto px-4 py-4 sm:py-6 pb-36 text-slate-900 dark:text-slate-100 select-none">
+    <div className={`w-full max-w-2xl mx-auto px-4 py-4 sm:py-6 ${embedded ? "pb-28" : "pb-36"} text-slate-900 dark:text-slate-100 select-none`}>
       <AnimatePresence mode="wait">
         {/* ══════════════════════════════════════════════════════════════
             STEP 1: CHOOSE CATEGORIES (Full Screen Sheet / Card)
@@ -446,15 +502,17 @@ export default function ArenaClient({ initialSelectedCategoryIds = null, embedde
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={() => router.push("/")}
-                className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:text-slate-300 flex items-center justify-center transition-colors shrink-0"
-                title={isHindi ? "बंद करें" : "Close"}
-                aria-label="Close"
-              >
-                <X size={18} />
-              </button>
+              {!embedded && (
+                <button
+                  type="button"
+                  onClick={() => router.push("/")}
+                  className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:text-slate-300 flex items-center justify-center transition-colors shrink-0"
+                  title={isHindi ? "बंद करें" : "Close"}
+                  aria-label="Close"
+                >
+                  <X size={18} />
+                </button>
+              )}
             </div>
 
             {/* Pinned Search Bar */}
@@ -644,14 +702,87 @@ export default function ArenaClient({ initialSelectedCategoryIds = null, embedde
                 </span>
               </div>
 
-              <button
-                type="button"
-                onClick={() => router.push("/")}
-                className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:text-slate-300 flex items-center justify-center transition-colors"
-                aria-label="Close"
-              >
-                <X size={16} />
-              </button>
+              {!embedded && (
+                <button
+                  type="button"
+                  onClick={() => router.push("/")}
+                  className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:text-slate-300 flex items-center justify-center transition-colors"
+                  aria-label="Close"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+
+            {/* Quick Presets (Rule 6) */}
+            <div className="bg-gradient-to-r from-indigo-50/90 via-purple-50/70 to-pink-50/80 dark:from-slate-900 dark:via-indigo-950/40 dark:to-slate-900 rounded-3xl border border-indigo-100 dark:border-slate-800 p-4 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-black uppercase tracking-wider text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5">
+                  <Sparkles size={14} className="text-amber-500" />
+                  <span>{isHindi ? "त्वरित प्रीसेट (वन-टैप सेटअप)" : "Quick Presets"}</span>
+                </span>
+                <span className="text-[10px] font-bold text-slate-400">
+                  {isHindi ? "1-टैप में लोड करें" : "One-tap config"}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleApplyPreset("5min")}
+                  className="p-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-indigo-200/80 dark:border-slate-700 text-left hover:border-indigo-500 hover:shadow-sm transition-all"
+                >
+                  <div className="text-sm">⚡</div>
+                  <div className="text-xs font-black text-slate-800 dark:text-slate-100 mt-1">
+                    {isHindi ? "5-मिनट जीके" : "5-min GK"}
+                  </div>
+                  <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                    10 Qs · 20s
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleApplyPreset("hard")}
+                  className="p-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-orange-200/80 dark:border-slate-700 text-left hover:border-orange-500 hover:shadow-sm transition-all"
+                >
+                  <div className="text-sm">🔥</div>
+                  <div className="text-xs font-black text-slate-800 dark:text-slate-100 mt-1">
+                    {isHindi ? "कठिन चुनौती" : "Hard Mode"}
+                  </div>
+                  <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                    20 Qs · 15s
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleApplyPreset("revision")}
+                  className="p-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-emerald-200/80 dark:border-slate-700 text-left hover:border-emerald-500 hover:shadow-sm transition-all"
+                >
+                  <div className="text-sm">🔄</div>
+                  <div className="text-xs font-black text-slate-800 dark:text-slate-100 mt-1">
+                    {isHindi ? "रिवीज़न (गलत)" : "Revision"}
+                  </div>
+                  <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                    {isHindi ? "केवल गलत प्रश्न" : "Wrong Qs"}
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleApplyPreset("exam")}
+                  className="p-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-purple-200/80 dark:border-slate-700 text-left hover:border-purple-500 hover:shadow-sm transition-all"
+                >
+                  <div className="text-sm">📝</div>
+                  <div className="text-xs font-black text-slate-800 dark:text-slate-100 mt-1">
+                    {isHindi ? "परीक्षा मोड" : "Exam Mode"}
+                  </div>
+                  <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                    50 Qs · 30s
+                  </div>
+                </button>
+              </div>
             </div>
 
             {/* 1. DIFFICULTY (Segmented Control matching Section 0 Tokens) */}
@@ -783,6 +914,93 @@ export default function ArenaClient({ initialSelectedCategoryIds = null, embedde
                     </button>
                   );
                 })}
+              </div>
+            </div>
+
+            {/* 4. QUESTIONS POOL (Rule 6: Unseen only, All, or Only wrong answers) */}
+            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 p-4 sm:p-5 shadow-sm">
+              <label className="text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-1.5 mb-3">
+                <RotateCcw size={14} className="text-indigo-600" />
+                <span>{isHindi ? "4. प्रश्न कहां से चुनें (Question Pool)" : "4. Questions Source"}</span>
+              </label>
+
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: "unseen", label: isHindi ? "केवल अनदेखे" : "Unseen Only", sub: isHindi ? "डिफ़ॉल्ट" : "Recommended" },
+                  { id: "all", label: isHindi ? "सभी प्रश्न" : "All Questions", sub: isHindi ? "पूरा संग्रह" : "Full Bank" },
+                  { id: "wrong", label: isHindi ? "गलत उत्तर (रिवीज़न)" : "Wrong Qs (Revision)", sub: isHindi ? "सुधार हेतु" : "Review" },
+                ].map((item) => {
+                  const isSelected = questionPool === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setQuestionPool(item.id)}
+                      className={`py-3 px-2 rounded-2xl text-xs font-black transition-all flex flex-col items-center justify-center gap-0.5 ${
+                        isSelected
+                          ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/25 ring-2 ring-indigo-500/20"
+                          : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300"
+                      }`}
+                    >
+                      <span className="text-center line-clamp-1">{item.label}</span>
+                      <span className="text-[9.5px] font-semibold opacity-80">{item.sub}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 5. QUIZ STYLE (Rule 6: Practice vs Exam Style) */}
+            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 p-4 sm:p-5 shadow-sm">
+              <label className="text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-1.5 mb-3">
+                <GraduationCap size={14} className="text-indigo-600" />
+                <span>{isHindi ? "5. क्विज़ शैली (Style)" : "5. Quiz Style"}</span>
+              </label>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setQuizStyle("practice")}
+                  className={`p-3.5 rounded-2xl border text-left transition-all ${
+                    quizStyle === "practice"
+                      ? "bg-indigo-50/90 dark:bg-indigo-950/50 border-2 border-indigo-600 text-indigo-950 dark:text-indigo-100 shadow-sm"
+                      : "bg-slate-100/70 hover:bg-slate-100 dark:bg-slate-800/70 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-black">
+                      🎯 {isHindi ? "अभ्यास मोड (Practice)" : "Practice Mode"}
+                    </span>
+                    {quizStyle === "practice" && <Check size={14} className="text-indigo-600" />}
+                  </div>
+                  <p className="text-[10.5px] text-slate-500 dark:text-slate-400 leading-snug">
+                    {isHindi
+                      ? "हर उत्तर के तुरंत बाद सही उत्तर व व्याख्या देखें।"
+                      : "Instant feedback & explanation after each answer."}
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setQuizStyle("exam")}
+                  className={`p-3.5 rounded-2xl border text-left transition-all ${
+                    quizStyle === "exam"
+                      ? "bg-purple-50/90 dark:bg-purple-950/50 border-2 border-purple-600 text-purple-950 dark:text-purple-100 shadow-sm"
+                      : "bg-slate-100/70 hover:bg-slate-100 dark:bg-slate-800/70 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-black">
+                      ⏱️ {isHindi ? "परीक्षा मोड (Exam)" : "Exam Mode"}
+                    </span>
+                    {quizStyle === "exam" && <Check size={14} className="text-purple-600" />}
+                  </div>
+                  <p className="text-[10.5px] text-slate-500 dark:text-slate-400 leading-snug">
+                    {isHindi
+                      ? "परीक्षा की तरह खेलें, पूरी समीक्षा अंत में परिणाम पृष्ठ पर।"
+                      : "Exam simulation. Complete review on the results screen."}
+                  </p>
+                </button>
               </div>
             </div>
 

@@ -23,6 +23,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useQuiz } from "@/context/QuizContext";
 import { shareQuiz, shareSetChallenge } from "@/lib/shareHelper";
 import SetPreviewModal from "@/components/SetPreviewModal";
+import ArenaClient from "@/app/arena/ArenaClient";
 import ProBannerStrip from "@/components/monetization/ProBannerStrip";
 import toast, { Toaster } from "react-hot-toast";
 
@@ -32,6 +33,10 @@ export default function GkTopicSetsPage() {
   const searchParams = useSearchParams();
   const { isHindi } = useLanguage();
   const { startQuizSet } = useQuiz();
+
+  // Layer: "standard" | "arena" (Rule 6)
+  const initialModeParam = searchParams?.get("mode") || searchParams?.get("layer");
+  const [activeLayer, setActiveLayer] = useState(initialModeParam === "arena" ? "arena" : "standard");
 
   const rawCategory = params.category || "india";
   const categoryTitle = rawCategory.toLowerCase().includes("world") ? "World GK" : "India GK";
@@ -206,7 +211,46 @@ export default function GkTopicSetsPage() {
       </header>
 
       <div className="max-w-4xl mx-auto px-4 py-5 space-y-6">
-        {/* Topic Header Hero Card */}
+        {/* Top Two-Tab Switch: Standard Sets | Quiz Arena (Rule 6) */}
+        <div className="flex items-center justify-center my-1">
+          <div className="inline-flex p-1 rounded-2xl bg-slate-200/70 dark:bg-slate-900 border border-slate-300/60 dark:border-slate-800 shadow-2xs">
+            <button
+              type="button"
+              onClick={() => setActiveLayer("standard")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${
+                activeLayer === "standard"
+                  ? "bg-white dark:bg-slate-800 text-purple-600 dark:text-purple-400 shadow-sm"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              }`}
+            >
+              <span>📚</span>
+              <span>{isHindi ? "स्टैंडर्ड सेट्स" : "Standard Sets"}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveLayer("arena")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${
+                activeLayer === "arena"
+                  ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-sm"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              }`}
+            >
+              <span>⚔️</span>
+              <span>{isHindi ? "क्विज़ अखाड़ा (Arena)" : "Quiz Arena"}</span>
+            </button>
+          </div>
+        </div>
+
+        {activeLayer === "arena" ? (
+          <div className="mt-2 mb-12">
+            <ArenaClient
+              initialSelectedCategoryIds={[selectedSubjectId || topicId]}
+              embedded={true}
+            />
+          </div>
+        ) : (
+          <>
+            {/* Topic Header Hero Card */}
         <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-2xl bg-purple-100 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 flex items-center justify-center text-3xl shrink-0">
@@ -533,6 +577,8 @@ export default function GkTopicSetsPage() {
 
         {/* Task 2.4: Single Pro Banner */}
         <ProBannerStrip />
+          </>
+        )}
       </div>
 
       {/* Set Preview / Read Mode Modal */}

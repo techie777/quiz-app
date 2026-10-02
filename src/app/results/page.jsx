@@ -24,6 +24,7 @@ import { recordQuizCompletion, createChallengeCode } from "@/lib/gameLayer";
 import GameResultsCard from "@/components/game/GameResultsCard";
 import { showRewarded } from "@/lib/adProvider";
 import ResultDonationCard from "@/components/monetization/ResultDonationCard";
+import ProBannerStrip from "@/components/monetization/ProBannerStrip";
 import MascotPlayer from "@/components/quiz/MascotPlayer";
 import { getMascotForCategory } from "@/config/mascots";
 
@@ -1181,6 +1182,7 @@ export default function ResultPage() {
           {/* Dismissible Donation Appeal Card (Students, Explorer, Arena; once a day; never Kids) */}
           <div className="w-full max-w-xl mx-auto px-2">
             <ResultDonationCard />
+            <ProBannerStrip />
           </div>
 
           {/* Game Layer: XP Progression, Streak Freeze, 3-Fact Recap, Weak-Topic Hint, 1v1 Challenge */}
@@ -1521,6 +1523,7 @@ export default function ResultPage() {
                 </div>
               </div>
             </Link>
+            <ProBannerStrip className="mt-4 mb-2" />
           </div>
         </div>
       )}

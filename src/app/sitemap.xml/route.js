@@ -36,18 +36,22 @@ export async function GET() {
     
     const staticPages = [
       { url: '', priority: '1.0', changefreq: 'daily' },
+      { url: '/gk', priority: '1.0', changefreq: 'daily' },
+      { url: '/arena', priority: '0.9', changefreq: 'daily' },
+      { url: '/daily-current-affairs', priority: '0.9', changefreq: 'daily' },
+      { url: '/current-affairs', priority: '0.9', changefreq: 'daily' },
+      { url: '/fun-facts', priority: '0.8', changefreq: 'daily' },
+      { url: '/true-false', priority: '0.8', changefreq: 'daily' },
+      { url: '/pro', priority: '0.8', changefreq: 'weekly' },
+      { url: '/support', priority: '0.6', changefreq: 'monthly' },
       { url: '/about', priority: '0.8', changefreq: 'monthly' },
       { url: '/privacy', priority: '0.5', changefreq: 'yearly' },
       { url: '/copyright', priority: '0.5', changefreq: 'yearly' },
       { url: '/profile', priority: '0.7', changefreq: 'weekly' },
-      { url: '/daily-current-affairs', priority: '0.9', changefreq: 'daily' },
-      { url: '/current-affairs', priority: '0.9', changefreq: 'daily' },
-      { url: '/daily', priority: '0.9', changefreq: 'daily' },
       { url: '/govt-exams', priority: '0.8', changefreq: 'weekly' },
       { url: '/govt-jobs-alerts', priority: '0.8', changefreq: 'daily' },
       { url: '/my-favourites', priority: '0.7', changefreq: 'weekly' },
       { url: '/previous-years-papers', priority: '0.7', changefreq: 'monthly' },
-      { url: '/arena', priority: '0.9', changefreq: 'daily' },
       { url: '/donate', priority: '0.6', changefreq: 'monthly' },
     ];
 
