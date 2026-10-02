@@ -9,61 +9,63 @@ import ThemeToggle from "@/components/ThemeToggle";
 import styles from "@/styles/Admin.module.css";
 import "./globals.css"; // Import admin-specific globals
 
-const JR_NAV = [
-  { href: "/admin", label: "Dashboard", icon: "📊", perm: "dashboard" },
-  { href: "/admin/monetization", label: "Monetization & Ads", icon: "💰", perm: "monetization" },
-  { href: "/admin/hot-quizzes", label: "Hot & Fun Quizzes", icon: "🔥", perm: "hotQuizzes" },
-  { href: "/admin/categories", label: "Quiz Categories", icon: "📁", perm: "categories" },
-  { href: "/admin/questions", label: "Quiz Questions", icon: "❓", perm: "questions" },
-  { href: "/admin/govt-exams", label: "Govt Exams", icon: "🏛️", perm: "govtExams" },
-  { href: "/admin/current-affairs", label: "Current Affairs", icon: "🗞️", perm: "currentAffairs" },
-  { href: "/admin/sections", label: "Sections", icon: "📂", perm: "sections" },
-  { href: "/admin/upload", label: "Bulk Upload", icon: "📤", perm: "upload" },
-  { href: "/admin/sawal-jawab", label: "Sawal / Jawab", icon: "📖", perm: "sawalJawab" },
-  { href: "/admin/daily", label: "Daily Quizzes", icon: "📅", perm: "daily" },
-  { href: "/admin/mock-tests-manager", label: "Mock Tests Engine", icon: "📝", perm: "mockTestsManager" },
-  { href: "/admin/rewards", label: "Rewards & Coins", icon: "🪙", perm: "rewards" },
-  { href: "/admin/study-material", label: "Study Materials", icon: "📚", perm: "studyMaterial" },
-  { href: "/admin/notifications", label: "Notifications", icon: "🔔", perm: "notifications" },
-  { href: "/admin/fun-facts", label: "Fun Facts", icon: "💡", perm: "funFacts" },
-  { href: "/admin/true-false", label: "True/False", icon: "✅", perm: "trueFalse" },
-  { href: "/admin/book-my-course", label: "Book My Course", icon: "📚", perm: "bookMyCourse" },
-  { href: "/admin/career-guides", label: "Career Guides", icon: "🧭", perm: "careerGuides" },
-  { href: "/admin/forum", label: "Community Forum", icon: "💬", perm: "forum" },
-  { href: "/admin/school-study", label: "School Study", icon: "🏫", perm: "schoolStudy" },
-  { href: "/admin/mascots", label: "Mascots & Hosts", icon: "🎭", perm: "settings" },
-  { href: "/admin/settings", label: "Settings", icon: "⚙️", perm: "settings" },
-];
-
-const MASTER_NAV_DEFAULT = [
-  { href: "/admin", label: "Dashboard", icon: "📊", perm: "dashboard" },
-  { href: "/admin/monetization", label: "Monetization & Ads", icon: "💰", perm: "monetization" },
-  { href: "/admin/hot-quizzes", label: "Hot & Fun Quizzes", icon: "🔥", perm: "hotQuizzes" },
-  { href: "/admin/categories", label: "Quiz Categories", icon: "📁", perm: "categories" },
-  { href: "/admin/gk", label: "GK", icon: "🏛️", perm: "gk" },
-  { href: "/admin/questions", label: "Quiz Questions", icon: "❓", perm: "questions" },
-  { href: "/admin/govt-exams", label: "Govt Exams", icon: "🏛️", perm: "govtExams" },
-  { href: "/admin/current-affairs", label: "Current Affairs", icon: "🗞️", perm: "currentAffairs" },
-  { href: "/admin/sections", label: "Sections", icon: "📂", perm: "sections" },
-  { href: "/admin/upload", label: "Bulk Upload", icon: "📤", perm: "upload" },
-  { href: "/admin/sawal-jawab", label: "Sawal / Jawab", icon: "📖", perm: "sawalJawab" },
-  { href: "/admin/daily", label: "Daily Quizzes", icon: "📅", perm: "daily" },
-  { href: "/admin/mock-tests-manager", label: "Mock Tests Engine", icon: "📝", perm: "mockTestsManager" },
-  { href: "/admin/rewards", label: "Rewards & Coins", icon: "🪙", perm: "rewards" },
-  { href: "/admin/study-material", label: "Study Materials", icon: "📚", perm: "studyMaterial" },
-  { href: "/admin/pending", label: "Approval Queue", icon: "📝", perm: "pending" },
-  { href: "/admin/accounts", label: "Admin Accounts", icon: "👥", perm: "accounts" },
-  { href: "/admin/accounts?type=user", label: "User Accounts", icon: "👤", perm: "users" },
-  { href: "/admin/logs", label: "Activity Logs", icon: "📋", perm: "logs" },
-  { href: "/admin/notifications", label: "Notifications", icon: "🔔", perm: "notifications" },
-  { href: "/admin/fun-facts", label: "Fun Facts", icon: "💡", perm: "funFacts" },
-  { href: "/admin/true-false", label: "True/False", icon: "✅", perm: "trueFalse" },
-  { href: "/admin/book-my-course", label: "Book My Course", icon: "📚", perm: "bookMyCourse" },
-  { href: "/admin/career-guides", label: "Career Guides", icon: "🧭", perm: "careerGuides" },
-  { href: "/admin/forum", label: "Community Forum", icon: "💬", perm: "forum" },
-  { href: "/admin/school-study", label: "School Study", icon: "🏫", perm: "schoolStudy" },
-  { href: "/admin/mascots", label: "Mascots & Hosts", icon: "🎭", perm: "settings" },
-  { href: "/admin/settings", label: "Settings", icon: "⚙️", perm: "settings" },
+const NAV_SECTIONS = [
+  {
+    id: "content",
+    title: "Quiz & Content",
+    icon: "📚",
+    items: [
+      { href: "/admin", label: "Dashboard", icon: "📊", perm: "dashboard" },
+      { href: "/admin/upload", label: "Bulk Upload", icon: "📤", perm: "upload" },
+      { href: "/admin/categories", label: "Quiz Categories", icon: "📁", perm: "categories" },
+      { href: "/admin/gk", label: "GK Hub", icon: "🏛️", perm: "gk" },
+      { href: "/admin/questions", label: "Quiz Questions", icon: "❓", perm: "questions" },
+      { href: "/admin/sections", label: "Sections", icon: "📂", perm: "sections" },
+    ],
+  },
+  {
+    id: "modules",
+    title: "Special Modules",
+    icon: "🎯",
+    items: [
+      { href: "/admin/govt-exams", label: "Govt Exams", icon: "🏛️", perm: "govtExams" },
+      { href: "/admin/current-affairs", label: "Current Affairs", icon: "🗞️", perm: "currentAffairs" },
+      { href: "/admin/mock-tests-manager", label: "Mock Tests Engine", icon: "📝", perm: "mockTestsManager" },
+      { href: "/admin/daily", label: "Daily Quizzes", icon: "📅", perm: "daily" },
+      { href: "/admin/hot-quizzes", label: "Hot & Fun Quizzes", icon: "🔥", perm: "hotQuizzes" },
+      { href: "/admin/sawal-jawab", label: "Sawal / Jawab", icon: "📖", perm: "sawalJawab" },
+      { href: "/admin/study-material", label: "Study Materials", icon: "📚", perm: "studyMaterial" },
+      { href: "/admin/school-study", label: "School Study", icon: "🏫", perm: "schoolStudy" },
+      { href: "/admin/fun-facts", label: "Fun Facts", icon: "💡", perm: "funFacts" },
+      { href: "/admin/true-false", label: "True/False", icon: "✅", perm: "trueFalse" },
+      { href: "/admin/book-my-course", label: "Book My Course", icon: "📚", perm: "bookMyCourse" },
+      { href: "/admin/career-guides", label: "Career Guides", icon: "🧭", perm: "careerGuides" },
+      { href: "/admin/forum", label: "Community Forum", icon: "💬", perm: "forum" },
+    ],
+  },
+  {
+    id: "growth",
+    title: "Monetization & Growth",
+    icon: "💎",
+    items: [
+      { href: "/admin/monetization", label: "Monetization & Ads", icon: "💰", perm: "monetization" },
+      { href: "/admin/rewards", label: "Rewards & Coins", icon: "🪙", perm: "rewards" },
+      { href: "/admin/notifications", label: "Notifications", icon: "🔔", perm: "notifications" },
+    ],
+  },
+  {
+    id: "system",
+    title: "System & Management",
+    icon: "⚙️",
+    items: [
+      { href: "/admin/pending", label: "Approval Queue", icon: "📝", perm: "pending" },
+      { href: "/admin/accounts", label: "Admin Accounts", icon: "👥", perm: "accounts" },
+      { href: "/admin/accounts?type=user", label: "User Accounts", icon: "👤", perm: "users" },
+      { href: "/admin/logs", label: "Activity Logs", icon: "📋", perm: "logs" },
+      { href: "/admin/mascots", label: "Mascots & Hosts", icon: "🎭", perm: "settings" },
+      { href: "/admin/settings", label: "Settings", icon: "⚙️", perm: "settings" },
+    ],
+  },
 ];
 
 function AdminShell({ children }) {
@@ -74,87 +76,23 @@ function AdminShell({ children }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [hasRefreshedForAdmin, setHasRefreshedForAdmin] = useState(false);
 
-  // Sidebar Order State & Dragging Highlight State
-  const [customNavOrder, setCustomNavOrder] = useState([]);
-  const [draggedIdx, setDraggedIdx] = useState(null);
-  const [dragOverIdx, setDragOverIdx] = useState(null);
-
   const isLogin = pathname === "/admin/login";
   const isMaster = adminUser?.role === "master";
 
-  // Load custom sidebar order from localStorage
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("admin_sidebar_order");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setCustomNavOrder(parsed);
-        }
-      }
-    } catch (e) {
-      console.error("Failed to parse sidebar order:", e);
-    }
-  }, []);
-
-  const saveNavOrder = (newHrefs) => {
-    setCustomNavOrder(newHrefs);
-    try {
-      localStorage.setItem("admin_sidebar_order", JSON.stringify(newHrefs));
-    } catch (e) {}
-  };
-
-  const navItems = useMemo(() => {
-    const raw = isMaster ? MASTER_NAV_DEFAULT : JR_NAV;
-    let baseList = isMaster ? raw : raw.filter((item) => (adminUser?.permissions || {})[item.perm] !== false);
-
-    if (customNavOrder.length > 0) {
-      const orderMap = new Map(customNavOrder.map((href, idx) => [href, idx]));
-      baseList = [...baseList].sort((a, b) => {
-        const idxA = orderMap.has(a.href) ? orderMap.get(a.href) : 999;
-        const idxB = orderMap.has(b.href) ? orderMap.get(b.href) : 999;
-        return idxA - idxB;
+  const filteredSections = useMemo(() => {
+    return NAV_SECTIONS.map((sec) => {
+      const allowedItems = sec.items.filter((item) => {
+        if (isMaster) return true;
+        return (adminUser?.permissions || {})[item.perm] !== false;
       });
-    }
+      return {
+        ...sec,
+        items: allowedItems,
+      };
+    }).filter((sec) => sec.items.length > 0);
+  }, [adminUser?.permissions, isMaster]);
 
-    return baseList;
-  }, [adminUser?.permissions, isMaster, customNavOrder]);
 
-  const handleDragStart = (e, index) => {
-    setDraggedIdx(index);
-    e.dataTransfer.effectAllowed = "move";
-  };
-
-  const handleDragOver = (e, index) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    if (dragOverIdx !== index) {
-      setDragOverIdx(index);
-    }
-  };
-
-  const handleDrop = (e, targetIdx) => {
-    e.preventDefault();
-    if (draggedIdx === null || draggedIdx === targetIdx) {
-      setDraggedIdx(null);
-      setDragOverIdx(null);
-      return;
-    }
-
-    const updated = [...navItems];
-    const [removed] = updated.splice(draggedIdx, 1);
-    updated.splice(targetIdx, 0, removed);
-
-    const newHrefs = updated.map(item => item.href);
-    saveNavOrder(newHrefs);
-    setDraggedIdx(null);
-    setDragOverIdx(null);
-  };
-
-  const handleDragEnd = () => {
-    setDraggedIdx(null);
-    setDragOverIdx(null);
-  };
 
   useEffect(() => {
     if (isLogin) return;
@@ -227,50 +165,34 @@ function AdminShell({ children }) {
         </div>
 
         <nav className={styles.nav}>
-          {navItems.map((item, idx) => {
-            const isBeingDragged = draggedIdx === idx;
-            const isDropTarget = dragOverIdx === idx && draggedIdx !== idx;
-
-            return (
-              <div
-                key={item.href}
-                draggable={isMaster}
-                onDragStart={(e) => handleDragStart(e, idx)}
-                onDragOver={(e) => handleDragOver(e, idx)}
-                onDrop={(e) => handleDrop(e, idx)}
-                onDragEnd={handleDragEnd}
-                style={{
-                  position: "relative",
-                  transition: "all 0.15s ease",
-                  opacity: isBeingDragged ? 0.4 : 1,
-                  transform: isBeingDragged
-                    ? "scale(0.96)"
-                    : isDropTarget
-                    ? "translateY(2px)"
-                    : "none",
-                  borderTop: isDropTarget ? "3px solid #6366f1" : "3px solid transparent",
-                  borderRadius: "10px",
-                  background: isDropTarget ? "rgba(99, 102, 241, 0.12)" : "transparent",
-                }}
-              >
-                <Link
-                  href={item.href}
-                  className={`${styles.navLink} ${
-                    isLinkActive(item.href) ? styles.navLinkActive : ""
-                  }`}
-                  style={{ width: "100%" }}
-                >
-                  <span className={styles.navIcon}>{item.icon}</span>
-                  <span className={styles.navText}>
-                    {item.label}
-                    {item.href === "/admin/notifications" && unreadCount > 0 ? (
-                      <span className={styles.navBadge}>{unreadCount}</span>
-                    ) : null}
-                  </span>
-                </Link>
+          {filteredSections.map((sec, secIdx) => (
+            <div key={sec.id} style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+              <div className={styles.navSectionHeader}>
+                <span>{sec.icon}</span>
+                <span>{sec.title}</span>
               </div>
-            );
-          })}
+              {sec.items.map((item) => (
+                <div key={item.href} style={{ position: "relative" }}>
+                  <Link
+                    href={item.href}
+                    className={`${styles.navLink} ${
+                      isLinkActive(item.href) ? styles.navLinkActive : ""
+                    }`}
+                    style={{ width: "100%" }}
+                  >
+                    <span className={styles.navIcon}>{item.icon}</span>
+                    <span className={styles.navText}>
+                      {item.label}
+                      {item.href === "/admin/notifications" && unreadCount > 0 ? (
+                        <span className={styles.navBadge}>{unreadCount}</span>
+                      ) : null}
+                    </span>
+                  </Link>
+                </div>
+              ))}
+              {secIdx < filteredSections.length - 1 && <div className={styles.navSectionDivider} />}
+            </div>
+          ))}
         </nav>
 
         <div className={styles.sidebarFooter}>

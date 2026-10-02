@@ -161,9 +161,10 @@ export async function POST(req) {
         const optD = getFieldByHeader(r, ["option d", "optiond", "option 4", "opt d", "opt4", "d"]);
         const rawAns = getFieldByHeader(r, ["correct answer", "correctanswer", "correct answer (1-4)", "answer", "correct", "ans"]);
         const rawDiff = getFieldByHeader(r, ["difficulty", "diff", "level"]);
-        const rawMaster = getFieldByHeader(r, ["master category", "mastercategory", "master_category"]) || "GK";
-        const rawCat = finalCatName;
-        const rawTopic = getFieldByHeader(r, ["topic", "topic name", "topicname", "topic_name"]) || finalCatName;
+        const rawMaster = getFieldByHeader(r, ["master category", "mastercategory", "master_category", "main category", "maincategory"]) || "GK";
+        const sheetCat = getFieldByHeader(r, ["category", "sub category", "subcategory"]);
+        const rawCat = sheetCat || finalCatName;
+        const rawTopic = getFieldByHeader(r, ["topic", "topic name", "topicname", "topic_name"]) || rawCat;
         const rawSubject = getFieldByHeader(r, ["subject", "subject name", "subjectname", "subject_name", "sub topic", "subtopic", "sub_topic"]) || rawTopic;
         const rawLang = getFieldByHeader(r, ["language", "lang"]) || "hi";
         const rawExam = getFieldByHeader(r, ["exam tags", "examtags", "exam", "tags"]);
@@ -211,9 +212,11 @@ export async function POST(req) {
           correctAnswer: options[correctIndex],
           difficulty,
           masterCategory: rawMaster,
-          category,
+          category: rawCat,
           language,
+          topic: rawTopic,
           topicName: rawTopic,
+          subject: rawSubject,
           subjectName: rawSubject,
           questionType: rawQType,
           explanation,
@@ -243,16 +246,17 @@ export async function POST(req) {
       });
 
       // ── DRY RUN CALCULATION (Rule 4: 7/7/6 sheet order, 20/set) ──
-      // Group valid, non-duplicate questions under the target category
+      // Group valid, non-duplicate questions under their specific category + subject + language
       const validForSets = validatedRows.filter((r) => !r.isDuplicate);
       const groups = {};
       validForSets.forEach((r) => {
-        const key = `${finalCatName}:::${r.language}`;
+        const key = `${r.masterCategory}:::${r.category}:::${r.topicName}:::${r.subjectName}:::${r.language}`;
         if (!groups[key]) {
           groups[key] = {
-            category: finalCatName,
-            subjectName: finalCatName,
-            topicName: finalCatName,
+            masterCategory: r.masterCategory,
+            category: r.category,
+            subjectName: r.subjectName,
+            topicName: r.topicName,
             language: r.language,
             questions: [],
           };
@@ -377,6 +381,20 @@ export async function POST(req) {
             continue;
           }
 
+          const qCat = q.category || finalCatName;
+          const qMaster = q.masterCategory || "GK";
+          const qTopic = q.topic || q.topicName || qCat;
+          const qSubject = q.subject || q.subjectName || qTopic;
+
+          const hier = await resolveHierarchy(db, {
+            masterCategory: qMaster,
+            category: qCat,
+            topic: qTopic,
+            subject: qSubject,
+          });
+
+          const targetCategoryId = catObjectId || hier.categoryId || (targetCat ? targetCat._id : undefined);
+
           const diffLevel =
             q.difficulty === "easy" ? 1 : q.difficulty === "hard" ? 3 : q.difficulty === "expert" ? 4 : 2;
 
@@ -408,19 +426,19 @@ export async function POST(req) {
             explanation_hi: q.language === "hi" ? q.explanation || "" : undefined,
             explanationHi: q.language === "hi" ? q.explanation || "" : undefined,
             language: q.language || "hi",
-            masterCategory: "GK",
-            categoryId: catObjectId || (targetCat ? targetCat._id : undefined),
-            category: finalCatName,
-            categoryName: finalCatName,
-            topic: q.topicName || finalCatName,
-            topicName: q.topicName || finalCatName,
-            topicId: finalCatIdStr,
-            topicSlug: finalCatSlug,
-            subject: q.subjectName || finalCatName,
-            subjectName: finalCatName,
-            subjectId: finalCatIdStr,
-            subjectSlug: finalCatSlug,
-            subTopic: q.subjectName || finalCatName,
+            masterCategory: hier.masterCategory,
+            categoryId: targetCategoryId,
+            category: hier.category,
+            categoryName: hier.category,
+            topic: hier.topicName,
+            topicName: hier.topicName,
+            topicId: hier.topicId,
+            topicSlug: hier.topicSlug,
+            subject: hier.subjectName,
+            subjectName: hier.subjectName,
+            subjectId: hier.subjectId,
+            subjectSlug: hier.subjectSlug,
+            subTopic: hier.subjectName,
             questionType: q.questionType || "MCQ",
             examTags: q.examTags || [],
             exam: q.examTags || [],
@@ -441,17 +459,17 @@ export async function POST(req) {
             toInsert.push(questionDoc);
           }
 
-          // Group by Category + Language for set generation
-          const groupKey = `${finalCatName}:::${q.language || "hi"}`;
+          // Group by MasterCategory + Category + Topic + Subject + Language for set generation
+          const groupKey = `${hier.masterCategory}:::${hier.category}:::${hier.topicId}:::${hier.subjectId}:::${q.language || "hi"}`;
           if (!subjectLanguageGroups[groupKey]) {
             subjectLanguageGroups[groupKey] = {
-              subjectId: finalCatIdStr,
-              subjectName: finalCatName,
-              topicId: finalCatIdStr,
-              topicName: finalCatName,
-              category: finalCatName,
-              categoryId: catObjectId ? catObjectId.toString() : undefined,
-              masterCategory: "GK",
+              subjectId: hier.subjectId,
+              subjectName: hier.subjectName,
+              topicId: hier.topicId,
+              topicName: hier.topicName,
+              category: hier.category,
+              categoryId: targetCategoryId ? targetCategoryId.toString() : undefined,
+              masterCategory: hier.masterCategory,
               language: q.language || "hi",
               questions: [],
             };
@@ -506,16 +524,25 @@ export async function POST(req) {
         totalRemainderCount += setGenResult.remainderCount;
       }
 
-      // Update question count in Category collection
-      if (catObjectId) {
-        const totalCatQ = await db.collection("Question").countDocuments({
-          categoryId: catObjectId,
-          status: "published",
-        });
-        await db.collection("Category").updateOne(
-          { _id: catObjectId },
-          { $set: { questionCount: totalCatQ, updatedAt: new Date() } }
-        );
+      // Update question count in Category collection for all touched categories
+      const touchedCatIds = new Set();
+      if (catObjectId) touchedCatIds.add(catObjectId.toString());
+      toInsert.concat(toUpdate.map((u) => u.doc)).forEach((doc) => {
+        if (doc.categoryId) touchedCatIds.add(doc.categoryId.toString());
+      });
+
+      for (const cIdStr of touchedCatIds) {
+        if (ObjectId.isValid(cIdStr)) {
+          const cOid = new ObjectId(cIdStr);
+          const totalCatQ = await db.collection("Question").countDocuments({
+            categoryId: cOid,
+            status: "published",
+          });
+          await db.collection("Category").updateOne(
+            { _id: cOid },
+            { $set: { questionCount: totalCatQ, updatedAt: new Date() } }
+          );
+        }
       }
 
       // ── 4. BUILT-IN VERIFICATION CHECK (Rule 1) ──

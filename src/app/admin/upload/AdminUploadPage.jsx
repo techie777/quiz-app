@@ -258,16 +258,16 @@ export default function AdminUploadPage() {
       mapping.optionC = findHeader("option c", "option 3", "opt c", "opt3", "c") || headers[3] || "";
       mapping.optionD = findHeader("option d", "option 4", "opt d", "opt4", "d") || headers[4] || "";
       mapping.correctAnswer = findHeader("correct answer", "correct answer (1-4)", "answer", "correct", "ans") || headers[5] || "";
-      mapping.questionType = findHeader("question type", "type");
-      mapping.masterCategory = findHeader("master category", "mastercategory");
+      mapping.questionType = findHeader("question type", "questiontype", "type");
+      mapping.masterCategory = findHeader("master category", "mastercategory", "master_category", "main category", "maincategory");
       mapping.category = findHeader("category", "sub category", "subcategory");
-      mapping.topic = findHeader("topic", "topic name");
-      mapping.subject = findHeader("subject", "subject name", "sub topic", "subtopic");
+      mapping.topic = findHeader("topic", "topic name", "topicname", "topic_name");
+      mapping.subject = findHeader("subject", "subject name", "subjectname", "subject_name", "sub topic", "subtopic", "sub_topic");
       mapping.difficulty = findHeader("difficulty", "level", "diff");
       mapping.explanation = findHeader("explanation", "exp", "solution", "notes");
       mapping.language = findHeader("language", "lang");
-      mapping.examTags = findHeader("exam tags", "exam", "tags");
-      mapping.subTopic = findHeader("sub topic", "subtopic");
+      mapping.examTags = findHeader("exam tags", "examtags", "exam", "tags");
+      mapping.subTopic = findHeader("sub topic", "subtopic", "sub_topic");
     } else {
       mapping.question = findHeader("question", "text") || headers[0] || "";
       mapping.optionA = findHeader("option 1", "option a", "opt 1", "a") || headers[1] || "";
@@ -369,28 +369,47 @@ export default function AdminUploadPage() {
     try {
       // Map rows according to column mapping
       const mappedRows = rows.map((r) => {
+        const rowMasterCat = (mapping.masterCategory && r[mapping.masterCategory]) || r["Master Category"] || r["Main Category"] || "GK";
+        const rowCategory = (mapping.category && r[mapping.category]) || r["Category"] || activeCatName || "General Knowledge";
+        const rowTopic = (mapping.topic && r[mapping.topic]) || r["Topic"] || rowCategory;
+        const rowSubject = (mapping.subject && r[mapping.subject]) || (mapping.subTopic && r[mapping.subTopic]) || r["Subject"] || rowTopic;
+        const rowLang = (mapping.language && r[mapping.language]) || r["Language"] || "hi";
+        const rowDiff = (mapping.difficulty && r[mapping.difficulty]) || r["Difficulty"] || "medium";
+        const rowType = (mapping.questionType && r[mapping.questionType]) || r["Question Type"] || "MCQ";
+        const rowExp = (mapping.explanation && r[mapping.explanation]) || r["Explanation"] || "";
+        const rowExam = (mapping.examTags && r[mapping.examTags]) || r["Exam Tags"] || "";
+
         return {
-          question: r[mapping.question] || "",
-          optionA: r[mapping.optionA] || "",
-          optionB: r[mapping.optionB] || "",
-          optionC: r[mapping.optionC] || "",
-          optionD: r[mapping.optionD] || "",
-          "Option A": r[mapping.optionA] || "",
-          "Option B": r[mapping.optionB] || "",
-          "Option C": r[mapping.optionC] || "",
-          "Option D": r[mapping.optionD] || "",
-          correctAnswer: r[mapping.correctAnswer] || "",
-          "Correct Answer": r[mapping.correctAnswer] || "",
-          difficulty: r[mapping.difficulty] || "medium",
-          masterCategory: "GK",
-          category: activeCatName || "General Knowledge",
-          topic: r[mapping.topic] || activeCatName || "General Knowledge",
-          subject: r[mapping.subject] || r[mapping.subTopic] || activeCatName || "General Knowledge",
-          language: r[mapping.language] || "hi",
-          explanation: r[mapping.explanation] || "",
-          examTags: r[mapping.examTags] || "",
-          subTopic: r[mapping.subTopic] || "",
-          questionType: r[mapping.questionType] || "MCQ",
+          question: (mapping.question && r[mapping.question]) || r["Question"] || "",
+          optionA: (mapping.optionA && r[mapping.optionA]) || r["Option A"] || "",
+          optionB: (mapping.optionB && r[mapping.optionB]) || r["Option B"] || "",
+          optionC: (mapping.optionC && r[mapping.optionC]) || r["Option C"] || "",
+          optionD: (mapping.optionD && r[mapping.optionD]) || r["Option D"] || "",
+          "Option A": (mapping.optionA && r[mapping.optionA]) || r["Option A"] || "",
+          "Option B": (mapping.optionB && r[mapping.optionB]) || r["Option B"] || "",
+          "Option C": (mapping.optionC && r[mapping.optionC]) || r["Option C"] || "",
+          "Option D": (mapping.optionD && r[mapping.optionD]) || r["Option D"] || "",
+          correctAnswer: (mapping.correctAnswer && r[mapping.correctAnswer]) || r["Correct Answer"] || "",
+          "Correct Answer": (mapping.correctAnswer && r[mapping.correctAnswer]) || r["Correct Answer"] || "",
+          difficulty: rowDiff,
+          "Difficulty": rowDiff,
+          masterCategory: rowMasterCat,
+          "Master Category": rowMasterCat,
+          category: rowCategory,
+          "Category": rowCategory,
+          topic: rowTopic,
+          "Topic": rowTopic,
+          subject: rowSubject,
+          "Subject": rowSubject,
+          language: rowLang,
+          "Language": rowLang,
+          explanation: rowExp,
+          "Explanation": rowExp,
+          examTags: rowExam,
+          "Exam Tags": rowExam,
+          subTopic: (mapping.subTopic && r[mapping.subTopic]) || rowSubject,
+          questionType: rowType,
+          "Question Type": rowType,
         };
       });
 
@@ -433,8 +452,9 @@ export default function AdminUploadPage() {
       return;
     }
 
-    if (!selectedCategoryId && !selectedCategoryName) {
-      toast.error("Please select a target Category before importing");
+    const hasRowCategory = validationResult.allValidated.some((r) => r.category && String(r.category).trim() !== "");
+    if (!selectedCategoryId && !selectedCategoryName && !hasRowCategory) {
+      toast.error("Please select a target Category or ensure rows have a Category column");
       return;
     }
 

@@ -15,6 +15,7 @@ export function slugify(text) {
  * Resolves or auto-creates the 4-level hierarchy:
  * Master Category > Sub Category > Topic > Subject
  */
+const catCache = new Map();
 const topicCache = new Map();
 const subjectCache = new Map();
 
@@ -29,6 +30,44 @@ export async function resolveHierarchy(db, {
   const cleanTopic = String(topic || "General Knowledge").trim();
   // Rule 3: If subject is missing, fallback to topic name
   const cleanSubject = String(subject || cleanTopic).trim();
+
+  // 1. Resolve or Create Category (in Category collection for app-wide compatibility)
+  const catCol = db.collection("Category");
+  const catCacheKey = cleanCategory.toLowerCase();
+  let catDoc = catCache.get(catCacheKey);
+  if (!catDoc) {
+    catDoc = await catCol.findOne({
+      $or: [
+        { topic: { $regex: `^${cleanCategory.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, $options: "i" } },
+        { name: { $regex: `^${cleanCategory.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, $options: "i" } },
+        { slug: slugify(cleanCategory) },
+      ],
+    });
+
+    if (!catDoc) {
+      const catSlug = slugify(cleanCategory) || `cat-${Date.now().toString(36)}`;
+      catDoc = {
+        topic: cleanCategory,
+        topicHi: cleanCategory,
+        slug: catSlug,
+        emoji: "📚",
+        description: `Comprehensive practice sets & questions for ${cleanCategory}`,
+        categoryClass: "category-general",
+        hidden: false,
+        originalLang: "hi",
+        isTrending: false,
+        chips: "[]",
+        sortOrder: 10,
+        showSubCategoriesOnHome: true,
+        attemptCount: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      const insertRes = await catCol.insertOne(catDoc);
+      catDoc._id = insertRes.insertedId;
+    }
+    catCache.set(catCacheKey, catDoc);
+  }
 
   const topicCacheKey = `${cleanCategory}:::${cleanTopic.toLowerCase()}`;
   const subjectCacheKey = `${cleanCategory}:::${cleanSubject.toLowerCase()}`;
@@ -121,7 +160,9 @@ export async function resolveHierarchy(db, {
 
   return {
     masterCategory: cleanMaster,
-    category: cleanCategory,
+    categoryId: catDoc ? catDoc._id : null,
+    category: catDoc?.topic || cleanCategory,
+    categorySlug: catDoc?.slug || slugify(cleanCategory),
     topicId: topicDoc.id,
     topicName: topicDoc.name,
     topicSlug: topicDoc.slug,
