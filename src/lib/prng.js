@@ -67,3 +67,62 @@ export function shuffleQuestionOptions(q, rng) {
     optionsHi: newOptionsHi,
   };
 }
+
+/**
+ * Maps question difficulty to numerical rank:
+ * 1 = Easy, 2 = Medium, 3 = Hard, 4 = Expert
+ */
+export function getDifficultyRank(difficulty) {
+  if (!difficulty) return 2;
+  const d = String(difficulty).toLowerCase().trim();
+  switch (d) {
+    case "easy":
+    case "आसान":
+    case "सरल":
+      return 1;
+    case "medium":
+    case "मध्यम":
+      return 2;
+    case "hard":
+    case "कठिन":
+      return 3;
+    case "expert":
+    case "कठिन+":
+    case "विशेषज्ञ":
+      return 4;
+    default:
+      return 2;
+  }
+}
+
+/**
+ * Orders questions with progressive difficulty:
+ * First: Easy questions
+ * Middle: Medium questions
+ * Last: Hard + Expert questions
+ * Within each difficulty tier, questions are deterministically shuffled using rng.
+ */
+export function orderQuestionsProgressiveDifficulty(questions, rng = null) {
+  if (!Array.isArray(questions) || questions.length === 0) return [];
+
+  const easy = [];
+  const medium = [];
+  const hard = [];
+  const expert = [];
+
+  for (const q of questions) {
+    const rank = getDifficultyRank(q.difficulty);
+    if (rank === 1) easy.push(q);
+    else if (rank === 2) medium.push(q);
+    else if (rank === 3) hard.push(q);
+    else expert.push(q);
+  }
+
+  const sEasy = rng ? shuffleArrayWithRng(easy, rng) : easy;
+  const sMedium = rng ? shuffleArrayWithRng(medium, rng) : medium;
+  const sHard = rng ? shuffleArrayWithRng(hard, rng) : hard;
+  const sExpert = rng ? shuffleArrayWithRng(expert, rng) : expert;
+
+  return [...sEasy, ...sMedium, ...sHard, ...sExpert];
+}
+

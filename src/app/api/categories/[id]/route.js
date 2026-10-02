@@ -5,6 +5,8 @@ import { requireAdmin } from "@/lib/adminSessionServer";
 
 export const dynamic = "force-dynamic";
 
+import { getMainCategoryBySlug } from "@/lib/mainCategoriesConfig";
+
 export async function GET(request, { params }) {
   const { id } = params;
   const { searchParams } = new URL(request.url);
@@ -29,13 +31,33 @@ export async function GET(request, { params }) {
       where: { parentId: category.id, hidden: false },
       orderBy: { sortOrder: "asc" }
     });
+
+    let allQuestions = [...(category.questions || [])];
+    if (subCategories.length > 0) {
+      const subCategoryIds = subCategories.map(sc => sc.id);
+      const subCatQuestions = await prisma.question.findMany({
+        where: { categoryId: { in: subCategoryIds } },
+        ...(metaOnly ? { select: { id: true } } : {})
+      });
+      // Deduplicate by id if any overlap
+      const existingIds = new Set(allQuestions.map(q => q.id));
+      for (const sq of subCatQuestions) {
+        if (!existingIds.has(sq.id)) {
+          allQuestions.push(sq);
+          existingIds.add(sq.id);
+        }
+      }
+    }
+
+    const mainCategoryConfig = getMainCategoryBySlug(category.slug);
     
     const responseData = {
       ...category,
-      questionCount: category.questions.length,
+      questionCount: allQuestions.length,
+      mainCategoryConfig: mainCategoryConfig || null,
       questions: metaOnly 
         ? [] 
-        : category.questions.map((q) => ({ 
+        : allQuestions.map((q) => ({ 
             ...q, 
             options: safeJsonParse(q.options),
             optionsHi: safeJsonParse(q.optionsHi) || []

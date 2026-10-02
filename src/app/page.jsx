@@ -17,6 +17,9 @@ import UnsetLandingPage from "@/components/UnsetLandingPage";
 import DailyQuizPill from "@/components/DailyQuizPill";
 import ArenaPromptCard from "@/components/ArenaPromptCard";
 import HotQuizzesRow from "@/components/explorer/HotQuizzesRow";
+import CategorySearchBar from "@/components/home/CategorySearchBar";
+import MainCategoryCard from "@/components/home/MainCategoryCard";
+import { MAIN_CATEGORIES, QUICK_FILTER_CHIPS, filterCategoriesByChip } from "@/lib/mainCategoriesConfig";
 
 const KIDS_PICTURE_TILES = [
   {
@@ -168,8 +171,7 @@ export default function MasterHubPage() {
     return { studyCategories: finalStudy, funCategories: finalFun };
   }, [quizzes]);
 
-  // Explorer Tier: Search, category chip, and daily quiz states (Step 8)
-  const [searchQuery, setSearchQuery] = useState("");
+  // Explorer Tier: Category chip and daily quiz states
   const [selectedChip, setSelectedChip] = useState("all");
   const [dailyCompleted, setDailyCompleted] = useState(false);
   const [dailyStreak, setDailyStreak] = useState(0);
@@ -189,21 +191,27 @@ export default function MasterHubPage() {
     } catch {}
   }, []);
 
-  // Explorer: Automatically hide any category with 0 questions (fallback to all if counts unavailable)
-  const explorerCategories = useMemo(() => {
-    if (!quizzes || !Array.isArray(quizzes)) return [];
-    const withQuestions = quizzes.filter((cat) => {
-      const topicLower = (cat.topic || "").toLowerCase();
-      // Avoid duplicating the dedicated GK parent tiles
-      if (topicLower === "india gk" || topicLower === "world gk") return false;
-      const count =
-        cat.questionCount ??
-        cat._count?.questions ??
-        (Array.isArray(cat.questions) ? cat.questions.length : 0);
-      return count > 0;
-    });
-    return withQuestions.length > 0 ? withQuestions : quizzes;
+  // Live database counts lookup for the 40 Main Categories
+  const dbCountMap = useMemo(() => {
+    const map = new Map();
+    if (Array.isArray(quizzes)) {
+      quizzes.forEach((c) => {
+        if (c.slug) {
+          const qCount =
+            c.questionCount ??
+            c._count?.questions ??
+            (Array.isArray(c.questions) ? c.questions.length : 0);
+          map.set(c.slug, qCount);
+        }
+      });
+    }
+    return map;
   }, [quizzes]);
+
+  // Filtered 40 Main Categories by Curated Quick Filter Chip
+  const displayedMainCategories = useMemo(() => {
+    return filterCategoriesByChip(MAIN_CATEGORIES, selectedChip);
+  }, [selectedChip]);
 
   // Ensure quizzes are populated if initial mount was empty
   useEffect(() => {
@@ -211,88 +219,6 @@ export default function MasterHubPage() {
       refreshQuizzes();
     }
   }, [quizzes, refreshQuizzes]);
-
-  // GK Home Data (Phase 5B)
-  const [gkHomeData, setGkHomeData] = useState(null);
-
-  useEffect(() => {
-    async function loadGkHome() {
-      try {
-        const lang = isHindi ? "hi" : "en";
-        const res = await fetch(`/api/gk/home?language=${lang}`);
-        if (res.ok) {
-          const data = await res.json();
-          setGkHomeData(data);
-        }
-      } catch (e) {
-        console.error("Failed to load GK home data:", e);
-      }
-    }
-    loadGkHome();
-  }, [isHindi]);
-
-  // Explorer: Filter by active chip and search query (Phase 5B integration)
-  const filteredExplorerCategories = useMemo(() => {
-    // 1. If India GK chip is selected -> show all India GK topics
-    if (selectedChip === "india-gk") {
-      const topics = (gkHomeData?.allTopics || []).filter((t) => t.category === "India GK");
-      if (!searchQuery.trim()) return topics;
-      const q = searchQuery.toLowerCase().trim();
-      return topics.filter(
-        (t) => (t.name || "").toLowerCase().includes(q) || (t.nameHi || "").toLowerCase().includes(q)
-      );
-    }
-
-    // 2. If World GK chip is selected -> show all World GK topics
-    if (selectedChip === "world-gk") {
-      const topics = (gkHomeData?.allTopics || []).filter((t) => t.category === "World GK");
-      if (!searchQuery.trim()) return topics;
-      const q = searchQuery.toLowerCase().trim();
-      return topics.filter(
-        (t) => (t.name || "").toLowerCase().includes(q) || (t.nameHi || "").toLowerCase().includes(q)
-      );
-    }
-
-    // 3. If a specific legacy category chip is selected
-    if (selectedChip !== "all") {
-      let list = explorerCategories.filter((cat) => cat.id === selectedChip);
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
-        list = list.filter((cat) => {
-          const titleEn = (cat.topic || "").toLowerCase();
-          const titleHi = (cat.topicHi || "").toLowerCase();
-          const slug = (cat.slug || "").toLowerCase();
-          return titleEn.includes(q) || titleHi.includes(q) || slug.includes(q);
-        });
-      }
-      return list;
-    }
-
-    // 4. "All" Chip selected:
-    // If search active: search across standard categories AND all 100 GK topics
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      const matchedCats = explorerCategories.filter((cat) => {
-        const titleEn = (cat.topic || "").toLowerCase();
-        const titleHi = (cat.topicHi || "").toLowerCase();
-        const slug = (cat.slug || "").toLowerCase();
-        return titleEn.includes(q) || titleHi.includes(q) || slug.includes(q);
-      });
-
-      const matchedGkTopics = (gkHomeData?.allTopics || []).filter(
-        (t) => (t.name || "").toLowerCase().includes(q) || (t.nameHi || "").toLowerCase().includes(q)
-      );
-
-      return [...matchedCats, ...matchedGkTopics];
-    }
-
-    // Standard "All" Grid:
-    // 2 Parent GK tiles ("India GK" & "World GK") + Pinned GK topic tiles + Standard categories
-    const parentTiles = gkHomeData?.parentTiles || [];
-    const pinnedTopics = gkHomeData?.pinnedTopics || [];
-
-    return [...parentTiles, ...pinnedTopics, ...explorerCategories];
-  }, [explorerCategories, selectedChip, searchQuery, gkHomeData]);
 
   useEffect(() => {
     setMounted(true);
@@ -800,32 +726,11 @@ export default function MasterHubPage() {
         )}
 
         {/* ── EXPLORER TIER: Clean Mobile-First Quiz Hub (Step 8) ── */}
+        {/* ── EXPLORER TIER: Clean Mobile-First Quiz Hub (Step 3: 40 Main Categories) ── */}
         {(tier === "adults" || (tier !== "kids" && tier !== "students")) && (
-          <div className="w-full mt-2 space-y-4 pb-20">
-            {/* 1. Search Field */}
-            <div className="relative w-full">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                <Search size={18} />
-              </div>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={isHindi ? "क्विज़ विषय खोजें..." : "Search quizzes..."}
-                className="w-full pl-10 pr-10 py-3 rounded-2xl bg-white/95 dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800 focus:border-indigo-500 dark:focus:border-indigo-500 text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-sm transition-all min-h-[48px]"
-                aria-label="Search quizzes"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery("")}
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                  aria-label="Clear search"
-                >
-                  <span className="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs">✕</span>
-                </button>
-              )}
-            </div>
+          <div className="w-full mt-2 space-y-5 pb-20">
+            {/* 1. Clean, Prominent Search Bar with Instant Autocomplete */}
+            <CategorySearchBar dbCategories={quizzes} className="w-full" />
 
             {/* 2. Daily Quiz Button */}
             <DailyQuizPill tier="explorer" />
@@ -836,112 +741,65 @@ export default function MasterHubPage() {
             {/* 🔥 Phase E1: Hot Quizzes Row */}
             <HotQuizzesRow />
 
-            {/* 3. Horizontally Scrollable Category Chips */}
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
-              <button
-                type="button"
-                onClick={() => setSelectedChip("all")}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-black whitespace-nowrap transition-all min-h-[36px] flex items-center gap-1.5 shrink-0 ${
-                  selectedChip === "all"
-                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/25"
-                    : "bg-white/90 dark:bg-slate-900/90 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
-                }`}
-              >
-                <span>✨</span>
-                <span>{isHindi ? "सभी" : "All"}</span>
-              </button>
+            {/* 3. Curated Quick Filter Chips */}
+            <div className="space-y-2 pt-1">
+              <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse" />
+                  <h2 className="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-200 tracking-wider uppercase">
+                    {isHindi ? "मुख्य श्रेणियां (40 विषय)" : "Main Categories (40 Topics)"}
+                  </h2>
+                </div>
+                <span className="text-[11px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded-full">
+                  {displayedMainCategories.length} {isHindi ? "श्रेणियां" : "topics"}
+                </span>
+              </div>
 
-              {/* India GK Chip (Phase 5B) */}
-              <button
-                type="button"
-                onClick={() => setSelectedChip(selectedChip === "india-gk" ? "all" : "india-gk")}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all min-h-[36px] flex items-center gap-1.5 shrink-0 ${
-                  selectedChip === "india-gk"
-                    ? "bg-purple-600 text-white font-black shadow-md shadow-purple-500/25"
-                    : "bg-white/90 dark:bg-slate-900/90 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
-                }`}
-              >
-                <span>🏛️</span>
-                <span>{isHindi ? "भारत सामान्य ज्ञान" : "India GK"}</span>
-              </button>
-
-              {/* World GK Chip (Phase 5B) */}
-              <button
-                type="button"
-                onClick={() => setSelectedChip(selectedChip === "world-gk" ? "all" : "world-gk")}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all min-h-[36px] flex items-center gap-1.5 shrink-0 ${
-                  selectedChip === "world-gk"
-                    ? "bg-purple-600 text-white font-black shadow-md shadow-purple-500/25"
-                    : "bg-white/90 dark:bg-slate-900/90 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
-                }`}
-              >
-                <span>🌍</span>
-                <span>{isHindi ? "विश्व सामान्य ज्ञान" : "World GK"}</span>
-              </button>
-              {explorerCategories.map((cat) => {
-                const isSelected = selectedChip === cat.id;
-                const catTitle = isHindi && cat.topicHi ? cat.topicHi : cat.topic;
-                return (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => setSelectedChip(isSelected ? "all" : cat.id)}
-                    className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all min-h-[36px] flex items-center gap-1.5 shrink-0 ${
-                      isSelected
-                        ? "bg-indigo-600 text-white font-black shadow-md shadow-indigo-500/25"
-                        : "bg-white/90 dark:bg-slate-900/90 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
-                    }`}
-                  >
-                    <span>{cat.emoji || "📝"}</span>
-                    <span>{catTitle}</span>
-                  </button>
-                );
-              })}
+              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+                {QUICK_FILTER_CHIPS.map((chip) => {
+                  const isSelected = selectedChip === chip.id;
+                  const chipLabel = isHindi && chip.labelHi ? chip.labelHi : chip.label;
+                  return (
+                    <button
+                      key={chip.id}
+                      type="button"
+                      onClick={() => setSelectedChip(chip.id)}
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all min-h-[36px] flex items-center gap-1.5 shrink-0 ${
+                        isSelected
+                          ? "bg-indigo-600 text-white font-black shadow-md shadow-indigo-500/25 scale-[1.02]"
+                          : "bg-white/90 dark:bg-slate-900/90 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      <span>{chip.icon}</span>
+                      <span>{chipLabel}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            {/* 4. 2-Column Grid of Category Cards */}
+            {/* 4. Beautiful, Uncluttered Grid of the 40 Main Categories */}
             {!dataLoaded && (!quizzes || quizzes.length === 0) ? (
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 pt-1">
-                {[1, 2, 3, 4, 5, 6].map((n) => (
-                  <div key={n} className="rounded-2xl p-4 bg-white/60 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 animate-pulse h-28 flex flex-col justify-between">
-                    <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800" />
-                    <div className="w-3/4 h-4 rounded bg-slate-200 dark:bg-slate-800" />
+              <div className="grid grid-cols-2 gap-3.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 pt-1">
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+                  <div key={n} className="rounded-3xl p-5 bg-white/60 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 animate-pulse h-36 flex flex-col justify-between">
+                    <div className="w-12 h-12 rounded-2xl bg-slate-200 dark:bg-slate-800" />
+                    <div className="space-y-2">
+                      <div className="w-3/4 h-4 rounded bg-slate-200 dark:bg-slate-800" />
+                      <div className="w-1/2 h-3 rounded bg-slate-200 dark:bg-slate-800" />
+                    </div>
                   </div>
                 ))}
               </div>
-            ) : filteredExplorerCategories.length > 0 ? (
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 pt-1">
-                {filteredExplorerCategories.map((cat) => (
-                  <CategoryCard
+            ) : (
+              <div className="grid grid-cols-2 gap-3.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 pt-1">
+                {displayedMainCategories.map((cat) => (
+                  <MainCategoryCard
                     key={cat.id}
                     category={cat}
-                    hideViewSets={true}
+                    dbCount={dbCountMap.get(cat.slug) || 0}
                   />
                 ))}
-              </div>
-            ) : (
-              <div className="text-center py-12 px-4 rounded-2xl bg-white/50 dark:bg-slate-900/50 border border-dashed border-slate-200 dark:border-slate-800">
-                <span className="text-3xl mb-2 block">🔍</span>
-                <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-                  {searchQuery ? (isHindi ? "कोई मिलता-जुलता विषय नहीं मिला" : "No matching quizzes found") : (isHindi ? "कोई क्विज़ श्रेणी नहीं मिली" : "No quiz categories found")}
-                </p>
-                {searchQuery ? (
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery("")}
-                    className="mt-3 px-3 py-1.5 rounded-full text-xs font-bold bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 cursor-pointer"
-                  >
-                    {isHindi ? "सर्च साफ़ करें" : "Clear search"}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => refreshQuizzes?.()}
-                    className="mt-3 px-3.5 py-1.5 rounded-full text-xs font-bold bg-indigo-600 text-white shadow-sm hover:bg-indigo-500 cursor-pointer"
-                  >
-                    {isHindi ? "पुनः प्रयास करें" : "Retry"}
-                  </button>
-                )}
               </div>
             )}
           </div>

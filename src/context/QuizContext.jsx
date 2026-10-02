@@ -3,7 +3,7 @@
 import { createContext, useContext, useReducer, useCallback, useEffect } from "react";
 import { useData } from "@/context/DataContext";
 import toast from "react-hot-toast";
-import { createMulberry32, shuffleArrayWithRng, shuffleQuestionOptions } from "@/lib/prng";
+import { createMulberry32, shuffleArrayWithRng, shuffleQuestionOptions, orderQuestionsProgressiveDifficulty } from "@/lib/prng";
 
 const QuizContext = createContext(null);
 
@@ -166,8 +166,13 @@ function quizReducer(state, action) {
       const rng = createMulberry32(setSeed);
       const normalizedQs = (questions || []).map(normalizeQuestion);
 
-      // Rule 5: Deep shuffle BOTH question order and option order deterministically
-      const shuffledQuestions = shuffleArrayWithRng(normalizedQs, rng).map(q => {
+      // User Requirement: Questions must start with first easy questions / easy+medium / in the last hard+expert when clicking on any set.
+      // 1. Order questions progressively by difficulty (Easy -> Medium -> Hard -> Expert)
+      //    with deterministic shuffling within each difficulty tier.
+      const progressiveQuestions = orderQuestionsProgressiveDifficulty(normalizedQs, rng);
+
+      // 2. Deterministically shuffle options for each question so options match across devices/modes.
+      const shuffledQuestions = progressiveQuestions.map(q => {
         const { userAnswer, ...pristineQ } = q;
         const qRng = createMulberry32(String(setSeed) + "_" + String(q.id || q._id || q.text));
         return shuffleQuestionOptions(pristineQ, qRng);

@@ -49,11 +49,22 @@ export async function GET(request) {
     // Admin view should still permit filtering by id and parentId.
     const parentIdParam = searchParams.get("parentId");
     const idParam = searchParams.get("id");
+    const mainOnly = searchParams.get("mainOnly") === "true";
 
     if (idParam) {
       andConditions.push({ id: idParam });
     } else if (parentIdParam) {
       andConditions.push({ parentId: parentIdParam });
+    }
+
+    if (mainOnly) {
+      andConditions.push({
+        sortOrder: { gte: 1, lte: 40 },
+        OR: [
+          { parentId: null },
+          { parentId: { isSet: false } }
+        ]
+      });
     }
 
     if (!isAdmin) {

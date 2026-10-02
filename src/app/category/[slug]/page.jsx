@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useData } from "@/context/DataContext";
@@ -23,6 +23,9 @@ import StickyPaywallCTA from "@/components/StickyPaywallCTA";
 import ProBannerStrip from "@/components/monetization/ProBannerStrip";
 import { useEntitlement } from "@/context/EntitlementContext";
 import ArenaClient from "@/app/arena/ArenaClient";
+import CategoryBreadcrumbs from "@/components/category/CategoryBreadcrumbs";
+import { getMainCategoryBySlug } from "@/lib/mainCategoriesConfig";
+import { orderQuestionsProgressiveDifficulty } from "@/lib/prng";
 
 // Helper function to detect if text is Hindi
 function isHindiText(text) {
@@ -48,6 +51,13 @@ const SETS_PER_PAGE = 8;
 export default function CategorySetsPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const subParam = searchParams?.get("sub") || null;
+  const topicParam = searchParams?.get("topic") || null;
+
+  const [selectedSubCategory, setSelectedSubCategory] = useState(subParam);
+  const [selectedTopic, setSelectedTopic] = useState(topicParam);
+
   const { quizzes } = useData();
   const { startQuizSet, startQuizResume } = useQuiz();
   const { data: session } = useSession();
@@ -56,6 +66,42 @@ export default function CategorySetsPage() {
   const effectiveSetSize = tier === "kids" ? 10 : 20;
 
   const [category, setCategory] = useState(null);
+
+  // Sync state if query params change
+  useEffect(() => {
+    if (subParam !== selectedSubCategory) setSelectedSubCategory(subParam);
+    if (topicParam !== selectedTopic) setSelectedTopic(topicParam);
+  }, [subParam, topicParam]);
+
+  const mainCategoryConfig = useMemo(() => {
+    return category?.mainCategoryConfig || getMainCategoryBySlug(params?.slug) || null;
+  }, [category, params?.slug]);
+
+  const availableSubCategories = useMemo(() => {
+    if (mainCategoryConfig?.subcategories?.length > 0) {
+      return mainCategoryConfig.subcategories;
+    }
+    return (category?.subCategories || []).map((sc) => ({
+      name: sc.topic,
+      slug: sc.slug,
+      topics: [],
+    }));
+  }, [mainCategoryConfig, category]);
+
+  const activeSubCategoryObj = useMemo(() => {
+    if (!selectedSubCategory) return null;
+    return (
+      availableSubCategories.find(
+        (s) =>
+          s.slug === selectedSubCategory ||
+          s.name?.toLowerCase() === selectedSubCategory.toLowerCase()
+      ) || { name: selectedSubCategory, slug: selectedSubCategory, topics: [] }
+    );
+  }, [availableSubCategories, selectedSubCategory]);
+
+  const availableTopics = useMemo(() => {
+    return activeSubCategoryObj?.topics || [];
+  }, [activeSubCategoryObj]);
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -233,11 +279,31 @@ export default function CategorySetsPage() {
 
   const displayedQuestions = useMemo(() => {
     if (!questions || !Array.isArray(questions)) return [];
-    if (!difficulty || difficulty === "ALL") return questions;
-    return questions.filter(
+    let list = questions;
+
+    // Filter by selected subcategory or topic if active
+    if (selectedTopic) {
+      const topLower = selectedTopic.toLowerCase();
+      const filtered = list.filter((q) => {
+        const full = `${q.text || ""} ${q.explanation || ""} ${q.subjectName || ""} ${q.topicName || ""}`.toLowerCase();
+        return full.includes(topLower);
+      });
+      if (filtered.length > 0) list = filtered;
+    } else if (activeSubCategoryObj) {
+      const subLower = activeSubCategoryObj.name?.toLowerCase() || "";
+      const topicMatches = activeSubCategoryObj.topics || [];
+      const filtered = list.filter((q) => {
+        const full = `${q.text || ""} ${q.explanation || ""} ${q.subjectName || ""} ${q.topicName || ""}`.toLowerCase();
+        return full.includes(subLower) || topicMatches.some((t) => full.includes(t.toLowerCase()));
+      });
+      if (filtered.length > 0) list = filtered;
+    }
+
+    if (!difficulty || difficulty === "ALL") return list;
+    return list.filter(
       (q) => (q.difficulty || "").toLowerCase() === difficulty.toLowerCase()
     );
-  }, [questions, difficulty]);
+  }, [questions, difficulty, selectedTopic, activeSubCategoryObj]);
 
   const sets = useMemo(() => {
     if (!category || !effectiveSetSize || effectiveSetSize <= 0) return [];
@@ -250,7 +316,7 @@ export default function CategorySetsPage() {
         index: result.length + 1,
         start: i,
         end: Math.min(i + effectiveSetSize, count),
-        questions: pool.slice(i, i + effectiveSetSize),
+        questions: orderQuestionsProgressiveDifficulty(pool.slice(i, i + effectiveSetSize)),
       });
     }
     return result;
@@ -556,44 +622,43 @@ export default function CategorySetsPage() {
       {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />}
 
       <div className={styles.contentWrap}>
-        {/* Sub-Categories Navigation (Seekho Category Grid) */}
-        {subCategories.length > 0 && (
-          <section className="mb-10">
-            <div className="mb-4">
-              <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
-                📁 {t('quizzes.category.subTopics') || (isHindi ? "उप-विषय" : "Sub-Topics")}
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                {isHindi ? `${category.topic} के अंतर्गत विशेष विषय चुनें।` : `Explore specialized sub-categories under ${category.topic}.`}
-              </p>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-4">
-              {subCategories.map(subCat => (
-                <CategoryCard key={subCat.id} category={subCat} />
-              ))}
-            </div>
-          </section>
-        )}
+        {/* Dynamic 4-Level Breadcrumbs (Home > 🔬 Science > Physics > Optics > Lenses) */}
+        <CategoryBreadcrumbs
+          mainCategory={{
+            name: category.topic,
+            nameHi: category.topicHi,
+            slug: category.slug || params.slug,
+            icon: category.emoji || "📚",
+          }}
+          subCategory={activeSubCategoryObj}
+          topic={selectedTopic}
+          onResetSubCategory={() => {
+            setSelectedSubCategory(null);
+            setSelectedTopic(null);
+          }}
+          onResetTopic={() => setSelectedTopic(null)}
+          className="mb-5 pt-1"
+        />
 
-        {/* Rule 6: Two Layers (Standard Sets | Quiz Arena) Switch */}
-        <div className="flex items-center justify-center mb-6">
-          <div className="inline-flex p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/90 border border-slate-200/90 dark:border-slate-700 shadow-2xs">
+        {/* Step 3: Clean Two-Tab Switcher (Standard Sets | Quiz Arena) */}
+        <div className="flex flex-col items-center justify-center mb-6">
+          <div className="inline-flex p-1.5 rounded-2xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/90 dark:border-slate-700 shadow-2xs">
             <button
               type="button"
               onClick={() => setActiveLayer("standard")}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${
+              className={`flex items-center gap-2 px-5 sm:px-6 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${
                 activeLayer === "standard"
                   ? "bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-300 shadow-sm"
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
               }`}
             >
               <span>📚</span>
-              <span>{isHindi ? "स्टैंडर्ड सेट्स" : "Standard Sets"}</span>
+              <span>{isHindi ? "स्टैंडर्ड सेट्स (20 प्रश्न)" : "Standard Sets (20 Qs)"}</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveLayer("arena")}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${
+              className={`flex items-center gap-2 px-5 sm:px-6 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${
                 activeLayer === "arena"
                   ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-sm"
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
@@ -603,7 +668,104 @@ export default function CategorySetsPage() {
               <span>{isHindi ? "क्विज़ अखाड़ा (Arena)" : "Quiz Arena"}</span>
             </button>
           </div>
+          <p className="text-[11px] text-slate-400 mt-2 text-center">
+            {activeLayer === "standard"
+              ? (isHindi ? "📚 20 प्रश्नों के मानक स्टैटिक सेट्स हल करें" : "📚 20-question static sets with instant feedback")
+              : (isHindi ? "⚔️ कठिनाई, टाइमर व प्रश्न प्रकार कस्टमाइज़ करके खेलें" : "⚔️ Custom build by difficulty, timer, question type & topics")}
+          </p>
         </div>
+
+        {/* Subcategories & Topics Drill-down Bar */}
+        {availableSubCategories.length > 0 && activeLayer === "standard" && (
+          <div className="mb-6 p-4 rounded-3xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <span>📁</span>
+                <span>{isHindi ? "उप-विषय (Sub-Categories)" : "Drill-Down Subcategories"}</span>
+              </span>
+              {(selectedSubCategory || selectedTopic) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedSubCategory(null);
+                    setSelectedTopic(null);
+                  }}
+                  className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                >
+                  {isHindi ? "सभी प्रश्न दिखाएं" : "Show All Questions"}
+                </button>
+              )}
+            </div>
+
+            {/* Subcategory Pills */}
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedSubCategory(null);
+                  setSelectedTopic(null);
+                }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                  !selectedSubCategory
+                    ? "bg-indigo-600 text-white font-black shadow-xs"
+                    : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                }`}
+              >
+                {isHindi ? "सभी उप-विषय" : "All Subcategories"}
+              </button>
+
+              {availableSubCategories.map((sub) => {
+                const isSelected = selectedSubCategory === sub.slug || selectedSubCategory === sub.name;
+                return (
+                  <button
+                    key={sub.slug || sub.name}
+                    type="button"
+                    onClick={() => {
+                      setSelectedSubCategory(isSelected ? null : (sub.slug || sub.name));
+                      setSelectedTopic(null);
+                    }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                      isSelected
+                        ? "bg-indigo-600 text-white font-black shadow-xs"
+                        : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                    }`}
+                  >
+                    {sub.name}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Topics under selected Subcategory */}
+            {availableTopics.length > 0 && (
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 mb-1.5">
+                  <span>🔬</span>
+                  <span>{isHindi ? "टॉपिक्स (Topics):" : "Specific Topics:"}</span>
+                </div>
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+                  {availableTopics.map((top) => {
+                    const isSelected = selectedTopic === top;
+                    return (
+                      <button
+                        key={top}
+                        type="button"
+                        onClick={() => setSelectedTopic(isSelected ? null : top)}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+                          isSelected
+                            ? "bg-purple-600 text-white font-black shadow-xs"
+                            : "bg-white dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-purple-300"
+                        }`}
+                      >
+                        {top}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {activeLayer === "arena" ? (
           <div className="mb-12">
