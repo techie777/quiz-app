@@ -381,7 +381,6 @@ export default function AdminMonetizationPage() {
               <span>{savingConfig ? "Saving..." : "Save Live Config"}</span>
             </button>
           </div>
-        </div>
 
         {/* Pro Plan Conversions Breakdown */}
         <div style={{ background: "#FFFFFF", padding: "24px", borderRadius: "18px", border: "1px solid #E2E8F0" }}>
