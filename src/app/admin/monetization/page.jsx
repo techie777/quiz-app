@@ -240,7 +240,54 @@ export default function AdminMonetizationPage() {
             Toggle any ad moment or free quota live across Explorer and Arena without requiring a code deploy.
           </p>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            {/* Master System Switches */}
+            <div style={{ background: "#EEF2FF", border: "1.5px solid #C7D2FE", borderRadius: "14px", padding: "14px", marginBottom: "8px" }}>
+              <div style={{ fontWeight: 800, fontSize: "14px", color: "#3730A3", marginBottom: "12px", display: "flex", alignItems: "center", gap: "6px" }}>
+                <span>🛡️</span>
+                <span>Master System Controls</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: "13px", color: "#1E1B4B" }}>Ads On Quiz Sets</div>
+                    <div style={{ fontSize: "11px", color: "#4338CA" }}>Show ad gates (AD button & lock) on sets beyond quota (Currently DISABLED)</div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={Boolean(config.quizSetsAdsEnabled)}
+                    onChange={(e) => setConfig({ ...config, quizSetsAdsEnabled: e.target.checked })}
+                    style={{ width: "20px", height: "20px", accentColor: "#4F46E5", cursor: "pointer" }}
+                  />
+                </label>
+
+                <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", borderTop: "1px solid #E0E7FF", paddingTop: "8px" }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: "13px", color: "#1E1B4B" }}>Global Ads Master Switch</div>
+                    <div style={{ fontSize: "11px", color: "#4338CA" }}>Master switch to enable/disable all ads everywhere</div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={Boolean(config.adsEnabled)}
+                    onChange={(e) => setConfig({ ...config, adsEnabled: e.target.checked })}
+                    style={{ width: "20px", height: "20px", accentColor: "#4F46E5", cursor: "pointer" }}
+                  />
+                </label>
+
+                <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", borderTop: "1px solid #E0E7FF", paddingTop: "8px" }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: "13px", color: "#1E1B4B" }}>Pro Features & Membership System</div>
+                    <div style={{ fontSize: "11px", color: "#4338CA" }}>Toggle Pro paywalls, Pro badges, and subscription gates across entire app</div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={Boolean(config.proFeaturesEnabled ?? true)}
+                    onChange={(e) => setConfig({ ...config, proFeaturesEnabled: e.target.checked })}
+                    style={{ width: "20px", height: "20px", accentColor: "#4F46E5", cursor: "pointer" }}
+                  />
+                </label>
+              </div>
+            </div>
+
             {[
               { key: "start", label: "Moment 1: Start Gate", desc: "Watch ad to start locked sets beyond free quota" },
               { key: "mid", label: "Moment 2: Mid-Quiz Gate", desc: "Show halfway ad prompt when questions >= 10" },

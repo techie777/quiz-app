@@ -40,28 +40,39 @@ export async function getAccessSettings() {
   try {
     const db = await getDb();
     const doc = await db.collection("access_settings").findOne({ key: "default" });
-    if (doc) {
-      cachedSettings = {
-        freeSetsPerWindow: typeof doc.freeSetsPerWindow === "number" ? doc.freeSetsPerWindow : DEFAULT_ACCESS_SETTINGS.freeSetsPerWindow,
-        windowMode: doc.windowMode || DEFAULT_ACCESS_SETTINGS.windowMode,
-        limitScope: doc.limitScope || DEFAULT_ACCESS_SETTINGS.limitScope,
-        maxAdMomentsPerSet: doc.maxAdMomentsPerSet || DEFAULT_ACCESS_SETTINGS.maxAdMomentsPerSet,
-        gateChallengeInvite: doc.gateChallengeInvite || false,
-      };
-    } else {
-      cachedSettings = { ...DEFAULT_ACCESS_SETTINGS };
-      // Seed default in DB
-      await db.collection("access_settings").updateOne(
-        { key: "default" },
-        { $setOnInsert: { key: "default", ...DEFAULT_ACCESS_SETTINGS, createdAt: new Date(), updatedAt: new Date() } },
-        { upsert: true }
-      );
-    }
+    const monetDoc = await db.collection("app_settings").findOne({ key: "monetization_config" });
+    const monetConfig = monetDoc?.value || {};
+    
+    // Ads on quiz sets default to false as requested
+    const adsEnabled = monetConfig.adsEnabled ?? false;
+    const quizSetsAdsEnabled = monetConfig.quizSetsAdsEnabled ?? false;
+    const proFeaturesEnabled = monetConfig.proFeaturesEnabled ?? true;
+
+    const freeSetsPerWindow = (!quizSetsAdsEnabled || !adsEnabled)
+      ? 9999
+      : (typeof doc?.freeSetsPerWindow === "number" ? doc.freeSetsPerWindow : (monetConfig.freeSetsPerWindow || DEFAULT_ACCESS_SETTINGS.freeSetsPerWindow));
+
+    cachedSettings = {
+      freeSetsPerWindow,
+      adsEnabled,
+      quizSetsAdsEnabled,
+      proFeaturesEnabled,
+      windowMode: doc?.windowMode || DEFAULT_ACCESS_SETTINGS.windowMode,
+      limitScope: doc?.limitScope || DEFAULT_ACCESS_SETTINGS.limitScope,
+      maxAdMomentsPerSet: doc?.maxAdMomentsPerSet || DEFAULT_ACCESS_SETTINGS.maxAdMomentsPerSet,
+      gateChallengeInvite: doc?.gateChallengeInvite || false,
+    };
     lastSettingsFetch = now;
     return cachedSettings;
   } catch (err) {
     console.error("Error fetching access_settings:", err);
-    return DEFAULT_ACCESS_SETTINGS;
+    return {
+      ...DEFAULT_ACCESS_SETTINGS,
+      adsEnabled: false,
+      quizSetsAdsEnabled: false,
+      proFeaturesEnabled: true,
+      freeSetsPerWindow: 9999,
+    };
   }
 }
 
@@ -236,18 +247,19 @@ export async function checkEntitlement({
 
   const freeSetsPerWindow = settings.freeSetsPerWindow;
   const remainingSets = Math.max(0, freeSetsPerWindow - usedSetsCount);
-  const isLocked = remainingSets <= 0;
+  const adsActive = Boolean(settings.adsEnabled && settings.quizSetsAdsEnabled);
+  const isLocked = adsActive ? (remainingSets <= 0) : false;
 
   let msRemaining = 0;
-  if (windowEnd && now < windowEnd) {
+  if (windowEnd && now < windowEnd && isLocked) {
     msRemaining = windowEnd.getTime() - now.getTime();
   }
 
   const countdownFormatted = msRemaining > 0 ? formatRemainingTime(msRemaining, false) : "";
   const countdownFormattedHi = msRemaining > 0 ? formatRemainingTime(msRemaining, true) : "";
 
-  // Ad option is only allowed for Explorer (adults) and Arena, never Kids or Students
-  const canWatchAd = isLocked && (tier === "adults" || tier === "explorer" || moduleId === "arena");
+  // Ad option is only allowed when quiz sets ads are enabled
+  const canWatchAd = isLocked && adsActive && (tier === "adults" || tier === "explorer" || moduleId === "arena");
 
   // Check all setIds unlocked via ad in the last 24h
   let unlockedSetIds = [];

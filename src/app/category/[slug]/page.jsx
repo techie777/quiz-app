@@ -10,7 +10,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useTier } from "@/context/TierContext";
 import { useMonetization } from "@/context/MonetizationContext";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Check, ChevronDown, ArrowLeft, Play, Eye, Lock, Clock, Sparkles } from "lucide-react";
+import { Users, Check, ChevronDown, ArrowLeft, Play, Eye, Lock, Clock, Sparkles, Tag } from "lucide-react";
 import toast from "react-hot-toast";
 import styles from "@/styles/CategorySets.module.css";
 import ResumeBanner from "@/components/ResumeBanner";
@@ -54,9 +54,12 @@ export default function CategorySetsPage() {
   const searchParams = useSearchParams();
   const subParam = searchParams?.get("sub") || null;
   const topicParam = searchParams?.get("topic") || null;
+  const tagParam = searchParams?.get("tag") || null;
+  const setParam = searchParams?.get("set") || null;
 
   const [selectedSubCategory, setSelectedSubCategory] = useState(subParam);
   const [selectedTopic, setSelectedTopic] = useState(topicParam);
+  const [selectedTag, setSelectedTag] = useState(tagParam);
 
   const { quizzes } = useData();
   const { startQuizSet, startQuizResume } = useQuiz();
@@ -71,7 +74,8 @@ export default function CategorySetsPage() {
   useEffect(() => {
     if (subParam !== selectedSubCategory) setSelectedSubCategory(subParam);
     if (topicParam !== selectedTopic) setSelectedTopic(topicParam);
-  }, [subParam, topicParam]);
+    if (tagParam !== selectedTag) setSelectedTag(tagParam);
+  }, [subParam, topicParam, tagParam]);
 
   const mainCategoryConfig = useMemo(() => {
     return category?.mainCategoryConfig || getMainCategoryBySlug(params?.slug) || null;
@@ -321,6 +325,75 @@ export default function CategorySetsPage() {
     }
     return result;
   }, [category, displayedQuestions, questions, effectiveSetSize, tier]);
+
+  const topicReferenceTags = useMemo(() => {
+    const TOPIC_CHAPTERS = {
+      "Rivers & Lakes": ["Ganga", "Yamuna", "Brahmaputra", "Indus", "Godavari", "Krishna", "Kaveri", "Narmada", "Tapi"],
+      "Himalayan & Peninsular Rivers": ["Ganga", "Yamuna", "Brahmaputra", "Indus", "Godavari", "Krishna", "Narmada"],
+      "Ganga Basin": ["Ganga", "Bhagirathi", "Alaknanda", "Yamuna", "Haridwar", "Varanasi", "Prayagraj"],
+      "Indus System": ["Indus", "Jhelum", "Chenab", "Ravi", "Beas", "Sutlej"],
+      "Godavari & Krishna": ["Godavari", "Krishna", "Tungabhadra", "Kaveri"],
+      "Narmada & Tapi": ["Narmada", "Tapi", "Dhuandhar Falls", "Sardar Sarovar"],
+      "Ancient India": ["Indus Valley", "Harappa", "Mohenjo-daro", "Vedic Period", "Mauryan Empire", "Ashoka", "Gupta Dynasty"],
+      "Medieval India": ["Delhi Sultanate", "Mughal Empire", "Akbar", "Maratha Empire", "Shivaji Maharaj", "Vijayanagara"],
+      "Modern India": ["1857 Revolt", "Freedom Movement", "Mahatma Gandhi", "Subhash Chandra Bose", "Bhagat Singh", "Quit India"],
+      "Constitution": ["Preamble", "Fundamental Rights", "Directive Principles", "Amendments", "Dr. Ambedkar"],
+      "Parliament": ["Lok Sabha", "Rajya Sabha", "President of India", "Speaker"],
+      "ISRO & Space": ["Chandrayaan", "Mangalyaan", "Aditya-L1", "Gaganyaan"],
+      "Cricket History": ["1983 World Cup", "2011 World Cup", "Kapil Dev", "Sachin Tendulkar", "MS Dhoni", "Virat Kohli"],
+      "Mega Metros": ["Delhi", "Mumbai", "Bengaluru", "Kolkata", "Chennai", "Hyderabad"],
+      "Heritage & Cultural Cities": ["Varanasi", "Jaipur", "Udaipur", "Amritsar", "Madurai"],
+      "Clean & Smart Cities": ["Indore", "Surat", "Bhopal", "Chandigarh", "Pune"],
+      "Ramayana": ["Lord Rama", "Sita", "Ayodhya", "Lanka", "Hanuman"],
+      "Mahabharata": ["Kurukshetra", "Krishna", "Arjuna", "Bhishma", "Pandavas"],
+    };
+
+    const qTags = (questions || [])
+      .filter((q) => !selectedTopic || q.topic === selectedTopic || q.subTopic === selectedTopic || q.topicName === selectedTopic)
+      .flatMap((q) => q.tags || [])
+      .filter(Boolean);
+
+    const presetTags = (selectedTopic && TOPIC_CHAPTERS[selectedTopic]) || (activeSubCategoryObj && TOPIC_CHAPTERS[activeSubCategoryObj.name]) || TOPIC_CHAPTERS["Rivers & Lakes"];
+    return Array.from(new Set([...(presetTags || []), ...qTags])).slice(0, 10);
+  }, [selectedTopic, activeSubCategoryObj, questions]);
+
+  const getSetTags = (set) => {
+    const qTags = (set.questions || []).flatMap((q) => q.tags || []).filter(Boolean);
+    if (qTags.length > 0) {
+      return Array.from(new Set(qTags)).slice(0, 3);
+    }
+    if (topicReferenceTags.length > 0) {
+      const startIdx = ((set.index - 1) * 2) % topicReferenceTags.length;
+      return topicReferenceTags.slice(startIdx, startIdx + 2);
+    }
+    return ["Standard Set"];
+  };
+
+  const filteredSets = useMemo(() => {
+    if (!selectedTag || selectedTag === "ALL") return sets;
+    const tagLower = selectedTag.toLowerCase();
+    const matched = sets.filter((s) => {
+      const sTags = getSetTags(s).map((t) => t.toLowerCase());
+      const hasDirectTag = sTags.some((t) => t.includes(tagLower));
+      const hasQMatch = s.questions.some((q) => {
+        const text = `${q.text || ""} ${q.explanation || ""}`.toLowerCase();
+        return text.includes(tagLower) || (q.tags || []).some((t) => t.toLowerCase().includes(tagLower));
+      });
+      return hasDirectTag || hasQMatch;
+    });
+    return matched.length > 0 ? matched : sets;
+  }, [sets, selectedTag, topicReferenceTags]);
+
+  useEffect(() => {
+    if (setParam && questionsLoaded) {
+      setTimeout(() => {
+        const el = document.getElementById(`set-tile-${setParam}`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }, 100);
+    }
+  }, [setParam, questionsLoaded]);
 
   const getSetCompletionInfo = (set) => {
     const progress = Array.isArray(userProgress)
@@ -628,15 +701,19 @@ export default function CategorySetsPage() {
             name: category.topic,
             nameHi: category.topicHi,
             slug: category.slug || params.slug,
-            icon: category.emoji || "📚",
+            icon: mainCategoryConfig?.icon || (category.emoji === "IN" ? "🇮🇳" : (category.emoji && category.emoji.length > 2 && !category.emoji.startsWith("http") ? category.emoji : (params.slug === "india-gk" ? "🇮🇳" : (category.emoji || "📚")))),
           }}
           subCategory={activeSubCategoryObj}
           topic={selectedTopic}
           onResetSubCategory={() => {
             setSelectedSubCategory(null);
             setSelectedTopic(null);
+            setSelectedTag(null);
           }}
-          onResetTopic={() => setSelectedTopic(null)}
+          onResetTopic={() => {
+            setSelectedTopic(null);
+            setSelectedTag(null);
+          }}
           className="mb-5 pt-1"
         />
 
@@ -764,6 +841,44 @@ export default function CategorySetsPage() {
                 </div>
               </div>
             )}
+
+            {/* Reference Tags / Chapters for Fast Search & Set Filtering */}
+            {topicReferenceTags.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center gap-1.5 flex-wrap">
+                <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1 mr-1">
+                  <Tag size={12} /> {isHindi ? "अध्याय / संदर्भ टैग:" : "Chapters / Reference Tags:"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedTag(null)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                    !selectedTag
+                      ? "bg-amber-500 text-white shadow-xs"
+                      : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
+                  }`}
+                >
+                  {isHindi ? "सभी" : "All"}
+                </button>
+                {topicReferenceTags.map((t) => {
+                  const isSel = selectedTag === t;
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setSelectedTag(isSel ? null : t)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
+                        isSel
+                          ? "bg-amber-500 text-white font-black shadow-xs scale-105"
+                          : "bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40 hover:border-amber-400"
+                      }`}
+                    >
+                      <span>🏷️</span>
+                      <span>{t}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
@@ -794,7 +909,7 @@ export default function CategorySetsPage() {
                 </button>
                 <div>
                   <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-                    <span className="text-2xl">{category.emoji || "📝"}</span>
+                    <span className="text-2xl">{category.emoji === "IN" ? "🇮🇳" : (category.emoji || "📝")}</span>
                     <span>{category.topic}</span>
                   </h1>
                 </div>
@@ -822,21 +937,40 @@ export default function CategorySetsPage() {
               </div>
             </div>
 
-            {/* Simple tiles "Set 1 · 20 Qs" */}
-            {sets.length > 0 ? (
+            {/* Simple tiles "Set 1 · 20 Qs" with Tag Display & Nice Loading Indicator */}
+            {!questionsLoaded ? (
+              <div className="py-16 px-4 flex flex-col items-center justify-center text-center rounded-2xl border border-dashed border-indigo-200/80 dark:border-indigo-900/40 bg-indigo-50/20 dark:bg-indigo-950/10">
+                <div className="relative w-14 h-14 mb-4">
+                  <div className="absolute inset-0 rounded-full border-4 border-indigo-200 dark:border-indigo-900 animate-ping opacity-25"></div>
+                  <div className="w-14 h-14 rounded-full border-4 border-t-indigo-600 border-r-indigo-500 border-b-transparent border-l-transparent animate-spin"></div>
+                  <div className="absolute inset-0 flex items-center justify-center text-lg">✨</div>
+                </div>
+                <p className="text-sm font-black text-slate-800 dark:text-slate-100 animate-pulse">
+                  {isHindi ? "क्विज़ सेट्स और प्रश्न लोड हो रहे हैं..." : "Loading quiz sets & progressive questions..."}
+                </p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-sm">
+                  {isHindi ? "प्रगतिशील स्तर (सरल ➔ मध्यम ➔ कठिन) तैयार किया जा रहा है" : "Organizing sets in progressive difficulty: Easy ➔ Medium ➔ Hard"}
+                </p>
+              </div>
+            ) : filteredSets.length > 0 ? (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {sets.map((set) => {
+                  {filteredSets.map((set) => {
                     const info = getSetCompletionInfo(set);
                     const targetSetId = `${category?.slug || category?.id || params?.slug}-${set.index}`;
-                    const isLocked = isSetLocked ? isSetLocked(set.index, targetSetId) : (set.index > (freeSetsPerWindow || 2) && !isPro);
+                    const isLocked = isSetLocked ? isSetLocked(set.index, targetSetId) : false;
+                    const setTags = getSetTags(set);
+                    const isHighlighted = String(setParam) === String(set.index);
 
                     return (
                       <div
                         key={set.index}
+                        id={`set-tile-${set.index}`}
                         onClick={() => handleTileClick(set)}
                         className={`w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border transition-all text-left min-h-[52px] select-none cursor-pointer group shadow-sm hover:shadow-md ${
-                          isLocked
+                          isHighlighted
+                            ? "ring-2 ring-indigo-500 bg-indigo-50/40 dark:bg-indigo-950/30 border-indigo-300 dark:border-indigo-700"
+                            : isLocked
                             ? "bg-amber-50/30 dark:bg-amber-950/20 border-amber-200/80 dark:border-amber-900/40 hover:border-amber-400 dark:hover:border-amber-700"
                             : "bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:border-indigo-500/50 dark:hover:border-indigo-500/40"
                         }`}
@@ -854,22 +988,25 @@ export default function CategorySetsPage() {
                           <div className="flex flex-col min-w-0">
                             <span className="text-sm font-extrabold text-slate-900 dark:text-white truncate flex items-center gap-1.5">
                               <span>{isHindi ? `सेट ${set.index} · ${set.questions.length} प्रश्न` : `Set ${set.index} · ${set.questions.length} Qs`}</span>
-                              {isLocked && (
-                                <span className="px-1.5 py-0.2 rounded text-[10px] font-black uppercase tracking-wider bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40">
-                                  PRO
+                              {isHighlighted && (
+                                <span className="px-1.5 py-0.2 rounded text-[10px] font-black uppercase tracking-wider bg-indigo-100 dark:bg-indigo-900/50 text-indigo-800 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/40">
+                                  MATCH
                                 </span>
                               )}
                             </span>
-                            {isLocked && (countdownFormatted || countdownFormattedHi) && (
-                              <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1 mt-0.5 sm:hidden">
-                                <Clock size={10} /> {isHindi ? countdownFormattedHi : countdownFormatted}
-                              </span>
-                            )}
+                            {/* Tags under set title */}
+                            <div className="flex items-center gap-1 mt-1 flex-wrap">
+                              {setTags.map((st) => (
+                                <span key={st} className="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/90 px-1.5 py-0.5 rounded border border-slate-200/50 dark:border-slate-700/50">
+                                  🏷️ {st}
+                                </span>
+                              ))}
+                            </div>
                           </div>
                         </div>
 
                         <div className="flex items-center gap-2 shrink-0">
-                          {/* Eye Preview Button (Phase D1) */}
+                          {/* Eye Preview Button */}
                           <button
                             type="button"
                             onClick={(e) => {
@@ -883,27 +1020,7 @@ export default function CategorySetsPage() {
                             <Eye size={16} />
                           </button>
 
-                          {isLocked ? (
-                            <div className="flex items-center gap-1.5">
-                              {(countdownFormatted || countdownFormattedHi) && (
-                                <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full border border-amber-200/60 dark:border-amber-900/40">
-                                  <Clock size={11} /> {isHindi ? countdownFormattedHi : countdownFormatted}
-                                </span>
-                              )}
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleTileClick(set);
-                                }}
-                                title={isHindi ? "विज्ञापन देखकर अनलॉक करें" : "Watch ad to unlock"}
-                                className="h-8 px-2.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center justify-center gap-1.5 hover:bg-amber-500 hover:text-white transition-all shadow-xs"
-                              >
-                                <Lock size={12} strokeWidth={2.5} />
-                                <span className="text-[11px] font-black uppercase tracking-wider">AD</span>
-                              </button>
-                            </div>
-                          ) : info.isComplete ? (
+                          {info.isComplete ? (
                             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                               <Check size={13} strokeWidth={3} />
                               <span>{info.bestScore !== null ? `${info.bestScore}/${info.total}` : (isHindi ? "पूर्ण" : "Done")}</span>
@@ -922,13 +1039,18 @@ export default function CategorySetsPage() {
             ) : (
               <div className="p-8 text-center rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
                 <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-                  {isHindi ? "इस कठिनाई स्तर के लिए कोई प्रश्न नहीं मिले।" : "No questions found for this difficulty level."}
+                  {selectedTag
+                    ? (isHindi ? `"${selectedTag}" टैग से संबंधित कोई प्रश्न नहीं मिले।` : `No sets found for tag "${selectedTag}".`)
+                    : (isHindi ? "इस कठिनाई स्तर के लिए कोई प्रश्न नहीं मिले।" : "No questions found for this difficulty level.")}
                 </p>
                 <button
-                  onClick={() => setDifficulty("ALL")}
+                  onClick={() => {
+                    setDifficulty("ALL");
+                    setSelectedTag(null);
+                  }}
                   className="mt-2 text-xs font-extrabold text-indigo-600 dark:text-indigo-400 hover:underline"
                 >
-                  {isHindi ? "सभी स्तर देखें" : "View all levels"}
+                  {isHindi ? "सभी स्तर व टैग देखें" : "View all sets & tags"}
                 </button>
               </div>
             )}
@@ -1357,7 +1479,7 @@ export default function CategorySetsPage() {
 
       {/* Sticky CTA Bar above bottom nav when viewing locked content (Requirement 5) */}
       <StickyPaywallCTA
-        hasLockedContent={sets.some((s) => s.index > FREE_SETS_QUOTA)}
+        hasLockedContent={sets.some((s) => isSetLocked ? isSetLocked(s.index, `${category?.slug || category?.id || params?.slug}-${s.index}`) : false)}
         isPro={isPro}
         onUnlockClick={() => {
           setPaywallItemTitle(category?.topic || "Premium Sets");

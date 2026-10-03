@@ -17,13 +17,16 @@ export default function CategoryBreadcrumbs({
 
   if (!mainCategory) return null;
 
+  const rawIcon = mainCategory?.icon || "📚";
+  const categoryIcon = rawIcon === "IN" ? "🇮🇳" : (rawIcon.length > 2 && !rawIcon.startsWith("http") ? rawIcon : (mainCategory?.slug === "india-gk" ? "🇮🇳" : rawIcon));
+
   const mainTitle = isHindi && mainCategory.nameHi ? mainCategory.nameHi : mainCategory.name;
 
   // JSON-LD Breadcrumb Schema for SEO
   const breadcrumbItems = [
     { name: isHindi ? "होम" : "Home", url: "https://quizweb.com/" },
     {
-      name: `${mainCategory.icon || ""} ${mainTitle}`.trim(),
+      name: `${categoryIcon} ${mainTitle}`.trim(),
       url: `https://quizweb.com/category/${mainCategory.slug}`,
     },
   ];
@@ -88,12 +91,12 @@ export default function CategoryBreadcrumbs({
               }}
               className="flex items-center gap-1.5 hover:text-indigo-600 dark:hover:text-indigo-400 font-bold transition-colors py-1 cursor-pointer"
             >
-              <span>{mainCategory.icon || "📚"}</span>
+              <span>{categoryIcon}</span>
               <span>{mainTitle}</span>
             </button>
           ) : (
             <span className="flex items-center gap-1.5 text-slate-900 dark:text-white font-black py-1">
-              <span>{mainCategory.icon || "📚"}</span>
+              <span>{categoryIcon}</span>
               <span>{mainTitle}</span>
             </span>
           )}

@@ -15,8 +15,8 @@ export function EntitlementProvider({ children }) {
   const [entitlement, setEntitlement] = useState({
     isPro: false,
     isLocked: false,
-    remainingSets: 2,
-    freeSetsPerWindow: 2,
+    remainingSets: 9999,
+    freeSetsPerWindow: 9999,
     usedSetsCount: 0,
     windowResetTime: null,
     countdownFormatted: "",
@@ -227,13 +227,16 @@ export function EntitlementProvider({ children }) {
    */
   const isSetLocked = useCallback((setIndex, setId = null) => {
     if (entitlement.isPro) return false;
+    if (entitlement.freeSetsPerWindow >= 9999 || (!entitlement.canWatchAd && !entitlement.isLocked)) {
+      return false;
+    }
     const targetId = setId || String(setIndex);
     const unlocked = entitlement.unlockedSetIds || [];
     if (unlocked.includes(targetId) || unlocked.includes(String(setIndex))) {
       return false;
     }
-    return setIndex > (entitlement.freeSetsPerWindow || 2);
-  }, [entitlement.isPro, entitlement.unlockedSetIds, entitlement.freeSetsPerWindow]);
+    return setIndex > (entitlement.freeSetsPerWindow || 9999);
+  }, [entitlement.isPro, entitlement.unlockedSetIds, entitlement.freeSetsPerWindow, entitlement.canWatchAd, entitlement.isLocked]);
 
   const value = {
     ...entitlement,

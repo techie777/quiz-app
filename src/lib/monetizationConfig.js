@@ -49,15 +49,18 @@ export const DONATION_PRESETS = [
 ];
 
 export const DEFAULT_AD_TOGGLES = {
-  start: true,
-  mid: true,
-  result: true,
-  review: true,
-  share: true,
+  adsEnabled: false,          // Master switch for all ads (disabled per user request)
+  quizSetsAdsEnabled: false,  // Ads on quiz sets (disabled per user request)
+  proFeaturesEnabled: true,   // Pro features master switch (controllable via admin)
+  start: false,               // Start gate ad on sets disabled
+  mid: false,                 // Mid-quiz ad disabled
+  result: false,              // Result screen ad disabled
+  review: false,              // Review explanations ad disabled
+  share: false,               // Share card ad disabled
   midQuizMinQuestions: 10,
   maxAdMomentsPerSet: 5,
   gateChallengeInvite: false, // Challenge a friend invite links are never gated
-  freeSetsPerWindow: 2,
+  freeSetsPerWindow: 9999,    // When quiz set ads are disabled, all sets are open
 };
 
 export const DEFAULT_APPEAL_TEXT = {

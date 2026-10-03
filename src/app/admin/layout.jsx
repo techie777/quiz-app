@@ -16,6 +16,8 @@ const NAV_SECTIONS = [
     icon: "📚",
     items: [
       { href: "/admin", label: "Dashboard", icon: "📊", perm: "dashboard" },
+      { href: "/admin/taxonomy", label: "Taxonomy & Sets", icon: "🗂️", perm: "categories" },
+      { href: "/admin/dataset-rules", label: "Dataset Rules", icon: "🎛️", perm: "settings" },
       { href: "/admin/upload", label: "Bulk Upload", icon: "📤", perm: "upload" },
       { href: "/admin/categories", label: "Quiz Categories", icon: "📁", perm: "categories" },
       { href: "/admin/gk", label: "GK Hub", icon: "🏛️", perm: "gk" },

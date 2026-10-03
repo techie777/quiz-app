@@ -29,7 +29,31 @@ export default function CategorySearchBar({ dbCategories = [], className = "" })
     return map;
   }, [dbCategories]);
 
-  // Compute search matches across Main Categories, Subcategories, and Topics
+  // Canonical topic reference chapters and tags dictionary
+  const TOPIC_CHAPTERS = useMemo(() => ({
+    "Rivers & Lakes": ["Ganga", "Yamuna", "Brahmaputra", "Indus", "Godavari", "Krishna", "Kaveri", "Narmada", "Tapi", "Wular Lake", "Chilika Lake", "Sambhar Lake"],
+    "Ganga Basin": ["Ganga", "Bhagirathi", "Alaknanda", "Yamuna", "Haridwar", "Varanasi", "Prayagraj", "Gomti", "Ghaghara", "Sunderbans", "Hooghly"],
+    "Indus System": ["Indus", "Jhelum", "Chenab", "Ravi", "Beas", "Sutlej", "Panjnad", "Harappa"],
+    "Godavari & Krishna": ["Godavari", "Krishna", "Tungabhadra", "Kaveri", "Nashik", "Rajahmundry", "Mahabaleshwar", "Nagarjuna Sagar"],
+    "Narmada & Tapi": ["Narmada", "Tapi", "Amarkantak", "Dhuandhar Falls", "Sardar Sarovar", "Surat", "Jabalpur"],
+    "Ancient India": ["Indus Valley", "Harappa", "Mohenjo-daro", "Vedic Period", "Mauryan Empire", "Ashoka", "Gupta Dynasty", "Harshavardhana", "Nalanda"],
+    "Medieval India": ["Delhi Sultanate", "Mughal Empire", "Akbar", "Maratha Empire", "Shivaji Maharaj", "Vijayanagara", "Chola Dynasty", "Razia Sultana"],
+    "Modern India": ["1857 Revolt", "Freedom Movement", "Mahatma Gandhi", "Subhash Chandra Bose", "Bhagat Singh", "Quit India", "1947 Partition", "Jallianwala Bagh"],
+    "Constitution": ["Preamble", "Fundamental Rights", "Directive Principles", "Amendments", "Article 370", "Constituent Assembly", "Dr. Ambedkar"],
+    "Parliament": ["Lok Sabha", "Rajya Sabha", "President of India", "Speaker", "Bills & Acts", "No-Confidence Motion"],
+    "ISRO & Space": ["Chandrayaan", "Mangalyaan", "Aditya-L1", "Gaganyaan", "PSLV", "GSLV", "Vikram Sarabhai", "Satish Dhawan"],
+    "Cricket History": ["1983 World Cup", "2011 World Cup", "2007 T20 World Cup", "Kapil Dev", "Sachin Tendulkar", "MS Dhoni", "Virat Kohli", "Ranji Trophy", "IPL"],
+    "Mega Metros": ["Delhi", "Mumbai", "Bengaluru", "Kolkata", "Chennai", "Hyderabad"],
+    "Heritage & Cultural Cities": ["Varanasi", "Jaipur", "Udaipur", "Amritsar", "Madurai", "Hampi"],
+    "Clean & Smart Cities": ["Indore", "Surat", "Bhopal", "Chandigarh", "Pune", "Navi Mumbai"],
+    "Ramayana": ["Lord Rama", "Sita", "Ayodhya", "Lanka", "Hanuman", "Valmiki", "Ravana", "Dandakaranya"],
+    "Mahabharata": ["Kurukshetra", "Krishna", "Arjuna", "Bhishma", "Karna", "Pandavas", "Kauravas", "Geeta Updesh"],
+    "Physics": ["Optics", "Mechanics", "Thermodynamics", "Electromagnetism", "Nuclear Physics"],
+    "Chemistry": ["Periodic Table", "Chemical Reactions", "Organic Chemistry", "Acids and Bases", "Metals"],
+    "Biology & Life Sciences": ["Human Body", "Cell Biology", "Genetics", "Plant Kingdom", "Diseases"],
+  }), []);
+
+  // Compute search matches across Main Categories, Subcategories, Topics, and Chapters/Tags
   const searchResults = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return [];
@@ -51,15 +75,15 @@ export default function CategorySearchBar({ dbCategories = [], className = "" })
           id: `main-${mc.slug}`,
           title: isHindi && mc.nameHi ? mc.nameHi : mc.name,
           subtitle: mc.example,
-          emoji: mc.icon,
+          emoji: mc.icon || "📚",
           slug: mc.slug,
           qCount,
           href: `/category/${mc.slug}`,
-          path: [mc.icon, isHindi && mc.nameHi ? mc.nameHi : mc.name],
+          path: [mc.icon || "📚", isHindi && mc.nameHi ? mc.nameHi : mc.name],
         });
       }
 
-      // 2. Check Subcategories & Topics under this Main Category
+      // 2. Check Subcategories, Topics, and Chapters/Tags under this Main Category
       if (Array.isArray(mc.subcategories)) {
         mc.subcategories.forEach((sub) => {
           const subMatch = sub.name.toLowerCase().includes(q);
@@ -70,42 +94,73 @@ export default function CategorySearchBar({ dbCategories = [], className = "" })
               id: `sub-${mc.slug}-${sub.slug}`,
               title: sub.name,
               subtitle: `Under ${mc.name}`,
-              emoji: mc.icon,
+              emoji: mc.icon || "📁",
               slug: mc.slug,
               subSlug: sub.slug,
               qCount,
               href: `/category/${mc.slug}?sub=${encodeURIComponent(sub.slug)}`,
-              path: [mc.icon, mc.name, sub.name],
+              path: [mc.icon || "📚", mc.name, sub.name],
             });
           }
 
           // Check individual topics
           if (Array.isArray(sub.topics)) {
             sub.topics.forEach((topic) => {
-              if (topic.toLowerCase().includes(q)) {
+              const topicMatch = topic.toLowerCase().includes(q);
+
+              if (topicMatch) {
                 matches.push({
                   type: "topic",
                   id: `topic-${mc.slug}-${sub.slug}-${topic}`,
                   title: topic,
                   subtitle: `${sub.name} · ${mc.name}`,
-                  emoji: mc.icon,
+                  emoji: mc.icon || "🎯",
                   slug: mc.slug,
                   subSlug: sub.slug,
                   topicName: topic,
                   qCount,
                   href: `/category/${mc.slug}?sub=${encodeURIComponent(sub.slug)}&topic=${encodeURIComponent(topic)}`,
-                  path: [mc.icon, mc.name, sub.name, topic],
+                  path: [mc.icon || "📚", mc.name, sub.name, topic],
                 });
               }
+
+              // 3. Check Chapters / Reference Tags under this topic (e.g. "Ganga")
+              const topicTags = TOPIC_CHAPTERS[topic] || [];
+              topicTags.forEach((tag) => {
+                if (tag.toLowerCase().includes(q)) {
+                  matches.push({
+                    type: "chapter",
+                    id: `tag-${mc.slug}-${sub.slug}-${topic}-${tag}`,
+                    title: `${tag} (Chapter / Tag)`,
+                    subtitle: `🎯 Opens Set with ${tag} · Under ${topic}`,
+                    emoji: "🏷️",
+                    slug: mc.slug,
+                    subSlug: sub.slug,
+                    topicName: topic,
+                    tagName: tag,
+                    qCount,
+                    href: `/category/${mc.slug}?sub=${encodeURIComponent(sub.slug)}&topic=${encodeURIComponent(topic)}&tag=${encodeURIComponent(tag)}&set=1`,
+                    path: [mc.icon || "📚", mc.name, sub.name, topic, tag],
+                    opensSet: true,
+                  });
+                }
+              });
             });
           }
         });
       }
     });
 
+    // Sort to prioritize exact chapter/tag and name matches
+    matches.sort((a, b) => {
+      const aExact = a.title.toLowerCase().startsWith(q) ? -1 : 1;
+      const bExact = b.title.toLowerCase().startsWith(q) ? -1 : 1;
+      return aExact - bExact;
+    });
+
     // Return top 8 most relevant matches
     return matches.slice(0, 8);
-  }, [query, isHindi, dbCountMap]);
+  }, [query, isHindi, dbCountMap, TOPIC_CHAPTERS]);
 
   // Click outside to dismiss autocomplete
   useEffect(() => {
