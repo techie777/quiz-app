@@ -125,7 +125,12 @@ export default function CategorySearchBar({ dbCategories = [], className = "" })
               }
 
               // 3. Check Chapters / Reference Tags under this topic (e.g. "Ganga")
-              const topicTags = TOPIC_CHAPTERS[topic] || [];
+              const topicTags = Array.from(new Set([
+                ...(TOPIC_CHAPTERS[topic] || []),
+                ...(Array.isArray(sub.tags) ? sub.tags : []),
+                ...(Array.isArray(sub.chapters) ? sub.chapters : []),
+                ...(sub.topicTags?.[topic] || []),
+              ]));
               topicTags.forEach((tag) => {
                 if (tag.toLowerCase().includes(q)) {
                   matches.push({

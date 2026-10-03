@@ -17,6 +17,12 @@ import {
   ToggleLeft,
   ToggleRight,
   TrendingUp,
+  Cpu,
+  Compass,
+  Shuffle,
+  ListOrdered,
+  Copy,
+  ExternalLink,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -68,6 +74,13 @@ export default function AdminDatasetRulesPage() {
     }
   };
 
+  const copyToClipboard = (text, label) => {
+    if (navigator?.clipboard) {
+      navigator.clipboard.writeText(text);
+      toast.success(`${label} copied to clipboard!`);
+    }
+  };
+
   if (loading || !rules) {
     return (
       <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "60px 16px", textAlign: "center" }}>
@@ -79,17 +92,87 @@ export default function AdminDatasetRulesPage() {
 
   return (
     <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "24px 16px" }}>
+      {/* Route & API Details Banner */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "12px",
+          padding: "12px 18px",
+          borderRadius: "14px",
+          background: "linear-gradient(135deg, #EEF2FF 0%, #F5F3FF 100%)",
+          border: "1px solid #C7D2FE",
+          marginBottom: "20px",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+          <span style={{ fontSize: "12px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.5px", color: "#4338CA" }}>
+            📍 System Endpoints:
+          </span>
+          <div
+            onClick={() => copyToClipboard("/admin/dataset-rules", "Page path")}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "4px 10px",
+              borderRadius: "8px",
+              background: "#FFFFFF",
+              border: "1px solid #CBD5E1",
+              fontSize: "12px",
+              fontWeight: 700,
+              fontFamily: "monospace",
+              color: "#334155",
+              cursor: "pointer",
+            }}
+            title="Click to copy page route"
+          >
+            <span>🖥️ /admin/dataset-rules</span>
+            <Copy size={12} color="#64748B" />
+          </div>
+          <div
+            onClick={() => copyToClipboard("/api/admin/dataset-rules", "API path")}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "4px 10px",
+              borderRadius: "8px",
+              background: "#ECFDF5",
+              border: "1px solid #A7F3D0",
+              fontSize: "12px",
+              fontWeight: 700,
+              fontFamily: "monospace",
+              color: "#065F46",
+              cursor: "pointer",
+            }}
+            title="Click to copy API route"
+          >
+            <span>⚡ /api/admin/dataset-rules</span>
+            <Copy size={12} color="#059669" />
+          </div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ fontSize: "11px", fontWeight: 700, color: "#4338CA", background: "#E0E7FF", padding: "3px 8px", borderRadius: "6px" }}>
+            LIVE SYNCED
+          </span>
+        </div>
+      </div>
+
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "16px", marginBottom: "24px" }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <span style={{ fontSize: "28px" }}>🎛️</span>
+            <span style={{ fontSize: "30px" }}>🎛️</span>
             <h1 style={{ fontSize: "26px", fontWeight: "900", color: "#0F172A", margin: 0 }}>
-              Dataset Display Rules & System Policies
+              Dataset Display Rules & Set Generation Engine
             </h1>
           </div>
           <p style={{ fontSize: "14px", color: "#64748B", marginTop: "6px" }}>
-            Administer progressive difficulty curves, set sizing, ad gates, and reference tag behavior across customer web.
+            Administer set creation formulas, 2,000-question mega pool round-robin algorithms, tag presentation, and ad policies.
           </p>
         </div>
 
@@ -116,7 +199,7 @@ export default function AdminDatasetRulesPage() {
             onClick={handleSave}
             disabled={saving}
             style={{
-              padding: "10px 20px",
+              padding: "10px 22px",
               borderRadius: "12px",
               background: "#4F46E5",
               color: "#FFFFFF",
@@ -137,91 +220,295 @@ export default function AdminDatasetRulesPage() {
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-        {/* RULE 1: Progressive Difficulty Ordering */}
+        {/* MASTER MODE SELECTOR: Dynamic vs Static */}
+        <div style={{ background: "#FFFFFF", borderRadius: "18px", border: "1px solid #E2E8F0", padding: "20px", boxShadow: "0 1px 3px rgba(0,0,0,0.03)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "12px", marginBottom: "14px" }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontSize: "20px" }}>⚡</span>
+                <h3 style={{ fontSize: "16px", fontWeight: "800", color: "#0F172A", margin: 0 }}>
+                  Master Set Generation Engine Mode
+                </h3>
+              </div>
+              <p style={{ fontSize: "13px", color: "#64748B", marginTop: "4px" }}>
+                Choose how quiz sets are constructed from the question pools across categories.
+              </p>
+            </div>
+
+            <div style={{ display: "inline-flex", background: "#F1F5F9", padding: "4px", borderRadius: "12px", border: "1px solid #CBD5E1" }}>
+              <button
+                type="button"
+                onClick={() => setRules({ ...rules, generationMode: "dynamic" })}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "8px",
+                  border: "none",
+                  fontWeight: 800,
+                  fontSize: "12px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  background: rules.generationMode !== "static" ? "#4F46E5" : "transparent",
+                  color: rules.generationMode !== "static" ? "#FFFFFF" : "#475569",
+                  boxShadow: rules.generationMode !== "static" ? "0 2px 4px rgba(79, 70, 229, 0.2)" : "none",
+                }}
+              >
+                <Cpu size={14} />
+                <span>Dynamic Smart Balancing (Recommended)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setRules({ ...rules, generationMode: "static" })}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "8px",
+                  border: "none",
+                  fontWeight: 800,
+                  fontSize: "12px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  background: rules.generationMode === "static" ? "#4F46E5" : "transparent",
+                  color: rules.generationMode === "static" ? "#FFFFFF" : "#475569",
+                  boxShadow: rules.generationMode === "static" ? "0 2px 4px rgba(79, 70, 229, 0.2)" : "none",
+                }}
+              >
+                <ListOrdered size={14} />
+                <span>Static Sequential Order (As Prepared)</span>
+              </button>
+            </div>
+          </div>
+
+          <div style={{ background: "#F8FAFC", borderRadius: "12px", padding: "14px", border: "1px solid #E2E8F0", fontSize: "12px", color: "#475569", lineHeight: "1.6" }}>
+            <strong>Active Policy:</strong>{" "}
+            {rules.generationMode === "static"
+              ? "Static Mode serves sets sequentially from uploaded index 1 to N as prepared in files, sorting each set purely Easy ➔ Medium ➔ Hard."
+              : "Dynamic Smart Mode uses multi-algorithm balancing: 10 Easy (Q1-5 first), 5 Medium, 5 Hard, round-robin subcategory allocation for mega pools, and progressive ladders for single categories."}
+          </div>
+        </div>
+
+        {/* RULE 1: Mega Pool Formula (2,000 Questions across 10-12 Subcategories) */}
         <div style={{ background: "#FFFFFF", borderRadius: "18px", border: "1px solid #E2E8F0", padding: "20px", boxShadow: "0 1px 3px rgba(0,0,0,0.03)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "14px" }}>
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <span style={{ fontSize: "18px" }}>📈</span>
+                <span style={{ fontSize: "20px" }}>🇮🇳</span>
                 <h3 style={{ fontSize: "16px", fontWeight: "800", color: "#0F172A", margin: 0 }}>
-                  Rule 1: Progressive Difficulty Curve
+                  Rule 1: Mega Pool Algorithm (e.g. India GK · 2,000 Questions · 10–12 Subcategories)
                 </h3>
                 <span style={{ fontSize: "11px", fontWeight: "800", background: "#DCFCE7", color: "#166534", padding: "2px 8px", borderRadius: "12px" }}>
-                  Active Engine
+                  Active Formula
                 </span>
               </div>
               <p style={{ fontSize: "13px", color: "#64748B", marginTop: "4px" }}>
-                Each 20-question quiz set is strictly arranged from easy foundations to challenging expert questions.
+                When all subcategories are active under a master category, sets are generated from the combined 2,000-question pool.
               </p>
             </div>
 
             <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
               <input
                 type="checkbox"
-                checked={Boolean(rules.progressiveDifficultyEnabled)}
-                onChange={(e) => setRules({ ...rules, progressiveDifficultyEnabled: e.target.checked })}
+                checked={Boolean(rules.megaPoolRoundRobin ?? true)}
+                onChange={(e) => setRules({ ...rules, megaPoolRoundRobin: e.target.checked })}
                 style={{ width: "20px", height: "20px", accentColor: "#4F46E5", cursor: "pointer" }}
               />
-              <span style={{ fontSize: "13px", fontWeight: "700", color: "#1E293B" }}>Enable Progressive Curve</span>
+              <span style={{ fontSize: "13px", fontWeight: "700", color: "#1E293B" }}>Enable Rule 1</span>
             </label>
           </div>
 
-          {/* Visual Step Breakdown */}
-          <div style={{ background: "#F8FAFC", borderRadius: "14px", padding: "16px", border: "1px solid #E2E8F0" }}>
-            <div style={{ fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "10px" }}>
-              Standard 20-Question Tier Progression:
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "12px", marginBottom: "14px" }}>
+            <div style={{ background: "#F0FDF4", padding: "14px", borderRadius: "12px", border: "1px solid #BBF7D0" }}>
+              <div style={{ fontSize: "12px", fontWeight: 800, color: "#166534" }}>🎯 20 Questions Standard</div>
+              <div style={{ fontSize: "18px", fontWeight: 900, color: "#15803D", marginTop: "4px" }}>10 Easy · 5 Medium · 5 Hard</div>
+              <div style={{ fontSize: "11px", color: "#4B5563", marginTop: "4px" }}>
+                Standardized mix across the entire 20-question set to ensure engagement and progressive mastery.
+              </div>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
-              <div style={{ background: "#FFFFFF", padding: "12px", borderRadius: "12px", border: "1px solid #BBF7D0" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#166534", fontWeight: "800", fontSize: "13px" }}>
-                  <span>🟢 Tier 1: Easy</span>
-                </div>
-                <div style={{ fontSize: "20px", fontWeight: "900", color: "#166534", marginTop: "4px" }}>
-                  Questions 1 to 7
-                </div>
-                <div style={{ fontSize: "11px", color: "#64748B", marginTop: "2px" }}>
-                  Foundational questions to build confidence & momentum.
-                </div>
+            <div style={{ background: "#EFF6FF", padding: "14px", borderRadius: "12px", border: "1px solid #BFDBFE" }}>
+              <div style={{ fontSize: "12px", fontWeight: 800, color: "#1E40AF" }}>🟢 Questions 1 to 5 First</div>
+              <div style={{ fontSize: "18px", fontWeight: 900, color: "#1D4ED8", marginTop: "4px" }}>Strictly Easy Questions</div>
+              <div style={{ fontSize: "11px", color: "#4B5563", marginTop: "4px" }}>
+                Questions 1 to 5 are strictly Easy questions first. Remaining 5 Easy, 5 Medium, and 5 Hard are shuffled for Q6–20.
               </div>
+            </div>
 
-              <div style={{ background: "#FFFFFF", padding: "12px", borderRadius: "12px", border: "1px solid #FEF08A" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#854D0E", fontWeight: "800", fontSize: "13px" }}>
-                  <span>🟡 Tier 2: Medium</span>
-                </div>
-                <div style={{ fontSize: "20px", fontWeight: "900", color: "#854D0E", marginTop: "4px" }}>
-                  Questions 8 to 14
-                </div>
-                <div style={{ fontSize: "11px", color: "#64748B", marginTop: "2px" }}>
-                  Analytical, conceptual, and multi-faceted questions.
-                </div>
-              </div>
-
-              <div style={{ background: "#FFFFFF", padding: "12px", borderRadius: "12px", border: "1px solid #FECACA" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#991B1B", fontWeight: "800", fontSize: "13px" }}>
-                  <span>🔴 Tier 3: Hard & Expert</span>
-                </div>
-                <div style={{ fontSize: "20px", fontWeight: "900", color: "#991B1B", marginTop: "4px" }}>
-                  Questions 15 to 20
-                </div>
-                <div style={{ fontSize: "11px", color: "#64748B", marginTop: "2px" }}>
-                  High-level exam and competitive trivia tier.
-                </div>
+            <div style={{ background: "#FAF5FF", padding: "14px", borderRadius: "12px", border: "1px solid #E9D5FF" }}>
+              <div style={{ fontSize: "12px", fontWeight: 800, color: "#6B21A8" }}>🔄 Subcategory Round-Robin</div>
+              <div style={{ fontSize: "18px", fontWeight: 900, color: "#7E22CE", marginTop: "4px" }}>Unique Category / Question</div>
+              <div style={{ fontSize: "11px", color: "#4B5563", marginTop: "4px" }}>
+                Each question belongs to a unique subcategory cycling through 1 to 10/12, repeating only after completing counts.
               </div>
             </div>
           </div>
         </div>
 
-        {/* RULE 2: Ads on Quiz Sets & Pro Features Control */}
+        {/* RULE 2: Subcategory with Multiple Topics */}
+        <div style={{ background: "#FFFFFF", borderRadius: "18px", border: "1px solid #E2E8F0", padding: "20px", boxShadow: "0 1px 3px rgba(0,0,0,0.03)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "14px" }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontSize: "20px" }}>🏏</span>
+                <h3 style={{ fontSize: "16px", fontWeight: "800", color: "#0F172A", margin: 0 }}>
+                  Rule 2: Subcategory with Multiple Topics (e.g. Sports GK &gt; Cricket · 200 Questions)
+                </h3>
+              </div>
+              <p style={{ fontSize: "13px", color: "#64748B", marginTop: "4px" }}>
+                Topics are shuffled and mixed within that subcategory to maximize user engagement.
+              </p>
+            </div>
+
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={Boolean(rules.subCategoryMixing ?? true)}
+                onChange={(e) => setRules({ ...rules, subCategoryMixing: e.target.checked })}
+                style={{ width: "20px", height: "20px", accentColor: "#4F46E5", cursor: "pointer" }}
+              />
+              <span style={{ fontSize: "13px", fontWeight: "700", color: "#1E293B" }}>Enable Rule 2</span>
+            </label>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "12px" }}>
+            <div style={{ background: "#F8FAFC", padding: "14px", borderRadius: "12px", border: "1px solid #E2E8F0" }}>
+              <div style={{ fontSize: "12px", fontWeight: 800, color: "#334155" }}>Set 1 Onboarding:</div>
+              <div style={{ fontSize: "16px", fontWeight: 900, color: "#0F172A", marginTop: "2px" }}>10 Easy · 5 Medium · 5 Hard</div>
+              <div style={{ fontSize: "11px", color: "#64748B", marginTop: "4px" }}>
+                Starts with Easy questions first (Q1–5) to hook users and build immediate confidence.
+              </div>
+            </div>
+
+            <div style={{ background: "#F8FAFC", padding: "14px", borderRadius: "12px", border: "1px solid #E2E8F0" }}>
+              <div style={{ fontSize: "12px", fontWeight: 800, color: "#334155" }}>Set 2 Onwards (Challenge Mode):</div>
+              <div style={{ fontSize: "16px", fontWeight: 900, color: "#0F172A", marginTop: "2px" }}>7 Easy · 7 Medium · 6 Hard/Expert</div>
+              <div style={{ fontSize: "11px", color: "#64748B", marginTop: "4px" }}>
+                Balanced 7-7-6 formula with topic mixing across the entire subcategory.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* RULE 3: Specific Topic Drill-Down */}
+        <div style={{ background: "#FFFFFF", borderRadius: "18px", border: "1px solid #E2E8F0", padding: "20px", boxShadow: "0 1px 3px rgba(0,0,0,0.03)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "14px" }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontSize: "20px" }}>🎯</span>
+                <h3 style={{ fontSize: "16px", fontWeight: "800", color: "#0F172A", margin: 0 }}>
+                  Rule 3: Specific Topic Drill-Down (No Category Shuffling · Strict 7-7-6)
+                </h3>
+              </div>
+              <p style={{ fontSize: "13px", color: "#64748B", marginTop: "4px" }}>
+                When a user selects a specific topic (e.g. Indian Geography &gt; Indian Rivers), sets do NOT jump categories.
+              </p>
+            </div>
+
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={Boolean(rules.topicSequentialDifficulty ?? true)}
+                onChange={(e) => setRules({ ...rules, topicSequentialDifficulty: e.target.checked })}
+                style={{ width: "20px", height: "20px", accentColor: "#4F46E5", cursor: "pointer" }}
+              />
+              <span style={{ fontSize: "13px", fontWeight: "700", color: "#1E293B" }}>Enable Rule 3</span>
+            </label>
+          </div>
+
+          <div style={{ background: "#F8FAFC", borderRadius: "12px", padding: "14px", border: "1px solid #E2E8F0", fontSize: "12px", color: "#475569" }}>
+            <strong>Sequential Difficulty:</strong> Q1–7: Easy foundational concepts ➔ Q8–14: Medium conceptual applications ➔ Q15–20: Hard/Expert questions. No random category jumps.
+          </div>
+        </div>
+
+        {/* RULE 4: Single / Bulk Category Selected from Home */}
+        <div style={{ background: "#FFFFFF", borderRadius: "18px", border: "1px solid #E2E8F0", padding: "20px", boxShadow: "0 1px 3px rgba(0,0,0,0.03)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "14px" }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontSize: "20px" }}>📦</span>
+                <h3 style={{ fontSize: "16px", fontWeight: "800", color: "#0F172A", margin: 0 }}>
+                  Rule 4: Single Quiz Category / Bulk Upload Ladder
+                </h3>
+              </div>
+              <p style={{ fontSize: "13px", color: "#64748B", marginTop: "4px" }}>
+                Applies when a category is accessed standalone or uploaded via bulk with 1 or multiple sets.
+              </p>
+            </div>
+
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={Boolean(rules.bulkCategoryLadder ?? true)}
+                onChange={(e) => setRules({ ...rules, bulkCategoryLadder: e.target.checked })}
+                style={{ width: "20px", height: "20px", accentColor: "#4F46E5", cursor: "pointer" }}
+              />
+              <span style={{ fontSize: "13px", fontWeight: "700", color: "#1E293B" }}>Enable Rule 4</span>
+            </label>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "12px" }}>
+            <div style={{ background: "#F8FAFC", padding: "14px", borderRadius: "12px", border: "1px solid #E2E8F0" }}>
+              <div style={{ fontSize: "12px", fontWeight: 800, color: "#334155" }}>If 1 Set Only:</div>
+              <div style={{ fontSize: "16px", fontWeight: 900, color: "#0F172A", marginTop: "2px" }}>10 Easy · 5 Medium · 5 Hard</div>
+              <div style={{ fontSize: "11px", color: "#64748B", marginTop: "4px" }}>Easy questions placed first in order.</div>
+            </div>
+
+            <div style={{ background: "#F8FAFC", padding: "14px", borderRadius: "12px", border: "1px solid #E2E8F0" }}>
+              <div style={{ fontSize: "12px", fontWeight: 800, color: "#334155" }}>If Multiple Sets · Set 1:</div>
+              <div style={{ fontSize: "16px", fontWeight: 900, color: "#15803D", marginTop: "2px" }}>ALL Easy Questions (20 Easy)</div>
+              <div style={{ fontSize: "11px", color: "#64748B", marginTop: "4px" }}>Builds mastery and player retention.</div>
+            </div>
+
+            <div style={{ background: "#F8FAFC", padding: "14px", borderRadius: "12px", border: "1px solid #E2E8F0" }}>
+              <div style={{ fontSize: "12px", fontWeight: 800, color: "#334155" }}>If Multiple Sets · Set 2+:</div>
+              <div style={{ fontSize: "16px", fontWeight: 900, color: "#0F172A", marginTop: "2px" }}>Set 2: 10/5/5 ➔ Set 3+: 7/7/6</div>
+              <div style={{ fontSize: "11px", color: "#64748B", marginTop: "4px" }}>Progressive escalation to expert tiers.</div>
+            </div>
+          </div>
+        </div>
+
+        {/* RULE 5: Strict Admin-Only Tagging Policy */}
+        <div style={{ background: "#FFFFFF", borderRadius: "18px", border: "1px solid #E2E8F0", padding: "20px", boxShadow: "0 1px 3px rgba(0,0,0,0.03)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "14px" }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontSize: "20px" }}>🏷️</span>
+                <h3 style={{ fontSize: "16px", fontWeight: "800", color: "#0F172A", margin: 0 }}>
+                  Rule 5: Strict Reference Tags Display Policy
+                </h3>
+              </div>
+              <p style={{ fontSize: "13px", color: "#64748B", marginTop: "4px" }}>
+                Do NOT display reference tags until specifically entered or tagged by admin for that category, subcategory, or topic.
+              </p>
+            </div>
+
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={Boolean(rules.strictAdminTagsOnly ?? true)}
+                onChange={(e) => setRules({ ...rules, strictAdminTagsOnly: e.target.checked })}
+                style={{ width: "20px", height: "20px", accentColor: "#4F46E5", cursor: "pointer" }}
+              />
+              <span style={{ fontSize: "13px", fontWeight: "700", color: "#1E293B" }}>Strict Tags Only</span>
+            </label>
+          </div>
+
+          <div style={{ background: "#FEF2F2", borderRadius: "12px", padding: "14px", border: "1px solid #FECACA", fontSize: "12px", color: "#991B1B", lineHeight: "1.5" }}>
+            <strong>Bug Fix Applied:</strong> Hardcoded river tags (Ganga, Yamuna, Brahmaputra) previously displayed on non-geography topics (e.g. Entertainment) have been completely removed. Tags now remain 100% hidden unless an admin explicitly adds tags to that topic in Taxonomy Manager or question tags exist.
+          </div>
+        </div>
+
+        {/* RULE 6: Ads on Quiz Sets & Pro Features Control */}
         <div style={{ background: "#FFFFFF", borderRadius: "18px", border: "1px solid #E2E8F0", padding: "20px", boxShadow: "0 1px 3px rgba(0,0,0,0.03)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-            <span style={{ fontSize: "18px" }}>🛡️</span>
+            <span style={{ fontSize: "20px" }}>🛡️</span>
             <h3 style={{ fontSize: "16px", fontWeight: "800", color: "#0F172A", margin: 0 }}>
-              Rule 2: Ad on Quiz Sets & Pro Feature Master Toggles
+              Rule 6: Ads on Quiz Sets & Pro Feature Master Toggles
             </h3>
           </div>
           <p style={{ fontSize: "13px", color: "#64748B", marginBottom: "16px" }}>
-            As per administrative request, ads on quiz sets are currently <strong>disabled</strong>, ensuring zero set gating for users.
+            As per user instruction, ads on quiz sets are currently <strong>disabled</strong>, ensuring zero set gating for users.
           </p>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -234,7 +521,7 @@ export default function AdminDatasetRulesPage() {
                 <div style={{ fontSize: "12px", color: "#64748B", marginTop: "2px" }}>
                   {rules.quizSetsAdsEnabled
                     ? "Currently ENABLED: Sets beyond free quota show 🔒 AD buttons and require rewarded ads."
-                    : "Currently DISABLED (Recommended): All sets show direct Play button (▶). No '🔒 AD' button or paywall gate is shown."}
+                    : "Currently DISABLED (Active Policy): All sets show direct Play button (▶). No '🔒 AD' button or paywall gate is shown."}
                 </div>
               </div>
               <input
@@ -283,12 +570,12 @@ export default function AdminDatasetRulesPage() {
           </div>
         </div>
 
-        {/* RULE 3: Set Sizing, Timers & Pass Threshold */}
+        {/* RULE 7: Set Sizing, Timers & Pass Threshold */}
         <div style={{ background: "#FFFFFF", borderRadius: "18px", border: "1px solid #E2E8F0", padding: "20px", boxShadow: "0 1px 3px rgba(0,0,0,0.03)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-            <span style={{ fontSize: "18px" }}>⚙️</span>
+            <span style={{ fontSize: "20px" }}>⚙️</span>
             <h3 style={{ fontSize: "16px", fontWeight: "800", color: "#0F172A", margin: 0 }}>
-              Rule 3: Set Sizing, Timers & Passing Threshold
+              Rule 7: Set Sizing, Timers & Passing Threshold
             </h3>
           </div>
           <p style={{ fontSize: "13px", color: "#64748B", marginBottom: "16px" }}>
@@ -350,40 +637,6 @@ export default function AdminDatasetRulesPage() {
                 <option value={90}>90 Seconds</option>
               </select>
               <span style={{ fontSize: "11px", color: "#64748B" }}>Initial timer setting on set load.</span>
-            </div>
-          </div>
-        </div>
-
-        {/* RULE 4: Breadcrumb Order & Reference Tags */}
-        <div style={{ background: "#FFFFFF", borderRadius: "18px", border: "1px solid #E2E8F0", padding: "20px", boxShadow: "0 1px 3px rgba(0,0,0,0.03)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-            <span style={{ fontSize: "18px" }}>🏷️</span>
-            <h3 style={{ fontSize: "16px", fontWeight: "800", color: "#0F172A", margin: 0 }}>
-              Rule 4: Breadcrumbs & Keyword Reference Tags
-            </h3>
-          </div>
-          <p style={{ fontSize: "13px", color: "#64748B", marginBottom: "16px" }}>
-            Data ordering in terms of customer web breadcrumbs and keyword reference tags.
-          </p>
-
-          <div style={{ background: "#F8FAFC", borderRadius: "12px", padding: "16px", border: "1px solid #E2E8F0" }}>
-            <div style={{ fontSize: "13px", fontWeight: "800", color: "#1E293B", marginBottom: "8px" }}>
-              Active Breadcrumb Hierarchy:
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", fontSize: "13px", fontWeight: "700" }}>
-              <span style={{ background: "#EEF2FF", color: "#4338CA", padding: "4px 10px", borderRadius: "8px" }}>🏠 Home</span>
-              <span style={{ color: "#94A3B8" }}>➔</span>
-              <span style={{ background: "#EEF2FF", color: "#4338CA", padding: "4px 10px", borderRadius: "8px" }}>🇮🇳 Main Category</span>
-              <span style={{ color: "#94A3B8" }}>➔</span>
-              <span style={{ background: "#EEF2FF", color: "#4338CA", padding: "4px 10px", borderRadius: "8px" }}>📁 Sub Category</span>
-              <span style={{ color: "#94A3B8" }}>➔</span>
-              <span style={{ background: "#EEF2FF", color: "#4338CA", padding: "4px 10px", borderRadius: "8px" }}>🎯 Topic</span>
-              <span style={{ color: "#94A3B8" }}>➔</span>
-              <span style={{ background: "#FEF3C7", color: "#92400E", padding: "4px 10px", borderRadius: "8px" }}>🏷️ Covered Subject / Chapters as Tags</span>
-            </div>
-
-            <div style={{ marginTop: "12px", fontSize: "12px", color: "#64748B", lineHeight: "1.5" }}>
-              <strong>Important Policy Note:</strong> Tags act as keyword references to find sets (e.g. typing &quot;Ganga&quot; matches Set 1 under Rivers & Lakes and deep-links directly to it). Tags do not create separate detached quiz set collections; instead, tags index the existing standard sets.
             </div>
           </div>
         </div>

@@ -16,8 +16,22 @@ const NAV_SECTIONS = [
     icon: "📚",
     items: [
       { href: "/admin", label: "Dashboard", icon: "📊", perm: "dashboard" },
-      { href: "/admin/taxonomy", label: "Taxonomy & Sets", icon: "🗂️", perm: "categories" },
-      { href: "/admin/dataset-rules", label: "Dataset Rules", icon: "🎛️", perm: "settings" },
+      {
+        href: "/admin/taxonomy",
+        label: "Taxonomy & Sets",
+        pageDetail: "/admin/taxonomy",
+        apiDetail: "/api/admin/taxonomy-hierarchy",
+        icon: "🗂️",
+        perm: "categories",
+      },
+      {
+        href: "/admin/dataset-rules",
+        label: "Dataset Rules",
+        pageDetail: "/admin/dataset-rules",
+        apiDetail: "/api/admin/dataset-rules",
+        icon: "🎛️",
+        perm: "settings",
+      },
       { href: "/admin/upload", label: "Bulk Upload", icon: "📤", perm: "upload" },
       { href: "/admin/categories", label: "Quiz Categories", icon: "📁", perm: "categories" },
       { href: "/admin/gk", label: "GK Hub", icon: "🏛️", perm: "gk" },
@@ -183,11 +197,23 @@ function AdminShell({ children }) {
                     style={{ width: "100%" }}
                   >
                     <span className={styles.navIcon}>{item.icon}</span>
-                    <span className={styles.navText}>
-                      {item.label}
-                      {item.href === "/admin/notifications" && unreadCount > 0 ? (
-                        <span className={styles.navBadge}>{unreadCount}</span>
-                      ) : null}
+                    <span className={styles.navText} style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", width: "100%", overflow: "hidden" }}>
+                      <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                        <span style={{ fontWeight: 700 }}>{item.label}</span>
+                        {item.href === "/admin/notifications" && unreadCount > 0 ? (
+                          <span className={styles.navBadge}>{unreadCount}</span>
+                        ) : null}
+                      </span>
+                      {item.pageDetail && (
+                        <span style={{ fontSize: "10px", color: "var(--color-primary, #6366f1)", fontFamily: "monospace", letterSpacing: "-0.2px", opacity: 0.9, marginTop: "2px" }}>
+                          {item.pageDetail}
+                        </span>
+                      )}
+                      {item.apiDetail && (
+                        <span style={{ fontSize: "9px", color: "#10b981", fontFamily: "monospace", letterSpacing: "-0.2px", opacity: 0.85, lineHeight: 1.1 }}>
+                          api: {item.apiDetail}
+                        </span>
+                      )}
                     </span>
                   </Link>
                 </div>

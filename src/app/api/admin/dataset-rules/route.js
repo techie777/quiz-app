@@ -7,6 +7,12 @@ import { DEFAULT_AD_TOGGLES } from "@/lib/monetizationConfig";
 export const dynamic = "force-dynamic";
 
 export const DEFAULT_DATASET_RULES = {
+  generationMode: "dynamic", // "dynamic" (Smart Balancing) | "static" (Sequential As Prepared)
+  megaPoolRoundRobin: true,  // Rule 1: 10 Easy (Q1-5 easy first), 5 Med, 5 Hard, round-robin subcategories
+  subCategoryMixing: true,   // Rule 2: Set 1 (10-5-5) -> Set 2+ (7-7-6) with topic mixing
+  topicSequentialDifficulty: true, // Rule 3: Curated topic drill-down 7-7-6 progressive difficulty
+  bulkCategoryLadder: true,  // Rule 4: 1 set: 10-5-5; Multi sets: Set 1 All Easy, Set 2 10-5-5, Set 3+ 7-7-6
+  strictAdminTagsOnly: true, // Do not show tags until specifically entered/tagged by admin
   progressiveDifficultyEnabled: true,
   progressiveTierBreakdown: {
     easyCount: 7,

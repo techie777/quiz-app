@@ -26,6 +26,7 @@ import ArenaClient from "@/app/arena/ArenaClient";
 import CategoryBreadcrumbs from "@/components/category/CategoryBreadcrumbs";
 import { getMainCategoryBySlug } from "@/lib/mainCategoriesConfig";
 import { orderQuestionsProgressiveDifficulty } from "@/lib/prng";
+import { generateSmartQuizSets } from "@/lib/setGenerationRules";
 
 // Helper function to detect if text is Hindi
 function isHindiText(text) {
@@ -312,61 +313,85 @@ export default function CategorySetsPage() {
   const sets = useMemo(() => {
     if (!category || !effectiveSetSize || effectiveSetSize <= 0) return [];
     const pool = tier === "adults" ? displayedQuestions : questions;
-    const count = pool.length;
-    const result = [];
+    if (!pool || pool.length === 0) return [];
 
-    for (let i = 0; i < count; i += effectiveSetSize) {
-      result.push({
-        index: result.length + 1,
-        start: i,
-        end: Math.min(i + effectiveSetSize, count),
-        questions: orderQuestionsProgressiveDifficulty(pool.slice(i, i + effectiveSetSize)),
-      });
-    }
-    return result;
-  }, [category, displayedQuestions, questions, effectiveSetSize, tier]);
+    return generateSmartQuizSets({
+      questions: pool,
+      category,
+      selectedSubCategory: activeSubCategoryObj?.name || null,
+      selectedTopic: selectedTopic || null,
+      effectiveSetSize: effectiveSetSize || 20,
+      rulesMode: "dynamic",
+    });
+  }, [category, displayedQuestions, questions, effectiveSetSize, tier, activeSubCategoryObj, selectedTopic]);
 
   const topicReferenceTags = useMemo(() => {
-    const TOPIC_CHAPTERS = {
-      "Rivers & Lakes": ["Ganga", "Yamuna", "Brahmaputra", "Indus", "Godavari", "Krishna", "Kaveri", "Narmada", "Tapi"],
-      "Himalayan & Peninsular Rivers": ["Ganga", "Yamuna", "Brahmaputra", "Indus", "Godavari", "Krishna", "Narmada"],
-      "Ganga Basin": ["Ganga", "Bhagirathi", "Alaknanda", "Yamuna", "Haridwar", "Varanasi", "Prayagraj"],
-      "Indus System": ["Indus", "Jhelum", "Chenab", "Ravi", "Beas", "Sutlej"],
-      "Godavari & Krishna": ["Godavari", "Krishna", "Tungabhadra", "Kaveri"],
-      "Narmada & Tapi": ["Narmada", "Tapi", "Dhuandhar Falls", "Sardar Sarovar"],
-      "Ancient India": ["Indus Valley", "Harappa", "Mohenjo-daro", "Vedic Period", "Mauryan Empire", "Ashoka", "Gupta Dynasty"],
-      "Medieval India": ["Delhi Sultanate", "Mughal Empire", "Akbar", "Maratha Empire", "Shivaji Maharaj", "Vijayanagara"],
-      "Modern India": ["1857 Revolt", "Freedom Movement", "Mahatma Gandhi", "Subhash Chandra Bose", "Bhagat Singh", "Quit India"],
-      "Constitution": ["Preamble", "Fundamental Rights", "Directive Principles", "Amendments", "Dr. Ambedkar"],
-      "Parliament": ["Lok Sabha", "Rajya Sabha", "President of India", "Speaker"],
-      "ISRO & Space": ["Chandrayaan", "Mangalyaan", "Aditya-L1", "Gaganyaan"],
-      "Cricket History": ["1983 World Cup", "2011 World Cup", "Kapil Dev", "Sachin Tendulkar", "MS Dhoni", "Virat Kohli"],
-      "Mega Metros": ["Delhi", "Mumbai", "Bengaluru", "Kolkata", "Chennai", "Hyderabad"],
-      "Heritage & Cultural Cities": ["Varanasi", "Jaipur", "Udaipur", "Amritsar", "Madurai"],
-      "Clean & Smart Cities": ["Indore", "Surat", "Bhopal", "Chandigarh", "Pune"],
-      "Ramayana": ["Lord Rama", "Sita", "Ayodhya", "Lanka", "Hanuman"],
-      "Mahabharata": ["Kurukshetra", "Krishna", "Arjuna", "Bhishma", "Pandavas"],
-    };
+    // STRICT RULE: Do not show tags unless specifically entered/tagged by admin
+    // for this quiz topic, subcategory, or category, or present in the questions.
+    const tagsSet = new Set();
 
-    const qTags = (questions || [])
-      .filter((q) => !selectedTopic || q.topic === selectedTopic || q.subTopic === selectedTopic || q.topicName === selectedTopic)
-      .flatMap((q) => q.tags || [])
-      .filter(Boolean);
+    // 1. Tags explicitly configured for the selected topic
+    if (selectedTopic) {
+      if (activeSubCategoryObj?.topicTags?.[selectedTopic] && Array.isArray(activeSubCategoryObj.topicTags[selectedTopic])) {
+        activeSubCategoryObj.topicTags[selectedTopic].forEach((t) => t && tagsSet.add(String(t).trim()));
+      }
+      if (category?.customTags?.[selectedTopic] && Array.isArray(category.customTags[selectedTopic])) {
+        category.customTags[selectedTopic].forEach((t) => t && tagsSet.add(String(t).trim()));
+      }
+    }
 
-    const presetTags = (selectedTopic && TOPIC_CHAPTERS[selectedTopic]) || (activeSubCategoryObj && TOPIC_CHAPTERS[activeSubCategoryObj.name]) || TOPIC_CHAPTERS["Rivers & Lakes"];
-    return Array.from(new Set([...(presetTags || []), ...qTags])).slice(0, 10);
-  }, [selectedTopic, activeSubCategoryObj, questions]);
+    // 2. Tags explicitly configured for the active subcategory
+    if (activeSubCategoryObj?.tags && Array.isArray(activeSubCategoryObj.tags)) {
+      activeSubCategoryObj.tags.forEach((t) => t && tagsSet.add(String(t).trim()));
+    }
+    if (activeSubCategoryObj?.chapters && Array.isArray(activeSubCategoryObj.chapters)) {
+      activeSubCategoryObj.chapters.forEach((t) => t && tagsSet.add(String(t).trim()));
+    }
+    if (activeSubCategoryObj?.name && category?.customTags?.[activeSubCategoryObj.name] && Array.isArray(category.customTags[activeSubCategoryObj.name])) {
+      category.customTags[activeSubCategoryObj.name].forEach((t) => t && tagsSet.add(String(t).trim()));
+    }
+
+    // 3. Category level tags specifically added by admin
+    if (category?.tags && Array.isArray(category.tags)) {
+      category.tags.forEach((t) => t && tagsSet.add(String(t).trim()));
+    }
+
+    // 4. Tags present on questions in this current scope
+    const relevantQuestions = (questions || []).filter((q) => {
+      if (selectedTopic) {
+        return q.topic === selectedTopic || q.subTopic === selectedTopic || q.topicName === selectedTopic;
+      }
+      if (activeSubCategoryObj) {
+        return q.subCategory === activeSubCategoryObj.name || q.subjectName === activeSubCategoryObj.name;
+      }
+      return true;
+    });
+
+    for (const q of relevantQuestions) {
+      if (Array.isArray(q?.tags)) {
+        for (const t of q.tags) {
+          if (t && typeof t === "string" && t.trim()) {
+            tagsSet.add(t.trim());
+          }
+        }
+      }
+    }
+
+    return Array.from(tagsSet).slice(0, 12);
+  }, [selectedTopic, activeSubCategoryObj, category, questions]);
 
   const getSetTags = (set) => {
-    const qTags = (set.questions || []).flatMap((q) => q.tags || []).filter(Boolean);
+    // Only return actual tags that were tagged on this set or its questions
+    if (Array.isArray(set.tags) && set.tags.length > 0) {
+      return set.tags.slice(0, 3);
+    }
+    const qTags = (set.questions || [])
+      .flatMap((q) => (Array.isArray(q.tags) ? q.tags : []))
+      .filter(Boolean);
     if (qTags.length > 0) {
       return Array.from(new Set(qTags)).slice(0, 3);
     }
-    if (topicReferenceTags.length > 0) {
-      const startIdx = ((set.index - 1) * 2) % topicReferenceTags.length;
-      return topicReferenceTags.slice(startIdx, startIdx + 2);
-    }
-    return ["Standard Set"];
+    return [];
   };
 
   const filteredSets = useMemo(() => {
@@ -994,14 +1019,16 @@ export default function CategorySetsPage() {
                                 </span>
                               )}
                             </span>
-                            {/* Tags under set title */}
-                            <div className="flex items-center gap-1 mt-1 flex-wrap">
-                              {setTags.map((st) => (
-                                <span key={st} className="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/90 px-1.5 py-0.5 rounded border border-slate-200/50 dark:border-slate-700/50">
-                                  🏷️ {st}
-                                </span>
-                              ))}
-                            </div>
+                            {/* Tags under set title (only if specifically tagged) */}
+                            {setTags.length > 0 && (
+                              <div className="flex items-center gap-1 mt-1 flex-wrap">
+                                {setTags.map((st) => (
+                                  <span key={st} className="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/90 px-1.5 py-0.5 rounded border border-slate-200/50 dark:border-slate-700/50">
+                                    🏷️ {st}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
 
