@@ -289,6 +289,185 @@ export default function AdminDatasetRulesPage() {
           </div>
         </div>
 
+        {/* POINT 4: PRESENTATION AND SHUFFLING RULES MATRIX TABLE */}
+        <div style={{ background: "#FFFFFF", borderRadius: "18px", border: "1px solid #E2E8F0", padding: "22px", boxShadow: "0 1px 3px rgba(0,0,0,0.03)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "10px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#EEF2FF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px" }}>
+                📊
+              </div>
+              <div>
+                <h3 style={{ fontSize: "16px", fontWeight: "800", color: "#0F172A", margin: 0 }}>
+                  Presentation & Shuffling Rules Matrix
+                </h3>
+                <p style={{ fontSize: "12px", color: "#64748B", margin: "2px 0 0 0" }}>
+                  Operational mapping of how question pools are standardized, shuffled, and presented to users.
+                </p>
+              </div>
+            </div>
+            <span style={{ fontSize: "11px", fontWeight: 800, color: "#4338CA", background: "#E0E7FF", padding: "4px 10px", borderRadius: "8px" }}>
+              Standard Set Size: 20 Qs
+            </span>
+          </div>
+
+          <div style={{ overflowX: "auto", borderRadius: "12px", border: "1px solid #E2E8F0" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "13px" }}>
+              <thead>
+                <tr style={{ background: "#F8FAFC", borderBottom: "1px solid #E2E8F0" }}>
+                  <th style={{ padding: "12px 16px", fontWeight: 800, color: "#334155", width: "24%" }}>Browsing Context</th>
+                  <th style={{ padding: "12px 16px", fontWeight: 800, color: "#334155", width: "22%" }}>Active Rule</th>
+                  <th style={{ padding: "12px 16px", fontWeight: 800, color: "#334155", width: "40%" }}>Set Composition & Shuffling Formula</th>
+                  <th style={{ padding: "12px 16px", fontWeight: 800, color: "#334155", width: "14%", textAlign: "center" }}>Engine Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {/* Row 1: All Subcategories Active (Mega Pool) */}
+                <tr style={{ borderBottom: "1px solid #F1F5F9", background: "#FFFFFF" }}>
+                  <td style={{ padding: "14px 16px", verticalAlign: "top" }}>
+                    <div style={{ fontWeight: 800, color: "#0F172A" }}>All Subcategories Active</div>
+                    <div style={{ fontSize: "11px", color: "#64748B", marginTop: "2px" }}>
+                      Mega Pool (e.g. India GK with 2,000 Questions across 10–12 Subcategories)
+                    </div>
+                  </td>
+                  <td style={{ padding: "14px 16px", verticalAlign: "top" }}>
+                    <span style={{ display: "inline-block", background: "#DCFCE7", color: "#166534", padding: "3px 8px", borderRadius: "6px", fontWeight: 800, fontSize: "11px" }}>
+                      Rule 1: Mega Pool Round-Robin
+                    </span>
+                  </td>
+                  <td style={{ padding: "14px 16px", verticalAlign: "top", color: "#334155", lineHeight: 1.5 }}>
+                    <ul style={{ margin: 0, paddingLeft: "16px", display: "flex", flexDirection: "column", gap: "3px" }}>
+                      <li><strong>20 Qs Composition:</strong> 10 Easy, 5 Medium, 5 Hard/Expert</li>
+                      <li><strong>Q1–5:</strong> Strictly Easy questions first to build immediate confidence</li>
+                      <li><strong>Q6–20:</strong> Shuffled mix of remaining 5 Easy, 5 Medium, 5 Hard</li>
+                      <li><strong>Subcategory Round-Robin:</strong> Each question belongs to unique subcategory (1 to 10/12) cycling before repeating</li>
+                    </ul>
+                  </td>
+                  <td style={{ padding: "14px 16px", verticalAlign: "middle", textAlign: "center" }}>
+                    <span style={{ background: "#F0FDF4", color: "#166534", border: "1px solid #BBF7D0", padding: "4px 8px", borderRadius: "8px", fontWeight: 700, fontSize: "11px" }}>
+                      Active Live
+                    </span>
+                  </td>
+                </tr>
+
+                {/* Row 2: 1 Subcategory + Multiple Topics */}
+                <tr style={{ borderBottom: "1px solid #F1F5F9", background: "#FAFAFA" }}>
+                  <td style={{ padding: "14px 16px", verticalAlign: "top" }}>
+                    <div style={{ fontWeight: 800, color: "#0F172A" }}>1 Subcategory + Multiple Topics</div>
+                    <div style={{ fontSize: "11px", color: "#64748B", marginTop: "2px" }}>
+                      e.g. Sports GK &gt; Cricket (200 questions across multiple topics)
+                    </div>
+                  </td>
+                  <td style={{ padding: "14px 16px", verticalAlign: "top" }}>
+                    <span style={{ display: "inline-block", background: "#DBEAFE", color: "#1E40AF", padding: "3px 8px", borderRadius: "6px", fontWeight: 800, fontSize: "11px" }}>
+                      Rule 2: Subcategory Mix
+                    </span>
+                  </td>
+                  <td style={{ padding: "14px 16px", verticalAlign: "top", color: "#334155", lineHeight: 1.5 }}>
+                    <ul style={{ margin: 0, paddingLeft: "16px", display: "flex", flexDirection: "column", gap: "3px" }}>
+                      <li>Topics shuffled within subcategory for engagement</li>
+                      <li><strong>Set 1:</strong> Starts with Easy questions, 10 Easy (Q1–5 easy first), 5 Medium, 5 Hard</li>
+                      <li><strong>Set 2 onwards:</strong> 7 Easy, 7 Medium, 6 Hard/Expert</li>
+                    </ul>
+                  </td>
+                  <td style={{ padding: "14px 16px", verticalAlign: "middle", textAlign: "center" }}>
+                    <span style={{ background: "#EFF6FF", color: "#1E40AF", border: "1px solid #BFDBFE", padding: "4px 8px", borderRadius: "8px", fontWeight: 700, fontSize: "11px" }}>
+                      Active Live
+                    </span>
+                  </td>
+                </tr>
+
+                {/* Row 3: Specific Topic Drill-Down */}
+                <tr style={{ borderBottom: "1px solid #F1F5F9", background: "#FFFFFF" }}>
+                  <td style={{ padding: "14px 16px", verticalAlign: "top" }}>
+                    <div style={{ fontWeight: 800, color: "#0F172A" }}>Specific Topic Drill-Down</div>
+                    <div style={{ fontSize: "11px", color: "#64748B", marginTop: "2px" }}>
+                      e.g. Indian Geography &gt; Indian Rivers (Direct focus)
+                    </div>
+                  </td>
+                  <td style={{ padding: "14px 16px", verticalAlign: "top" }}>
+                    <span style={{ display: "inline-block", background: "#F3E8FF", color: "#6B21A8", padding: "3px 8px", borderRadius: "6px", fontWeight: 800, fontSize: "11px" }}>
+                      Rule 3: Curated Progressive
+                    </span>
+                  </td>
+                  <td style={{ padding: "14px 16px", verticalAlign: "top", color: "#334155", lineHeight: 1.5 }}>
+                    <ul style={{ margin: 0, paddingLeft: "16px", display: "flex", flexDirection: "column", gap: "3px" }}>
+                      <li><strong>No category jumping</strong> — stays strictly in topic domain</li>
+                      <li><strong>Strict sequential difficulty order:</strong></li>
+                      <li style={{ listStyleType: "none", paddingLeft: "8px", color: "#64748B", fontSize: "12px" }}>
+                        • Q1–7: Easy foundational concepts<br />
+                        • Q8–14: Medium analytical concepts<br />
+                        • Q15–20: Hard / Expert challenge
+                      </li>
+                    </ul>
+                  </td>
+                  <td style={{ padding: "14px 16px", verticalAlign: "middle", textAlign: "center" }}>
+                    <span style={{ background: "#FAF5FF", color: "#6B21A8", border: "1px solid #E9D5FF", padding: "4px 8px", borderRadius: "8px", fontWeight: 700, fontSize: "11px" }}>
+                      Active Live
+                    </span>
+                  </td>
+                </tr>
+
+                {/* Row 4: Single Category / Bulk Upload */}
+                <tr style={{ borderBottom: "1px solid #F1F5F9", background: "#FAFAFA" }}>
+                  <td style={{ padding: "14px 16px", verticalAlign: "top" }}>
+                    <div style={{ fontWeight: 800, color: "#0F172A" }}>Single Category / Bulk Upload</div>
+                    <div style={{ fontSize: "11px", color: "#64748B", marginTop: "2px" }}>
+                      Accessed standalone from Home page or bulk uploaded
+                    </div>
+                  </td>
+                  <td style={{ padding: "14px 16px", verticalAlign: "top" }}>
+                    <span style={{ display: "inline-block", background: "#FEF3C7", color: "#92400E", padding: "3px 8px", borderRadius: "6px", fontWeight: 800, fontSize: "11px" }}>
+                      Rule 4: Bulk Category Ladder
+                    </span>
+                  </td>
+                  <td style={{ padding: "14px 16px", verticalAlign: "top", color: "#334155", lineHeight: 1.5 }}>
+                    <ul style={{ margin: 0, paddingLeft: "16px", display: "flex", flexDirection: "column", gap: "3px" }}>
+                      <li><strong>1 Set Only:</strong> 10 Easy (first), 5 Medium, 5 Hard</li>
+                      <li><strong>Multiple Sets Ladder:</strong></li>
+                      <li style={{ listStyleType: "none", paddingLeft: "8px", color: "#64748B", fontSize: "12px" }}>
+                        • <strong>Set 1:</strong> 20 All Easy (builds player mastery & retention)<br />
+                        • <strong>Set 2:</strong> 10 Easy (Q1–5 first), 5 Medium, 5 Hard<br />
+                        • <strong>Set 3+:</strong> 7 Easy, 7 Medium, 6 Hard/Expert
+                      </li>
+                    </ul>
+                  </td>
+                  <td style={{ padding: "14px 16px", verticalAlign: "middle", textAlign: "center" }}>
+                    <span style={{ background: "#FFFBEB", color: "#92400E", border: "1px solid #FDE68A", padding: "4px 8px", borderRadius: "8px", fontWeight: 700, fontSize: "11px" }}>
+                      Active Live
+                    </span>
+                  </td>
+                </tr>
+
+                {/* Row 5: Static Preparation Mode */}
+                <tr style={{ background: "#FFFFFF" }}>
+                  <td style={{ padding: "14px 16px", verticalAlign: "top" }}>
+                    <div style={{ fontWeight: 800, color: "#0F172A" }}>Static Preparation Mode</div>
+                    <div style={{ fontSize: "11px", color: "#64748B", marginTop: "2px" }}>
+                      Admin toggleable fallback for static pre-built files
+                    </div>
+                  </td>
+                  <td style={{ padding: "14px 16px", verticalAlign: "top" }}>
+                    <span style={{ display: "inline-block", background: "#F1F5F9", color: "#475569", padding: "3px 8px", borderRadius: "6px", fontWeight: 800, fontSize: "11px" }}>
+                      Static Sequential Mode
+                    </span>
+                  </td>
+                  <td style={{ padding: "14px 16px", verticalAlign: "top", color: "#334155", lineHeight: 1.5 }}>
+                    <ul style={{ margin: 0, paddingLeft: "16px", display: "flex", flexDirection: "column", gap: "3px" }}>
+                      <li>Preserves original uploaded file sequence from Set 1 to N exactly as prepared</li>
+                      <li>Sorts each set purely by Easy ➔ Medium ➔ Hard without category shuffling</li>
+                    </ul>
+                  </td>
+                  <td style={{ padding: "14px 16px", verticalAlign: "middle", textAlign: "center" }}>
+                    <span style={{ background: rules.generationMode === "static" ? "#DCFCE7" : "#F1F5F9", color: rules.generationMode === "static" ? "#166534" : "#64748B", border: "1px solid #CBD5E1", padding: "4px 8px", borderRadius: "8px", fontWeight: 700, fontSize: "11px" }}>
+                      {rules.generationMode === "static" ? "Active" : "Standby"}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         {/* RULE 1: Mega Pool Formula (2,000 Questions across 10-12 Subcategories) */}
         <div style={{ background: "#FFFFFF", borderRadius: "18px", border: "1px solid #E2E8F0", padding: "20px", boxShadow: "0 1px 3px rgba(0,0,0,0.03)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "14px" }}>

@@ -86,6 +86,7 @@ export function LanguageProvider({ children }) {
 
   const value = {
     language,
+    setLanguage: confirmLanguageSelection,
     toggleLanguage,
     confirmLanguageSelection,
     t,
@@ -110,6 +111,7 @@ export function useLanguage() {
   if (context === undefined) {
     return {
       language: 'hi',
+      setLanguage: () => {},
       toggleLanguage: () => {},
       t: (path) => {
         const keys = path.split('.');

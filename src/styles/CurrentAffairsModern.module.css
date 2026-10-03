@@ -1,0 +1,1133 @@
+/* ==========================================================================
+   QuizWeb - Modern Current Affairs Stylesheet (Anki-Style Clean Design)
+   White background, soft borders (#ECE8DA / #E2E8F0), Indigo Accent (#4F46E5)
+   ========================================================================== */
+
+.page {
+  min-height: 100vh;
+  background-color: #ffffff;
+  color: #0f172a;
+  font-family: var(--font-poppins), 'Noto Sans Devanagari', -apple-system, BlinkMacSystemFont, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.container {
+  width: 100%;
+  max-width: 580px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background-color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ──────────────── 1. SCREEN 1: DAILY LIST TOP BAR ──────────────── */
+.topBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px 12px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: #0f172a;
+}
+
+.brandIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: #4f46e5;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+}
+
+.brandText {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: #0f172a;
+}
+
+.langToggle {
+  display: inline-flex;
+  align-items: center;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.langBtn {
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.langBtnActive {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Title & Calendar Action */
+.titleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 20px 14px;
+}
+
+.pageTitle {
+  font-size: 26px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.6px;
+  margin: 0;
+}
+
+.calendarBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.calendarBtn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.calendarHiddenInput {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+/* ──────────────── 2. WEEK STRIP ──────────────── */
+.weekStripWrapper {
+  padding: 0 20px 14px;
+  width: 100%;
+}
+
+.weekStripContainer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.weekNavBtn {
+  width: 28px;
+  height: 64px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.weekNavBtn:hover:not(:disabled) {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.weekNavBtn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.weekStrip {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+  justify-content: space-between;
+}
+
+.weekDay {
+  flex: 1;
+  min-width: 0;
+  height: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  border: 1px solid #ece8da;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 4px;
+}
+
+.weekDay:hover:not(.weekDayActive) {
+  border-color: #cbd5e1;
+  background: #fafaf9;
+}
+
+.weekDayActive {
+  background: #1e2430;
+  border-color: #1e2430;
+  box-shadow: 0 4px 12px rgba(30, 36, 48, 0.22);
+}
+
+.weekDayName {
+  font-size: 11px;
+  font-weight: 500;
+  color: #94a3b8;
+  margin-bottom: 2px;
+  text-transform: capitalize;
+}
+
+.weekDayActive .weekDayName {
+  color: #94a3b8;
+}
+
+.weekDayNum {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1;
+}
+
+.weekDayActive .weekDayNum {
+  color: #ffffff;
+}
+
+/* ──────────────── 3. MERGED MODE SELECTOR TABS ──────────────── */
+.modeTabsWrapper {
+  padding: 0 20px 14px;
+  width: 100%;
+}
+
+.modeTabs {
+  display: flex;
+  gap: 6px;
+  background: #f8fafc;
+  padding: 4px;
+  border-radius: 16px;
+  border: 1px solid #f1f5f9;
+}
+
+.modeTab {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.modeTabActive {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+/* ──────────────── 4. CATEGORY CHIPS ──────────────── */
+.categoryChips {
+  display: flex;
+  gap: 8px;
+  padding: 0 20px 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  width: 100%;
+}
+
+.categoryChips::-webkit-scrollbar {
+  display: none;
+}
+
+.categoryChip {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.categoryChip:hover:not(.categoryChipActive) {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.categoryChipActive {
+  background: #1e2430;
+  border-color: #1e2430;
+  color: #ffffff;
+}
+
+/* ──────────────── 5. REVISE BANNER ──────────────── */
+.reviseBanner {
+  margin: 0 20px 18px;
+  padding: 13px 18px;
+  border-radius: 16px;
+  background: #eef2ff;
+  border: 1px solid #e0e7ff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.reviseBanner:hover {
+  background: #e0e7ff;
+  transform: translateY(-1px);
+}
+
+.reviseBannerLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #4338ca;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.reviseBannerIcon {
+  width: 22px;
+  height: 22px;
+  color: #4f46e5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reviseBannerArrow {
+  color: #4f46e5;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* ──────────────── 6. STORY CARDS FEED ──────────────── */
+.storyList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 20px 40px;
+  width: 100%;
+}
+
+.storyCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid #ece8da;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  position: relative;
+}
+
+.storyCard:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+  transform: translateY(-1px);
+}
+
+.categoryIconBadge {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.storyContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.storyHeadline {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.35;
+  margin: 0 0 6px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.storySummary {
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.4;
+  margin: 0 0 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.storyMetaRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.metaSeparator {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background-color: #cbd5e1;
+}
+
+.bookmarkBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  color: #94a3b8;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  margin-left: 2px;
+}
+
+.bookmarkBtn:hover {
+  background: #f1f5f9;
+  color: #4f46e5;
+}
+
+.bookmarkBtnActive {
+  color: #4f46e5;
+}
+
+/* ──────────────── 7. ONE-LINERS TAB FEED ──────────────── */
+.oneLinerCard {
+  border: 1px solid #ece8da;
+  border-radius: 18px;
+  padding: 16px 18px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease;
+}
+
+.oneLinerCard:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.oneLinerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.oneLinerBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.oneLinerHeadline {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.oneLinerHighlight {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #78350f;
+  line-height: 1.5;
+}
+
+.oneLinerFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 4px;
+}
+
+.oneLinerReviseBtn {
+  border: none;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: background 0.15s ease;
+}
+
+.oneLinerReviseBtn:hover {
+  background: #e0e7ff;
+}
+
+/* ──────────────── 8. DAILY QUIZ TAB FEED ──────────────── */
+.quizCard {
+  border: 1px solid #ece8da;
+  border-radius: 20px;
+  padding: 18px 20px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  margin-bottom: 14px;
+}
+
+.quizCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.quizQuestionNum {
+  font-size: 12px;
+  font-weight: 700;
+  color: #4f46e5;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.quizScoreBadge {
+  font-size: 12px;
+  font-weight: 700;
+  color: #059669;
+  background: #ecfdf5;
+  padding: 3px 10px;
+  border-radius: 12px;
+}
+
+.quizQuestionText {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.45;
+  margin: 0 0 16px;
+}
+
+.quizOptionsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quizOptionBtn {
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.quizOptionBtn:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.quizOptionBtnCorrect {
+  background: #ecfdf5 !important;
+  border-color: #10b981 !important;
+  color: #065f46 !important;
+  font-weight: 600;
+}
+
+.quizOptionBtnIncorrect {
+  background: #fef2f2 !important;
+  border-color: #ef4444 !important;
+  color: #991b1b !important;
+}
+
+.quizOptionLetter {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  background: #e2e8f0;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.quizOptionBtnCorrect .quizOptionLetter {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.quizOptionBtnIncorrect .quizOptionLetter {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.quizExplanation {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  font-size: 12px;
+  color: #166534;
+  line-height: 1.5;
+  margin-top: 12px;
+}
+
+/* ──────────────── 9. SCREEN 2: STORY READER ──────────────── */
+.readerContainer {
+  width: 100%;
+  max-width: 580px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background-color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.readerHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px 12px;
+  position: sticky;
+  top: 0;
+  background: #ffffff;
+  z-index: 20;
+}
+
+.readerBackBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.readerBackBtn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.readerHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.readerActionBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.readerActionBtn:hover {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.readerActionBtnActive {
+  color: #4f46e5;
+  border-color: #c7d2fe;
+  background: #eef2ff;
+}
+
+.readerContent {
+  padding: 12px 20px 110px;
+  flex: 1;
+}
+
+.readerMetaRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.readerCategoryPill {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.readerDate {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.readerTitle {
+  font-size: 24px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.3;
+  margin: 0 0 20px;
+  letter-spacing: -0.4px;
+}
+
+/* Key Points Soft Cream Card */
+.keyPointsBox {
+  background: #fffdf0;
+  border: 1px solid #fde68a;
+  border-radius: 18px;
+  padding: 18px 20px;
+  margin-bottom: 24px;
+}
+
+.keyPointsTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: #92400e;
+  margin: 0 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.keyPointsList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.keyPointItem {
+  font-size: 14px;
+  color: #78350f;
+  line-height: 1.5;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.keyPointBullet {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #d97706;
+  margin-top: 7px;
+  flex-shrink: 0;
+}
+
+.readerArticle {
+  font-size: 15px;
+  line-height: 1.75;
+  color: #334155;
+}
+
+.readerArticle p {
+  margin: 0 0 16px;
+}
+
+.readerStickyBottom {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px 20px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.96) 35%, #ffffff 100%);
+  display: flex;
+  justify-content: center;
+  z-index: 40;
+}
+
+.reviseFlashcardsBtn {
+  width: 100%;
+  max-width: 540px;
+  height: 52px;
+  border-radius: 26px;
+  background: #4f46e5;
+  color: #ffffff;
+  border: none;
+  font-size: 15px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.35);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.reviseFlashcardsBtn:hover {
+  background: #4338ca;
+  transform: translateY(-1px);
+}
+
+/* ──────────────── 10. SCREEN 3: REVISE AS FLASHCARDS ──────────────── */
+.flashcardsWrapper {
+  width: 100%;
+  max-width: 540px;
+  margin: 0 auto;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 14px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+  position: relative;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.flashcardsTopBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.flashcardsCloseBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  border: none;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.flashcardsCloseBtn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.flashcardsDeckTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  text-align: center;
+  max-width: 280px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.flashcardsCounter {
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+  min-width: 36px;
+  text-align: right;
+}
+
+.progressBar {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+  margin: 4px 0 16px;
+}
+
+.progressSegment {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: #e2e8f0;
+  transition: background 0.3s ease;
+}
+
+.progressSegmentActive {
+  background: #4f46e5;
+}
+
+/* Flashcard Front Face */
+.fcFront {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 22px;
+  text-align: left;
+}
+
+.fcCategoryRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fcCategoryText {
+  font-size: 13px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.fcSource {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 500;
+  margin-top: 10px;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.fcMainText {
+  font-size: 19px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.45;
+  margin: auto 0;
+}
+
+.fcHint {
+  font-size: 12px;
+  color: #94a3b8;
+  text-align: center;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* Flashcard Back Face */
+.fcBack {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 22px;
+  text-align: left;
+  background: #fafaf9;
+}
+
+.fcBackCategory {
+  font-size: 11px;
+  font-weight: 700;
+  color: #4f46e5;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.fcBackBody {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #334155;
+  margin: auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fcBackExamBox {
+  background: #fffdf0;
+  border: 1px solid #fde68a;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: #92400e;
+  font-weight: 600;
+}
+
+/* Bottom Controls */
+.fcControls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.fcRoundBtn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.fcRoundBtn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.fcFavActive {
+  color: #ef4444 !important;
+  border-color: #fecdd3 !important;
+  background: #fff1f2 !important;
+}
+
+.fcNextBtn {
+  flex: 1;
+  height: 48px;
+  border-radius: 24px;
+  background: #4f46e5;
+  color: #ffffff;
+  border: none;
+  font-size: 15px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 3px 12px rgba(79, 70, 229, 0.3);
+  transition: all 0.15s ease;
+}
+
+.fcNextBtn:hover {
+  background: #4338ca;
+  transform: translateY(-1px);
+}
+
+/* Empty State / Loading */
+.emptyState {
+  padding: 48px 20px;
+  text-align: center;
+  color: #64748b;
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.emptyStateTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.skeletonCard {
+  border-radius: 18px;
+  border: 1px solid #ece8da;
+  padding: 18px;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  height: 100px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (max-width: 480px) {
+  .pageTitle {
+    font-size: 22px;
+  }
+  .weekDay {
+    height: 60px;
+  }
+  .weekDayNum {
+    font-size: 15px;
+  }
+}

@@ -1,0 +1,291 @@
+/* FlashDeck transitions: flip, fly-out, deck advance, settle, enter-left */
+
+.fd-deck-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 10px 0 6px 0;
+  box-sizing: border-box;
+  overflow: visible;
+  position: relative;
+}
+
+.fd-deck {
+  position: relative;
+  width: 100%;
+  height: clamp(290px, 44dvh, 390px);
+  margin: 0 38px;
+  outline: none;
+  overflow: visible;
+}
+
+/* ---------- deck layers behind the card ---------- */
+.fd-peek,
+.fd-card {
+  position: absolute;
+  inset: 0;
+  border-radius: 28px;
+}
+
+.fd-peek {
+  transition: transform 0.68s cubic-bezier(0.25, 0.9, 0.35, 1),
+    background-color 0.68s ease;
+  pointer-events: none;
+}
+.fd-peek--2 { 
+  background: #d9d6ff; 
+  transform: rotate(-3deg); 
+  z-index: 1;
+  box-shadow: 0 8px 20px rgba(31, 36, 48, 0.08);
+}
+.fd-peek--1 { 
+  background: #ffd9c7; 
+  transform: rotate(4deg); 
+  z-index: 2;
+  box-shadow: 0 10px 24px rgba(31, 36, 48, 0.1);
+}
+
+/* while the top card flies away, the deck steps forward one place */
+.fd-deck.is-advancing .fd-peek--1 { background: #fff; transform: rotate(-1deg); }
+.fd-deck.is-advancing .fd-peek--2 { background: #ffd9c7; transform: rotate(4deg); }
+
+/* ---------- the top card ---------- */
+.fd-card {
+  background: #fff;
+  border: 1px solid #ece8da;
+  box-shadow: 0 14px 30px rgba(31, 36, 48, 0.14);
+  transform: rotate(-1deg);
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+  z-index: 3;
+  /* smooth, gentle spring back after a short drag */
+  transition: transform 0.52s cubic-bezier(0.25, 1, 0.4, 1),
+    background-color 0.4s ease,
+    border-color 0.4s ease,
+    box-shadow 0.4s ease;
+}
+.fd-card.is-dragging { 
+  cursor: grabbing; 
+  transition: none !important;
+}
+
+/* Flying out state during swipe or next: smooth, graceful, and natural glide */
+.fd-card.is-flying-right {
+  transform: translate(114%, 8px) rotate(12deg) !important;
+  opacity: 0;
+  transition: transform 0.68s cubic-bezier(0.25, 0.9, 0.35, 1), opacity 0.58s ease-out !important;
+}
+.fd-card.is-flying-left {
+  transform: translate(-114%, 8px) rotate(-12deg) !important;
+  opacity: 0;
+  transition: transform 0.68s cubic-bezier(0.25, 0.9, 0.35, 1), opacity 0.58s ease-out !important;
+}
+
+/* new card after "Next": it grows into place with a subtle, gentle settle */
+.fd-card.enter-settle {
+  animation: fd-settle 0.58s cubic-bezier(0.25, 1, 0.4, 1);
+}
+/* new card after "Back": it slides in smoothly from the left like a returned card */
+.fd-card.enter-left {
+  animation: fd-in-left 0.72s cubic-bezier(0.22, 0.9, 0.32, 1);
+}
+
+@keyframes fd-settle {
+  from { transform: rotate(-1deg) scale(0.985); opacity: 0.9; }
+  to   { transform: rotate(-1deg) scale(1); opacity: 1; }
+}
+@keyframes fd-in-left {
+  from { transform: translateX(-104%) rotate(-7deg); opacity: 0.3; }
+  to   { transform: rotate(-1deg) translateX(0); opacity: 1; }
+}
+
+/* ---------- 3D flip ---------- */
+.fd-lift { 
+  width: 100%; 
+  height: 100%; 
+  perspective: 1100px; 
+}
+
+.fd-flip {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.62s cubic-bezier(0.34, 1.3, 0.5, 1);
+}
+.fd-flip.is-flipped { transform: rotateY(180deg); }
+
+.fd-face {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  border-radius: 28px;
+  overflow: hidden;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: #FFFFFF;
+  transition: background-color 0.4s ease, border-color 0.4s ease;
+}
+.fd-back { transform: rotateY(180deg); }
+
+/* Ensure children float over ambient decorations */
+.fd-face > *:not(.fd-decorations) {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------- True/False Answer Background Color Fill ---------- */
+.fd-card.card-bg-correct,
+.fd-card.card-bg-correct .fd-face {
+  background-color: #ECFDF5 !important;
+  border-color: #6EE7B7 !important;
+  box-shadow: 0 14px 30px rgba(16, 185, 129, 0.18) !important;
+}
+
+.fd-card.card-bg-incorrect,
+.fd-card.card-bg-incorrect .fd-face {
+  background-color: #FFF1F2 !important;
+  border-color: #FCA5A5 !important;
+  box-shadow: 0 14px 30px rgba(244, 63, 94, 0.18) !important;
+}
+
+/* True/False Answer Pulse Flash */
+.fd-card.flash-correct {
+  animation: fd-flash-green 0.5s ease-out;
+}
+.fd-card.flash-incorrect {
+  animation: fd-flash-red 0.5s ease-out;
+}
+
+@keyframes fd-flash-green {
+  0% { box-shadow: 0 0 0 5px #10B981, 0 14px 30px rgba(16, 185, 129, 0.3); }
+  100% { box-shadow: 0 14px 30px rgba(31, 36, 48, 0.14); }
+}
+@keyframes fd-flash-red {
+  0% { box-shadow: 0 0 0 5px #F43F5E, 0 14px 30px rgba(244, 63, 94, 0.3); }
+  100% { box-shadow: 0 14px 30px rgba(31, 36, 48, 0.14); }
+}
+
+/* ---------- Ambient Card Decorations: Clouds, Sparkles, Blinking Stars ---------- */
+.fd-decorations {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: 28px;
+  z-index: 0;
+}
+
+/* Floating Clouds */
+.fd-decor-cloud {
+  position: absolute;
+  pointer-events: none;
+}
+.fd-decor-cloud-1 {
+  top: 14px;
+  right: 12px;
+  animation: fd-cloud-drift 8s ease-in-out infinite alternate;
+}
+.fd-decor-cloud-2 {
+  bottom: 24px;
+  left: 12px;
+  animation: fd-cloud-drift 10s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes fd-cloud-drift {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(8px); }
+}
+
+/* Twinkling Sparkles */
+.fd-sparkle {
+  position: absolute;
+  pointer-events: none;
+}
+.fd-sparkle-1 {
+  top: 18px;
+  right: 56px;
+  animation: fd-sparkle-twinkle 3.2s ease-in-out infinite;
+}
+.fd-sparkle-2 {
+  top: 45%;
+  left: 14px;
+  animation: fd-sparkle-twinkle 3.8s ease-in-out infinite 1.2s;
+}
+.fd-sparkle-3 {
+  bottom: 22px;
+  right: 18px;
+  animation: fd-sparkle-twinkle 4.2s ease-in-out infinite 2.1s;
+}
+
+@keyframes fd-sparkle-twinkle {
+  0%, 100% {
+    transform: scale(0.65) rotate(0deg);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.15) rotate(16deg);
+    opacity: 1;
+    filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.45));
+  }
+}
+
+/* Blinking Mini Star Dots */
+.fd-blink-dot {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: #818CF8;
+  pointer-events: none;
+}
+.fd-blink-dot-1 {
+  top: 36%;
+  right: 20px;
+  animation: fd-star-blink 2.4s ease-in-out infinite;
+}
+.fd-blink-dot-2 {
+  top: 68%;
+  left: 20px;
+  background-color: #F59E0B;
+  animation: fd-star-blink 3s ease-in-out infinite 1s;
+}
+.fd-blink-dot-3 {
+  top: 22%;
+  left: 68px;
+  background-color: #10B981;
+  animation: fd-star-blink 2.8s ease-in-out infinite 1.8s;
+}
+
+@keyframes fd-star-blink {
+  0%, 100% {
+    transform: scale(0.5);
+    opacity: 0.15;
+  }
+  50% {
+    transform: scale(1.4);
+    opacity: 0.9;
+    box-shadow: 0 0 6px currentColor;
+  }
+}
+
+/* ---------- accessibility ---------- */
+.fd-deck:focus-visible .fd-card { 
+  box-shadow: 0 0 0 3px #4f46e5, 0 14px 30px rgba(31, 36, 48, 0.14); 
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fd-peek, .fd-card, .fd-flip { transition-duration: 0.01ms !important; }
+  .fd-card.enter-settle, .fd-card.enter-left { animation: none; }
+  .fd-sparkle, .fd-blink-dot, .fd-decor-cloud { animation: none !important; }
+}

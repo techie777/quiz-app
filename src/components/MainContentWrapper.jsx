@@ -21,7 +21,9 @@ export default function MainContentWrapper({ children }) {
   const isAdmin = pathname?.startsWith("/admin");
   const isArena = pathname?.startsWith("/arena");
 
-  const hasBottomNav = !isUnsetLanding && !isQuizPlaying && !isTimedExam && !isAdmin && !isArena;
+  const isFlashcardRoute = pathname?.startsWith("/fun-facts") || pathname?.startsWith("/true-false");
+
+  const hasBottomNav = !isUnsetLanding && !isQuizPlaying && !isTimedExam && !isAdmin && !isArena && !isFlashcardRoute;
 
   return (
     <main

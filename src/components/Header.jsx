@@ -31,7 +31,9 @@ export default function Header() {
   };
 
   const isQuizOrExamRoute = pathname?.startsWith("/quiz/") || pathname?.includes("/mock-tests/paper/") || pathname?.startsWith("/live/");
-  if (pathname?.startsWith("/admin") || isQuizOrExamRoute) return null;
+  const isFlashcardRoute = pathname?.startsWith("/fun-facts") || pathname?.startsWith("/true-false");
+  const isCurrentAffairsRoute = pathname?.startsWith("/daily-current-affairs") || pathname?.startsWith("/current-affairs");
+  if (!isMounted || pathname?.startsWith("/admin") || isQuizOrExamRoute || isFlashcardRoute || isCurrentAffairsRoute) return null;
 
   return (
     <header className={styles.header}>

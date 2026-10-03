@@ -1,330 +1,519 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
-import Link from "next/link";
-import { useLanguage } from "@/context/LanguageContext";
-import { Sparkles, ArrowRight, Rocket, LayoutGrid, List } from "lucide-react";
-import { highlightFactText } from "@/lib/textUtils";
-import styles from "@/styles/FunFacts.module.css";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { ArrowLeft, ArrowRight, Heart } from "lucide-react";
+import styles from "@/styles/Flashcards.module.css";
+import FlashcardHeader from "@/components/flashcards/FlashcardHeader";
+import CategorySheet from "@/components/flashcards/CategorySheet";
+import FlashDeck from "@/components/flashcards/FlashDeck";
+import { CategoryIllustration } from "@/components/flashcards/CategorySVGs";
+import { getCategoryBadgeIcon } from "@/components/flashcards/CategoryIcons";
 
-export default function FunFactsHub() {
-  const { t, language: globalAppLang } = useLanguage();
+const SESSION_LIMIT = 20;
+
+export default function FunFactsPage() {
+  // Global & Persisted Preferences
+  const [language, setLanguage] = useState("EN"); // "EN" or "HI"
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
+  const [mode, setMode] = useState("all"); // "all", "random", "daily"
+  const [isCategorySheetOpen, setIsCategorySheetOpen] = useState(false);
+  const [isFavoritesOnly, setIsFavoritesOnly] = useState(false);
+
+  // Deck & State
+  const [deck, setDeck] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [reviewedCount, setReviewedCount] = useState(0);
+  const [isSessionComplete, setIsSessionComplete] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Categories list
   const [categories, setCategories] = useState([]);
-  const [loadingCats, setLoadingCats] = useState(true);
-  
-  // Navigation & Preferences
-  const [activeTab, setActiveTab] = useState("all"); // all, trending, daily, favorites
-  const [globalLang, setGlobalLang] = useState(globalAppLang.toUpperCase());
-  const [readMode, setReadMode] = useState("image"); // image, text
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchInput, setSearchInput] = useState("");
-  
-  // Wall state
-  const [facts, setFacts] = useState([]);
+
+  // Favourites stored in localStorage (set of fact IDs)
+  const [favoriteIds, setFavoriteIds] = useState(new Set());
+
+  // Prefetch tracking
   const [page, setPage] = useState(1);
-  const [loadingFacts, setLoadingFacts] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [selectedCats, setSelectedCats] = useState([]);
-  const [requestSeed, setRequestSeed] = useState(Date.now().toString());
+  const [isFetchingBatch, setIsFetchingBatch] = useState(false);
 
-  const refreshSeed = () => {
-    setRequestSeed(Date.now().toString());
-    setPage(1); setFacts([]); setHasMore(true);
-  };
+  // Long-press timer ref for Favourite button
+  const longPressTimerRef = useRef(null);
 
-  // Initialization
+  // 1. Initial Load of Persisted Preferences & Categories
   useEffect(() => {
-    const savedLang = localStorage.getItem("factLang") || globalAppLang.toUpperCase();
-    const savedMode = localStorage.getItem("factReadMode") || "image";
-    setGlobalLang(savedLang);
-    setReadMode(savedMode);
-    
+    if (typeof window !== "undefined") {
+      const savedLang = localStorage.getItem("quizweb_flashcard_lang") || "EN";
+      setLanguage(savedLang);
+
+      try {
+        const savedCatIds = JSON.parse(localStorage.getItem("quizweb_fact_catIds") || "[]");
+        if (Array.isArray(savedCatIds)) {
+          setSelectedCategoryIds(savedCatIds);
+        }
+      } catch (e) {
+        const singleCat = localStorage.getItem("quizweb_fact_catId");
+        if (singleCat && singleCat !== "null") {
+          setSelectedCategoryIds([singleCat]);
+        }
+      }
+
+      const savedMode = localStorage.getItem("quizweb_fact_mode") || "all";
+      setMode(savedMode);
+
+      try {
+        const savedFavs = JSON.parse(localStorage.getItem("quizweb_fact_favs") || "[]");
+        setFavoriteIds(new Set(savedFavs));
+      } catch (e) {}
+    }
+
+    // Fetch categories
     fetch("/api/fun-facts/categories")
-      .then(res => res.json())
-      .then(data => {
-        setCategories(data.categories || []);
-        setLoadingCats(false);
-      });
+      .then((res) => res.json())
+      .then((data) => {
+        const cats = data.categories || [];
+        setCategories(cats);
+      })
+      .catch((err) => console.error("Error loading categories:", err));
   }, []);
 
-  // Sync with app-wide language if it changes
-  useEffect(() => {
-     setGlobalLang(globalAppLang.toUpperCase());
-  }, [globalAppLang]);
-
-  // Update URL preferences
-  const updatePref = (key, val, setter) => {
-    setter(val);
-    localStorage.setItem(key, val);
-  };
-
-  const toggleCategory = (catId) => {
-    setSelectedCats(prev => {
-      let next = prev.includes(catId) ? prev.filter(c => c !== catId) : [...prev, catId];
-      setPage(1); setFacts([]); setHasMore(true);
-      return next;
-    });
-  };
-
-  const handleTabSwitch = (tab) => {
-    if (activeTab === tab) {
-       refreshSeed();
-    } else {
-       setActiveTab(tab);
-       setPage(1); setFacts([]); setHasMore(true);
+  // Save language changes
+  const handleLanguageChange = (newLang) => {
+    setLanguage(newLang);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("quizweb_flashcard_lang", newLang);
     }
   };
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    setSearchQuery(searchInput);
-    setPage(1); setFacts([]); setHasMore(true);
-  };
+  // 2. Fetch Facts in Batches of 20 with Multi-Category Support
+  const fetchFactsBatch = useCallback(
+    async (pageNum, replace = false) => {
+      if (!replace && (isFetchingBatch || !hasMore)) return;
+      setIsFetchingBatch(true);
+      if (replace) setIsLoading(true);
 
-  const fetchFacts = async (pageNum, reset = false) => {
-    if (loadingFacts || (!hasMore && !reset)) return;
-    setLoadingFacts(true);
-    
-    try {
-      let url = `/api/fun-facts/list?page=${pageNum}&limit=12&tab=${activeTab}&seed=${requestSeed}`;
-      if (selectedCats.length > 0) url += `&categories=${selectedCats.join(",")}`;
-      if (searchQuery) url += `&q=${encodeURIComponent(searchQuery)}`;
-      
-      const res = await fetch(url);
-      const data = await res.json();
-      
-      if (res.ok) {
-        setFacts(prev => reset ? data.facts : [...prev, ...data.facts]);
-        setHasMore(data.pagination.page < data.pagination.totalPages);
+      try {
+        let url = `/api/fun-facts/list?page=${pageNum}&limit=20&tab=${isFavoritesOnly ? "favorites" : mode}`;
+        if (selectedCategoryIds.length > 0) {
+          url += `&categories=${selectedCategoryIds.join(",")}`;
+        }
+        if (mode === "random") {
+          url += `&seed=${Date.now()}`;
+        }
+
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (res.ok && data.facts) {
+          let incoming = data.facts.map((f) => ({
+            id: f.id,
+            categoryId: f.categoryId,
+            categoryName: f.categoryName || f.category?.name || "General",
+            categoryNameHi: f.categoryNameHi || f.category?.nameHi || "सामान्य",
+            textEn: f.textEn || f.description || "",
+            textHi: f.textHi || f.descriptionHi || f.textEn || f.description || "",
+            explanationEn: f.explanationEn || f.explanation || "",
+            explanationHi: f.explanationHi || "",
+            source: f.source || "",
+            illustrationKey: f.illustrationKey || f.category?.slug || f.category?.name?.toLowerCase() || "",
+            hasFavorited: f.hasFavorited || false,
+          }));
+
+          if (isFavoritesOnly) {
+            incoming = incoming.filter((f) => favoriteIds.has(f.id));
+          }
+
+          setDeck((prev) => (replace ? incoming : [...prev, ...incoming]));
+          setHasMore(data.pagination.page < data.pagination.totalPages);
+          setPage(pageNum);
+
+          if (replace) {
+            setCurrentIndex(0);
+            setIsFlipped(false);
+            setReviewedCount(0);
+            setIsSessionComplete(false);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch facts batch:", err);
+      } finally {
+        setIsFetchingBatch(false);
+        setIsLoading(false);
       }
-    } catch (err) { console.error(err); }
-    
-    setLoadingFacts(false);
+    },
+    [isFetchingBatch, hasMore, mode, selectedCategoryIds, isFavoritesOnly, favoriteIds]
+  );
+
+  // Reload deck on category, mode, or favorites-only change
+  useEffect(() => {
+    fetchFactsBatch(1, true);
+  }, [selectedCategoryIds, mode, isFavoritesOnly]);
+
+  // Prefetch next batch when 5 cards remain
+  useEffect(() => {
+    if (deck.length > 0 && deck.length - currentIndex <= 5 && hasMore && !isFetchingBatch) {
+      fetchFactsBatch(page + 1, false);
+    }
+  }, [currentIndex, deck.length, hasMore, isFetchingBatch, page, fetchFactsBatch]);
+
+  // Current Card
+  const currentCard = useMemo(() => {
+    if (deck.length === 0 || currentIndex >= deck.length) return null;
+    return deck[currentIndex];
+  }, [deck, currentIndex]);
+
+  // Check if current card is favorited
+  const isCurrentCardFavorited = useMemo(() => {
+    if (!currentCard) return false;
+    return favoriteIds.has(currentCard.id) || currentCard.hasFavorited;
+  }, [currentCard, favoriteIds]);
+
+  // Toggle Favourite
+  const toggleFavorite = () => {
+    if (!currentCard) return;
+    const cardId = currentCard.id;
+    setFavoriteIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(cardId)) {
+        next.delete(cardId);
+      } else {
+        next.add(cardId);
+      }
+      if (typeof window !== "undefined") {
+        localStorage.setItem("quizweb_fact_favs", JSON.stringify(Array.from(next)));
+      }
+      return next;
+    });
+
+    fetch("/api/fun-facts/interaction", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ factId: cardId, action: "favorite" }),
+    }).catch(() => {});
   };
 
-  // Trigger fetch on dependencies change
-  useEffect(() => {
-    fetchFacts(page, page === 1);
-  }, [activeTab, selectedCats, searchQuery, page, requestSeed]);
+  // Spaced Repetition Buttons: Again, Good, Easy (calls next() to fly away)
+  const handleSpacedRepetition = (rating, nextFn) => {
+    if (!currentCard) return;
+    const cardToReinsert = { ...currentCard };
 
-  const observer = useRef();
-  const lastFactElementRef = useCallback(node => {
-    if (loadingFacts) return;
-    if (observer.current) observer.current.disconnect();
-    observer.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore) setPage(prev => prev + 1);
+    setDeck((prevDeck) => {
+      const newDeck = [...prevDeck];
+      if (rating === "again") {
+        const targetIdx = Math.min(currentIndex + 4, newDeck.length);
+        newDeck.splice(targetIdx, 0, cardToReinsert);
+      } else if (rating === "good") {
+        const targetIdx = Math.min(currentIndex + 11, newDeck.length);
+        newDeck.splice(targetIdx, 0, cardToReinsert);
+      }
+      return newDeck;
     });
-    if (node) observer.current.observe(node);
-  }, [loadingFacts, hasMore]);
 
+    // Anki note: call next() so the card flies away after answer
+    if (nextFn) {
+      nextFn("right");
+    }
+  };
+
+  // Multi-Category selection handler
+  const handleSelectCategories = (catIds) => {
+    setSelectedCategoryIds(catIds);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("quizweb_fact_catIds", JSON.stringify(catIds));
+    }
+  };
+
+  // Mode selection handler
+  const handleSelectMode = (newMode) => {
+    setMode(newMode);
+    setIsFavoritesOnly(false);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("quizweb_fact_mode", newMode);
+    }
+  };
+
+  // Restart / Reset Session
+  const restartSession = () => {
+    fetchFactsBatch(1, true);
+  };
+
+  // Category title display in header
+  const categoryTitle = useMemo(() => {
+    if (isFavoritesOnly) return { en: "Favourites", hi: "पसंदीदा" };
+    if (selectedCategoryIds.length === 0) return { en: "All categories", hi: "सभी" };
+    if (selectedCategoryIds.length === 1) {
+      const cat = categories.find((c) => c.id === selectedCategoryIds[0]);
+      return {
+        en: cat ? cat.name : "Category",
+        hi: cat ? cat.nameHi || cat.name : "श्रेणी",
+      };
+    }
+    if (selectedCategoryIds.length === 2) {
+      const c1 = categories.find((c) => c.id === selectedCategoryIds[0]);
+      const c2 = categories.find((c) => c.id === selectedCategoryIds[1]);
+      return {
+        en: `${c1?.name || "Cat 1"}, ${c2?.name || "Cat 2"}`,
+        hi: `${c1?.nameHi || c1?.name || ""}, ${c2?.nameHi || c2?.name || ""}`,
+      };
+    }
+    return {
+      en: `${selectedCategoryIds.length} categories`,
+      hi: `${selectedCategoryIds.length} श्रेणियां`,
+    };
+  }, [selectedCategoryIds, categories, isFavoritesOnly]);
+
+  const progressText = `${Math.min(currentIndex + 1, SESSION_LIMIT)} / ${Math.min(
+    deck.length || SESSION_LIMIT,
+    SESSION_LIMIT
+  )}`;
+
+  const isHindi = language === "HI";
 
   return (
-    <div className={styles.page}>
-      <div className={styles.container}>
-        {/* Module Switcher: Fun Facts | True / False (Rule D3) */}
-        <div className="flex items-center gap-2 mb-5">
-          <Link
-            href="/fun-facts"
-            className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-indigo-600 text-white font-black text-xs shadow-sm shadow-indigo-500/20"
-          >
-            <Sparkles size={14} />
-            <span>{globalAppLang === "hi" ? "रोचक तथ्य (Fun Facts)" : "Fun Facts"}</span>
-          </Link>
-          <Link
-            href="/true-false"
-            className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-white border border-slate-200 text-slate-700 font-black text-xs hover:border-indigo-300 transition-all shadow-2xs"
-          >
-            <span>✓✗</span>
-            <span>{globalAppLang === "hi" ? "सही या गलत (True/False)" : "True / False"}</span>
-          </Link>
-        </div>
+    <div className={styles.pageContainer}>
+      {/* ──────────────── 2. SCREEN LAYOUT: HEADER ROWS ──────────────── */}
+      <FlashcardHeader
+        activeTab="facts"
+        language={language}
+        onLanguageChange={handleLanguageChange}
+        categoryName={categoryTitle.en}
+        categoryNameHi={categoryTitle.hi}
+        onOpenCategorySheet={() => setIsCategorySheetOpen(true)}
+        progressText={progressText}
+      />
 
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8 bg-white p-4 rounded-2xl shadow-sm border border-indigo-50">
-          <div className="flex gap-2 p-1 bg-indigo-50/50 border border-indigo-100 rounded-xl overflow-x-auto w-full md:w-auto">
-            {["all", "random", "trending", "daily", "favorites"].map(tab => (
-              <button 
-                key={tab}
-                onClick={() => handleTabSwitch(tab)}
-                className={`px-4 py-2 rounded-lg text-sm font-bold capitalize whitespace-nowrap transition-all ${activeTab === tab ? 'bg-indigo-600 text-white shadow-md' : 'text-indigo-600 hover:bg-indigo-100'}`}
+      {/* ──────────────── 3. FLASHDECK OR SESSION SUMMARY ──────────────── */}
+      {isSessionComplete ? (
+        <div className={styles.summaryContainer}>
+          <div className={styles.summaryCard}>
+            <div className={styles.cardBadge}>
+              <Heart size={22} color="#FFFFFF" />
+            </div>
+            <h2 style={{ fontSize: "22px", fontWeight: "700", margin: 0 }}>
+              {isHindi ? "सत्र पूर्ण!" : "Session Complete!"}
+            </h2>
+            <p style={{ color: "#5B6070", fontSize: "15px", margin: 0 }}>
+              {isHindi
+                ? `आपने ${reviewedCount} तथ्य सफलतापूर्वक पढ़े हैं।`
+                : `You reviewed ${reviewedCount} facts in this session.`}
+            </p>
+            <div style={{ display: "flex", gap: "10px", width: "100%", marginTop: "12px" }}>
+              <button
+                type="button"
+                className={styles.primaryNextBtn}
+                style={{ flex: 1 }}
+                onClick={restartSession}
               >
-                {t(`facts.tabs.${tab}`)}
+                {isHindi ? "फिर से खेलें" : "Play again"}
               </button>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-4 w-full md:w-auto">
-            <form onSubmit={handleSearch} className="flex-grow">
-              <input 
-                type="text" 
-                placeholder={t('facts.search')} 
-                value={searchInput}
-                onChange={e => setSearchInput(e.target.value)}
-                className="w-full px-4 py-2 border border-indigo-200 rounded-xl outline-none focus:border-indigo-500 text-sm focus:ring-2 focus:ring-indigo-200 transition-all"
-              />
-            </form>
-            <div className="flex gap-1 p-1 bg-indigo-50 border border-indigo-100 rounded-xl shadow-inner">
-              <button onClick={() => updatePref('factLang', 'EN', setGlobalLang)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${globalLang === 'EN' ? 'bg-white text-indigo-700 shadow flex items-center justify-center' : 'text-slate-500'}`}>EN</button>
-              <button onClick={() => updatePref('factLang', 'HI', setGlobalLang)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${globalLang === 'HI' ? 'bg-white text-indigo-700 shadow flex items-center justify-center' : 'text-slate-500'}`}>HI</button>
-            </div>
-            <div className="flex gap-1 p-1 bg-indigo-50 border border-indigo-100 rounded-xl shadow-inner hidden md:flex">
-                <button onClick={() => updatePref('factReadMode', 'image', setReadMode)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${readMode === 'image' ? 'bg-white text-indigo-700 shadow' : 'text-slate-500'}`}>{t('facts.view.image')}</button>
-                <button onClick={() => updatePref('factReadMode', 'text', setReadMode)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${readMode === 'text' ? 'bg-white text-indigo-700 shadow' : 'text-slate-500'}`}>{t('facts.view.text')}</button>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <div className={styles.categoryFilterScroll}>
-            <div 
-              onClick={() => { setSelectedCats([]); setPage(1); setFacts([]); setHasMore(true); }}
-              className={`${styles.filterChip} ${selectedCats.length === 0 ? styles.filterChipActive : ''}`}
-            >
-              {t('facts.categories')}
-            </div>
-            {categories.map(cat => (
-              <div 
-                key={cat.id}
-                onClick={() => toggleCategory(cat.id)}
-                className={`${styles.filterChip} ${selectedCats.includes(cat.id) ? styles.filterChipActive : ''}`}
+              <button
+                type="button"
+                className={styles.roundControlBtn}
+                style={{ width: "auto", padding: "0 18px", borderRadius: "9999px" }}
+                onClick={() => setIsCategorySheetOpen(true)}
               >
-                {globalAppLang === 'hi' && cat.nameHi ? cat.nameHi : cat.name}
-              </div>
-            ))}
-          </div>
-
-          <div className={styles.wallGrid}>
-            {facts.map((fact, index) => (
-              <WallFactCard 
-                key={fact.id + index}
-                fact={fact}
-                index={index}
-                isLast={facts.length === index + 1}
-                lastFactElementRef={lastFactElementRef}
-                globalLang={globalLang}
-                readMode={readMode}
-                highlightFactText={highlightFactText}
-              />
-            ))}
-          </div>
-
-             {loadingFacts && (
-               <div className="flex justify-center mt-8">
-                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
-               </div>
-             )}
-             
-             {!loadingFacts && facts.length === 0 && (
-               <div className="text-center py-12 text-slate-500 font-medium">
-                 {t('facts.empty')}
-               </div>
-             )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function WallFactCard({ fact, index, isLast, lastFactElementRef, globalLang, readMode, highlightFactText }) {
-  const [isHidden, setIsHidden] = useState(false);
-  const [localLang, setLocalLang] = useState(globalLang);
-  
-  // Sync with global choice but allow local override
-  useEffect(() => {
-    setLocalLang(globalLang);
-  }, [globalLang]);
-
-  const displayText = localLang === "HI" && fact.descriptionHi ? fact.descriptionHi : fact.description;
-  const effectiveImg = fact.image || fact.category?.image;
-  const hasImg = effectiveImg && readMode === "image";
-
-  return (
-    <div className="relative group">
-       <Link href={`/fun-facts/read/${fact.id}`}>
-          <div 
-            ref={isLast ? lastFactElementRef : null} 
-            className={`${styles.wallFactCard} hover:-translate-y-1 transition-all cursor-pointer relative border border-white/10 overflow-hidden ring-1 ring-white/5`}
-            style={{ borderRadius: '1.5rem' }}
-          >
-            <div 
-              className={styles.wallFactText}
-              style={hasImg ? { 
-                backgroundImage: isHidden ? `url('${effectiveImg}')` : `linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.5) 50%, rgba(0, 0, 0, 0.2) 100%), url('${effectiveImg}')`, 
-                backgroundSize: 'cover', 
-                backgroundPosition: 'center', 
-                color: 'white', 
-                minHeight: '350px', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                justifyContent: 'flex-end', 
-                textShadow: isHidden ? 'none' : '0 1px 1px #000, 0 4px 12px rgba(0,0,0,0.8)'
-              } : {
-                background: 'linear-gradient(135deg, #1e293b 0%, #020617 100%)',
-                minHeight: '200px',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                color: '#f8fafc'
-              }}
-            >
-              <div className={`${styles.quoteWrapper} transition-all duration-500 ${isHidden ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
-                <span className={styles.quoteMark}>“</span>
-                <div className={`${styles.bigFactText} ${hasImg ? 'text-lg md:text-xl' : ''}`}>
-                  {highlightFactText(displayText, hasImg ? true : false)}
-                </div>
-                <span className={styles.quoteMarkEnd}>”</span>
-              </div>
-              
-              <div className={`mt-6 text-xs font-bold uppercase flex items-center justify-between gap-2 transition-opacity duration-500 ${hasImg ? 'text-amber-400' : 'text-indigo-500'} ${isHidden ? 'opacity-0' : 'opacity-100'}`}>
-                 <div className="flex items-center gap-1"><span>•</span> {fact.category?.name}</div>
-                 <div className={styles.factStats + (hasImg ? ' text-white' : '')}>
-                   <span className={styles.statItem}>
-                     <span className={styles.statEmoji}>❤️</span>
-                     {(fact._count?.likes || 0) + (fact.hasLiked ? 1 : 0)}
-                   </span>
-                   <span className={styles.statItem}>
-                     <span className={styles.statEmoji}>💬</span>
-                     {fact._count?.comments || 0}
-                   </span>
-                 </div>
-              </div>
+                {isHindi ? "श्रेणी बदलें" : "Change category"}
+              </button>
             </div>
           </div>
-       </Link>
+        </div>
+      ) : (
+        <FlashDeck
+          cards={deck}
+          currentIndex={currentIndex}
+          onIndexChange={(nextIdx) => {
+            if (nextIdx >= SESSION_LIMIT || nextIdx >= deck.length) {
+              setReviewedCount((c) => c + 1);
+              setIsSessionComplete(true);
+            } else {
+              setReviewedCount((c) => c + 1);
+              setCurrentIndex(nextIdx);
+            }
+          }}
+          isFlipped={isFlipped}
+          onFlipChange={setIsFlipped}
+          renderFront={(card) => (
+            <>
+              {/* Top row with Heart in top-right */}
+              <div className={styles.cardTopRow}>
+                <div className={`${styles.cardBadge} ${styles.badgePop}`}>
+                  {getCategoryBadgeIcon(card?.categoryName, 18)}
+                </div>
+                <div className={styles.cardCategoryTitle}>
+                  {isHindi
+                    ? card?.categoryNameHi || card?.categoryName || "तथ्य"
+                    : card?.categoryName || "Military"}
+                </div>
+                <button
+                  type="button"
+                  className={styles.cardTopRightHeartBtn}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleFavorite();
+                  }}
+                  aria-label={isCurrentCardFavorited ? "Remove from favourites" : "Add to favourites"}
+                >
+                  <Heart
+                    size={20}
+                    fill={isCurrentCardFavorited ? "#E11D48" : "none"}
+                    color={isCurrentCardFavorited ? "#E11D48" : "#94A3B8"}
+                    strokeWidth={2}
+                  />
+                </button>
+              </div>
 
-       {/* Top Right Action Group */}
-       {hasImg && (
-         <div className="absolute top-4 right-4 z-20 flex gap-2">
-           {/* Language Toggle */}
-           <button 
-             onClick={(e) => {
-               e.preventDefault();
-               e.stopPropagation();
-               setLocalLang(localLang === "HI" ? "EN" : "HI");
-             }}
-             className="bg-black/40 hover:bg-black/60 backdrop-blur-md text-[10px] font-black text-white px-2.5 py-1.5 rounded-lg transition-all border border-white/10 shadow-lg tracking-widest"
-             title="Toggle Local Language"
-           >
-             {localLang === "HI" ? "HI" : "EN"}
-           </button>
+              {/* Illustration Area with float & pop */}
+              <div className={`${styles.cardIllustrationArea} ${styles.illustrationAnimated}`}>
+                <CategoryIllustration
+                  categoryName={card?.categoryName}
+                  illustrationKey={card?.illustrationKey}
+                />
+              </div>
 
-           {/* Eye Toggle */}
-           <button 
-             onClick={(e) => {
-               e.preventDefault();
-               e.stopPropagation();
-               setIsHidden(!isHidden);
-             }}
-             className="bg-black/40 hover:bg-black/60 backdrop-blur-md text-white/80 hover:text-white p-2 rounded-full transition-all border border-white/10 shadow-lg"
-             title={isHidden ? "Show Text" : "Hide Text"}
-           >
-             {isHidden ? (
-               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-             ) : (
-               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9.88 9.88 1.39 1.39"/><path d="M2 12s3-7 10-7a6.38 6.38 0 0 1 5.35 2.81"/><path d="M10.46 10.46a2.19 2.19 0 0 0 3.08 3.08"/><path d="M22 12s-3 7-10 7a6.83 6.83 0 0 1-5.65-3.04"/><path d="m22.61 22.61-8.72-8.72"/></svg>
-             )}
-           </button>
-         </div>
-       )}
+              {/* Bottom Text with Fade & Slide Up Reveal */}
+              <div className={styles.cardBottomContent}>
+                <p
+                  key={`text-${card?.id}-${language}`}
+                  className={`${styles.cardMainText} ${styles.textAnimated} ${
+                    isHindi ? styles.hindiText : ""
+                  }`}
+                >
+                  {isHindi
+                    ? card?.textHi || card?.textEn || "लोड हो रहा है..."
+                    : card?.textEn || "Loading fact..."}
+                </p>
+                <p className={styles.cardFlipHint}>
+                  {isHindi ? "पलटने के लिए कार्ड पर टैप करें" : "Tap card to flip"}
+                </p>
+              </div>
+            </>
+          )}
+          renderBack={(card) => (
+            <>
+              {/* Top row with Heart in top-right */}
+              <div className={styles.cardTopRow}>
+                <div className={styles.cardBadge}>
+                  {getCategoryBadgeIcon(card?.categoryName, 18)}
+                </div>
+                <div className={styles.cardCategoryTitle}>
+                  {isHindi ? "और जानें" : "Know more"}
+                </div>
+                <button
+                  type="button"
+                  className={styles.cardTopRightHeartBtn}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleFavorite();
+                  }}
+                  aria-label={isCurrentCardFavorited ? "Remove from favourites" : "Add to favourites"}
+                >
+                  <Heart
+                    size={20}
+                    fill={isCurrentCardFavorited ? "#E11D48" : "none"}
+                    color={isCurrentCardFavorited ? "#E11D48" : "#94A3B8"}
+                    strokeWidth={2}
+                  />
+                </button>
+              </div>
+
+              {/* Back content: English & Hindi explanations, source */}
+              <div className={`${styles.backContentScrollable} ${styles.textAnimated}`}>
+                <span className={styles.knowMoreLabel}>KNOW MORE</span>
+
+                {/* English Explanation */}
+                {card?.explanationEn ? (
+                  <p className={styles.explanationEn}>{card.explanationEn}</p>
+                ) : (
+                  <p className={styles.explanationEn}>
+                    {card?.textEn}
+                  </p>
+                )}
+
+                {/* Hindi Explanation in #EEF1FF box */}
+                {(card?.explanationHi || card?.textHi) && (
+                  <div className={styles.explanationHiBox}>
+                    {card.explanationHi || card.textHi}
+                  </div>
+                )}
+              </div>
+
+              {/* Bottom Source */}
+              <p className={styles.sourceText}>
+                Source: {card?.source || "[add source]"}
+              </p>
+            </>
+          )}
+          controls={({ next, prev, isFlipped }) => (
+            <div className={styles.controlsSection}>
+              {!isFlipped ? (
+                /* Front side controls: Sleek small Back & Next buttons */
+                <>
+                  <button
+                    type="button"
+                    className={styles.smallBackBtn}
+                    onClick={() => prev()}
+                    disabled={currentIndex === 0}
+                    aria-label="Previous card"
+                  >
+                    <ArrowLeft size={18} />
+                  </button>
+
+                  <button
+                    type="button"
+                    className={styles.smallNextBtn}
+                    onClick={() => next("right")}
+                    aria-label="Next card"
+                  >
+                    <span>{isHindi ? "आगे" : "Next"}</span>
+                    <ArrowRight size={16} />
+                  </button>
+                </>
+              ) : (
+                /* Back side controls: Again, Good, Easy (Anki spaced repetition) */
+                <div className={styles.ankiButtonsRow}>
+                  <button
+                    type="button"
+                    className={`${styles.ankiBtn} ${styles.ankiBtnAgain}`}
+                    onClick={() => handleSpacedRepetition("again", next)}
+                    aria-label="Review Again in 3 cards"
+                  >
+                    {isHindi ? "फिर से" : "Again"}
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.ankiBtn} ${styles.ankiBtnGood}`}
+                    onClick={() => handleSpacedRepetition("good", next)}
+                    aria-label="Good, review in 10 cards"
+                  >
+                    {isHindi ? "अच्छा" : "Good"}
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.ankiBtn} ${styles.ankiBtnEasy}`}
+                    onClick={() => handleSpacedRepetition("easy", next)}
+                    aria-label="Easy, finish for this session"
+                  >
+                    {isHindi ? "आसान" : "Easy"}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        />
+      )}
+
+      {/* ──────────────── 5. CATEGORY SHEET ──────────────── */}
+      <CategorySheet
+        isOpen={isCategorySheetOpen}
+        onClose={() => setIsCategorySheetOpen(false)}
+        categories={categories}
+        selectedCategoryIds={selectedCategoryIds}
+        selectedMode={mode}
+        onSelectCategories={handleSelectCategories}
+        onSelectMode={handleSelectMode}
+        isHindi={isHindi}
+      />
     </div>
   );
 }

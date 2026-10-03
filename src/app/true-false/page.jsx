@@ -1,249 +1,549 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
-import Link from "next/link";
-import { useLanguage } from "@/context/LanguageContext";
-import { CheckCircle, ArrowRight, Brain, Sparkles, Play } from "lucide-react";
-import styles from "@/styles/TrueFalse.module.css";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { Check, X, ArrowRight, Trophy, Heart } from "lucide-react";
+import styles from "@/styles/Flashcards.module.css";
+import FlashcardHeader from "@/components/flashcards/FlashcardHeader";
+import CategorySheet from "@/components/flashcards/CategorySheet";
+import FlashDeck from "@/components/flashcards/FlashDeck";
+import { CategoryIllustration } from "@/components/flashcards/CategorySVGs";
+import { getCategoryBadgeIcon } from "@/components/flashcards/CategoryIcons";
 
-const LanguageToggle = ({ lang, onChange, className }) => (
-  <div 
-    className={`${styles.langToggle} ${className}`} 
-    onClick={(e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      onChange(lang === "EN" ? "HI" : "EN");
-    }}
-  >
-    <div className={`${styles.langThumb} ${lang === "HI" ? styles.langThumbHindi : ""}`} />
-    <div className={`${styles.langOption} ${lang === "EN" ? styles.langOptionActive : ""}`}>EN</div>
-    <div className={`${styles.langOption} ${lang === "HI" ? styles.langOptionActive : ""}`}>HI</div>
-  </div>
-);
+const SESSION_LIMIT = 10;
 
-export default function TrueFalseHub() {
-  const { t, language: globalAppLang } = useLanguage();
+export default function TrueFalsePage() {
+  // Global & Persisted Preferences
+  const [language, setLanguage] = useState("EN"); // "EN" or "HI"
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
+  const [mode, setMode] = useState("all"); // "all", "random", "daily"
+  const [isCategorySheetOpen, setIsCategorySheetOpen] = useState(false);
+
+  // Deck & State
+  const [deck, setDeck] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [isAnswered, setIsAnswered] = useState(false);
+  const [userChoice, setUserChoice] = useState(null);
+  const [isCorrect, setIsCorrect] = useState(false);
+  const [answerFlash, setAnswerFlash] = useState(null); // 'correct' | 'incorrect' | null
+  const [favoriteIds, setFavoriteIds] = useState(new Set());
+
+  // Stats & Streak
+  const [streak, setStreak] = useState(0);
+  const [maxStreak, setMaxStreak] = useState(0);
+  const [correctCount, setCorrectCount] = useState(0);
+  const [reviewedCount, setReviewedCount] = useState(0);
+  const [isSessionComplete, setIsSessionComplete] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Categories list
   const [categories, setCategories] = useState([]);
-  const [questions, setQuestions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
+
+  // Prefetch tracking
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [globalLang, setGlobalLang] = useState(globalAppLang.toUpperCase());
+  const [isFetchingBatch, setIsFetchingBatch] = useState(false);
 
-  // Sync with global app language
+  // 1. Initial Load of Persisted Preferences & Categories
   useEffect(() => {
-    setGlobalLang(globalAppLang.toUpperCase());
-  }, [globalAppLang]);
+    if (typeof window !== "undefined") {
+      const savedLang = localStorage.getItem("quizweb_flashcard_lang") || "EN";
+      setLanguage(savedLang);
 
-  // Initial data load
-  useEffect(() => {
+      try {
+        const savedCatIds = JSON.parse(localStorage.getItem("quizweb_tf_catIds") || "[]");
+        if (Array.isArray(savedCatIds)) {
+          setSelectedCategoryIds(savedCatIds);
+        }
+      } catch (e) {
+        const singleCat = localStorage.getItem("quizweb_tf_catId");
+        if (singleCat && singleCat !== "null") {
+          setSelectedCategoryIds([singleCat]);
+        }
+      }
+
+      const savedMode = localStorage.getItem("quizweb_tf_mode") || "all";
+      setMode(savedMode);
+
+      try {
+        const savedFavs = JSON.parse(localStorage.getItem("quizweb_tf_favs") || "[]");
+        setFavoriteIds(new Set(savedFavs));
+      } catch (e) {}
+    }
+
     fetch("/api/true-false/categories")
-      .then(res => res.json())
-      .then(data => {
-        setCategories(data.categories || []);
+      .then((res) => res.json())
+      .then((data) => {
+        const cats = data.categories || [];
+        setCategories(cats);
       })
-      .catch(err => console.error(err));
+      .catch((err) => console.error("Error loading TF categories:", err));
   }, []);
 
-  const fetchQuestions = async (pageNum, catId, reset = false) => {
-    if (loadingMore || (!hasMore && !reset)) return;
-    setLoadingMore(true);
-    
-    try {
-      const res = await fetch(`/api/true-false/list?page=${pageNum}&categoryId=${catId}`);
-      const data = await res.json();
-      
-      if (res.ok) {
-        setQuestions(prev => reset ? data.questions : [...prev, ...data.questions]);
-        setHasMore(data.pagination.page < data.pagination.totalPages);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingMore(false);
-      setLoading(false);
+  // Save language changes
+  const handleLanguageChange = (newLang) => {
+    setLanguage(newLang);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("quizweb_flashcard_lang", newLang);
     }
   };
 
-  useEffect(() => {
-    setLoading(true);
-    setPage(1);
-    setHasMore(true);
-    fetchQuestions(1, selectedCategory, true);
-  }, [selectedCategory]);
+  // 2. Fetch Questions in Batches of 20 with Multi-Category Support
+  const fetchQuestionsBatch = useCallback(
+    async (pageNum, replace = false) => {
+      if (!replace && (isFetchingBatch || !hasMore)) return;
+      setIsFetchingBatch(true);
+      if (replace) setIsLoading(true);
 
-  const observer = useRef();
-  const lastElementRef = useCallback(node => {
-    if (loadingMore) return;
-    if (observer.current) observer.current.disconnect();
-    observer.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore) {
-        setPage(prev => {
-          const next = prev + 1;
-          fetchQuestions(next, selectedCategory);
-          return next;
-        });
+      try {
+        let url = `/api/true-false/list?page=${pageNum}&limit=20&tab=${mode}`;
+        if (selectedCategoryIds.length > 0) {
+          url += `&categories=${selectedCategoryIds.join(",")}`;
+        }
+        if (mode === "random") {
+          url += `&seed=${Date.now()}`;
+        }
+
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (res.ok && data.questions) {
+          const incoming = data.questions.map((q) => ({
+            id: q.id,
+            categoryId: q.categoryId,
+            categoryName: q.categoryName || q.category?.name || "General",
+            categoryNameHi: q.categoryNameHi || q.category?.nameHi || "सामान्य",
+            statementEn: q.statementEn || q.statement || "",
+            statementHi: q.statementHi || q.statement || "",
+            answer: q.answer !== undefined ? q.answer : q.correctAnswer,
+            explanationEn: q.explanationEn || q.explanation || "",
+            explanationHi: q.explanationHi || "",
+            illustrationKey: q.illustrationKey || q.category?.slug || q.category?.name?.toLowerCase() || "",
+          }));
+
+          setDeck((prev) => (replace ? incoming : [...prev, ...incoming]));
+          setHasMore(data.pagination.page < data.pagination.totalPages);
+          setPage(pageNum);
+
+          if (replace) {
+            setCurrentIndex(0);
+            setIsFlipped(false);
+            setIsAnswered(false);
+            setUserChoice(null);
+            setAnswerFlash(null);
+            setReviewedCount(0);
+            setCorrectCount(0);
+            setStreak(0);
+            setIsSessionComplete(false);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch TF batch:", err);
+      } finally {
+        setIsFetchingBatch(false);
+        setIsLoading(false);
       }
-    });
-    if (node) observer.current.observe(node);
-  }, [loadingMore, hasMore, selectedCategory]);
-
-  return (
-    <div className={styles.page}>
-      <div className={styles.container}>
-        {/* Module Switcher: Fun Facts | True / False (Rule D3) */}
-        <div className="flex items-center gap-2 mb-5">
-          <Link
-            href="/fun-facts"
-            className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-white border border-slate-200 text-slate-700 font-black text-xs hover:border-indigo-300 transition-all shadow-2xs"
-          >
-            <Sparkles size={14} />
-            <span>{globalAppLang === "hi" ? "रोचक तथ्य (Fun Facts)" : "Fun Facts"}</span>
-          </Link>
-          <Link
-            href="/true-false"
-            className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-indigo-600 text-white font-black text-xs shadow-sm shadow-indigo-500/20"
-          >
-            <span>✓✗</span>
-            <span>{globalAppLang === "hi" ? "सही या गलत (True/False)" : "True / False"}</span>
-          </Link>
-        </div>
-
-        {/* Voyager Play Button */}
-        <div className={styles.voyagerPlayWrapper}>
-          <Link href="/true-false/voyager" className={styles.voyagerPlayBtn} title={t('tf.voyager')}>
-            <Play fill="currentColor" size={24} />
-          </Link>
-          <span className={styles.voyagerPlayLabel}>{t('tf.voyager')}</span>
-        </div>
-
-        {/* Global Language Toggle */}
-        <div className={styles.globalLangWrapper}>
-          <span className={styles.globalLangLabel}>{t('tf.streamLang')}</span>
-          <LanguageToggle lang={globalLang} onChange={setGlobalLang} />
-        </div>
-
-        {/* Category Filters */}
-        <div className={styles.categoryFilterScroll}>
-          <div 
-             className={`${styles.filterChip} ${selectedCategory === 'all' ? styles.filterChipActive : ''}`}
-             onClick={() => setSelectedCategory('all')}
-          >
-            {t('tf.all')}
-          </div>
-          {categories.map(cat => (
-            <div 
-               key={cat.id}
-               className={`${styles.filterChip} ${selectedCategory === cat.id ? styles.filterChipActive : ''}`}
-               onClick={() => setSelectedCategory(cat.id)}
-            >
-              {globalAppLang === 'hi' && cat.nameHi ? cat.nameHi : cat.name}
-            </div>
-          ))}
-        </div>
-
-        {loading && questions.length === 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1,2,3,4,5,6].map(i => (
-              <div key={i} className={styles.wallCard} style={{ background: '#022c22', height: '300px' }}></div>
-            ))}
-          </div>
-        ) : (
-          <div className={styles.wallGrid}>
-            {questions.map((q, idx) => (
-              <WallTrueFalseCard 
-                key={q.id + idx} 
-                question={q} 
-                isLast={questions.length === idx + 1}
-                lastRef={lastElementRef}
-                globalLang={globalLang}
-                t={t}
-              />
-            ))}
-          </div>
-        )}
-
-        {loadingMore && (
-          <div className="flex justify-center py-10">
-            <div className={styles.loadingSpinner}></div>
-          </div>
-        )}
-
-        {!hasMore && questions.length > 0 && (
-          <div className="text-center py-10 text-emerald-500/50 font-bold">
-            {t('tf.end')}
-          </div>
-        )}
-      </div>
-    </div>
+    },
+    [isFetchingBatch, hasMore, mode, selectedCategoryIds]
   );
-}
 
-function WallTrueFalseCard({ question, isLast, lastRef, globalLang, t }) {
-  const [localLang, setLocalLang] = useState(null);
-  const [userGuess, setUserGuess] = useState(null); // null, 'correct', 'incorrect'
-  
-  const currentLang = localLang || globalLang;
-  const displayText = currentLang === "HI" && question.statementHi ? question.statementHi : question.statement;
+  // Reload deck on category or mode change
+  useEffect(() => {
+    fetchQuestionsBatch(1, true);
+  }, [selectedCategoryIds, mode]);
 
-  const handleGuess = (e, guess) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (userGuess) return; // Prevent multiple guesses
-    
-    // Correct answer is a boolean in the DB
-    if (guess === question.correctAnswer) {
-       setUserGuess('correct');
+  // Prefetch next batch when 5 cards remain
+  useEffect(() => {
+    if (deck.length > 0 && deck.length - currentIndex <= 5 && hasMore && !isFetchingBatch) {
+      fetchQuestionsBatch(page + 1, false);
+    }
+  }, [currentIndex, deck.length, hasMore, isFetchingBatch, page, fetchQuestionsBatch]);
+
+  // Current Card
+  const currentCard = useMemo(() => {
+    if (deck.length === 0 || currentIndex >= deck.length) return null;
+    return deck[currentIndex];
+  }, [deck, currentIndex]);
+
+  // Handle User Answer: True or False with green/red flash and flip
+  const handleAnswer = (choice) => {
+    if (isAnswered || !currentCard) return;
+
+    setUserChoice(choice);
+    const correct = choice === Boolean(currentCard.answer);
+    setIsCorrect(correct);
+    setIsAnswered(true);
+
+    // Green or Red answer flash
+    setAnswerFlash(correct ? "correct" : "incorrect");
+    setTimeout(() => setAnswerFlash(null), 600);
+
+    if (correct) {
+      setCorrectCount((c) => c + 1);
+      setStreak((s) => {
+        const next = s + 1;
+        setMaxStreak((m) => Math.max(m, next));
+        return next;
+      });
     } else {
-       setUserGuess('incorrect');
+      setStreak(0);
+    }
+
+    // Automatically flip card to the result face
+    setIsFlipped(true);
+  };
+
+  // Check if current card is favorited
+  const isCurrentCardFavorited = useMemo(() => {
+    if (!currentCard) return false;
+    return favoriteIds.has(currentCard.id);
+  }, [currentCard, favoriteIds]);
+
+  // Toggle Favourite
+  const toggleFavorite = () => {
+    if (!currentCard) return;
+    const cardId = currentCard.id;
+    setFavoriteIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(cardId)) {
+        next.delete(cardId);
+      } else {
+        next.add(cardId);
+      }
+      if (typeof window !== "undefined") {
+        localStorage.setItem("quizweb_tf_favs", JSON.stringify(Array.from(next)));
+      }
+      return next;
+    });
+  };
+
+  // Multi-Category selection handler
+  const handleSelectCategories = (catIds) => {
+    setSelectedCategoryIds(catIds);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("quizweb_tf_catIds", JSON.stringify(catIds));
     }
   };
 
+  // Mode selection handler
+  const handleSelectMode = (newMode) => {
+    setMode(newMode);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("quizweb_tf_mode", newMode);
+    }
+  };
+
+  // Restart / Reset Session
+  const restartSession = () => {
+    fetchQuestionsBatch(1, true);
+  };
+
+  // Category title display in header
+  const categoryTitle = useMemo(() => {
+    if (selectedCategoryIds.length === 0) return { en: "All categories", hi: "सभी" };
+    if (selectedCategoryIds.length === 1) {
+      const cat = categories.find((c) => c.id === selectedCategoryIds[0]);
+      return {
+        en: cat ? cat.name : "Category",
+        hi: cat ? cat.nameHi || cat.name : "श्रेणी",
+      };
+    }
+    if (selectedCategoryIds.length === 2) {
+      const c1 = categories.find((c) => c.id === selectedCategoryIds[0]);
+      const c2 = categories.find((c) => c.id === selectedCategoryIds[1]);
+      return {
+        en: `${c1?.name || "Cat 1"}, ${c2?.name || "Cat 2"}`,
+        hi: `${c1?.nameHi || c1?.name || ""}, ${c2?.nameHi || c2?.name || ""}`,
+      };
+    }
+    return {
+      en: `${selectedCategoryIds.length} categories`,
+      hi: `${selectedCategoryIds.length} श्रेणियां`,
+    };
+  }, [selectedCategoryIds, categories]);
+
+  const progressText = `${Math.min(currentIndex + 1, SESSION_LIMIT)} / ${Math.min(
+    deck.length || SESSION_LIMIT,
+    SESSION_LIMIT
+  )}`;
+
+  const isHindi = language === "HI";
+
   return (
-    <div className={styles.wallCard} ref={isLast ? lastRef : null}>
-       <div className={styles.actionBadge}>
-          <LanguageToggle 
-            lang={currentLang} 
-            onChange={setLocalLang} 
-            className={styles.langToggleSmall}
-          />
-        </div>
+    <div className={styles.pageContainer}>
+      {/* ──────────────── 2. SCREEN LAYOUT: HEADER ROWS ──────────────── */}
+      <FlashcardHeader
+        activeTab="tf"
+        language={language}
+        onLanguageChange={handleLanguageChange}
+        categoryName={categoryTitle.en}
+        categoryNameHi={categoryTitle.hi}
+        onOpenCategorySheet={() => setIsCategorySheetOpen(true)}
+        progressText={progressText}
+        streak={streak}
+      />
 
-       <Link href={`/true-false/${question.category?.slug}?id=${question.id}`} className="flex-1 flex flex-col">
-          <div 
-            className={`${styles.wallCardContent} ${question.image ? styles.wallCardContentWithImg : ''}`}
-            style={question.image ? { backgroundImage: `linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 100%), url('${question.image}')` } : {}}
-          >
-             <h3 className={styles.bigCardText}>{displayText}</h3>
-             
-             {/* Gamification Layer */}
-             {!userGuess ? (
-               <div className={styles.wallCardActions}>
-                  <button className={`${styles.guessBtn} ${styles.trueBtn}`} onClick={(e) => handleGuess(e, true)}>{t('tf.true')}</button>
-                  <button className={`${styles.guessBtn} ${styles.falseBtn}`} onClick={(e) => handleGuess(e, false)}>{t('tf.false')}</button>
-               </div>
-             ) : (
-               <div className={`${styles.resPill} ${userGuess === 'correct' ? styles.correctPill : styles.incorrectPill}`}>
-                  {userGuess === 'correct' ? (
-                     <><span>🎯</span> {t('tf.right')}</>
-                  ) : (
-                     <><span>❌</span> {t('tf.wrong')}</>
-                  )}
-               </div>
-             )}
+      {/* ──────────────── 3. FLASHDECK OR SESSION SUMMARY ──────────────── */}
+      {isSessionComplete ? (
+        <div className={styles.summaryContainer}>
+          <div className={styles.summaryCard}>
+            <div className={styles.cardBadge}>
+              <Trophy size={22} color="#FFFFFF" />
+            </div>
+            <h2 style={{ fontSize: "22px", fontWeight: "700", margin: 0 }}>
+              {isHindi ? "सत्र पूर्ण!" : "Session Complete!"}
+            </h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <p style={{ color: "#1F2430", fontSize: "18px", fontWeight: "600", margin: 0 }}>
+                {isHindi ? "सटीकता:" : "Accuracy:"}{" "}
+                <span style={{ color: "#0B6B53" }}>
+                  {reviewedCount > 0
+                    ? Math.round((correctCount / reviewedCount) * 100)
+                    : 0}
+                  %
+                </span>{" "}
+                ({correctCount} / {reviewedCount})
+              </p>
+              {maxStreak >= 2 && (
+                <p style={{ color: "#8C5800", fontSize: "14px", fontWeight: "500", margin: 0 }}>
+                  🔥 {isHindi ? "सर्वश्रेष्ठ स्ट्रीक:" : "Highest Streak:"} {maxStreak}
+                </p>
+              )}
+            </div>
 
-             <div className={styles.cardFooter}>
-               <span className={styles.cardCategory}>{globalLang === 'HI' && question.category?.nameHi ? question.category?.nameHi : question.category?.name}</span>
-               <div className="flex gap-2">
-                 <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30">
-                    <CheckCircle className="w-4 h-4 text-emerald-400" />
-                 </div>
-               </div>
-             </div>
+            <div style={{ display: "flex", gap: "10px", width: "100%", marginTop: "12px" }}>
+              <button
+                type="button"
+                className={styles.smallNextBtn}
+                style={{ flex: 1 }}
+                onClick={restartSession}
+              >
+                {isHindi ? "फिर से खेलें" : "Play again"}
+              </button>
+              <button
+                type="button"
+                className={styles.smallBackBtn}
+                style={{ width: "auto", padding: "0 18px", borderRadius: "9999px" }}
+                onClick={() => setIsCategorySheetOpen(true)}
+              >
+                {isHindi ? "श्रेणी बदलें" : "Change category"}
+              </button>
+            </div>
           </div>
-       </Link>
+        </div>
+      ) : (
+        <FlashDeck
+          cards={deck}
+          currentIndex={currentIndex}
+          onIndexChange={(nextIdx) => {
+            if (nextIdx >= SESSION_LIMIT || nextIdx >= deck.length) {
+              setReviewedCount((c) => c + 1);
+              setIsSessionComplete(true);
+            } else {
+              setReviewedCount((c) => c + 1);
+              setCurrentIndex(nextIdx);
+              setIsAnswered(false);
+              setUserChoice(null);
+            }
+          }}
+          isFlipped={isFlipped}
+          onFlipChange={setIsFlipped}
+          onAnswer={handleAnswer}
+          answerFlash={answerFlash}
+          cardBg={isAnswered ? (isCorrect ? "correct" : "incorrect") : null}
+          enableTapFlip={false}
+          renderFront={(card) => (
+            <>
+              {/* Top row with Heart in top-right */}
+              <div className={styles.cardTopRow}>
+                <div className={`${styles.cardBadge} ${styles.badgePop}`}>
+                  {getCategoryBadgeIcon(card?.categoryName, 18)}
+                </div>
+                <div className={styles.cardCategoryTitle}>
+                  {isHindi
+                    ? card?.categoryNameHi || card?.categoryName || "श्रेणी"
+                    : card?.categoryName || "Animals"}
+                </div>
+                <button
+                  type="button"
+                  className={styles.cardTopRightHeartBtn}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleFavorite();
+                  }}
+                  aria-label={isCurrentCardFavorited ? "Remove from favourites" : "Add to favourites"}
+                >
+                  <Heart
+                    size={20}
+                    fill={isCurrentCardFavorited ? "#E11D48" : "none"}
+                    color={isCurrentCardFavorited ? "#E11D48" : "#94A3B8"}
+                    strokeWidth={2}
+                  />
+                </button>
+              </div>
+
+              {/* Illustration Area with float */}
+              <div className={`${styles.cardIllustrationArea} ${styles.illustrationAnimated}`}>
+                <CategoryIllustration
+                  categoryName={card?.categoryName}
+                  illustrationKey={card?.illustrationKey}
+                />
+              </div>
+
+              {/* Bottom Statement with Fade & Slide Up Reveal */}
+              <div className={styles.cardBottomContent}>
+                <p
+                  key={`statement-${card?.id}-${language}`}
+                  className={`${styles.cardMainText} ${styles.textAnimated} ${
+                    isHindi ? styles.hindiText : ""
+                  }`}
+                >
+                  {isHindi
+                    ? card?.statementHi || card?.statementEn || "लोड हो रहा है..."
+                    : card?.statementEn || "Loading statement..."}
+                </p>
+                <p className={styles.cardFlipHint}>
+                  {isHindi
+                    ? "सही के लिए True, गलत के लिए False चुनें"
+                    : "Tap True or False to answer"}
+                </p>
+              </div>
+            </>
+          )}
+          renderBack={(card) => (
+            <>
+              {/* Top row with Heart in top-right */}
+              <div className={styles.cardTopRow}>
+                <div className={styles.cardBadge}>
+                  {isCorrect ? (
+                    <Check size={18} color="#FFFFFF" strokeWidth={2.5} />
+                  ) : (
+                    <X size={18} color="#FFFFFF" strokeWidth={2.5} />
+                  )}
+                </div>
+                <div className={styles.cardCategoryTitle}>
+                  {isHindi ? "और जानें" : "Know more"}
+                </div>
+                <button
+                  type="button"
+                  className={styles.cardTopRightHeartBtn}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleFavorite();
+                  }}
+                  aria-label={isCurrentCardFavorited ? "Remove from favourites" : "Add to favourites"}
+                >
+                  <Heart
+                    size={20}
+                    fill={isCurrentCardFavorited ? "#E11D48" : "none"}
+                    color={isCurrentCardFavorited ? "#E11D48" : "#94A3B8"}
+                    strokeWidth={2}
+                  />
+                </button>
+              </div>
+
+              {/* Back content: Status Badge & Explanations with Transition */}
+              <div className={`${styles.backContentScrollable} ${styles.textAnimated}`}>
+                <div>
+                  <span
+                    className={`${styles.resultStatusBadge} ${
+                      isCorrect
+                        ? styles.resultStatusCorrect
+                        : styles.resultStatusIncorrect
+                    } ${styles.badgePop}`}
+                  >
+                    {isCorrect
+                      ? isHindi
+                        ? "✓ सही उत्तर"
+                        : "✓ Correct"
+                      : isHindi
+                      ? "✕ गलत उत्तर"
+                      : "✕ Not quite"}
+                  </span>
+                </div>
+
+                {/* English Explanation */}
+                {card?.explanationEn && (
+                  <p className={styles.explanationEn}>{card.explanationEn}</p>
+                )}
+
+                {/* Hindi Explanation in #EEF1FF box */}
+                {card?.explanationHi && (
+                  <div className={styles.explanationHiBox}>
+                    {card.explanationHi}
+                  </div>
+                )}
+
+                {/* Fallback if no explanation exists */}
+                {!card?.explanationEn && !card?.explanationHi && (
+                  <p className={styles.explanationEn}>
+                    {isHindi
+                      ? `यह कथन ${card?.answer ? "सही (True)" : "गलत (False)"} है।`
+                      : `This statement is ${card?.answer ? "True" : "False"}.`}
+                  </p>
+                )}
+              </div>
+
+              {/* Bottom Answer Reminder */}
+              <p className={styles.sourceText}>
+                {isHindi ? "सही उत्तर:" : "Correct answer:"}{" "}
+                <strong>{card?.answer ? (isHindi ? "सही (True)" : "True") : (isHindi ? "गलत (False)" : "False")}</strong>
+              </p>
+            </>
+          )}
+          controls={({ next }) => (
+            <div className={styles.controlsSection}>
+              {!isAnswered ? (
+                /* Front side controls: Small slim True & False buttons */
+                <div className={styles.tfButtonsRow}>
+                  <button
+                    type="button"
+                    className={`${styles.tfBtn} ${styles.tfBtnTrue}`}
+                    onClick={() => handleAnswer(true)}
+                    aria-label="Answer True"
+                  >
+                    <Check size={18} />
+                    <span>{isHindi ? "सही (True)" : "True"}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`${styles.tfBtn} ${styles.tfBtnFalse}`}
+                    onClick={() => handleAnswer(false)}
+                    aria-label="Answer False"
+                  >
+                    <X size={18} />
+                    <span>{isHindi ? "गलत (False)" : "False"}</span>
+                  </button>
+                </div>
+              ) : (
+                /* Back side controls: Small sleek Next Button */
+                <button
+                  type="button"
+                  className={styles.smallNextBtn}
+                  onClick={() => next("right")}
+                  aria-label="Next question"
+                >
+                  <span>{isHindi ? "अगला प्रश्न" : "Next"}</span>
+                  <ArrowRight size={16} />
+                </button>
+              )}
+            </div>
+          )}
+        />
+      )}
+
+      {/* ──────────────── 5. CATEGORY SHEET ──────────────── */}
+      <CategorySheet
+        isOpen={isCategorySheetOpen}
+        onClose={() => setIsCategorySheetOpen(false)}
+        categories={categories}
+        selectedCategoryIds={selectedCategoryIds}
+        selectedMode={mode}
+        onSelectCategories={handleSelectCategories}
+        onSelectMode={handleSelectMode}
+        isHindi={isHindi}
+      />
     </div>
   );
 }

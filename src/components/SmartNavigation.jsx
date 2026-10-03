@@ -89,7 +89,8 @@ export default function SmartNavigation() {
   });
 
   const isQuizOrExamRoute = pathname?.startsWith("/quiz/") || pathname?.includes("/mock-tests/paper/") || pathname?.startsWith("/live/");
-  if (pathname?.startsWith("/admin") || isQuizOrExamRoute) return null;
+  const isFlashcardRoute = pathname?.startsWith("/fun-facts") || pathname?.startsWith("/true-false");
+  if (pathname?.startsWith("/admin") || isQuizOrExamRoute || isFlashcardRoute) return null;
 
   const userInitial = session?.user?.name
     ? session.user.name.charAt(0).toUpperCase()

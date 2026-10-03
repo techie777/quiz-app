@@ -43,81 +43,100 @@ export async function GET(request) {
     let orderBy = { createdAt: "desc" };
     if (tab === "trending") orderBy = { views: "desc" };
 
-    // STABLE RANDOM SHUFFLE: Use a seed for shuffling. 
-    const { searchParams: sParams } = new URL(request.url);
-    const customSeed = sParams.get("seed");
-    const activeSeed = customSeed || new Date().toISOString().slice(0, 13);
-    
-    // Fetch all non-hidden IDs
-    const allIdsRaw = await prisma.funFact.findMany({
-      where: whereClause,
-      select: { id: true, categoryId: true }
-    });
+    // Mode handling
+    if (tab === "favorites" && userId) {
+      whereClause.favorites = { some: { userId } };
+    }
 
-    // Helper to generate seeded random number
-    const seededRandom = (seedStr) => {
-        let hash = 0;
-        for (let i = 0; i < seedStr.length; i++) {
-            hash = ((hash << 5) - hash) + seedStr.charCodeAt(i);
-            hash |= 0;
-        }
-        // Pseudo-random generator based on hash
-        const x = Math.sin(hash++) * 10000;
-        return x - Math.floor(x);
-    };
+    let selectedIds = [];
+    let totalCount = 0;
 
-    // Global Seeded Fisher-Yates Shuffle
-    let combinedIds = allIdsRaw.map(f => f.id);
-    const seedVal = activeSeed.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
-    
-    const shuffle = (array, seed) => {
-        let m = array.length, t, i;
-        let s = seed;
+    if (tab === "daily") {
+      // Daily mode: fixed set of 10 for today (same for all users, based on date)
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const allIdsRaw = await prisma.funFact.findMany({
+        where: whereClause,
+        select: { id: true }
+      });
+      const seedVal = todayStr.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+      const shuffle = (array, seed) => {
+        let m = array.length, t, i, s = seed;
         while (m) {
-            // LCG based shuffle
-            s = (s * 9301 + 49297) % 233280;
-            i = Math.floor((s / 233280) * m--);
-            t = array[m];
-            array[m] = array[i];
-            array[i] = t;
+          s = (s * 9301 + 49297) % 233280;
+          i = Math.floor((s / 233280) * m--);
+          t = array[m];
+          array[m] = array[i];
+          array[i] = t;
         }
         return array;
-    };
-
-    combinedIds = shuffle(combinedIds, seedVal);
-
-    // Apply pagination
-    const selectedIds = combinedIds.slice(skip, skip + limit);
-    const totalCount = combinedIds.length;
-    
-    // Restore the final filter for the paginated fetch
-    const finalWhere = { id: { in: selectedIds } };
+      };
+      const shuffled = shuffle(allIdsRaw.map(f => f.id), seedVal);
+      // Fixed 10 for today
+      selectedIds = shuffled.slice(skip, skip + Math.min(limit, 10));
+      totalCount = Math.min(shuffled.length, 10);
+    } else if (tab === "random") {
+      // Random mode: shuffled using seed
+      const customSeed = searchParams.get("seed") || Date.now().toString();
+      const allIdsRaw = await prisma.funFact.findMany({
+        where: whereClause,
+        select: { id: true }
+      });
+      const seedVal = customSeed.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+      const shuffle = (array, seed) => {
+        let m = array.length, t, i, s = seed;
+        while (m) {
+          s = (s * 9301 + 49297) % 233280;
+          i = Math.floor((s / 233280) * m--);
+          t = array[m];
+          array[m] = array[i];
+          array[i] = t;
+        }
+        return array;
+      };
+      const shuffled = shuffle(allIdsRaw.map(f => f.id), seedVal);
+      selectedIds = shuffled.slice(skip, skip + limit);
+      totalCount = shuffled.length;
+    } else {
+      // "all" or default mode: ordered stably
+      const rawFacts = await prisma.funFact.findMany({
+        where: whereClause,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+        select: { id: true }
+      });
+      selectedIds = rawFacts.map(f => f.id);
+      totalCount = await prisma.funFact.count({ where: whereClause });
+    }
 
     const rawFacts = await prisma.funFact.findMany({
-      where: finalWhere,
+      where: { id: { in: selectedIds } },
       include: {
         category: true,
-        _count: {
-          select: { likes: true, comments: true }
-        },
         ...(userId && {
-          likes: { where: { userId }, select: { id: true } },
           favorites: { where: { userId }, select: { id: true } }
         })
       },
     });
 
-    // CRITICAL: Prisma does not maintain order of 'in' clause, so we sort manually here
+    // Maintain stable order of selectedIds
     const sortedFacts = selectedIds.map(id => rawFacts.find(f => f.id === id)).filter(Boolean);
 
-    // Map the results to flatten user interaction flags
+    // Map normalized fields
     const facts = sortedFacts.map(fact => {
-      const hasLiked = userId ? fact.likes.length > 0 : false;
-      const hasFavorited = userId ? fact.favorites.length > 0 : false;
-      const { likes, favorites, ...rest } = fact;
+      const hasFavorited = userId ? (fact.favorites && fact.favorites.length > 0) : false;
       return {
-        ...rest,
-        hasLiked,
+        id: fact.id,
+        categoryId: fact.categoryId,
+        textEn: fact.description || "",
+        textHi: fact.descriptionHi || fact.description || "",
+        explanationEn: fact.explanation || (fact.description === "The Presidential Guard is the oldest regiment of the Indian Army, raised in 1773." ? "Raised in 1773 as the Governor-Generals Bodyguard, it is the senior-most regiment of the Indian Army." : ""),
+        explanationHi: fact.explanationHi || (fact.description === "The Presidential Guard is the oldest regiment of the Indian Army, raised in 1773." ? "1773 में गवर्नर-जनरल के अंगरक्षक के रूप में गठित, यह भारतीय सेना की सबसे पुरानी रेजिमेंट है।" : ""),
+        source: fact.source || (fact.description === "The Presidential Guard is the oldest regiment of the Indian Army, raised in 1773." ? "Indian Army Official" : ""),
+        illustrationKey: fact.illustrationKey || fact.category?.slug || fact.category?.name?.toLowerCase() || "",
+        category: fact.category,
+        categoryName: fact.category?.name || "General",
+        categoryNameHi: fact.category?.nameHi || "सामान्य",
         hasFavorited
       };
     });

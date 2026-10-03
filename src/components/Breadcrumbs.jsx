@@ -35,8 +35,8 @@ const Breadcrumbs = () => {
   const isQuizOrExamRoute = pathname?.startsWith("/quiz/") || pathname?.includes("/mock-tests/paper/") || pathname?.startsWith("/live/");
   const isCurrentlyFullscreen = isFullscreen && isQuizOrExamRoute;
 
-  // Don't show breadcrumbs on home, category (which has rich 4-level CategoryBreadcrumbs), admin routes, or when fullscreen/mobile menu is open or before mounting
-  if (!isMounted || pathname === '/' || pathname?.startsWith('/category') || pathname?.startsWith('/admin') || pathname?.includes('/mock-tests/paper/') || isMobileMenuOpen || isCurrentlyFullscreen) return null;
+  // Don't show breadcrumbs on home, category (which has rich 4-level CategoryBreadcrumbs), admin routes, flashcard routes, or when fullscreen/mobile menu is open or before mounting
+  if (!isMounted || pathname === '/' || pathname?.startsWith('/category') || pathname?.startsWith('/admin') || pathname?.startsWith('/fun-facts') || pathname?.startsWith('/true-false') || pathname?.includes('/mock-tests/paper/') || isMobileMenuOpen || isCurrentlyFullscreen) return null;
 
   const pathSegments = pathname.split('/').filter((segment) => segment !== '');
 

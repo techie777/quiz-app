@@ -60,48 +60,91 @@ export async function POST(request) {
       categoryMap.set(name, cat.id);
     }
     
-    const factsToCreate = [];
     for (const row of data) {
+      const type = (row["Type"] || row["type"] || "fact").toLowerCase().trim();
       const catNameRaw = row.Category?.trim() || row["Category (Hindi)"]?.trim() || "General";
-      const desc = row["Fun Fact Description"]?.trim();
-      const descHi = row["Fun Fact Description (Hindi)"]?.trim();
-      const imageUrl = row["Image URL"] || row["Category Image URL"];
-      
-      const catId = categoryMap.get(catNameRaw);
-      
-      if (catId) {
-        factsToCreate.push({
-          categoryId: catId,
-          description: desc || descHi || "New Fact", // Ensure description is never empty
-          descriptionHi: descHi || null,
-          image: imageUrl || null,
-          views: 0,
-          hidden: false
+      const catHi = row["Category (Hindi)"]?.trim() || null;
+      const textEn = (row["Text EN"] || row["Text En"] || row["Fun Fact Description"] || row["Statement"] || "").trim();
+      const textHi = (row["Text HI"] || row["Text Hi"] || row["Fun Fact Description (Hindi)"] || row["Statement (Hindi)"] || "").trim();
+      const explEn = (row["Explanation EN"] || row["Explanation En"] || row["Explanation"] || "").trim();
+      const explHi = (row["Explanation HI"] || row["Explanation Hi"] || "").trim();
+      const illustrationKey = (row["Illustration Key"] || row["illustrationKey"] || "").trim();
+      const source = (row["Source"] || row["source"] || "").trim();
+      const imageUrl = row["Image URL"] || row["Category Image URL"] || null;
+
+      if (!textEn && !textHi) continue;
+
+      if (type === "tf" || type === "truefalse" || type === "true-false") {
+        // True / False Upload
+        const catSlug = catNameRaw.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        let tfCat = await prisma.trueFalseCategory.findUnique({ where: { slug: catSlug } });
+        if (!tfCat) {
+          tfCat = await prisma.trueFalseCategory.create({
+            data: {
+              name: catNameRaw,
+              nameHi: catHi,
+              slug: catSlug,
+              image: imageUrl
+            }
+          });
+        }
+
+        const rawAns = String(row["Answer (for tf)"] || row["Answer"] || "true").toLowerCase().trim();
+        const correctAnswer = ["true", "1", "t", "yes", "y", "सही"].includes(rawAns);
+
+        const existingTf = await prisma.trueFalseQuestion.findFirst({
+          where: {
+            categoryId: tfCat.id,
+            OR: [
+              { statement: textEn || textHi },
+              ...(textHi ? [{ statementHi: textHi }] : [])
+            ]
+          }
         });
-      }
-    }
-    
-    if (factsToCreate.length > 0) {
-      for (const factData of factsToCreate) {
-        try {
-          // Check for existing fact with the same description in this category
+
+        if (!existingTf) {
+          await prisma.trueFalseQuestion.create({
+            data: {
+              categoryId: tfCat.id,
+              statement: textEn || textHi,
+              statementHi: textHi || null,
+              correctAnswer,
+              explanation: explEn || null,
+              explanationHi: explHi || null,
+              image: imageUrl,
+              views: 0,
+              hidden: false
+            }
+          });
+          importedCount++;
+        }
+      } else {
+        // Fun Fact Upload
+        const catId = categoryMap.get(catNameRaw);
+        if (catId) {
           const existing = await prisma.funFact.findFirst({
             where: {
-              categoryId: factData.categoryId,
+              categoryId: catId,
               OR: [
-                { description: factData.description },
-                { descriptionHi: factData.descriptionHi }
+                { description: textEn || textHi },
+                ...(textHi ? [{ descriptionHi: textHi }] : [])
               ]
             }
           });
 
           if (!existing) {
-            await prisma.funFact.create({ data: factData });
+            await prisma.funFact.create({
+              data: {
+                categoryId: catId,
+                description: textEn || textHi,
+                descriptionHi: textHi || null,
+                image: imageUrl,
+                views: 0,
+                hidden: false
+              }
+            });
             importedCount++;
           }
-        } catch (err) {
-          console.error("Error creating individual fact:", err);
-          // Continue with next fact
         }
       }
     }
@@ -109,7 +152,7 @@ export async function POST(request) {
     return NextResponse.json({ 
       success: true, 
       importedCount,
-      message: `Successfully processed ${importedCount} facts.`
+      message: `Successfully processed ${importedCount} items.`
     }, { status: 201 });
 
   } catch (error) {

@@ -1,0 +1,1043 @@
+/* Flashcards minimal, light, Anki-style design system */
+
+.pageContainer {
+  position: relative;
+  width: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
+  background-color: #FFFFFF;
+  color: #1F2430;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+  font-family: var(--font-poppins), 'Poppins', 'Noto Sans Devanagari', -apple-system, BlinkMacSystemFont, sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+  padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+.hindiText {
+  font-family: 'Noto Sans Devanagari', var(--font-poppins), sans-serif;
+  line-height: 1.6;
+}
+
+/* ──────────────── 2. HEADER ROWS ──────────────── */
+
+.headerSection {
+  flex-shrink: 0;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 10px 20px 4px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-sizing: border-box;
+  z-index: 10;
+}
+
+.headerRow1 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+/* Segmented Pill Switch */
+.segmentedSwitch {
+  display: inline-flex;
+  align-items: center;
+  background-color: #FFFFFF;
+  border: 1px solid #E3DDC8;
+  border-radius: 9999px;
+  padding: 2px;
+  height: 34px;
+  box-sizing: border-box;
+}
+
+.segmentItem {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: #5B6070;
+  border-radius: 9999px;
+  padding: 4px 12px;
+  height: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  text-decoration: none;
+  min-height: 28px;
+}
+
+.segmentItemActive {
+  background-color: #ECEAF5;
+  color: #1F2430;
+  font-weight: 600;
+}
+
+.headerRow2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 28px;
+}
+
+.categorySelectorBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: 4px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1F2430;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+  min-height: 44px;
+}
+
+.categorySelectorBtn:hover {
+  opacity: 0.8;
+}
+
+.chevronIcon {
+  color: #5B6070;
+  transition: transform 0.2s ease;
+}
+
+.progressAndBadges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.streakChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background-color: #FFF3C4;
+  color: #8C5800;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid #FFE08A;
+}
+
+.progressText {
+  font-size: 13px;
+  font-weight: 500;
+  color: #5B6070;
+}
+
+/* ──────────────── 3. CARD STACK AREA ──────────────── */
+
+.cardArea {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 10px 38px 6px 38px;
+  box-sizing: border-box;
+  overflow: visible;
+  position: relative;
+}
+
+.deckContainer {
+  position: relative;
+  width: 100%;
+  height: clamp(340px, 52dvh, 440px);
+  max-height: 440px;
+  perspective: 1100px;
+  overflow: visible;
+}
+
+/* Behind cards */
+.deckCardLavender {
+  position: absolute;
+  inset: 0;
+  border-radius: 28px;
+  background-color: #D9D6FF;
+  transform: rotate(-5deg);
+  transform-origin: center center;
+  pointer-events: none;
+  z-index: 1;
+  box-shadow: 0 10px 24px rgba(31, 36, 48, 0.08);
+  transition: transform 0.3s ease;
+}
+
+.deckCardPeach {
+  position: absolute;
+  inset: 0;
+  border-radius: 28px;
+  background-color: #FFD9C7;
+  transform: rotate(+7deg);
+  transform-origin: center center;
+  pointer-events: none;
+  z-index: 2;
+  box-shadow: 0 12px 26px rgba(31, 36, 48, 0.1);
+  transition: transform 0.3s ease;
+}
+
+/* Interactive Front/Flipping Card */
+.activeCardWrapper {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  transform: rotate(-1deg);
+  transform-origin: center center;
+  cursor: pointer;
+  transition: transform 0.25s ease;
+}
+
+.flipCardInner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 28px;
+  transform-style: preserve-3d;
+  transition: transform 450ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.flipCardInner.flipped {
+  transform: rotateY(180deg);
+}
+
+.cardFace {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 28px;
+  background-color: #FFFFFF;
+  border: 1px solid #ECE8DA;
+  box-shadow: 0 14px 30px rgba(31, 36, 48, 0.14);
+  padding: 18px 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  overflow: hidden;
+}
+
+.cardFaceBack {
+  transform: rotateY(180deg);
+}
+
+/* Card Top Row */
+.cardTopRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  width: 100%;
+  min-height: 40px;
+  z-index: 5;
+}
+
+.cardBadge {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background-color: #4F46E5;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cardCategoryTitle {
+  position: absolute;
+  left: 46px;
+  right: 46px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+  color: #475569;
+  pointer-events: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Card Top Right Heart Button */
+.cardTopRightHeartBtn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background-color: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  color: #94A3B8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.25, 1, 0.4, 1);
+  flex-shrink: 0;
+  z-index: 6;
+  padding: 0;
+}
+
+.cardTopRightHeartBtn:hover {
+  background-color: #FFF1F2;
+  border-color: #FECDD3;
+  transform: scale(1.08);
+}
+
+.cardTopRightHeartBtn:active {
+  transform: scale(0.92);
+}
+
+/* Card Illustration Area */
+.cardIllustrationArea {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 160px;
+  max-height: 105px;
+  margin: 0 auto;
+}
+
+/* Card Content / Bottom Area */
+.cardBottomContent {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  text-align: center;
+}
+
+.cardMainText {
+  font-size: clamp(16px, 2.5dvh, 19px);
+  font-weight: 600;
+  line-height: 1.35;
+  color: #1F2430;
+  margin: 0;
+  word-break: break-word;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+}
+
+.cardFlipHint {
+  font-size: 12px;
+  font-weight: 400;
+  color: #5B6070;
+  margin: 0;
+}
+
+/* Back Face Specifics */
+.backContentScrollable {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 6px 0;
+  overflow: hidden;
+}
+
+.knowMoreLabel {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  color: #5B6070;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.explanationEn {
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: #1F2430;
+  margin: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+}
+
+.explanationHiBox {
+  background-color: #EEF1FF;
+  color: #2E3A6E;
+  border-radius: 14px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.6;
+  font-family: 'Noto Sans Devanagari', sans-serif;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.sourceText {
+  font-size: 12px;
+  color: #5B6070;
+  margin: 0;
+  text-align: left;
+}
+
+/* ──────────────── 4. CONTROLS ROW: SMALL & UP TO THE POINT ──────────────── */
+
+.controlsSection {
+  flex-shrink: 0;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 6px 20px 10px 20px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* Small, sleek, up to the point: Previous / Back button */
+.smallBackBtn,
+.roundControlBtn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background-color: #FFFFFF;
+  border: 1.5px solid #E2E8F0;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  flex-shrink: 0;
+}
+
+.smallBackBtn:hover:not(:disabled),
+.roundControlBtn:hover:not(:disabled) {
+  background-color: #F8FAFC;
+  border-color: #CBD5E1;
+  color: #1E293B;
+  transform: translateY(-1px);
+}
+
+.smallBackBtn:active:not(:disabled),
+.roundControlBtn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.smallBackBtn:disabled,
+.roundControlBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* Small, sleek, up to the point: Next button */
+.smallNextBtn,
+.primaryNextBtn {
+  height: 44px;
+  border-radius: 9999px;
+  background-color: #4F46E5;
+  color: #FFFFFF;
+  border: none;
+  padding: 0 24px;
+  font-size: 14px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.28);
+}
+
+.smallNextBtn:hover:not(:disabled),
+.primaryNextBtn:hover:not(:disabled) {
+  background-color: #4338CA;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+}
+
+.smallNextBtn:active:not(:disabled),
+.primaryNextBtn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.smallNextBtn:disabled,
+.primaryNextBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Back Side Anki Buttons */
+.ankiButtonsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 360px;
+  gap: 10px;
+}
+
+.ankiBtn {
+  flex: 1;
+  height: 44px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.ankiBtnAgain {
+  background-color: #FFE1E1;
+  color: #9B2236;
+}
+
+.ankiBtnAgain:hover {
+  background-color: #FFD4D4;
+}
+
+.ankiBtnGood {
+  background-color: #DDF3E8;
+  color: #0B6B53;
+}
+
+.ankiBtnGood:hover {
+  background-color: #CEEEDB;
+}
+
+.ankiBtnEasy {
+  background-color: #E0E8FF;
+  color: #2F3F9E;
+}
+
+.ankiBtnEasy:hover {
+  background-color: #D2DEFF;
+}
+
+/* Small Slim True/False Buttons */
+.tfButtonsRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+  gap: 12px;
+}
+
+.tfBtn {
+  flex: 1;
+  height: 42px;
+  border-radius: 9999px;
+  background-color: #FFFFFF;
+  font-size: 14px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  padding: 0 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.tfBtnTrue {
+  border: 1.5px solid #10B981;
+  color: #047857;
+}
+
+.tfBtnTrue:hover {
+  background-color: #ECFDF5;
+  border-color: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+}
+
+.tfBtnTrue:active {
+  transform: scale(0.96);
+}
+
+.tfBtnFalse {
+  border: 1.5px solid #F43F5E;
+  color: #BE123C;
+}
+
+.tfBtnFalse:hover {
+  background-color: #FFF1F2;
+  border-color: #E11D48;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(244, 63, 94, 0.2);
+}
+
+.tfBtnFalse:active {
+  transform: scale(0.96);
+}
+
+/* Card Skeleton & Empty States */
+.cardLoadingContainer {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+}
+
+.skeletonBadge {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #E2E8F0;
+  animation: pulseSkeleton 1.5s ease-in-out infinite;
+}
+
+.skeletonIllustration {
+  width: 120px;
+  height: 80px;
+  border-radius: 20px;
+  background: #F1F5F9;
+  animation: pulseSkeleton 1.5s ease-in-out infinite 0.2s;
+}
+
+.skeletonTextWrap {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.skeletonTextLine {
+  height: 14px;
+  border-radius: 7px;
+  background: #E2E8F0;
+  animation: pulseSkeleton 1.5s ease-in-out infinite 0.3s;
+}
+
+@keyframes pulseSkeleton {
+  0%, 100% { opacity: 0.6; transform: scale(0.99); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+/* Result Card Styles */
+.resultStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  border-radius: 9999px;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.resultStatusCorrect {
+  background-color: #DDF3E8;
+  color: #0B6B53;
+}
+
+.resultStatusIncorrect {
+  background-color: #FFE1E1;
+  color: #9B2236;
+}
+
+/* ──────────────── 5. CATEGORY SHEET ──────────────── */
+
+.sheetOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+}
+
+.fullHeightSheet {
+  width: 100%;
+  max-width: 500px;
+  height: 100%;
+  background-color: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.15);
+  animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.sheetHeader {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px 24px;
+}
+
+.sheetTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1F2430;
+  margin: 0;
+}
+
+.sheetCloseBtn {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: none;
+  border: none;
+  color: #1F2430;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.sheetCloseBtn:hover {
+  background-color: #F3F4F6;
+}
+
+.sheetSearchContainer {
+  flex-shrink: 0;
+  padding: 0 24px 16px 24px;
+}
+
+.sheetSearchInput {
+  width: 100%;
+  height: 48px;
+  border-radius: 14px;
+  border: 1px solid #E3DDC8;
+  padding: 0 16px;
+  font-size: 15px;
+  color: #1F2430;
+  outline: none;
+  background-color: #FFFFFF;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease;
+}
+
+.sheetSearchInput:focus {
+  border-color: #4F46E5;
+}
+
+.sheetModesRow {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 24px 16px 24px;
+}
+
+.modeChip {
+  padding: 6px 18px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid #E3DDC8;
+  background-color: #FFFFFF;
+  color: #1F2430;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-height: 36px;
+}
+
+.modeChipActive {
+  background-color: #1F2430;
+  color: #FFFFFF;
+  border-color: #1F2430;
+}
+
+.categoryListScrollable {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 24px 24px 24px;
+}
+
+.categoryRow {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #F0ECE1;
+  cursor: pointer;
+  padding: 0 4px;
+  transition: background 0.12s ease;
+  font-size: 15px;
+  font-weight: 500;
+  color: #1F2430;
+}
+
+.categoryRow:hover {
+  background-color: #FAFAFA;
+}
+
+.categoryRowText {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.categorySep {
+  color: #8C92A4;
+}
+
+.categoryHindi {
+  color: #5B6070;
+  font-family: 'Noto Sans Devanagari', sans-serif;
+}
+
+.checkIcon {
+  color: #4F46E5;
+}
+
+/* ──────────────── 6. SESSION SUMMARY ──────────────── */
+
+.summaryContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  gap: 16px;
+}
+
+.summaryCard {
+  width: 100%;
+  max-width: 380px;
+  border-radius: 28px;
+  background-color: #FFFFFF;
+  border: 1px solid #ECE8DA;
+  box-shadow: 0 14px 30px rgba(31, 36, 48, 0.14);
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+/* ──────────────── 7. TRANSITION EFFECTS (CARD & TEXT) ──────────────── */
+
+@keyframes cardSlideInNext {
+  0% {
+    opacity: 0;
+    transform: rotate(-1deg) translateX(42px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(-1deg) translateX(0) scale(1);
+  }
+}
+
+@keyframes cardSlideInPrev {
+  0% {
+    opacity: 0;
+    transform: rotate(-1deg) translateX(-42px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(-1deg) translateX(0) scale(1);
+  }
+}
+
+@keyframes deckRecoil {
+  0% {
+    transform: scale(0.97);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes textFadeSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes illustrationPopIn {
+  0% {
+    opacity: 0.6;
+    transform: scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes subtleFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes badgePulse {
+  0% {
+    opacity: 0.7;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.cardTransitionNext {
+  animation: cardSlideInNext 0.6s cubic-bezier(0.25, 0.9, 0.35, 1) both;
+}
+
+.cardTransitionPrev {
+  animation: cardSlideInPrev 0.6s cubic-bezier(0.25, 0.9, 0.35, 1) both;
+}
+
+.textAnimated {
+  animation: textFadeSlideUp 0.48s cubic-bezier(0.25, 1, 0.4, 1) both;
+}
+
+.illustrationAnimated {
+  animation: illustrationPopIn 0.52s cubic-bezier(0.25, 1, 0.4, 1) both,
+    subtleFloat 4s ease-in-out infinite 0.52s;
+}
+
+.deckPeachRecoil {
+  animation: deckRecoil 0.5s cubic-bezier(0.25, 1, 0.4, 1);
+}
+
+.badgePop {
+  animation: badgePulse 0.4s cubic-bezier(0.25, 1, 0.4, 1) both;
+}
+
+/* ──────────────── 8. MULTI-CATEGORY SELECTION STYLES ──────────────── */
+
+.sheetSubBar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px 10px 24px;
+}
+
+.multiSelectHint {
+  font-size: 13px;
+  font-weight: 500;
+  color: #5B6070;
+}
+
+.multiSelectClearBtn {
+  font-size: 13px;
+  font-weight: 600;
+  color: #4F46E5;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.15s ease;
+}
+
+.multiSelectClearBtn:hover {
+  background-color: #ECEAF5;
+}
+
+.categoryCheckboxBox {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1.5px solid #D1CBD0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #FFFFFF;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.categoryCheckboxBoxActive {
+  background-color: #4F46E5;
+  border-color: #4F46E5;
+  color: #FFFFFF;
+}
+
+.sheetStickyFooter {
+  flex-shrink: 0;
+  padding: 12px 24px calc(14px + env(safe-area-inset-bottom, 0px)) 24px;
+  background-color: #FFFFFF;
+  border-top: 1px solid #F0ECE1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.sheetApplyButton {
+  flex: 1;
+  height: 52px;
+  border-radius: 9999px;
+  background-color: #4F46E5;
+  color: #FFFFFF;
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
+  transition: all 0.15s ease;
+}
+
+.sheetApplyButton:hover {
+  background-color: #4338CA;
+  transform: translateY(-1px);
+}
+
