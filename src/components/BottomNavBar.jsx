@@ -2,25 +2,16 @@
 
 import React from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import {
-  Home,
-  BookOpen,
-  Play,
-  Flame,
-  User,
-  Sparkles,
-  Globe,
-} from "lucide-react";
 import { useTier, TIERS } from "@/context/TierContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { DEFAULT_MODULES_CONFIG } from "@/lib/modulesConfig";
 import { useData } from "@/context/DataContext";
 
 /**
- * Standard 5-tab destinations: Home · GK · Play · Current · Seekho
- * Center PLAY button opens Quiz Arena.
+ * Standard 5-tab destinations: Home · GK · Play · Current · Facts
+ * Matches previous UI layout with elevated center PLAY button and new emoji icons & colors.
  */
 export const TIER_NAVIGATION_CONFIG = {
   [TIERS.ADULTS]: [
@@ -31,7 +22,7 @@ export const TIER_NAVIGATION_CONFIG = {
       shortLabel: "Home",
       shortLabelHi: "होम",
       href: "/",
-      icon: Home,
+      emoji: "🏠",
       matchRegex: /^\/$/,
     },
     {
@@ -41,7 +32,7 @@ export const TIER_NAVIGATION_CONFIG = {
       shortLabel: "GK",
       shortLabelHi: "जीके",
       href: "/gk",
-      icon: Globe,
+      emoji: "🌐",
       matchRegex: /^\/gk/,
     },
     {
@@ -51,7 +42,7 @@ export const TIER_NAVIGATION_CONFIG = {
       shortLabel: "Play",
       shortLabelHi: "खेलें",
       href: "/arena",
-      icon: Play,
+      emoji: "▶",
       isElevated: true,
       matchRegex: /^\/arena/,
     },
@@ -62,18 +53,18 @@ export const TIER_NAVIGATION_CONFIG = {
       shortLabel: "Current",
       shortLabelHi: "करंट",
       href: "/daily-current-affairs",
-      icon: Flame,
+      emoji: "🔥",
       matchRegex: /^\/(daily-current-affairs|current-affairs)/,
     },
     {
-      id: "facts",
-      label: "Fun Facts & T/F",
-      labelHi: "रोचक तथ्य",
-      shortLabel: "Facts",
-      shortLabelHi: "तथ्य",
-      href: "/fun-facts",
-      icon: Sparkles,
-      matchRegex: /^\/(fun-facts|true-false)/,
+      id: "books",
+      label: "My Books",
+      labelHi: "मेरी पुस्तकें",
+      shortLabel: "Books",
+      shortLabelHi: "पुस्तकें",
+      href: "/gk-book",
+      emoji: "📖",
+      matchRegex: /^\/gk-book/,
     },
   ],
   [TIERS.STUDENTS]: [
@@ -84,7 +75,7 @@ export const TIER_NAVIGATION_CONFIG = {
       shortLabel: "Home",
       shortLabelHi: "होम",
       href: "/",
-      icon: Home,
+      emoji: "🏠",
       matchRegex: /^\/$/,
     },
     {
@@ -94,7 +85,7 @@ export const TIER_NAVIGATION_CONFIG = {
       shortLabel: "Study",
       shortLabelHi: "पढ़ाई",
       href: "/school-study",
-      icon: BookOpen,
+      emoji: "📚",
       matchRegex: /^\/(school-study|learn)/,
     },
     {
@@ -104,7 +95,7 @@ export const TIER_NAVIGATION_CONFIG = {
       shortLabel: "Play",
       shortLabelHi: "खेलें",
       href: "/arena?audience=students",
-      icon: Play,
+      emoji: "▶",
       isElevated: true,
       matchRegex: /^\/arena/,
     },
@@ -115,7 +106,7 @@ export const TIER_NAVIGATION_CONFIG = {
       shortLabel: "Current",
       shortLabelHi: "करंट",
       href: "/daily-current-affairs",
-      icon: Flame,
+      emoji: "🔥",
       matchRegex: /^\/(daily-current-affairs|current-affairs)/,
     },
     {
@@ -125,7 +116,7 @@ export const TIER_NAVIGATION_CONFIG = {
       shortLabel: "Profile",
       shortLabelHi: "प्रोफ़ाइल",
       href: "/profile",
-      icon: User,
+      emoji: "👤",
       matchRegex: /^\/(profile|wallet|settings|leaderboard)/,
     },
   ],
@@ -137,7 +128,7 @@ export const TIER_NAVIGATION_CONFIG = {
       shortLabel: "Home",
       shortLabelHi: "होम",
       href: "/",
-      icon: Home,
+      emoji: "🏠",
       matchRegex: /^\/$/,
     },
     {
@@ -147,7 +138,7 @@ export const TIER_NAVIGATION_CONFIG = {
       shortLabel: "Explore",
       shortLabelHi: "सैर",
       href: "/learn",
-      icon: Sparkles,
+      emoji: "✨",
       matchRegex: /^\/learn/,
     },
     {
@@ -157,9 +148,19 @@ export const TIER_NAVIGATION_CONFIG = {
       shortLabel: "Play",
       shortLabelHi: "खेलें",
       href: "/arena?audience=kids",
-      icon: Play,
+      emoji: "▶",
       isElevated: true,
       matchRegex: /^\/arena/,
+    },
+    {
+      id: "rewards",
+      label: "Rewards",
+      labelHi: "इनाम",
+      shortLabel: "Rewards",
+      shortLabelHi: "इनाम",
+      href: "/rewards",
+      emoji: "🎁",
+      matchRegex: /^\/rewards/,
     },
     {
       id: "profile",
@@ -168,7 +169,7 @@ export const TIER_NAVIGATION_CONFIG = {
       shortLabel: "Profile",
       shortLabelHi: "प्रोफ़ाइल",
       href: "/profile",
-      icon: User,
+      emoji: "👤",
       matchRegex: /^\/profile/,
     },
   ],
@@ -176,7 +177,6 @@ export const TIER_NAVIGATION_CONFIG = {
 
 export default function BottomNavBar() {
   const pathname = usePathname();
-  const router = useRouter();
   const { tier, hasSavedTier, mounted: tierMounted } = useTier();
   const { isHindi } = useLanguage();
   const { modules } = useData();
@@ -213,22 +213,16 @@ export default function BottomNavBar() {
     return pathname.startsWith(item.href);
   };
 
-  const handlePlayClick = (e, item) => {
-    e.preventDefault();
-    router.push(item.href || "/arena");
-  };
-
   return (
     <nav
       aria-label="Bottom Navigation"
       role="navigation"
-      className="fixed bottom-0 left-0 right-0 w-full z-50 bg-[#FFFFFF] border-t border-[#EEF0F4] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] select-none pb-[env(safe-area-inset-bottom,0px)]"
+      className="fixed bottom-0 left-0 right-0 w-full z-50 bg-[#FFFFFF] dark:bg-slate-900 border-t border-[#EEF0F4] dark:border-slate-800 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] select-none pb-[env(safe-area-inset-bottom,0px)]"
     >
       {/* 100% width full responsive bar, centered content on tablet/desktop */}
       <div className="w-full max-w-lg md:max-w-2xl mx-auto h-[62px] sm:h-[66px] px-2 sm:px-6 flex items-center justify-between relative">
         {destinations.map((item) => {
           const isActive = isTabActive(item);
-          const Icon = item.icon;
           const label = isHindi ? item.labelHi || item.label : item.label;
           const shortLabel = isHindi
             ? item.shortLabelHi || item.labelHi || item.label
@@ -251,13 +245,11 @@ export default function BottomNavBar() {
                   <motion.div
                     whileTap={{ scale: 0.94 }}
                     transition={{ type: "spring", stiffness: 450, damping: 25 }}
-                    className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-2xl sm:rounded-full bg-gradient-to-tr from-[#6366F1] to-[#8B5CF6] flex flex-col items-center justify-center text-white ring-4 ring-white shadow-lg shadow-indigo-500/30 transition-transform"
+                    className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-2xl sm:rounded-full bg-gradient-to-tr from-[#6366F1] to-[#8B5CF6] flex flex-col items-center justify-center text-white ring-4 ring-white dark:ring-slate-900 shadow-lg shadow-indigo-500/30 transition-transform"
                   >
-                    <Play
-                      size={22}
-                      fill="currentColor"
-                      className="translate-x-0.5 group-hover:scale-110 transition-transform"
-                    />
+                    <span className="text-xl sm:text-2xl leading-none">
+                      {item.emoji || "▶"}
+                    </span>
                     <span className="text-[10px] font-black uppercase tracking-wider mt-0.5 leading-none">
                       {shortLabel}
                     </span>
@@ -280,20 +272,18 @@ export default function BottomNavBar() {
                 <div
                   className={`flex items-center justify-center rounded-full transition-all duration-200 ${
                     isActive
-                      ? "bg-[#EEF2FF] text-[#6366F1] px-3 py-1"
-                      : "text-[#94A3B8] hover:text-slate-700 py-1"
+                      ? "bg-[#EEF2FF] dark:bg-indigo-950/60 text-[#6366F1] dark:text-indigo-400 px-3 py-1"
+                      : "text-[#94A3B8] hover:text-slate-700 dark:hover:text-slate-300 py-1"
                   }`}
                 >
-                  <Icon
-                    size={20}
-                    strokeWidth={isActive ? 2.5 : 2}
-                    className="transition-transform duration-200"
-                  />
+                  <span className="text-xl leading-none select-none">
+                    {item.emoji}
+                  </span>
                 </div>
                 <span
                   className={`text-[10.5px] sm:text-[11px] leading-tight mt-0.5 tracking-tight ${
                     isActive
-                      ? "text-[#6366F1] font-bold"
+                      ? "text-[#6366F1] dark:text-indigo-400 font-bold"
                       : "text-[#94A3B8] font-medium"
                   }`}
                 >

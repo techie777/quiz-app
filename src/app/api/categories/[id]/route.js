@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/adminSessionServer";
 export const dynamic = "force-dynamic";
 
 import { getMainCategoryBySlug } from "@/lib/mainCategoriesConfig";
+import { getCategoryGroup, getCategoryCardImageUrl } from "@/lib/categoryCardImages";
 
 export async function GET(request, { params }) {
   const { id } = params;
@@ -50,9 +51,28 @@ export async function GET(request, { params }) {
     }
 
     const mainCategoryConfig = getMainCategoryBySlug(category.slug);
+    const subCatCount = subCategories.length;
+    const configTopicCount = mainCategoryConfig?.subcategories?.reduce((acc, sub) => acc + (sub.topics?.length || 1), 0) || 0;
+    let computedTopicsCount = 0;
+    if (subCatCount > 0) {
+      computedTopicsCount = subCatCount * 10;
+    } else if (allQuestions.length > 0) {
+      computedTopicsCount = Math.max(1, Math.min(100, Math.ceil(allQuestions.length / 10) * 10));
+    } else if (configTopicCount > 0) {
+      computedTopicsCount = configTopicCount;
+    }
+
+    const currentStatus = category.status || (allQuestions.length > 0 ? "live" : "coming_soon");
+    const currentGroup = category.group || getCategoryGroup(category.slug);
+    const imageUrl = category.image_url || category.image || getCategoryCardImageUrl(category);
     
     const responseData = {
       ...category,
+      image_url: imageUrl,
+      group: currentGroup,
+      status: currentStatus,
+      sort_order: category.sort_order ?? category.sortOrder ?? 0,
+      topics_count: computedTopicsCount,
       questionCount: allQuestions.length,
       mainCategoryConfig: mainCategoryConfig || null,
       questions: metaOnly 
@@ -280,6 +300,11 @@ export async function PUT(request, { params }) {
       ...(body.categoryClass !== undefined && { categoryClass: body.categoryClass }),
       ...(body.hidden !== undefined && { hidden: body.hidden }),
       ...(body.image !== undefined && { image: body.image || null }),
+      ...((body.image_url !== undefined || body.imageUrl !== undefined) && { image_url: body.image_url || body.imageUrl || null }),
+      ...(body.group !== undefined && { group: body.group }),
+      ...(body.status !== undefined && { status: body.status }),
+      ...(body.sort_order !== undefined && { sort_order: Number(body.sort_order), sortOrder: Number(body.sort_order) }),
+      ...(body.sortOrder !== undefined && { sortOrder: Number(body.sortOrder), sort_order: Number(body.sortOrder) }),
       ...(body.parentId !== undefined && { parentId: body.parentId || null }),
       ...(body.showSubCategoriesOnHome !== undefined && { showSubCategoriesOnHome: !!body.showSubCategoriesOnHome }),
       ...(body.storyText !== undefined && { storyText: body.storyText || null }),
@@ -292,6 +317,10 @@ export async function PUT(request, { params }) {
   
   return NextResponse.json({
     ...category,
+    image_url: category.image_url || category.image || getCategoryCardImageUrl(category),
+    group: category.group || getCategoryGroup(category.slug),
+    status: category.status || "coming_soon",
+    sort_order: category.sort_order ?? category.sortOrder ?? 0,
     chips: safeJsonParse(category.chips) || [],
   });
 }

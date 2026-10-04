@@ -5,6 +5,8 @@ import { authOptions } from "@/lib/auth";
 import { safeJsonParse } from "@/lib/utils";
 import { requireAdmin, getAdminFromRequest } from "@/lib/adminSessionServer";
 import { enforceRateLimit, rateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
+import { getMainCategoryBySlug } from "@/lib/mainCategoriesConfig";
+import { getCategoryGroup, getCategoryCardImageUrl } from "@/lib/categoryCardImages";
 
 export const dynamic = "force-dynamic";
 
@@ -142,7 +144,7 @@ export async function GET(request) {
     const needsInMemoryFilteringOrSorting = qCount !== "all" || sortBy === "popular";
     const limit = limitRaw > 0 ? Math.min(limitRaw, 60) : 0;
 
-    const includeQuestions = searchParams.get("full") === "true" || isAdmin;
+    const includeQuestions = searchParams.get("full") === "true";
 
     // Fetch categories
     const categories = await prisma.category.findMany({
@@ -153,23 +155,37 @@ export async function GET(request) {
         },
         subCategories: {
           select: {
+            id: true,
+            topic: true,
+            topicHi: true,
+            slug: true,
+            emoji: true,
+            description: true,
+            descriptionHi: true,
+            categoryClass: true,
+            hidden: true,
+            image: true,
+            sortOrder: true,
+            parentId: true,
             _count: {
               select: { questions: true }
             }
           }
         },
-        questions: includeQuestions ? true : {
-          take: 3,
-          select: {
-            id: true,
-            text: true,
-            textHi: true,
-            options: true,
-            optionsHi: true,
-            explanation: true,
-            explanationHi: true,
+        ...(includeQuestions ? {
+          questions: {
+            select: {
+              id: true,
+              text: true,
+              textHi: true,
+              options: true,
+              optionsHi: true,
+              explanation: true,
+              explanationHi: true,
+              difficulty: true,
+            }
           }
-        }
+        } : {})
       },
       orderBy,
       ...(needsInMemoryFilteringOrSorting || limit === 0 ? {} : (limit > 0 ? { take: limit } : {})),
@@ -231,41 +247,93 @@ export async function GET(request) {
     });
 
     // Explicitly map all fields to ensure they are returned correctly
-    const result = paginatedCategories.map((cat) => ({
-      id: cat.id,
-      topic: cat.topic,
-      topicHi: cat.topicHi,
-      slug: cat.slug,
-      emoji: cat.emoji,
-      description: cat.description,
-      descriptionHi: cat.descriptionHi,
-      categoryClass: cat.categoryClass,
-      hidden: cat.hidden,
-      image: cat.image,
-      storyText: cat.storyText,
-      storyImage: cat.storyImage,
-      originalLang: cat.originalLang,
-      isTrending: cat.isTrending,
-      chips: safeJsonParse(cat.chips) || [],
-      sortOrder: cat.sortOrder,
-      parentId: cat.parentId,
-      showSubCategoriesOnHome: cat.showSubCategoriesOnHome,
-      createdAt: cat.createdAt,
-      updatedAt: cat.updatedAt,
-      questionCount: (cat._count?.questions || 0) + (cat.subCategories?.reduce((acc, sub) => acc + (sub._count?.questions || 0), 0) || 0),
-      difficultyStats: difficultyMap[cat.id] || { easy: 0, medium: 0, hard: 0 },
-      questions: (cat.questions || []).map(q => ({
-        ...q,
-        options: safeJsonParse(q.options) || [],
-        optionsHi: safeJsonParse(q.optionsHi) || []
-      })),
-    }));
+    const result = paginatedCategories.map((cat) => {
+      const storedCount = typeof cat.questionCount === "number" ? cat.questionCount : (typeof cat.totalQuestions === "number" ? cat.totalQuestions : 0);
+      const childCount = cat.subCategories?.reduce((acc, sub) => acc + (sub._count?.questions || sub.questionCount || 0), 0) || 0;
+      const directCount = cat._count?.questions || 0;
+      const qCount = Math.max(storedCount, directCount + childCount);
+      const subCatCount = cat.subCategories?.length || 0;
+      const mainConfig = getMainCategoryBySlug(cat.slug);
+      const configTopicCount = mainConfig?.subcategories?.reduce((acc, sub) => acc + (sub.topics?.length || 1), 0) || 0;
+
+      // Computed from DB: subcategories count, question sets, or config topics count
+      let computedTopicsCount = 0;
+      if (subCatCount > 0) {
+        computedTopicsCount = subCatCount * 10;
+      } else if (qCount > 0) {
+        computedTopicsCount = Math.max(1, Math.min(100, Math.ceil(qCount / 10) * 10));
+      } else if (configTopicCount > 0) {
+        computedTopicsCount = configTopicCount;
+      }
+
+      const currentStatus = cat.status || (qCount > 0 ? "live" : "coming_soon");
+      const currentGroup = cat.group || getCategoryGroup(cat.slug);
+      const imageUrl = cat.image_url || cat.image || getCategoryCardImageUrl(cat);
+
+      return {
+        id: cat.id,
+        name: cat.topic,
+        nameHi: cat.topicHi || "",
+        topic: cat.topic,
+        topicHi: cat.topicHi,
+        slug: cat.slug,
+        emoji: cat.emoji,
+        description: cat.description,
+        descriptionHi: cat.descriptionHi,
+        categoryClass: cat.categoryClass,
+        hidden: cat.hidden,
+        image: cat.image,
+        image_url: imageUrl,
+        group: currentGroup,
+        status: currentStatus,
+        sort_order: cat.sort_order ?? cat.sortOrder ?? 0,
+        topics_count: computedTopicsCount,
+        storyText: cat.storyText,
+        storyImage: cat.storyImage,
+        originalLang: cat.originalLang,
+        isTrending: cat.isTrending,
+        chips: safeJsonParse(cat.chips) || [],
+        sortOrder: cat.sortOrder,
+        parentId: cat.parentId,
+        showSubCategoriesOnHome: cat.showSubCategoriesOnHome,
+        createdAt: cat.createdAt,
+        updatedAt: cat.updatedAt,
+        questionCount: qCount,
+        questionsCount: qCount,
+        count: qCount,
+        difficultyStats: difficultyMap[cat.id] || { easy: 0, medium: 0, hard: 0 },
+        subCategories: (cat.subCategories || []).map(sub => ({
+          id: sub.id,
+          name: sub.topic,
+          nameHi: sub.topicHi || "",
+          topic: sub.topic,
+          topicHi: sub.topicHi,
+          slug: sub.slug,
+          emoji: sub.emoji,
+          description: sub.description,
+          descriptionHi: sub.descriptionHi,
+          categoryClass: sub.categoryClass,
+          hidden: sub.hidden,
+          image: sub.image,
+          image_url: sub.image,
+          parentId: sub.parentId,
+          sortOrder: sub.sortOrder,
+          questionCount: sub._count?.questions || 0,
+          questionsCount: sub._count?.questions || 0,
+          count: sub._count?.questions || 0,
+        })),
+        questions: (cat.questions || []).map(q => ({
+          ...q,
+          options: safeJsonParse(q.options) || [],
+          optionsHi: safeJsonParse(q.optionsHi) || []
+        })),
+      };
+    });
     
     return NextResponse.json({ categories: result, total });
   } catch (error) {
     console.error("Categories GET error:", error);
-    // Return empty array on error to prevent breaking frontend
-    return NextResponse.json({ categories: [], total: 0 });
+    return NextResponse.json({ categories: [], total: 0, error: error.message, stack: error.stack });
   }
 }
 
@@ -279,7 +347,7 @@ export async function POST(request) {
   try {
     const body = await request.json();
     console.log("[API/categories] Request body topic:", body.topic);
-    const { topic, topicHi, emoji, description, descriptionHi, categoryClass, hidden, image, parentId, showSubCategoriesOnHome, storyText, storyImage, originalLang, isTrending, chips } = body;
+    const { topic, topicHi, emoji, description, descriptionHi, categoryClass, hidden, image, image_url, group, status, sort_order, parentId, showSubCategoriesOnHome, storyText, storyImage, originalLang, isTrending, chips } = body;
     
     if (!topic) {
       console.warn("[API/categories] Missing topic");
@@ -300,6 +368,10 @@ export async function POST(request) {
       slug = `${rawBaseSlug}-${suffix}`;
     }
 
+    const targetSortOrder = typeof sort_order === "number" ? sort_order : ((maxSort._max.sortOrder ?? -1) + 1);
+    const finalGroup = group || getCategoryGroup(slug);
+    const finalImageUrl = image_url || image || getCategoryCardImageUrl({ slug });
+
     const category = await prisma.category.create({
       data: {
         topic,
@@ -311,7 +383,11 @@ export async function POST(request) {
         categoryClass: categoryClass || `category-${topic.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")}`,
         hidden: !!hidden,
         image: image || null,
-        sortOrder: (maxSort._max.sortOrder ?? -1) + 1,
+        image_url: finalImageUrl,
+        group: finalGroup,
+        status: status || "coming_soon",
+        sortOrder: targetSortOrder,
+        sort_order: targetSortOrder,
         parentId: parentId || null,
         showSubCategoriesOnHome: !!showSubCategoriesOnHome,
         storyText: storyText || null,

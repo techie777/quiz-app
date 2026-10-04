@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>QuizWeb – Home</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Noto+Sans+Devanagari:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f7fc;--card:#fff;--ink:#14162b;--mute:#6b7190;--line:#e8eaf5;--pri:#4f46e5;--pri2:#7c5cff;--soft:#eef0ff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0e1020;--card:#181b33;--ink:#f1f2ff;--mute:#9aa0c4;--line:#262a4a;--soft:#222650}}
+:root[data-theme=dark]{--bg:#0e1020;--card:#181b33;--ink:#f1f2ff;--mute:#9aa0c4;--line:#262a4a;--soft:#222650}
+*{box-sizing:border-box;margin:0}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--ink);font-family:Poppins,system-ui,sans-serif;padding:0 14px 110px;max-width:560px;margin:auto}
+.hi{font-family:'Noto Sans Devanagari',Poppins,sans-serif}
+header{padding:18px 2px 10px}header small{color:var(--mute);font-size:13px}header h1{font-size:22px;line-height:1.25}
+.search{display:flex;gap:8px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 14px;margin:8px 0 12px}
+.search input{border:0;outline:0;background:none;color:var(--ink);font:500 14px Poppins,sans-serif;width:100%}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 12px;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);z-index:5;scrollbar-width:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--card);color:var(--mute);border-radius:99px;padding:7px 14px;font:600 12.5px Poppins,sans-serif;cursor:pointer}
+.chip.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+.hero{background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;border-radius:20px;padding:16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.hero b{font-size:16px}.hero p{font-size:12px;opacity:.85;margin-top:2px}
+.hero button{border:0;background:#fff;color:var(--pri);font:700 13px Poppins,sans-serif;border-radius:12px;padding:10px 16px}
+h2{font-size:15px;margin:6px 2px 10px;display:flex;justify-content:space-between}h2 span{color:var(--mute);font-weight:500;font-size:12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+.c{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;-webkit-tap-highlight-color:transparent}
+.c:active{transform:scale(.97)}
+.th{aspect-ratio:1/1;position:relative;display:grid;place-items:center;font-size:54px}
+.th img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.tag{position:absolute;top:8px;left:8px;background:rgba(20,22,43,.72);color:#fff;font-size:10.5px;font-weight:600;padding:3px 8px;border-radius:99px;backdrop-filter:blur(4px)}
+.tag.live{background:#16a34a}
+.b{padding:10px 12px 12px}.b h3{font-size:14px;line-height:1.25}.b .hi{font-size:12px;color:var(--mute);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m{font-size:11px;color:var(--mute);margin-top:7px}
+.c.soon .th{filter:saturate(.55);opacity:.85}
+nav{position:fixed;left:0;right:0;bottom:0;max-width:560px;margin:auto;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:flex-end;padding:8px 6px calc(8px + env(safe-area-inset-bottom,0px))}
+nav a{font-size:11px;color:var(--mute);text-align:center;font-weight:600;display:grid;gap:2px;min-width:56px}nav a i{font-style:normal;font-size:20px}nav a.on{color:var(--pri)}
+nav .play{background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;border-radius:18px;padding:10px 14px;margin-top:-26px;box-shadow:0 8px 20px rgba(79,70,229,.4)}
+</style></head><body>
+<header><small>Namaste 👋</small><h1>What do you want to<br>play today?</h1></header>
+<div class="search">🔍<input id="q" placeholder="Search 40+ quiz categories"></div>
+<div class="chips" id="chips"></div>
+<div class="hero"><div><b>⚡ Daily Quiz</b><p>10 questions · 3 mins</p></div><button>Play now</button></div>
+<div id="out"></div>
+<nav><a class="on"><i>🏠</i>Home</a><a><i>🌐</i>GK</a><a class="play"><i>▶</i>PLAY</a><a><i>🔥</i>Current</a><a><i>✨</i>Facts</a></nav>
+<script>
+// [slug, emoji, English, Hindi, sub, group, live, topics] — set card image at /cards/<slug>.webp
+const D=[
+["india-gk","🇮🇳","India GK","भारत सामान्य ज्ञान","History, Polity, Science","Core",1,100],["world-gk","🌍","World GK","विश्व सामान्य ज्ञान","Countries, Capitals","Core",0,0],["general-knowledge","🧠","General Knowledge","सामान्य ज्ञान","Mixed GK","Core",1,40],["current-affairs","📰","Current Affairs","करेंट अफेयर्स","India, World, Sports","Core",1,0],
+["indian-geography","🗺️","Indian Geography","भारतीय भूगोल","States, Rivers","India",0,0],["indian-cities","🏙️","Indian Cities","भारत के प्रमुख शहर","Mumbai, Delhi, Indore","India",0,0],["indian-states","🏛️","States & UTs","भारतीय राज्य","Rajasthan, MP, Kerala","India",0,0],["religion","🙏","Religion","धर्म और आध्यात्म","Hinduism, Buddhism","India",0,0],["heritage","🏰","Heritage","धरोहर व स्मारक","Forts, Temples","India",0,0],["art-culture","🎨","Art & Culture","कला व संस्कृति","Dance, Painting","India",0,0],
+["science","🔬","Science","विज्ञान","Physics, Chemistry","Learn",0,0],["mathematics","➗","Mathematics","गणित","Algebra, Geometry","Learn",0,0],["reasoning","🧩","Reasoning","तर्कशक्ति","Logic, Puzzles","Learn",0,0],["history","📜","History","इतिहास","India, World","Learn",0,0],["geography","🌎","Geography","विश्व भूगोल","World Geography","Learn",0,0],["technology","💻","Technology","कंप्यूटर व तकनीक","Computers, AI","Learn",0,0],["space","🚀","Space","अंतरिक्ष","ISRO, NASA","Learn",0,0],["language","🔤","Language","भाषा व व्याकरण","English, Hindi","Learn",0,0],["literature","📚","Literature","साहित्य","Books, Authors","Learn",0,0],
+["entertainment","🎬","Entertainment","मनोरंजन","Bollywood, TV","Fun",0,0],["music","🎵","Music","संगीत","Classical, Pop","Fun",0,0],["sports","🏏","Sports","खेलकूद","Cricket, Olympics","Fun",0,0],["gaming","🎮","Gaming","गेमिंग","Video Games","Fun",0,0],["theatre","🎭","Theatre","रंगमंच","Drama, Dance","Fun",0,0],["famous-people","🧑","Famous People","महान व्यक्तित्व","Leaders, Actors","Fun",0,0],["awards","🏆","Awards","पुरस्कार","Nobel, Oscars","Fun",0,0],["kids-family","🧒","Kids & Family","बच्चे और परिवार","Kids GK","Fun",0,0],["fun-viral","🎯","Fun & Viral","मजेदार क्विज़","Picture Quiz","Fun",0,0],
+["business","💰","Business","व्यापार","Banking, Finance","World",0,0],["politics","⚖️","Politics","राजनीति","Constitution","World",0,0],["environment","🌿","Environment","पर्यावरण","Wildlife, Climate","World",0,0],["food","🍛","Food","खानपान","Indian, World","World",0,0],["transport","🚆","Transport","परिवहन","Railways, Aviation","World",0,0],["defence","🪖","Defence","रक्षा","Army, Weapons","World",0,0],["brands","🏷️","Brands","ब्रांड्स","Companies","World",0,0],["lifestyle","🛍️","Lifestyle","दैनिक ज्ञान","Home, Daily life","World",0,0],["animals","🦁","Animals","पशु-पक्षी","Birds, Marine","World",0,0],["plants","🌾","Plants","पेड़-पौधे","Crops, Farming","World",0,0],["inventions","💡","Inventions","आविष्कार","Inventors","World",0,0],["travel","✈️","Travel","पर्यटन","Destinations","World",0,0]];
+const G=["All","Core","India","Learn","Fun","World"],hue=s=>[...s].reduce((a,c)=>a+c.charCodeAt(0),0)*7%360;
+let f="All",q="";const $=id=>document.getElementById(id);
+$("chips").innerHTML=G.map(g=>`<button class="chip" data-g="${g}">${g==="All"?"All":g==="Core"?"⭐ Popular":g}</button>`).join("");
+function card(c){const[s,e,n,h,sub,,live,t]=c,H=hue(s);
+return `<div class="c ${live?"":"soon"}"><div class="th" style="background:linear-gradient(145deg,hsl(${H} 85% 90%),hsl(${(H+40)%360} 80% 80%))">${e}<img src="cards/${s}.webp" alt="" loading="lazy" onerror="this.remove()"><span class="tag ${live?"live":""}">${live?"● Live":"Coming soon"}</span></div><div class="b"><h3>${n}</h3><div class="hi">${h}</div><div class="m">${live&&t?t+" topics":sub}</div></div></div>`}
+function draw(){const L=D.filter(c=>(f==="All"||c[5]===f)&&(c[2]+c[3]+c[4]).toLowerCase().includes(q));
+const a=L.filter(c=>c[6]),b=L.filter(c=>!c[6]);
+$("out").innerHTML=(a.length?`<h2>Play now <span>${a.length} live</span></h2><div class="grid">${a.map(card).join("")}</div>`:"")+(b.length?`<h2>Coming soon <span>${b.length} categories</span></h2><div class="grid">${b.map(card).join("")}</div>`:"")||"<p style='color:var(--mute);padding:20px'>No match found.</p>"}
+document.querySelectorAll(".chip").forEach(x=>{x.onclick=()=>{f=x.dataset.g;document.querySelectorAll(".chip").forEach(y=>y.classList.toggle("on",y===x));draw()}});
+document.querySelector(".chip").classList.add("on");$("q").oninput=e=>{q=e.target.value.toLowerCase();draw()};draw();
+</script></body></html>
