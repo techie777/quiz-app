@@ -13,12 +13,13 @@ export default function GkBookPathPage() {
   const pageQuery = searchParams.get("page");
   const initialPage = pageQuery ? Math.max(0, parseInt(pageQuery, 10) - 1) : 0;
 
-  const handleBackToIndex = () => {
-    router.push("/gk-book");
-  };
-
   const pathArray = params?.path || [];
   const chapterSlug = Array.isArray(pathArray) ? pathArray[pathArray.length - 1] : (pathArray || "sindhu-ghati");
+
+  const handleBackToIndex = () => {
+    const parentBook = chapterSlug === "solar-system" ? "world-gk" : "india-gk";
+    router.push(`/gk-book?book=${parentBook}`);
+  };
 
   return (
     <GkBookReader

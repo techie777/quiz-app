@@ -8,6 +8,9 @@ import GkBookQuizCard from "./GkBookQuizCard";
 import {
   SHORT_PAGES,
   FULL_PAGES,
+  SOLAR_SYSTEM_SHORT_PAGES,
+  SOLAR_SYSTEM_FULL_PAGES,
+  CHAPTER_PAGES_MAP,
   STORAGE_KEY,
   sanitizeHtml,
   LIVE_CHAPTER,
@@ -89,8 +92,13 @@ export default function GkBookReader({
     }
   };
 
-  const dynamicPages = chapterData?.pages || [];
-  const totalPagesCount = dynamicPages.length > 0 ? dynamicPages.length : SHORT_PAGES.length;
+  const isSolar = chapterSlug === "solar-system";
+  const defaultShortPages = isSolar ? SOLAR_SYSTEM_SHORT_PAGES : SHORT_PAGES;
+  const defaultFullPages = isSolar ? SOLAR_SYSTEM_FULL_PAGES : FULL_PAGES;
+  const seedPages = CHAPTER_PAGES_MAP[chapterSlug] || defaultShortPages;
+
+  const dynamicPages = chapterData?.pages && chapterData.pages.length > 0 ? chapterData.pages : seedPages;
+  const totalPagesCount = dynamicPages.length > 0 ? dynamicPages.length : 1;
 
   // Switch Page
   const goToPage = (newIndex) => {
@@ -174,12 +182,13 @@ export default function GkBookReader({
     saveState({ att: updated });
   };
 
-  const currentPage = dynamicPages[pageIndex] || SHORT_PAGES[pageIndex] || SHORT_PAGES[0];
+  const currentPage = dynamicPages[pageIndex] || dynamicPages[0] || {};
   const shortBlocks = currentPage.P || currentPage.b || [];
-  const fullBlocks = currentPage.F || FULL_PAGES[pageIndex] || [];
-  const currentBlocks = isFull ? fullBlocks : shortBlocks;
+  const fullBlocks = currentPage.F || defaultFullPages[pageIndex] || [];
+  const currentBlocks = isFull ? (fullBlocks.length > 0 ? fullBlocks : shortBlocks) : shortBlocks;
   const readMin = isFull ? (currentPage.readingTimeFull || (currentPage.m || 3) + 3) : (currentPage.readingTimeShort || currentPage.m || 3);
   const progressPct = ((pageIndex + 1) / totalPagesCount) * 100;
+  const chapterDisplayTitle = chapterData?.titleHi || (isSolar ? "सौरमंडल (Solar System)" : LIVE_CHAPTER.title);
 
   // Render individual content block
   const renderBlock = (block, idx) => {
@@ -261,7 +270,7 @@ export default function GkBookReader({
     <div className={styles.bookWrapper} data-theme={theme}>
       {/* Sticky Reader Header */}
       <GkBookHeader
-        title={`अध्याय ${pageIndex + 1} / ${SHORT_PAGES.length} · ${currentPage.t}`}
+        title={`अध्याय ${pageIndex + 1} / ${totalPagesCount} · ${currentPage.t || currentPage.title || chapterDisplayTitle}`}
         theme={theme}
         onThemeChange={handleThemeChange}
         fontSize={fontSize}
@@ -277,17 +286,17 @@ export default function GkBookReader({
               onClick={onBackToIndex}
               style={{ background: "none", border: "none", color: "var(--pri)", cursor: "pointer", font: "inherit", fontWeight: 700, padding: 0 }}
             >
-              ← अनुक्रमणिका (Shelf)
+              ← अनुक्रमणिका (Index)
             </button>
           ) : (
             <Link href="/gk-book">
-              ← अनुक्रमणिका (Shelf)
+              ← अनुक्रमणिका (Index)
             </Link>
           )}
           <span>›</span>
-          <span>{LIVE_CHAPTER.title}</span>
+          <span>{chapterDisplayTitle}</span>
           <span>›</span>
-          <span>अध्याय {pageIndex + 1}</span>
+          <span>पृष्ठ {pageIndex + 1}</span>
         </div>
 
         {/* Top Prev/Next Navigation Row */}

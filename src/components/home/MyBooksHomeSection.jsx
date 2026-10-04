@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BookOpen, Sparkles, ArrowRight, CheckCircle2, Clock } from "lucide-react";
+import { ArrowRight, Clock, BookOpen, Sparkles } from "lucide-react";
 
 export default function MyBooksHomeSection({ isHindi = false }) {
   const router = useRouter();
@@ -17,11 +17,54 @@ export default function MyBooksHomeSection({ isHindi = false }) {
     }
   };
 
+  const LIVE_BOOKS = [
+    {
+      id: "india-gk",
+      title: isHindi ? "भारत सामान्य ज्ञान (India GK)" : "India General Knowledge (India GK)",
+      subtitle: isHindi
+        ? "सिंधु घाटी सभ्यता, वैदिक काल, मौर्य साम्राज्य, नदियां, भूगोल, राजव्यवस्था एवं भारतीय संविधान का सम्पूर्ण डिजिटल अध्ययन।"
+        : "Indus Valley Civilization, Vedic Era, Maurya Empire, Rivers, Geography & Indian Constitution.",
+      cover: "/images/gk-book/india-gk-cover.jpg",
+      bgGradient: "linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%)",
+      glowColor: "rgba(245, 158, 11, 0.15)",
+      badge: isHindi ? "लाइव उपलब्ध" : "Live Available",
+      stats: isHindi ? "5 विषय · 15+ अध्याय · 25+ पृष्ठ" : "5 Topics · 15+ Chapters · 25+ Pages",
+      bookUrl: "/gk-book?book=india-gk",
+      readUrl: "/gk-book/sindhu-ghati",
+      firstChapterTitle: isHindi ? "अध्याय 1: सिंधु घाटी सभ्यता" : "Ch 1: Indus Valley Civilization",
+      features: [
+        isHindi ? "⚡ संक्षिप्त व विस्तृत नोट्स" : "⚡ Short & Full Modes",
+        isHindi ? "🎯 हर पृष्ठ पर क्विज़" : "🎯 Page Quiz Cards",
+        isHindi ? "✓ 100% फ्री" : "✓ 100% Free",
+      ],
+    },
+    {
+      id: "world-gk",
+      title: isHindi ? "विश्व सामान्य ज्ञान (World GK)" : "World General Knowledge (World GK)",
+      subtitle: isHindi
+        ? "ब्रह्मांड, सौरमंडल, विश्व के महाद्वीप व महासागर, अंतर्राष्ट्रीय सीमाएं तथा संयुक्त राष्ट्र (UN) व वैश्विक संगठन।"
+        : "Universe, Solar System, World Continents, Oceans, International Boundaries & United Nations (UN).",
+      cover: "/images/gk-book/world-gk-cover.jpg",
+      bgGradient: "linear-gradient(135deg, #09203f 0%, #17365d 50%, #1e4a7a 100%)",
+      glowColor: "rgba(56, 189, 248, 0.2)",
+      badge: isHindi ? "लाइव उपलब्ध" : "Live Available",
+      stats: isHindi ? "2 विषय · 4 अध्याय · 12+ पृष्ठ" : "2 Topics · 4 Chapters · 12+ Pages",
+      bookUrl: "/gk-book?book=world-gk",
+      readUrl: "/gk-book?book=world-gk&chapter=solar-system&page=1",
+      firstChapterTitle: isHindi ? "अध्याय 1: सौरमंडल (Solar System)" : "Ch 1: The Solar System",
+      features: [
+        isHindi ? "🌍 विश्व भूगोल व खगोलिकी" : "🌍 World Geography & Astronomy",
+        isHindi ? "🏛️ अंतर्राष्ट्रीय संगठन (UN/WTO)" : "🏛️ International Agencies",
+        isHindi ? "🎯 हर पृष्ठ पर क्विज़" : "🎯 Page Quiz Cards",
+      ],
+    },
+  ];
+
   const UPCOMING_BOOKS = [
     {
       id: "mp-gk",
       title: isHindi ? "मध्य प्रदेश सामान्य ज्ञान (MP GK)" : "Madhya Pradesh GK (MP GK)",
-      subtitle: isHindi ? "इतिहास, नदियां, जनजातियां, राष्ट्रीय उद्यान व संस्कृति" : "History, Rivers, Tribes, Forests & MPPSC",
+      subtitle: isHindi ? "इतिहास, नदियां, जनजातियां, राष्ट्रीय उद्यान, किले व कला-संस्कृति" : "History, Rivers, Tribes, Forests & MPPSC",
       cover: "/images/gk-book/mp-gk-cover.jpg",
       exams: "MPPSC · MP Police · व्यापम",
       badge: isHindi ? "शीघ्र आ रहा है" : "Upcoming",
@@ -29,9 +72,17 @@ export default function MyBooksHomeSection({ isHindi = false }) {
     {
       id: "up-gk",
       title: isHindi ? "उत्तर प्रदेश सामान्य ज्ञान (UP GK)" : "Uttar Pradesh GK (UP GK)",
-      subtitle: isHindi ? "75 जिले, नदियां, कला-संस्कृति, अर्थव्यवस्था व भूगोल" : "75 Districts, Rivers, Culture & UPPSC/UPSSSC",
+      subtitle: isHindi ? "75 जिले, नदियां, ऐतिहासिक धरोहर, कला-संस्कृति, अर्थव्यवस्था व भूगोल" : "75 Districts, Rivers, Culture & UPPSC/UPSSSC",
       cover: "/images/gk-book/up-gk-cover.jpg",
       exams: "UPPSC · UPSSSC · RO/ARO",
+      badge: isHindi ? "शीघ्र आ रहा है" : "Upcoming",
+    },
+    {
+      id: "rajasthan-gk",
+      title: isHindi ? "राजस्थान सामान्य ज्ञान (Rajasthan GK)" : "Rajasthan GK (Rajasthan GK)",
+      subtitle: isHindi ? "गौरवशाली इतिहास, दुर्ग, थार मरुस्थल, लोक देवता व समृद्ध संस्कृति" : "History, Forts, Thar Desert, Folk Deities & Culture",
+      cover: "/images/gk-book/rajasthan-gk-cover.jpg",
+      exams: "RAS · REET · राजस्थान पुलिस",
       badge: isHindi ? "शीघ्र आ रहा है" : "Upcoming",
     },
   ];
@@ -51,8 +102,8 @@ export default function MyBooksHomeSection({ isHindi = false }) {
             </h2>
             <p className="text-[11px] sm:text-xs" style={{ color: "var(--mute, #6b7190)" }}>
               {isHindi
-                ? "अध्याय दर अध्याय संरचित डिजिटल बुक + हर पृष्ठ पर क्विज़"
-                : "Structured chapter-by-chapter book with page-end quizzes"}
+                ? "अध्याय दर अध्याय संरचित डिजिटल बुक्स + प्रत्येक पृष्ठ पर स्व-मूल्यांकन क्विज़"
+                : "Structured chapter-by-chapter books with page-end self-quizzes"}
             </p>
           </div>
         </div>
@@ -66,132 +117,115 @@ export default function MyBooksHomeSection({ isHindi = false }) {
         </Link>
       </div>
 
-      {/* Featured Book Card: India GK */}
-      <div
-        className="p-4 sm:p-5 rounded-2xl mb-3 text-white relative overflow-hidden"
-        style={{
-          background: "linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%)",
-          boxShadow: "0 8px 24px rgba(49, 46, 129, 0.25)",
-          border: "1px solid rgba(129, 140, 248, 0.3)",
-        }}
-      >
-        {/* Glow ambient background */}
-        <div className="absolute -top-12 -right-12 w-48 h-48 bg-amber-400/10 rounded-full blur-2xl pointer-events-none" />
-
-        <div className="flex flex-col sm:flex-row items-center sm:items-stretch gap-4 relative z-10">
-          {/* Book Cover Thumbnail */}
-          <Link
-            href="/gk-book/sindhu-ghati"
-            className="w-28 sm:w-32 aspect-[3/4] rounded-xl overflow-hidden shadow-xl border border-white/20 shrink-0 transform hover:scale-105 transition-transform bg-slate-900 group relative block"
+      {/* Featured Live Books: India GK & World GK */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 mb-3.5">
+        {LIVE_BOOKS.map((book) => (
+          <div
+            key={book.id}
+            className="p-4 sm:p-5 rounded-2xl text-white relative overflow-hidden flex flex-col justify-between"
+            style={{
+              background: book.bgGradient,
+              boxShadow: "0 8px 24px rgba(15, 23, 42, 0.25)",
+              border: "1px solid rgba(255, 255, 255, 0.15)",
+            }}
           >
-            <img
-              src="/images/gk-book/india-gk-cover.jpg"
-              alt="India GK Book Cover"
-              className="w-full h-full object-cover"
+            {/* Glow ambient background */}
+            <div
+              className="absolute -top-12 -right-12 w-44 h-44 rounded-full blur-2xl pointer-events-none"
+              style={{ background: book.glowColor }}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-1.5">
-              <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-400 text-slate-950">
-                {isHindi ? "पढ़ें" : "Read"}
-              </span>
-            </div>
-          </Link>
 
-          {/* Book Info & Quick Actions */}
-          <div className="flex-1 flex flex-col justify-between text-center sm:text-left">
             <div>
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 mb-1.5">
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">
-                  ✓ {isHindi ? "लाइव उपलब्ध" : "Live Available"}
-                </span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-indigo-100">
-                  5+ {isHindi ? "अध्याय" : "Chapters"} · 25+ {isHindi ? "पृष्ठ" : "Pages"}
-                </span>
-              </div>
+              <div className="flex items-start gap-3.5 sm:gap-4 mb-3 relative z-10">
+                {/* Book Cover Thumbnail */}
+                <Link
+                  href={book.bookUrl}
+                  className="w-24 sm:w-28 aspect-[3/4] rounded-xl overflow-hidden shadow-xl border border-white/20 shrink-0 transform hover:scale-105 transition-transform bg-slate-900 group relative block"
+                >
+                  <img
+                    src={book.cover}
+                    alt={book.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-1">
+                    <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-400 text-slate-950">
+                      {isHindi ? "पढ़ें" : "Read"}
+                    </span>
+                  </div>
+                </Link>
 
-              <h3 className="text-lg sm:text-xl font-black text-white leading-tight mb-1">
-                {isHindi ? "भारत सामान्य ज्ञान (India GK)" : "India General Knowledge (India GK)"}
-              </h3>
-              <p className="text-xs text-indigo-200/90 leading-snug mb-3">
-                {isHindi
-                  ? "सिंधु घाटी सभ्यता, वैदिक काल, मौर्य साम्राज्य, नदियां, भूगोल एवं भारतीय संविधान का सम्पूर्ण डिजिटल अध्ययन।"
-                  : "Indus Valley Civilization, Vedic Era, Maurya Empire, Rivers, Geography & Indian Constitution."}
-              </p>
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                    <span className="px-2 py-0.5 rounded-full text-[9.5px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">
+                      ✓ {book.badge}
+                    </span>
+                    <span className="px-1.5 py-0.5 rounded-full text-[9.5px] font-bold bg-white/10 text-slate-200">
+                      {book.stats}
+                    </span>
+                  </div>
 
-              {/* Feature pills */}
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-3 text-[10.5px] text-indigo-200">
-                <span className="flex items-center gap-1">
-                  <span>⚡</span> {isHindi ? "संक्षिप्त व विस्तृत मोड" : "Short & Full Modes"}
-                </span>
-                <span>·</span>
-                <span className="flex items-center gap-1">
-                  <span>🎯</span> {isHindi ? "हर पृष्ठ पर क्विज़" : "Page Quiz Cards"}
-                </span>
-                <span>·</span>
-                <span className="flex items-center gap-1 text-emerald-300 font-bold">
-                  <span>✓</span> {isHindi ? "100% मुफ्त" : "100% Free"}
-                </span>
+                  <h3 className="text-base sm:text-lg font-black text-white leading-tight mb-1">
+                    {book.title}
+                  </h3>
+                  <p className="text-[11.5px] text-slate-200/90 line-clamp-2 leading-snug mb-2">
+                    {book.subtitle}
+                  </p>
+
+                  {/* Feature pills */}
+                  <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-slate-200/80">
+                    {book.features.map((feat, fIdx) => (
+                      <span key={fIdx} className="bg-black/20 px-1.5 py-0.5 rounded">
+                        {feat}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* CTA Buttons & Jump to Chapter Dropdown */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            {/* Action buttons */}
+            <div className="flex items-center gap-2 pt-2 border-t border-white/10 relative z-10 mt-auto">
               <Link
-                href="/gk-book/sindhu-ghati"
-                className="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-amber-400 hover:bg-amber-300 text-slate-950 flex items-center justify-center gap-1.5 shadow-md transition-all active:scale-95"
+                href={book.bookUrl}
+                className="flex-1 px-3 py-2 rounded-xl text-xs font-bold bg-amber-400 hover:bg-amber-300 text-slate-950 flex items-center justify-center gap-1 shadow-md transition-all active:scale-95"
               >
-                <span>{isHindi ? "किताब पढ़ना शुरू करें" : "Start Reading"}</span>
-                <ArrowRight size={14} />
+                <span>{isHindi ? "किताब खोलें" : "Open Book"}</span>
+                <ArrowRight size={13} />
               </Link>
 
-              {/* Chapter Jump Dropdown */}
-              <div className="relative flex-1">
-                <select
-                  value={selectedChapter}
-                  onChange={handleChapterChange}
-                  className="w-full px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white border border-white/20 text-xs font-semibold outline-none cursor-pointer backdrop-blur-xs transition-colors"
-                >
-                  <option value="" disabled className="bg-slate-900 text-slate-400">
-                    {isHindi ? "▼ सीधे अध्याय पर जाएं..." : "▼ Jump to Chapter..."}
-                  </option>
-                  <option value="/gk-book/sindhu-ghati" className="bg-slate-900 text-white">
-                    1. सिंधु घाटी सभ्यता — विस्तार व नगर नियोजन (Live)
-                  </option>
-                  <option value="/gk-book" className="bg-slate-900 text-white">
-                    2. वैदिक काल एवं महाजनपद (Upcoming)
-                  </option>
-                  <option value="/gk-book" className="bg-slate-900 text-white">
-                    3. मौर्य साम्राज्य एवं चाणक्य (Upcoming)
-                  </option>
-                  <option value="/gk-book" className="bg-slate-900 text-white">
-                    📚 {isHindi ? "पूरी अनुक्रमणिका देखें" : "View Complete Shelf"}
-                  </option>
-                </select>
-              </div>
+              <Link
+                href={book.readUrl}
+                className="px-3 py-2 rounded-xl text-xs font-bold bg-white/15 hover:bg-white/20 text-white flex items-center justify-center gap-1 border border-white/20 transition-all active:scale-95"
+                title={book.firstChapterTitle}
+              >
+                <span>⚡ {isHindi ? "शुरू करें" : "Start"}</span>
+              </Link>
             </div>
           </div>
-        </div>
+        ))}
       </div>
 
-      {/* Upcoming Books Grid: MP GK, UP GK */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {/* Upcoming Books Grid: MP GK, UP GK, Rajasthan GK */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {UPCOMING_BOOKS.map((book) => (
           <div
             key={book.id}
-            className="p-3.5 rounded-2xl border transition-all flex items-center gap-3.5 bg-white dark:bg-slate-900"
+            className="p-3 rounded-2xl border transition-all flex items-center gap-3 bg-white dark:bg-slate-900"
             style={{
               borderColor: "var(--line, #e8eaf5)",
               boxShadow: "0 2px 8px rgba(0,0,0,0.03)",
             }}
           >
             {/* Book Cover Thumbnail */}
-            <div className="w-16 sm:w-20 aspect-[3/4] rounded-lg overflow-hidden shadow-md border border-slate-200 dark:border-slate-800 shrink-0 bg-slate-100 dark:bg-slate-800 relative">
+            <div className="w-14 sm:w-16 aspect-[3/4] rounded-lg overflow-hidden shadow-md border border-slate-200 dark:border-slate-800 shrink-0 bg-slate-100 dark:bg-slate-800 relative">
               <img
                 src={book.cover}
                 alt={book.title}
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
-                <span className="text-[9px] font-black uppercase px-1 py-0.5 rounded bg-amber-400/90 text-slate-950">
+                <span className="text-[8.5px] font-black uppercase px-1 py-0.5 rounded bg-amber-400/90 text-slate-950">
                   {book.badge}
                 </span>
               </div>
@@ -199,36 +233,28 @@ export default function MyBooksHomeSection({ isHindi = false }) {
 
             {/* Info */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5 mb-1">
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+              <div className="flex items-center gap-1 mb-0.5">
+                <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
                   ⏳ {book.badge}
-                </span>
-                <span className="text-[10px] text-slate-400 truncate">
-                  {book.exams}
                 </span>
               </div>
 
               <h4
-                className="text-sm font-bold truncate leading-snug mb-0.5"
+                className="text-xs font-bold truncate leading-snug mb-0.5"
                 style={{ color: "var(--ink, #14162b)" }}
               >
                 {book.title}
               </h4>
               <p
-                className="text-xs line-clamp-2 leading-relaxed mb-2"
+                className="text-[11px] line-clamp-1 leading-normal mb-1.5"
                 style={{ color: "var(--mute, #6b7190)" }}
               >
                 {book.subtitle}
               </p>
 
-              <button
-                type="button"
-                disabled
-                className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed inline-flex items-center gap-1"
-              >
-                <Clock size={11} />
-                <span>{isHindi ? "जल्द उपलब्ध होगा" : "Coming Soon"}</span>
-              </button>
+              <span className="text-[10px] text-slate-400 block truncate">
+                🎯 {book.exams}
+              </span>
             </div>
           </div>
         ))}

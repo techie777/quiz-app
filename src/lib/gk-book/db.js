@@ -27,42 +27,45 @@ export async function getGkBookTree() {
 
     // First populate from SEED_TREE to ensure all categories/topics/subjects exist
     SEED_TREE.forEach((sc) => {
-      const scKey = sc.id;
+      const scKey = sc.id || sc.slug;
       if (!treeMap.has(scKey)) {
         treeMap.set(scKey, {
-          id: sc.id,
-          title: sc.title,
-          icon: sc.icon,
+          id: scKey,
+          title: sc.title || sc.n,
+          icon: sc.icon || "📚",
           en: sc.en,
           topics: new Map(),
         });
       }
 
-      sc.topics.forEach((top) => {
-        const topKey = top.id;
+      const topicsList = sc.topics || sc.t || [];
+      topicsList.forEach((top) => {
+        const topKey = top.id || top.slug;
         const scNode = treeMap.get(scKey);
         if (!scNode.topics.has(topKey)) {
           scNode.topics.set(topKey, {
-            id: top.id,
-            title: top.title,
+            id: topKey,
+            title: top.title || top.n,
             en: top.en,
             subjects: new Map(),
           });
         }
 
-        top.subjects.forEach((subj) => {
-          const subKey = subj.id;
+        const subjectsList = top.subjects || top.s || [];
+        subjectsList.forEach((subj) => {
+          const subKey = subj.id || subj.slug;
           const topNode = scNode.topics.get(topKey);
           if (!topNode.subjects.has(subKey)) {
             topNode.subjects.set(subKey, {
-              id: subj.id,
-              title: subj.title,
+              id: subKey,
+              title: subj.title || subj.n,
               en: subj.en,
               chapters: [],
             });
           }
 
-          subj.chapters.forEach((ch) => {
+          const chaptersList = subj.chapters || subj.c || [];
+          chaptersList.forEach((ch) => {
             topNode.subjects.get(subKey).chapters.push({ ...ch });
           });
         });

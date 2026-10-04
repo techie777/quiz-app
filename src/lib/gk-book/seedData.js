@@ -291,155 +291,438 @@ export const PAGES = SHORT_PAGES.map((sp, idx) => ({
   })),
 }));
 
-// Tree structure matching gk-book.html
+export const SOLAR_SYSTEM_SHORT_PAGES = [
+  {
+    t: "सूर्य और सौर परिवार",
+    m: 3,
+    b: [
+      ["h", "सौरमंडल का केंद्र: सूर्य"],
+      ["p", "हमारा सौरमंडल लगभग 4.6 अरब वर्ष पुराना है। इसके केंद्र में सूर्य स्थित है, जो सौरमंडल के कुल द्रव्यमान का 99.86% हिस्सा धारण करता है।"],
+      ["l", [
+        "सतह का तापमान: लगभग 6,000°C (कोरोना का तापमान 10 लाख°C से अधिक)",
+        "पृथ्वी तक प्रकाश पहुँचने का समय: 8 मिनट 20 सेकंड (500 सेकंड)",
+        "ऊर्जा का स्रोत: नाभिकीय संलयन (Nuclear Fusion) जिसमें हाइड्रोजन हीलियम में संलयित होती है"
+      ]],
+      ["f", "💡 सूर्य का गुरुत्वाकर्षण बल ही सभी 8 ग्रहों, उपग्रहों और क्षुद्रग्रहों को अपनी कक्षा में बांधे रखता है।"]
+    ],
+    q: [
+      ["सूर्य की ऊर्जा का मुख्य स्रोत क्या है?", ["नाभिकीय संलयन (Nuclear Fusion)", "नाभिकीय विखंडन", "रासायनिक दहन", "रेडियोधर्मी क्षय"], 0],
+      ["सूर्य का प्रकाश पृथ्वी तक पहुँचने में कितना समय लेता है?", ["8 मिनट 20 सेकंड", "6 मिनट 10 सेकंड", "10 मिनट 45 सेकंड", "12 मिनट"], 0]
+    ]
+  },
+  {
+    t: "आंतरिक ग्रह (पार्थिव ग्रह)",
+    m: 4,
+    b: [
+      ["h", "बुध, शुक्र, पृथ्वी, मंगल"],
+      ["p", "सूर्य के सबसे निकटतम चार ग्रहों को आंतरिक या पार्थिव ग्रह कहा जाता है क्योंकि ये सघन चट्टानी पदार्थों से बने हैं।"],
+      ["l", [
+        "बुध (Mercury): सबसे छोटा और सूर्य के सबसे निकटतम ग्रह; कोई वायुमंडल व उपग्रह नहीं",
+        "शुक्र (Venus): सबसे चमकीला व सबसे गर्म ग्रह (96% CO2); 'भोर व सांझ का तारा' तथा 'पृथ्वी की जुड़वां बहन'",
+        "पृथ्वी (Earth): जल की उपस्थिति के कारण 'नीला ग्रह'; एकमात्र प्राकृतिक उपग्रह चंद्रमा",
+        "मंगल (Mars): आयरन ऑक्साइड के कारण 'लाल ग्रह'; दो उपग्रह: फोबोस और डीमोस"
+      ]],
+      ["f", "💡 सौरमंडल का सबसे ऊँचा ज्वालामुखी पर्वत 'ओलंपस मॉन्स' मंगल ग्रह पर स्थित है, जो माउंट एवरेस्ट से 3 गुना ऊँचा है।"]
+    ],
+    q: [
+      ["किस ग्रह को 'पृथ्वी की बहन' (Earth's Twin) और सबसे चमकीला ग्रह कहा जाता है?", ["शुक्र (Venus)", "मंगल (Mars)", "बुध (Mercury)", "बृहस्पति (Jupiter)"], 0],
+      ["मंगल ग्रह के दो प्राकृतिक उपग्रह कौन-से हैं?", ["फोबोस और डीमोस", "टाइटन और गैनिमीड", "यूरोपा और कैलिस्टो", "ट्राइटन और नेरीड"], 0]
+    ]
+  },
+  {
+    t: "बाह्य ग्रह एवं क्षुद्रग्रह पेटी",
+    m: 3,
+    b: [
+      ["h", "गैस दानव व क्षुद्रग्रह पेटी"],
+      ["p", "मंगल और बृहस्पति की कक्षाओं के बीच लाखों छोटे-बड़े पत्थरों की 'क्षुद्रग्रह पेटी' (Asteroid Belt) पाई जाती है। इसके पार स्थित चारों ग्रह विशाल गैसीय ग्रह हैं।"],
+      ["l", [
+        "बृहस्पति (Jupiter): सौरमंडल का सबसे बड़ा ग्रह; सबसे बड़ा उपग्रह 'गैनिमीड' (बुध ग्रह से भी बड़ा)",
+        "शनि (Saturn): मनोहारी छल्लों (Rings) वाला ग्रह; सबसे बड़ा उपग्रह 'टाइटन'; जल से भी कम घनत्व",
+        "अरुण (Uranus): अत्यधिक झुकाव के कारण 'लेटा हुआ ग्रह'; पूर्व से पश्चिम परिक्रमा करता है",
+        "वरुण (Neptune): सूर्य से सर्वाधिक दूर, अत्यंत ठंडा मीथेन गैस युक्त हरा-नीला ग्रह"
+      ]],
+      ["f", "💡 शनि ग्रह का घनत्व पानी से भी कम (0.687 g/cm³) है। यदि इसे किसी विशाल जलकुंड में रखा जाए, तो यह तैरने लगेगा।"]
+    ],
+    q: [
+      ["सौरमंडल का सबसे बड़ा उपग्रह कौन-सा है और यह किस ग्रह का है?", ["गैनिमीड (बृहस्पति)", "टाइटन (शनि)", "फोबोस (मंगल)", "ट्राइटन (वरुण)"], 0],
+      ["क्षुद्रग्रह पेटी (Asteroid Belt) किन दो ग्रहों की कक्षाओं के मध्य स्थित है?", ["मंगल और बृहस्पति", "पृथ्वी और मंगल", "बृहस्पति और शनि", "शुक्र और पृथ्वी"], 0]
+    ]
+  }
+];
+
+export const SOLAR_SYSTEM_FULL_PAGES = [
+  // Page 1 Full
+  [
+    ["p", "ब्रह्मांड के अनंत विस्तार में हमारी आकाशगंगा (मिल्की वे / दुग्ध मेखला) की 'ओरियन भुजा' में स्थित है हमारा सौरमंडल। यह एक गुरुत्वाकर्षण रूप से बंधी प्रणाली है जिसमें सूर्य और उसकी परिक्रमा करने वाले सभी खगोलीय पिंड शामिल हैं।"],
+    ["h", "1. सौरमंडल का पितामह: सूर्य"],
+    ["p", "सूर्य एक मध्यम आकार का पीला बौना (Yellow Dwarf) तारा है। यह हमारे सौरमंडल के कुल द्रव्यमान का <b>99.86%</b> हिस्सा समेटे हुए है।"],
+    ["l", [
+      "<b>आयु:</b> लगभग 4.6 अरब वर्ष (अपने जीवन का आधा हिस्सा पूरा कर चुका है)।",
+      "<b>संरचना:</b> 73% हाइड्रोजन, 25% हीलियम और 2% भारी तत्व (ऑक्सीजन, कार्बन, लोहा आदि)।",
+      "<b>तापमान:</b> केंद्र (Core) में लगभग 1.5 करोड़°C और बाहरी सतह (Photosphere) पर लगभग 6,000°C।",
+      "<b>कोरोना:</b> सूर्य का सबसे बाहरी वायुमंडल जो पूर्ण सूर्यग्रहण के समय सफेद मुकुट जैसा दिखाई देता है।"
+    ]],
+    ["h", "2. प्रकाश और दूरी"],
+    ["p", "सूर्य से पृथ्वी की औसत दूरी लगभग <b>14.96 करोड़ किलोमीटर (1 AU - Astronomical Unit)</b> है। सूर्य के प्रकाश की गति 3,00,000 किमी/सेकंड है, जिससे प्रकाश को पृथ्वी तक आने में <b>8 मिनट 20 सेकंड</b> लगते हैं।"]
+  ],
+  // Page 2 Full
+  [
+    ["p", "सूर्य से दूरी के क्रम में पहले चार ग्रह बुध, शुक्र, पृथ्वी और मंगल हैं। ये सघन चट्टानी धातुओं से निर्मित होने के कारण 'स्थलीय' या 'पार्थिव' ग्रह (Terrestrial Planets) कहलाते हैं।"],
+    ["h", "1. बुध (Mercury)"],
+    ["l", [
+      "सौरमंडल का सबसे छोटा ग्रह (प्लूटो के बौने ग्रह बनने के बाद)।",
+      "सूर्य की सबसे तेज परिक्रमा मात्र <b>88 दिनों</b> में पूरी करता है।",
+      "वायुमंडल न होने के कारण यहाँ दिन का तापमान 430°C और रात का तापमान -180°C तक गिर जाता है (सर्वाधिक तापांतर: 610°C)।"
+    ]],
+    ["h", "2. शुक्र (Venus)"],
+    ["l", [
+      "आकार व घनत्व में पृथ्वी के लगभग समान, इसलिए <b>'पृथ्वी की जुड़वां बहन'</b>।",
+      "इसके वायुमंडल में 96% कार्बन डाइऑक्साइड है, जिससे भीषण ग्रीनहाउस प्रभाव उत्पन्न होता है; यह सौरमंडल का <b>सबसे गर्म ग्रह (465°C)</b> है।",
+      "यह अपनी धुरी पर पूर्व से पश्चिम (Clockwise) घूमता है, इसलिए यहाँ सूर्योदय पश्चिम में होता है।"
+    ]],
+    ["h", "3. मंगल (Mars)"],
+    ["l", [
+      "इसकी मिट्टी में लौह ऑक्साइड (Rust) प्रचुर मात्रा में है, इसलिए इसे <b>'लाल ग्रह'</b> कहा जाता है।",
+      "इसके दो छोटे उपग्रह <b>फोबोस (Phobos)</b> और <b>डीमोस (Deimos)</b> हैं। डीमोस सौरमंडल का सबसे छोटा उपग्रह है।",
+      "भारत के <b>मंगलयान (Mangalyaan / MOM - 2013)</b> ने अपने पहले ही प्रयास में मंगल की कक्षा में प्रवेश कर इतिहास रचा था।"
+    ]]
+  ],
+  // Page 3 Full
+  [
+    ["p", "क्षुद्रग्रह पेटी के पार के चार ग्रह विशाल आकार और अत्यंत कम घनत्व वाले हैं। इन्हें 'जोवियन' या 'गैस दानव' (Gas Giants / Ice Giants) कहा जाता है।"],
+    ["h", "1. बृहस्पति (Jupiter)"],
+    ["l", [
+      "सौरमंडल का सबसे विशाल ग्रह (अन्य सभी ग्रहों के संयुक्त द्रव्यमान से ढाई गुना भारी)।",
+      "अपनी धुरी पर सबसे तेज घूमता है—एक चक्कर मात्र <b>9 घंटे 55 मिनट</b> में।",
+      "इस पर सदियों से चल रहा विशाल तूफान <b>'ग्रेट रेड स्पॉट' (Great Red Spot)</b> मौजूद है।",
+      "इसका उपग्रह <b>गैनिमीड (Ganymede)</b> बुध ग्रह से भी बड़ा है और इसका अपना चुंबकीय क्षेत्र है।"
+    ]],
+    ["h", "2. शनि (Saturn)"],
+    ["l", [
+      "इसके चारों ओर बर्फ और चट्टानों के टुकड़ों से बने <b>7 मुख्य छल्ले (Rings)</b> हैं।",
+      "शनि का उपग्रह <b>टाइटन (Titan)</b> दूसरा सबसे बड़ा उपग्रह है और एकमात्र ऐसा उपग्रह है जिसका सघन वायुमंडल और तरल मीथेन की झीलें हैं।",
+      "इसका औसत घनत्व 0.687 ग्राम/सेमी³ है, जो पानी (1.0 ग्राम/सेमी³) से भी कम है।"
+    ]],
+    ["h", "3. अंतर्राष्ट्रीय सीमा: क्यूपर बेल्ट व प्लूटो"],
+    ["p", "वरुण (Neptune) के पार बर्फीले पिंडों की <b>क्यूपर बेल्ट (Kuiper Belt)</b> स्थित है। वर्ष 2006 में अंतर्राष्ट्रीय खगोलीय संघ (IAU) ने प्लूटो को ग्रहों की श्रेणी से हटाकर <b>'बौना ग्रह' (Dwarf Planet)</b> घोषित किया था।"]
+  ]
+];
+
+export const SOLAR_SYSTEM_PAGES = SOLAR_SYSTEM_SHORT_PAGES.map((sp, idx) => ({
+  pageNumber: idx + 1,
+  title: sp.t,
+  readingTimeShort: sp.m || 3,
+  readingTimeFull: (sp.m || 3) + 3,
+  P: sp.b.map((block) => ({
+    type: block[0],
+    text: typeof block[1] === "string" ? block[1] : undefined,
+    items: Array.isArray(block[1]) ? block[1] : undefined,
+  })),
+  F: (SOLAR_SYSTEM_FULL_PAGES[idx] || []).map((block) => ({
+    type: block[0],
+    text: typeof block[1] === "string" ? block[1] : undefined,
+    items: Array.isArray(block[1]) ? block[1] : undefined,
+  })),
+  q: sp.q.map((question, qIdx) => ({
+    id: `sol_q_${idx}_${qIdx}`,
+    text: question[0],
+    options: question[1],
+    answer: question[2],
+    explanation: "",
+  })),
+}));
+
+export const CHAPTER_PAGES_MAP = {
+  "sindhu-ghati": PAGES,
+  "solar-system": SOLAR_SYSTEM_PAGES,
+};
+
+// Tree structure for India GK Book
+export const INDIA_GK_TREE = {
+  id: "india-gk",
+  slug: "india-gk",
+  title: "भारत सामान्य ज्ञान",
+  titleEn: "India GK",
+  subtitle: "सिंधु घाटी सभ्यता, वैदिक काल, मौर्य साम्राज्य, नदियां, भूगोल, राजव्यवस्था एवं भारतीय संविधान का संपूर्ण अध्ययन।",
+  cover: "/images/gk-book/india-gk-cover.jpg",
+  badge: "live",
+  badgeLabel: "लाइव उपलब्ध",
+  category: "national",
+  categoryLabel: "राष्ट्रीय सामान्य ज्ञान",
+  firstChapterSlug: "sindhu-ghati",
+  examTags: ["UPSC", "SSC CGL", "Railway", "All State PCS"],
+  stats: { topics: 5, chapters: 15, liveChapters: 1 },
+  t: [
+    {
+      n: "इतिहास",
+      slug: "history",
+      en: "History",
+      s: [
+        {
+          n: "प्राचीन भारत",
+          slug: "ancient-india",
+          en: "Ancient India",
+          c: [
+            { title: LIVE_CHAPTER.title, slug: LIVE_CHAPTER.slug, live: true, en: "Indus Valley Civilization Sindhu Ghati Harappa हड़प्पा" },
+            { title: "वैदिक काल", slug: "vedic-period", live: false, en: "Vedic Period" },
+            { title: "महाजनपद काल", slug: "mahajanapadas", live: false, en: "Mahajanapadas" },
+            { title: "मौर्य साम्राज्य", slug: "maurya-empire", live: false, en: "Maurya Empire" },
+            { title: "गुप्त साम्राज्य", slug: "gupta-empire", live: false, en: "Gupta Empire" },
+          ]
+        },
+        {
+          n: "मध्यकालीन भारत",
+          slug: "medieval-india",
+          en: "Medieval India",
+          c: [
+            { title: "दिल्ली सल्तनत", slug: "delhi-sultanate", live: false, en: "Delhi Sultanate" },
+            { title: "मुगलकाल", slug: "mughal-era", live: false, en: "Mughal Era" },
+            { title: "भक्ति और सूफी आंदोलन", slug: "bhakti-sufi", live: false, en: "Bhakti Sufi Movement" },
+          ]
+        },
+        {
+          n: "आधुनिक भारत",
+          slug: "modern-india",
+          en: "Modern India",
+          c: [
+            { title: "1857 का विद्रोह", slug: "1857-revolt", live: false, en: "1857 Revolt" },
+            { title: "गांधीवादी चरण", slug: "gandhian-phase", live: false, en: "Gandhian Phase" },
+            { title: "संविधान निर्माण", slug: "constitution-making", live: false, en: "Constitution Making" },
+          ]
+        }
+      ]
+    },
+    {
+      n: "भूगोल",
+      slug: "geography",
+      s: [
+        {
+          n: "भारत का भूगोल",
+          slug: "indian-geography",
+          c: [
+            { title: "भू-आकृतिक प्रदेश", slug: "physiography", live: false },
+            { title: "अपवाह तंत्र (नदियां)", slug: "drainage-system", live: false },
+            { title: "जलवायु और मृदा", slug: "climate-soil", live: false },
+          ]
+        }
+      ]
+    },
+    {
+      n: "भारतीय राजव्यवस्था",
+      slug: "polity",
+      s: [
+        {
+          n: "संविधान",
+          slug: "constitution",
+          c: [
+            { title: "प्रस्तावना", slug: "preamble", live: false },
+            { title: "मूल अधिकार", slug: "fundamental-rights", live: false },
+            { title: "राष्ट्रपति और संसद", slug: "president-parliament", live: false },
+          ]
+        }
+      ]
+    },
+    {
+      n: "भारतीय अर्थव्यवस्था",
+      slug: "economy",
+      s: [
+        {
+          n: "आधार",
+          slug: "economic-basics",
+          c: [
+            { title: "अर्थव्यवस्था के क्षेत्र", slug: "sectors-of-economy", live: false },
+            { title: "बैंकिंग प्रणाली", slug: "banking-system", live: false },
+            { title: "बजट और कर प्रणाली", slug: "budget-taxation", live: false },
+          ]
+        }
+      ]
+    },
+    {
+      n: "सामान्य विज्ञान",
+      slug: "science",
+      s: [
+        {
+          n: "भौतिक विज्ञान",
+          slug: "physics",
+          c: [
+            { title: "मापन एवं मात्रक", slug: "units-measurement", live: false },
+            { title: "गति के नियम", slug: "laws-of-motion", live: false },
+          ]
+        },
+        {
+          n: "जीव विज्ञान",
+          slug: "biology",
+          c: [
+            { title: "कोशिका संरचना", slug: "cell-structure", live: false },
+            { title: "मानव पाचन तंत्र", slug: "digestive-system", live: false },
+          ]
+        }
+      ]
+    }
+  ]
+};
+
+// Tree structure for World GK Book (Standalone Individual Book)
+export const WORLD_GK_TREE = {
+  id: "world-gk",
+  slug: "world-gk",
+  title: "विश्व सामान्य ज्ञान",
+  titleEn: "World GK",
+  subtitle: "ब्रह्मांड, सौरमंडल, विश्व के महाद्वीप व महासागर, अंतर्राष्ट्रीय सीमाएं तथा संयुक्त राष्ट्र (UN) व वैश्विक संगठन।",
+  cover: "/images/gk-book/world-gk-cover.jpg",
+  badge: "live",
+  badgeLabel: "लाइव उपलब्ध",
+  category: "world",
+  categoryLabel: "विश्व सामान्य ज्ञान",
+  firstChapterSlug: "solar-system",
+  examTags: ["UPSC", "SSC", "CDS", "NDA", "State PCS"],
+  stats: { topics: 2, chapters: 4, liveChapters: 1 },
+  t: [
+    {
+      n: "विश्व भूगोल",
+      slug: "world-geography",
+      s: [
+        {
+          n: "ब्रह्मांड एवं खगोलिकी",
+          slug: "universe",
+          c: [
+            { title: "सौरमंडल (Solar System)", slug: "solar-system", live: true, en: "Solar System Planets Sun Space Universe" },
+            { title: "आकाशगंगा और तारे", slug: "galaxies-stars", live: false, en: "Galaxies Stars Milky Way" },
+          ]
+        },
+        {
+          n: "स्थलमंडल एवं जलमंडल",
+          slug: "lithosphere-hydrosphere",
+          c: [
+            { title: "महाद्वीप एवं पर्वत श्रृंखलाएं", slug: "continents-mountains", live: false, en: "Continents Mountains" },
+            { title: "महासागर एवं जलधाराएं", slug: "oceans-currents", live: false, en: "Oceans Currents" },
+          ]
+        }
+      ]
+    },
+    {
+      n: "अंतर्राष्ट्रीय संगठन",
+      slug: "international-organizations",
+      s: [
+        {
+          n: "वैश्विक संस्थाएं",
+          slug: "global-agencies",
+          c: [
+            { title: "संयुक्त राष्ट्र (UN) एवं उसके अंग", slug: "united-nations", live: false, en: "United Nations Organs" },
+            { title: "WTO, IMF एवं विश्व बैंक", slug: "wto-imf-worldbank", live: false, en: "WTO IMF World Bank" },
+          ]
+        }
+      ]
+    }
+  ]
+};
+
+// All Books Catalog for Bookshelf
+export const BOOKS_CATALOG = [
+  {
+    id: "india-gk",
+    slug: "india-gk",
+    title: "भारत सामान्य ज्ञान (India GK)",
+    titleHi: "भारत सामान्य ज्ञान",
+    titleEn: "India General Knowledge",
+    subtitle: "सिंधु घाटी सभ्यता, वैदिक काल, मौर्य साम्राज्य, नदियां, भूगोल, राजव्यवस्था एवं भारतीय संविधान का संपूर्ण अध्ययन।",
+    cover: "/images/gk-book/india-gk-cover.jpg",
+    badge: "live",
+    badgeLabel: "लाइव उपलब्ध",
+    category: "national",
+    categoryLabel: "राष्ट्रीय",
+    firstChapterSlug: "sindhu-ghati",
+    examTags: ["UPSC", "SSC CGL", "Railway", "All State PCS"],
+    stats: { topics: 5, chapters: 15, pages: 25 },
+    tree: INDIA_GK_TREE,
+  },
+  {
+    id: "world-gk",
+    slug: "world-gk",
+    title: "विश्व सामान्य ज्ञान (World GK)",
+    titleHi: "विश्व सामान्य ज्ञान",
+    titleEn: "World General Knowledge",
+    subtitle: "ब्रह्मांड, सौरमंडल, विश्व के महाद्वीप व महासागर, अंतर्राष्ट्रीय सीमाएं तथा संयुक्त राष्ट्र (UN) व वैश्विक संगठन।",
+    cover: "/images/gk-book/world-gk-cover.jpg",
+    badge: "live",
+    badgeLabel: "लाइव उपलब्ध",
+    category: "world",
+    categoryLabel: "विश्व",
+    firstChapterSlug: "solar-system",
+    examTags: ["UPSC", "SSC", "CDS", "NDA", "State PCS"],
+    stats: { topics: 2, chapters: 4, pages: 12 },
+    tree: WORLD_GK_TREE,
+  },
+  {
+    id: "mp-gk",
+    slug: "mp-gk",
+    title: "मध्य प्रदेश सामान्य ज्ञान (MP GK)",
+    titleHi: "मध्य प्रदेश सामान्य ज्ञान",
+    titleEn: "Madhya Pradesh GK",
+    subtitle: "मध्य प्रदेश का इतिहास, नदियां, जनजातियां, राष्ट्रीय उद्यान, मेले, साहित्य, कला-संस्कृति व पुरातात्विक धरोहर।",
+    cover: "/images/gk-book/mp-gk-cover.jpg",
+    badge: "upcoming",
+    badgeLabel: "शीघ्र आ रहा है",
+    category: "state",
+    categoryLabel: "राज्य विशेष",
+    examTags: ["MPPSC", "MP Police", "पटवारी", "व्यापम"],
+    stats: { topics: 6, chapters: 28, pages: 60 },
+  },
+  {
+    id: "up-gk",
+    slug: "up-gk",
+    title: "उत्तर प्रदेश सामान्य ज्ञान (UP GK)",
+    titleHi: "उत्तर प्रदेश सामान्य ज्ञान",
+    titleEn: "Uttar Pradesh GK",
+    subtitle: "75 जिलों का विवरण, प्रमुख ऐतिहासिक स्थल, नदियां, कला-संस्कृति, अर्थव्यवस्था, योजनाएं व समसामयिकी।",
+    cover: "/images/gk-book/up-gk-cover.jpg",
+    badge: "upcoming",
+    badgeLabel: "शीघ्र आ रहा है",
+    category: "state",
+    categoryLabel: "राज्य विशेष",
+    examTags: ["UPPSC", "UPSSSC", "RO/ARO", "UP Police"],
+    stats: { topics: 7, chapters: 30, pages: 65 },
+  },
+  {
+    id: "rajasthan-gk",
+    slug: "rajasthan-gk",
+    title: "राजस्थान सामान्य ज्ञान (Rajasthan GK)",
+    titleHi: "राजस्थान सामान्य ज्ञान",
+    titleEn: "Rajasthan GK",
+    subtitle: "राजस्थान का गौरवशाली इतिहास, दुर्ग, थार मरुस्थल, लोक देवता, रीति-रिवाज, संगीत, नृत्य व परंपराएं।",
+    cover: "/images/gk-book/rajasthan-gk-cover.jpg",
+    badge: "upcoming",
+    badgeLabel: "शीघ्र आ रहा है",
+    category: "state",
+    categoryLabel: "राज्य विशेष",
+    examTags: ["RAS", "REET", "राजस्थान पुलिस", "RSMSSB"],
+    stats: { topics: 5, chapters: 25, pages: 55 },
+  },
+];
+
+// Tree structure containing both India GK and World GK for backward compatibility
 export const BOOK_TREE = [
   {
     n: "India GK",
     slug: "india-gk",
     en: "India GK",
-    t: [
-      {
-        n: "इतिहास",
-        slug: "history",
-        en: "History",
-        s: [
-          {
-            n: "प्राचीन भारत",
-            slug: "ancient-india",
-            en: "Ancient India",
-            c: [
-              { title: LIVE_CHAPTER.title, slug: LIVE_CHAPTER.slug, live: true, en: "Indus Valley Civilization Sindhu Ghati Harappa हड़प्पा" },
-              { title: "वैदिक काल", slug: "vedic-period", live: false, en: "Vedic Period" },
-              { title: "महाजनपद काल", slug: "mahajanapadas", live: false, en: "Mahajanapadas" },
-              { title: "मौर्य साम्राज्य", slug: "maurya-empire", live: false, en: "Maurya Empire" },
-              { title: "गुप्त साम्राज्य", slug: "gupta-empire", live: false, en: "Gupta Empire" },
-            ]
-          },
-          {
-            n: "मध्यकालीन भारत",
-            slug: "medieval-india",
-            en: "Medieval India",
-            c: [
-              { title: "दिल्ली सल्तनत", slug: "delhi-sultanate", live: false, en: "Delhi Sultanate" },
-              { title: "मुगलकाल", slug: "mughal-era", live: false, en: "Mughal Era" },
-              { title: "भक्ति और सूफी आंदोलन", slug: "bhakti-sufi", live: false, en: "Bhakti Sufi Movement" },
-            ]
-          },
-          {
-            n: "आधुनिक भारत",
-            slug: "modern-india",
-            en: "Modern India",
-            c: [
-              { title: "1857 का विद्रोह", slug: "1857-revolt", live: false, en: "1857 Revolt" },
-              { title: "गांधीवादी चरण", slug: "gandhian-phase", live: false, en: "Gandhian Phase" },
-              { title: "संविधान निर्माण", slug: "constitution-making", live: false, en: "Constitution Making" },
-            ]
-          }
-        ]
-      },
-      {
-        n: "भूगोल",
-        slug: "geography",
-        s: [
-          {
-            n: "भारत का भूगोल",
-            slug: "indian-geography",
-            c: [
-              { title: "भू-आकृतिक प्रदेश", slug: "physiography", live: false },
-              { title: "अपवाह तंत्र", slug: "drainage-system", live: false },
-              { title: "जलवायु और मृदा", slug: "climate-soil", live: false },
-            ]
-          }
-        ]
-      },
-      {
-        n: "भारतीय राजव्यवस्था",
-        slug: "polity",
-        s: [
-          {
-            n: "संविधान",
-            slug: "constitution",
-            c: [
-              { title: "प्रस्तावना", slug: "preamble", live: false },
-              { title: "मूल अधिकार", slug: "fundamental-rights", live: false },
-              { title: "राष्ट्रपति और संसद", slug: "president-parliament", live: false },
-            ]
-          }
-        ]
-      },
-      {
-        n: "भारतीय अर्थव्यवस्था",
-        slug: "economy",
-        s: [
-          {
-            n: "आधार",
-            slug: "economic-basics",
-            c: [
-              { title: "अर्थव्यवस्था के क्षेत्र", slug: "sectors-of-economy", live: false },
-              { title: "बैंकिंग", slug: "banking-system", live: false },
-              { title: "बजट और कर", slug: "budget-taxation", live: false },
-            ]
-          }
-        ]
-      },
-      {
-        n: "सामान्य विज्ञान",
-        slug: "science",
-        s: [
-          {
-            n: "भौतिक विज्ञान",
-            slug: "physics",
-            c: [
-              { title: "मापन", slug: "units-measurement", live: false },
-              { title: "गति के नियम", slug: "laws-of-motion", live: false },
-            ]
-          },
-          {
-            n: "जीव विज्ञान",
-            slug: "biology",
-            c: [
-              { title: "कोशिका", slug: "cell-structure", live: false },
-              { title: "पाचन तंत्र", slug: "digestive-system", live: false },
-            ]
-          }
-        ]
-      }
-    ]
+    t: INDIA_GK_TREE.t,
   },
   {
     n: "World GK",
     slug: "world-gk",
-    t: [
-      {
-        n: "विश्व भूगोल",
-        slug: "world-geography",
-        s: [
-          {
-            n: "ब्रह्मांड",
-            slug: "universe",
-            c: [
-              { title: "आकाशगंगा और तारे", slug: "galaxies-stars", live: false },
-              { title: "सौरमंडल", slug: "solar-system", live: false },
-            ]
-          }
-        ]
-      },
-      {
-        n: "अंतर्राष्ट्रीय संगठन",
-        slug: "international-organizations",
-        s: [
-          {
-            n: "संयुक्त राष्ट्र",
-            slug: "united-nations",
-            c: [
-              { title: "अंग और महासचिव", slug: "un-organs", live: false },
-            ]
-          }
-        ]
-      }
-    ]
+    en: "World GK",
+    t: WORLD_GK_TREE.t,
   }
 ];
+
+export function getBookBySlug(slug) {
+  if (!slug) return INDIA_GK_TREE;
+  const found = BOOKS_CATALOG.find((b) => b.slug === slug || b.id === slug);
+  if (found && found.tree) return found.tree;
+  if (slug === "world-gk") return WORLD_GK_TREE;
+  return INDIA_GK_TREE;
+}
 
 /**
  * Sanitizes input text allowing strictly only <b> and <i> HTML tags.

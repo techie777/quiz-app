@@ -570,19 +570,22 @@ export default function UnsetLandingPage() {
                     defaultValue=""
                   >
                     <option value="" disabled className="bg-slate-900 text-slate-400">
-                      {isHindi ? "▼ सीधे अध्याय पर जाएं..." : "▼ Jump to Chapter..."}
+                      {isHindi ? "▼ सीधे पुस्तक या अध्याय पर जाएं..." : "▼ Jump to Book or Chapter..."}
+                    </option>
+                    <option value="/gk-book" className="bg-slate-900 text-amber-300 font-bold">
+                      📚 {isHindi ? "मेरी डिजिटल पुस्तकें (सभी पुस्तकें)" : "My Bookshelf (All Books)"}
                     </option>
                     <option value="/gk-book/sindhu-ghati" className="bg-slate-900 text-white">
-                      1. सिंधु घाटी सभ्यता — विस्तार व नगर नियोजन (5 पृष्ठ · Live)
+                      🇮🇳 1. India GK: सिंधु घाटी सभ्यता (Live)
                     </option>
-                    <option value="/gk-book" className="bg-slate-900 text-white">
-                      2. वैदिक काल एवं महाजनपद (Upcoming)
+                    <option value="/gk-book?book=world-gk&chapter=solar-system&page=1" className="bg-slate-900 text-white">
+                      🌍 2. World GK: सौरमंडल एवं ब्रह्मांड (Live)
                     </option>
-                    <option value="/gk-book" className="bg-slate-900 text-white">
-                      3. मौर्य साम्राज्य एवं चाणक्य (Upcoming)
+                    <option value="/gk-book?book=mp-gk" className="bg-slate-900 text-slate-300">
+                      🏛️ 3. MP GK: मध्य प्रदेश सामान्य ज्ञान (Upcoming)
                     </option>
-                    <option value="/gk-book" className="bg-slate-900 text-white">
-                      📚 {isHindi ? "पूरी अनुक्रमणिका देखें (All Chapters)" : "View Full Shelf"}
+                    <option value="/gk-book?book=up-gk" className="bg-slate-900 text-slate-300">
+                      🏛️ 4. UP GK: उत्तर प्रदेश सामान्य ज्ञान (Upcoming)
                     </option>
                   </select>
                 </div>
