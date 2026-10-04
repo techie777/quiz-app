@@ -4,7 +4,7 @@ import React from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import GkBookReader from "@/components/gk-book/GkBookReader";
 
-export default function GkBookPathPage() {
+function GkBookPathContent() {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
@@ -27,5 +27,13 @@ export default function GkBookPathPage() {
       initialPage={initialPage}
       onBackToIndex={handleBackToIndex}
     />
+  );
+}
+
+export default function GkBookPathPage() {
+  return (
+    <React.Suspense fallback={<div style={{ minHeight: "100vh", background: "#f7f7fd" }} />}>
+      <GkBookPathContent />
+    </React.Suspense>
   );
 }

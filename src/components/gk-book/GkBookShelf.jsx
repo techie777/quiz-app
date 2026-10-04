@@ -1,16 +1,46 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import styles from "@/styles/GkBook.module.css";
 import GkBookHeader from "./GkBookHeader";
-import { BOOKS_CATALOG, INDIA_GK_TREE, WORLD_GK_TREE } from "@/lib/gk-book/seedData";
+import {
+  BOOKS_CATALOG,
+  INDIA_GK_TREE,
+  WORLD_GK_TREE,
+  STORAGE_KEY,
+} from "@/lib/gk-book/seedData";
 
 export default function GkBookShelf({ onSelectBook, onSelectChapter }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
   const [theme, setTheme] = useState("light");
   const [fontSize, setFontSize] = useState(17);
+  const [lastRead, setLastRead] = useState(null);
+  const [readPagesCount, setReadPagesCount] = useState(0);
+
+  // Load last read chapter & progress from localStorage
+  useEffect(() => {
+    try {
+      const lr = localStorage.getItem("gkbook:lastRead");
+      if (lr) {
+        const parsed = JSON.parse(lr);
+        if (parsed && parsed.chapterSlug) {
+          setLastRead(parsed);
+        }
+      }
+
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && parsed.read && typeof parsed.read === "object") {
+          setReadPagesCount(Object.keys(parsed.read).length);
+        }
+      }
+    } catch (e) {
+      console.warn("Could not load lastRead", e);
+    }
+  }, []);
 
   // Search logic across books and all internal chapters
   const query = searchQuery.trim().toLowerCase();
@@ -23,9 +53,13 @@ export default function GkBookShelf({ onSelectBook, onSelectChapter }) {
     const searchInTree = (bookSlug, bookTitle, tree) => {
       if (!tree || !tree.t) return;
       tree.t.forEach((top) => {
-        const topMatches = top.n.toLowerCase().includes(query) || (top.en && top.en.toLowerCase().includes(query));
+        const topMatches =
+          top.n.toLowerCase().includes(query) ||
+          (top.en && top.en.toLowerCase().includes(query));
         top.s.forEach((sub) => {
-          const subMatches = sub.n.toLowerCase().includes(query) || (sub.en && sub.en.toLowerCase().includes(query));
+          const subMatches =
+            sub.n.toLowerCase().includes(query) ||
+            (sub.en && sub.en.toLowerCase().includes(query));
           sub.c.forEach((ch) => {
             const chMatches =
               ch.title.toLowerCase().includes(query) ||
@@ -73,9 +107,12 @@ export default function GkBookShelf({ onSelectBook, onSelectChapter }) {
         (book.titleEn && book.titleEn.toLowerCase().includes(query)) ||
         (book.subtitle && book.subtitle.toLowerCase().includes(query));
 
-      const tagMatches = book.examTags && book.examTags.some((tag) => tag.toLowerCase().includes(query));
+      const tagMatches =
+        book.examTags && book.examTags.some((tag) => tag.toLowerCase().includes(query));
 
-      const hasMatchingChapter = matchingChapters.some((mc) => mc.bookSlug === book.slug);
+      const hasMatchingChapter = matchingChapters.some(
+        (mc) => mc.bookSlug === book.slug
+      );
 
       return titleMatches || tagMatches || hasMatchingChapter;
     });
@@ -156,6 +193,40 @@ export default function GkBookShelf({ onSelectBook, onSelectChapter }) {
           </div>
         </div>
 
+        {/* 1.1 SMART RESUME BANNER: "जहां छोड़ा था वहीं से शुरू करें" */}
+        {lastRead && (
+          <div className={styles.resumeBanner}>
+            <div className={styles.resumeLeft}>
+              <img
+                src={lastRead.cover || "/images/gk-book/india-gk-cover.jpg"}
+                alt={lastRead.chapterTitle}
+                className={styles.resumeCover}
+              />
+              <div style={{ minWidth: 0 }}>
+                <span className={styles.resumeTag}>
+                  <span>🔖</span> पढ़ना जारी रखें (Continue Reading)
+                </span>
+                <h3 className={styles.resumeTitle}>
+                  {lastRead.chapterTitle}
+                </h3>
+                <div className={styles.resumeSub}>
+                  {lastRead.bookTitle} · पृष्ठ {(lastRead.pageIndex || 0) + 1} / {lastRead.totalPages || 5}
+                  {lastRead.pageTitle ? ` · ${lastRead.pageTitle}` : ""}
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className={styles.resumeBtn}
+              onClick={() => onSelectChapter(lastRead.chapterSlug, lastRead.pageIndex || 0)}
+            >
+              <span>पढ़ना जारी रखें</span>
+              <span>▶</span>
+            </button>
+          </div>
+        )}
+
         {/* Prominent Search Bar */}
         <div className={styles.searchBoxWrapper}>
           <span className={styles.searchIcon}>🔍</span>
@@ -198,7 +269,10 @@ export default function GkBookShelf({ onSelectBook, onSelectChapter }) {
                   <div style={{ fontWeight: 700, fontSize: "14px" }}>
                     {mc.chapterTitle}
                   </div>
-                  <div className={styles.mutedText} style={{ fontSize: "11px", margin: "2px 0 0" }}>
+                  <div
+                    className={styles.mutedText}
+                    style={{ fontSize: "11px", margin: "2px 0 0" }}
+                  >
                     {mc.bookTitle} › {mc.topicName} › {mc.subjectName}
                   </div>
                 </div>
@@ -262,6 +336,14 @@ export default function GkBookShelf({ onSelectBook, onSelectChapter }) {
             {filteredBooks.map((book) => {
               const isLive = book.badge === "live";
 
+              // Calculate book progress
+              let progressPercent = 0;
+              if (book.slug === "india-gk") {
+                progressPercent = Math.min(100, Math.round((readPagesCount / 5) * 100));
+              } else if (book.slug === "world-gk" && lastRead?.bookSlug === "world-gk") {
+                progressPercent = Math.min(100, Math.round(((lastRead.pageIndex + 1) / 3) * 100));
+              }
+
               return (
                 <div key={book.id} className={styles.bookCard}>
                   {/* Book Cover Area */}
@@ -296,6 +378,32 @@ export default function GkBookShelf({ onSelectBook, onSelectChapter }) {
                   <div className={styles.bookCardBody}>
                     <h2 className={styles.bookCardTitle}>{book.title}</h2>
                     <p className={styles.bookCardSubtitle}>{book.subtitle}</p>
+
+                    {/* Reading Progress Bar for Live Books */}
+                    {isLive && (
+                      <div style={{ marginBottom: "12px" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            fontSize: "11px",
+                            fontWeight: 700,
+                            color: "var(--mut)",
+                          }}
+                        >
+                          <span>पठन प्रगति</span>
+                          <span style={{ color: progressPercent > 0 ? "var(--ok)" : "inherit" }}>
+                            {progressPercent > 0 ? `${progressPercent}% पूर्ण` : "प्रारंभ करें"}
+                          </span>
+                        </div>
+                        <div className={styles.cardProgressBar}>
+                          <div
+                            className={styles.cardProgressFill}
+                            style={{ width: `${progressPercent}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
 
                     {/* Exam / Topic Tags */}
                     {book.examTags && book.examTags.length > 0 && (

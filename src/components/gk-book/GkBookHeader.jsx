@@ -11,6 +11,13 @@ export default function GkBookHeader({
   onThemeChange,
   fontSize = 17,
   onFontSizeChange,
+  onToggleAudio,
+  isPlayingAudio = false,
+  onToggleZen,
+  onOpenNotes,
+  notesCount = 0,
+  isBilingual = false,
+  onToggleBilingual,
 }) {
   const handleToggleTheme = () => {
     const currentIndex = THEMES.indexOf(theme);
@@ -33,6 +40,70 @@ export default function GkBookHeader({
   return (
     <header className={styles.header}>
       <b className={styles.headerTitle}>{title}</b>
+
+      {/* Audio Reader Toggle */}
+      {onToggleAudio && (
+        <button
+          type="button"
+          className={styles.iconBtn}
+          onClick={onToggleAudio}
+          aria-label="ऑडियो सुनें (Listen Audio)"
+          title="ऑडियो मोड: पृष्ठ को सुनें"
+          style={{
+            color: isPlayingAudio ? "var(--ok)" : "inherit",
+            borderColor: isPlayingAudio ? "var(--ok)" : undefined,
+          }}
+        >
+          {isPlayingAudio ? "🔊 बंद करें" : "🎧 सुनें"}
+        </button>
+      )}
+
+      {/* Highlights & Notes Drawer Toggle */}
+      {onOpenNotes && (
+        <button
+          type="button"
+          className={styles.iconBtn}
+          onClick={onOpenNotes}
+          aria-label="मेरे नोट्स व हाइलाइट्स"
+          title="मेरे हाइलाइट्स व नोट्स"
+        >
+          📝 {notesCount > 0 ? `(${notesCount})` : ""}
+        </button>
+      )}
+
+      {/* Zen Focus Mode Toggle */}
+      {onToggleZen && (
+        <button
+          type="button"
+          className={styles.iconBtn}
+          onClick={onToggleZen}
+          aria-label="ज़ेन मोड (Focus Mode)"
+          title="ज़ेन मोड: एकाग्र पठन (Distraction Free)"
+        >
+          🔲
+        </button>
+      )}
+
+      {/* Bilingual / Terminology Toggle */}
+      {onToggleBilingual && (
+        <button
+          type="button"
+          className={styles.iconBtn}
+          onClick={onToggleBilingual}
+          aria-label="द्विभाषी टॉगल"
+          title="द्विभाषी मोड: हिन्दी + English शब्दावली"
+          style={{
+            fontWeight: 800,
+            fontSize: "11px",
+            color: isBilingual ? "var(--pri)" : "inherit",
+            borderColor: isBilingual ? "var(--pri)" : undefined,
+          }}
+        >
+          {isBilingual ? "HI+EN" : "HI"}
+        </button>
+      )}
+
+      {/* Theme Toggle */}
       <button
         type="button"
         className={styles.iconBtn}
@@ -42,6 +113,8 @@ export default function GkBookHeader({
       >
         {themeIcon}
       </button>
+
+      {/* Font Size Adjusters */}
       <button
         type="button"
         className={styles.iconBtn}
