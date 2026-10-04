@@ -5,6 +5,52 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===== Explorer Home Redesign Tokens ===== */
+:root {
+  --bg: #f6f7fc;
+  --card: #ffffff;
+  --ink: #14162b;
+  --mute: #6b7190;
+  --line: #e8eaf5;
+  --pri: #4f46e5;
+  --pri2: #7c5cff;
+  --soft: #eef0ff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1020;
+    --card: #181b33;
+    --ink: #f1f2ff;
+    --mute: #9aa0c4;
+    --line: #262a4a;
+    --soft: #222650;
+  }
+}
+
+:root[data-theme="dark"],
+.dark {
+  --bg: #0e1020;
+  --card: #181b33;
+  --ink: #f1f2ff;
+  --mute: #9aa0c4;
+  --line: #262a4a;
+  --soft: #222650;
+}
+
+.c-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.c-card:active {
+  transform: scale(0.97) !important;
+}
+@media (hover: hover) {
+  .c-card:hover {
+    border-color: #a5b4fc !important;
+    box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.12);
+  }
+}
+
 /* ===== Strict Design System Reset & Base (Poppins ONLY) ===== */
 *,
 *::before,

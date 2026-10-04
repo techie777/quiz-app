@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAdmin } from "@/context/AdminContext";
 import styles from "@/styles/AdminLogin.module.css";
@@ -13,8 +13,13 @@ export default function AdminLoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace("/admin");
+    }
+  }, [isAuthenticated, router]);
+
   if (isAuthenticated) {
-    router.replace("/admin");
     return null;
   }
 

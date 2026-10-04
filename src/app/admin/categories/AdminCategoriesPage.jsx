@@ -8,7 +8,7 @@ import styles from "@/styles/AdminCategories.module.css";
 import toast from "react-hot-toast";
 import CategorySearchSelect from "@/components/admin/CategorySearchSelect";
 
-const EMPTY_CAT = { id: "", topic: "", topicHi: "", emoji: "", description: "", descriptionHi: "", categoryClass: "", hidden: false, image: "", parentId: "", showSubCategoriesOnHome: false, storyText: "", storyImage: "", originalLang: "en", isTrending: false, chips: [] };
+const EMPTY_CAT = { id: "", topic: "", topicHi: "", emoji: "", description: "", descriptionHi: "", categoryClass: "", hidden: false, image: "", image_url: "", group: "core", status: "coming_soon", sort_order: 0, sortOrder: 0, parentId: "", showSubCategoriesOnHome: false, storyText: "", storyImage: "", originalLang: "en", isTrending: false, chips: [] };
 
 async function submitPending(type, payload) {
   const res = await fetch("/api/admin/pending", {
@@ -95,6 +95,39 @@ const EditForm = ({ category, onSave, onCancel, isNew = false, quizzes = [], set
     } catch (error) {
       console.error('Story image upload error:', error);
       toast.error('Failed to upload story image');
+    }
+  };
+
+  const handleCardImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 150 * 1024) {
+      toast.error(`Card WebP image must be under 150 KB (Current: ${(file.size / 1024).toFixed(1)} KB)`);
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('slug', form.slug || form.topic?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'category');
+
+      const response = await fetch('/api/admin/categories/upload-card-image', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setForm({ ...form, image_url: result.url, image: result.url });
+        toast.success(`Card image saved as ${result.filename}!`);
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'Failed to upload card image');
+      }
+    } catch (error) {
+      console.error('Card image upload error:', error);
+      toast.error('Failed to upload card image');
     }
   };
 
@@ -192,12 +225,67 @@ const EditForm = ({ category, onSave, onCancel, isNew = false, quizzes = [], set
         </div>
 
         <div className={styles.field}>
-          <label>Category Thumbnail Image</label>
-          <input type="file" accept="image/*" onChange={handleImageUpload} className={styles.fileInput} />
-          {form.image && (
-            <div className={styles.imagePreview}>
-              <img src={form.image} alt="Preview" />
-              <button type="button" className={styles.removeImg} onClick={() => setForm({ ...form, image: "" })}>✕ Remove</button>
+          <label>Status (Live / Coming soon)</label>
+          <select
+            value={form.status || "coming_soon"}
+            onChange={(e) => setForm({ ...form, status: e.target.value })}
+            className={styles.select}
+          >
+            <option value="live">● Live (Publicly Playable)</option>
+            <option value="coming_soon">Coming soon (Shows Waitlist Toast)</option>
+          </select>
+        </div>
+
+        <div className={styles.field}>
+          <label>Group Category</label>
+          <select
+            value={form.group || "core"}
+            onChange={(e) => setForm({ ...form, group: e.target.value })}
+            className={styles.select}
+          >
+            <option value="core">⭐ Core (Popular)</option>
+            <option value="india">India</option>
+            <option value="learn">Learn</option>
+            <option value="fun">Fun</option>
+            <option value="world">World</option>
+          </select>
+        </div>
+
+        <div className={styles.field}>
+          <label>Sort Order (1 to 40)</label>
+          <input
+            type="number"
+            value={form.sort_order ?? form.sortOrder ?? 0}
+            onChange={(e) => {
+              const val = parseInt(e.target.value, 10) || 0;
+              setForm({ ...form, sort_order: val, sortOrder: val });
+            }}
+            placeholder="e.g. 1"
+            className={styles.input}
+          />
+        </div>
+
+        <div className={styles.field}>
+          <label>Card Thumbnail (WebP, 512x512, max 150 KB)</label>
+          <input
+            type="file"
+            accept="image/webp,image/*"
+            onChange={handleCardImageUpload}
+            className={styles.fileInput}
+          />
+          <small style={{ color: "#64748b", fontSize: "11px", display: "block", marginTop: "4px" }}>
+            Auto-saves to /cards/{form.slug || "slug"}.webp (Instant customer site reflection)
+          </small>
+          {(form.image_url || form.image) && (
+            <div className={styles.imagePreview} style={{ marginTop: "6px" }}>
+              <img src={form.image_url || form.image} alt="Card Preview" style={{ width: "64px", height: "64px", objectFit: "cover", borderRadius: "10px" }} />
+              <button
+                type="button"
+                className={styles.removeImg}
+                onClick={() => setForm({ ...form, image_url: "", image: "" })}
+              >
+                ✕ Remove
+              </button>
             </div>
           )}
         </div>
@@ -271,6 +359,14 @@ export default function AdminCategoriesPage() {
   const [activeTab, setActiveTab] = useState("quizzes"); // "quizzes", "govt-exams", "image-quizzes"
   const [healthFilter, setHealthFilter] = useState("all"); // "all", "ready", "progress", "empty"
   const [search, setSearch] = useState("");
+  const [expandedParents, setExpandedParents] = useState({});
+
+  const toggleParentExpand = (catId) => {
+    setExpandedParents((prev) => ({
+      ...prev,
+      [catId]: !prev[catId],
+    }));
+  };
 
   const dragItem = useRef(null);
   const dragOver = useRef(null);
@@ -281,21 +377,22 @@ export default function AdminCategoriesPage() {
     let progress = 0;
     let ready = 0;
 
-    quizzes.forEach((c) => {
-      const count = c.questionCount || 0;
+    (quizzes || []).forEach((c) => {
+      const count = c?.questionCount || 0;
       if (count === 0) empty++;
       else if (count < 20) progress++;
       else ready++;
     });
 
-    return { empty, progress, ready, total: quizzes.length };
+    return { empty, progress, ready, total: (quizzes || []).length };
   }, [quizzes]);
 
   // Main Categories Filtered
   const filteredCategories = useMemo(() => {
-    return quizzes
-      .filter((c) => !c.parentId)
+    return (quizzes || [])
+      .filter((c) => !c?.parentId)
       .filter((cat) => {
+        if (!cat) return false;
         if (activeTab === "all") return true;
         const cls = cat.categoryClass || "";
         if (activeTab === "govt-exams") return cls.includes("govt-exam");
@@ -312,7 +409,7 @@ export default function AdminCategoriesPage() {
         );
       })
       .filter((cat) => {
-        const count = cat.questionCount || 0;
+        const count = cat?.questionCount || 0;
         if (healthFilter === "empty") return count === 0;
         if (healthFilter === "progress") return count > 0 && count < 20;
         if (healthFilter === "ready") return count >= 20;
@@ -448,22 +545,28 @@ export default function AdminCategoriesPage() {
         {/* Vertical Type Tabs */}
         <div className={styles.typeTabs}>
           <button 
+            className={`${styles.typeTabBtn} ${activeTab === 'all' ? styles.typeTabBtnActive : ''}`}
+            onClick={() => setActiveTab("all")}
+          >
+            <span>🌐 All Categories ({(quizzes || []).length})</span>
+          </button>
+          <button 
             className={`${styles.typeTabBtn} ${activeTab === 'quizzes' ? styles.typeTabBtnActive : ''}`}
             onClick={() => setActiveTab("quizzes")}
           >
-            <span>📝 Regular quizzes ({quizzes.filter(c => !(c.categoryClass || '').includes('govt-exam') && !(c.categoryClass || '').includes('image-quiz')).length})</span>
+            <span>📝 Regular quizzes ({(quizzes || []).filter(c => !(c?.categoryClass || '').includes('govt-exam') && !(c?.categoryClass || '').includes('image-quiz')).length})</span>
           </button>
           <button 
             className={`${styles.typeTabBtn} ${activeTab === 'govt-exams' ? styles.typeTabBtnActive : ''}`}
             onClick={() => setActiveTab("govt-exams")}
           >
-            <span>🏛️ Govt Exams ({quizzes.filter(c => (c.categoryClass || '').includes('govt-exam')).length})</span>
+            <span>🏛️ Govt Exams ({(quizzes || []).filter(c => (c?.categoryClass || '').includes('govt-exam')).length})</span>
           </button>
           <button 
             className={`${styles.typeTabBtn} ${activeTab === 'image-quizzes' ? styles.typeTabBtnActive : ''}`}
             onClick={() => setActiveTab("image-quizzes")}
           >
-            <span>🖼️ Image Quizzes ({quizzes.filter(c => (c.categoryClass || '').includes('image-quiz')).length})</span>
+            <span>🖼️ Image Quizzes ({(quizzes || []).filter(c => (c?.categoryClass || '').includes('image-quiz')).length})</span>
           </button>
         </div>
 
@@ -524,6 +627,9 @@ export default function AdminCategoriesPage() {
         {filteredCategories.map((cat, idx) => {
           const count = cat.questionCount || 0;
           const sets = Math.ceil(count / 20);
+          const childSubs = (quizzes || []).filter((sub) => sub?.parentId === cat.id);
+          const hasSubs = childSubs.length > 0;
+          const isExpanded = !!expandedParents[cat.id] || (search.trim().length > 0);
 
           let statusLabel = `${sets} ${sets === 1 ? 'SET' : 'SETS'} READY`;
           let pillClass = styles.pillReady;
@@ -574,6 +680,31 @@ export default function AdminCategoriesPage() {
                   
                   <span className={`${styles.statusPill} ${pillClass}`}>{statusLabel}</span>
                   <span className={styles.count}>{count} Qs</span>
+
+                  {hasSubs && (
+                    <button
+                      type="button"
+                      onClick={() => toggleParentExpand(cat.id)}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "5px",
+                        padding: "5px 10px",
+                        borderRadius: "8px",
+                        border: "1px solid var(--card-border, #e2e8f0)",
+                        background: isExpanded ? "rgba(99, 102, 241, 0.12)" : "var(--bg-secondary)",
+                        color: isExpanded ? "#6366f1" : "var(--text-secondary)",
+                        fontSize: "0.78rem",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        transition: "all 0.2s ease",
+                      }}
+                      title={isExpanded ? "Collapse subcategories" : "Expand subcategories"}
+                    >
+                      <span>{isExpanded ? "▾" : "▸"}</span>
+                      <span>{childSubs.length} Sub-categories</span>
+                    </button>
+                  )}
 
                   <div className={styles.actions}>
                     <Link href={`/admin/questions?category=${cat.id}`} className={styles.addQBtn}>
@@ -634,11 +765,10 @@ export default function AdminCategoriesPage() {
                 />
               )}
 
-              {/* Render Sub-categories */}
-              <div className={styles.subRows}>
-                {quizzes
-                  .filter((sub) => sub.parentId === cat.id)
-                  .map((sub) => (
+              {/* Render Sub-categories (Accordion) */}
+              {hasSubs && isExpanded && (
+                <div className={styles.subRows}>
+                  {childSubs.map((sub) => (
                     <div key={sub.id} className={`${styles.row} ${styles.subRow}`}>
                       <div className={styles.rowInfo}>
                         <span className={styles.subIndicator}>↳</span>
@@ -713,7 +843,8 @@ export default function AdminCategoriesPage() {
                       )}
                     </div>
                   ))}
-              </div>
+                </div>
+              )}
 
             </div>
           );

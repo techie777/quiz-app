@@ -19,6 +19,7 @@ import ArenaPromptCard from "@/components/ArenaPromptCard";
 import HotQuizzesRow from "@/components/explorer/HotQuizzesRow";
 import CategorySearchBar from "@/components/home/CategorySearchBar";
 import MainCategoryCard from "@/components/home/MainCategoryCard";
+import ExplorerHomeSection from "@/components/home/ExplorerHomeSection";
 import { MAIN_CATEGORIES, QUICK_FILTER_CHIPS, filterCategoriesByChip } from "@/lib/mainCategoriesConfig";
 
 const KIDS_PICTURE_TILES = [
@@ -726,83 +727,12 @@ export default function MasterHubPage() {
         )}
 
         {/* ── EXPLORER TIER: Clean Mobile-First Quiz Hub (Step 8) ── */}
-        {/* ── EXPLORER TIER: Clean Mobile-First Quiz Hub (Step 3: 40 Main Categories) ── */}
         {(tier === "adults" || (tier !== "kids" && tier !== "students")) && (
-          <div className="w-full mt-2 space-y-5 pb-20">
-            {/* 1. Clean, Prominent Search Bar with Instant Autocomplete */}
-            <CategorySearchBar dbCategories={quizzes} className="w-full" />
-
-            {/* 2. Daily Quiz Button */}
-            <DailyQuizPill tier="explorer" />
-
-            {/* Quiz Arena compact card for Explorer */}
-            <ArenaPromptCard audience="explorer" className="mb-2" />
-
-            {/* 🔥 Phase E1: Hot Quizzes Row */}
-            <HotQuizzesRow />
-
-            {/* 3. Curated Quick Filter Chips */}
-            <div className="space-y-2 pt-1">
-              <div className="flex items-center justify-between px-1">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse" />
-                  <h2 className="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-200 tracking-wider uppercase">
-                    {isHindi ? "मुख्य श्रेणियां (40 विषय)" : "Main Categories (40 Topics)"}
-                  </h2>
-                </div>
-                <span className="text-[11px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded-full">
-                  {displayedMainCategories.length} {isHindi ? "श्रेणियां" : "topics"}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
-                {QUICK_FILTER_CHIPS.map((chip) => {
-                  const isSelected = selectedChip === chip.id;
-                  const chipLabel = isHindi && chip.labelHi ? chip.labelHi : chip.label;
-                  return (
-                    <button
-                      key={chip.id}
-                      type="button"
-                      onClick={() => setSelectedChip(chip.id)}
-                      className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all min-h-[36px] flex items-center gap-1.5 shrink-0 ${
-                        isSelected
-                          ? "bg-indigo-600 text-white font-black shadow-md shadow-indigo-500/25 scale-[1.02]"
-                          : "bg-white/90 dark:bg-slate-900/90 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
-                      }`}
-                    >
-                      <span>{chip.icon}</span>
-                      <span>{chipLabel}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* 4. Beautiful, Uncluttered Grid of the 40 Main Categories */}
-            {!dataLoaded && (!quizzes || quizzes.length === 0) ? (
-              <div className="grid grid-cols-2 gap-3.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 pt-1">
-                {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-                  <div key={n} className="rounded-3xl p-5 bg-white/60 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 animate-pulse h-36 flex flex-col justify-between">
-                    <div className="w-12 h-12 rounded-2xl bg-slate-200 dark:bg-slate-800" />
-                    <div className="space-y-2">
-                      <div className="w-3/4 h-4 rounded bg-slate-200 dark:bg-slate-800" />
-                      <div className="w-1/2 h-3 rounded bg-slate-200 dark:bg-slate-800" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-3.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 pt-1">
-                {displayedMainCategories.map((cat) => (
-                  <MainCategoryCard
-                    key={cat.id}
-                    category={cat}
-                    dbCount={dbCountMap.get(cat.slug) || 0}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+          <ExplorerHomeSection
+            dbCategories={quizzes}
+            dataLoaded={dataLoaded}
+            isHindi={isHindi}
+          />
         )}
 
         {/* Optional Personalization Prompt & Support Banner (Kids & Students only) */}

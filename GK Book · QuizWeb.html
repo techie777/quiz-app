@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="hi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GK Book · QuizWeb</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;800&family=Poppins:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f7f7fd;--card:#fff;--tx:#1b1b3a;--mut:#6b6b8a;--pri:#4f46e5;--pri2:#7c3aed;--bd:#e4e4f4;--ok:#16a34a;--bad:#dc2626;--fact:#fff7e0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]):not([data-theme="sepia"]){--bg:#13132a;--card:#1c1c3a;--tx:#ececff;--mut:#a3a3c8;--bd:#2d2d55;--fact:#2e2a14}}
+:root[data-theme="dark"]{--bg:#13132a;--card:#1c1c3a;--tx:#ececff;--mut:#a3a3c8;--bd:#2d2d55;--fact:#2e2a14}
+:root[data-theme="sepia"]{--bg:#efe6cf;--card:#f8f0dc;--tx:#3b2f1c;--mut:#7a6a4d;--bd:#dccfae;--fact:#f1e2b5}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:'Noto Sans Devanagari','Poppins',sans-serif;line-height:1.8}
+button{font:inherit;cursor:pointer;border:0;color:inherit}
+button:focus-visible{outline:3px solid var(--pri2);outline-offset:2px}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--card);border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:8px;padding:10px 14px}
+header b{font-family:Poppins;flex:1}
+.ib{background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:2px 10px;min-height:36px}
+main{max-width:720px;margin:0 auto;padding:16px 16px 90px}
+.crumb{color:var(--mut);font-size:14px;margin:4px 0 14px}
+h1{font-size:28px;line-height:1.3;margin:0 0 4px;font-weight:800}
+.unit{display:block;width:100%;text-align:left;background:var(--card);border:2px solid var(--pri);border-radius:20px;padding:18px;margin:14px 0}
+.unit.lock{border:2px dashed var(--bd);opacity:.65;cursor:default}
+.bar{height:8px;border-radius:8px;background:var(--bd);overflow:hidden;margin-top:10px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--pri),var(--pri2));width:0;transition:width .3s}
+.art{background:var(--card);border:1px solid var(--bd);border-radius:20px;padding:20px 18px}
+.art h2{font-size:1.15em;margin:18px 0 4px;color:var(--pri)}
+.art p,.art li{margin:6px 0}
+.fact{background:var(--fact);border-radius:14px;padding:10px 14px;margin:14px 0}
+.tw{overflow-x:auto;margin:10px 0}
+table{border-collapse:collapse;width:100%;font-size:.9em}
+td,th{border:1px solid var(--bd);padding:6px 10px;text-align:left}
+th{background:var(--bg)}
+.nav{display:flex;gap:10px;margin:16px 0}
+.btn{background:linear-gradient(90deg,var(--pri),var(--pri2));color:#fff;border-radius:14px;padding:10px 18px;font-weight:600;min-height:44px}
+.btn.g{background:var(--card);color:var(--tx);border:1px solid var(--bd)}
+.btn[disabled]{opacity:.4}
+.qc{background:var(--card);border:2px solid var(--pri);border-radius:20px;padding:16px;margin-top:18px}
+.qc .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.stars{font-size:22px;letter-spacing:2px}
+.ov{position:fixed;inset:0;z-index:10;background:var(--bg);overflow:auto;padding:calc(16px + env(safe-area-inset-top,0px)) 16px 40px}
+.ov>div{max-width:640px;margin:0 auto}
+.opt{display:block;width:100%;text-align:left;background:var(--card);border:2px solid var(--bd);border-radius:14px;padding:12px 14px;margin:10px 0;min-height:48px}
+.opt.ok{border-color:var(--ok);background:rgba(22,163,74,.15)}
+.opt.no{border-color:var(--bad);background:rgba(220,38,38,.13)}
+.d1,.d2,.d3{border:1px solid var(--bd);border-radius:16px;background:var(--card);margin:10px 0;padding:0 12px}
+.d2,.d3{background:transparent;border:0;border-left:3px solid var(--bd);border-radius:0;margin:6px 0 6px 6px;padding:0 0 0 10px}
+summary{cursor:pointer;display:flex;justify-content:space-between;gap:8px;padding:10px 0;list-style:none;min-height:44px;align-items:center}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"▸";color:var(--pri);margin-right:8px;transition:transform .2s}
+details[open]>summary::before{transform:rotate(90deg)}
+summary b{flex:1}.d1>summary b{font-size:19px}.d3>summary b{font-weight:600}
+.cn,.chip{font-size:12px;color:var(--mut)}
+.ch{display:flex;justify-content:space-between;gap:8px;align-items:center;width:100%;text-align:left;padding:10px 12px;margin:6px 0;border-radius:12px;background:var(--bg);border:1px solid var(--bd);min-height:44px}
+.ch.live{border:2px solid var(--pri);background:var(--card);font-weight:600}
+.ch.live .chip{color:#fff;background:var(--pri);padding:2px 10px;border-radius:20px}
+.srch{width:100%;padding:12px 14px;border-radius:14px;border:1px solid var(--bd);background:var(--card);color:var(--tx);font:inherit;margin:12px 0}
+.dots{display:flex;gap:8px;margin:0 0 12px}
+.dt{width:36px;height:36px;border-radius:50%;border:2px solid var(--bd);background:var(--card);font:600 13px Poppins,sans-serif;display:flex;align-items:center;justify-content:center;padding:0}
+.dt.r{background:var(--ok);border-color:var(--ok);color:#fff}
+.dt.c{border-color:var(--pri);box-shadow:0 0 0 3px rgba(79,70,229,.28)}
+.ic{display:inline-block;width:1.2em;text-align:center}.ic.u{color:var(--mut)}.ic.p{color:#d97706}.ic.d{color:var(--ok)}
+.big{font-size:56px;font-weight:800;font-family:Poppins;text-align:center}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style></head><body>
+<header><b id="ttl">GK Book</b><button class="ib" id="th" aria-label="थीम बदलें">🌓</button><button class="ib" id="fm" aria-label="छोटा">A−</button><button class="ib" id="fp" aria-label="बड़ा">A+</button></header>
+<main id="app"></main>
+<script>
+var P=[
+{t:"रहस्यमयी शुरुआत",m:3,b:[["h","अनपेक्षित खोज"],["p","1856 में कराची–लाहौर रेल लाइन बिछाते समय ब्रंटन बंधुओं ने टीले की पकी ईंटें गिट्टी बना दीं, जबकि वह दुनिया की सबसे पुरानी नगर सभ्यताओं में से एक थी।"],["l",["1921: दयाराम साहनी, हड़प्पा की खुदाई","1922: राखालदास बनर्जी, मोहनजोदड़ो ('मुर्दों का टीला')","1924: सर जॉन मार्शल की औपचारिक घोषणा"]],["f","💡 सभ्यता का फैलाव मिस्र और मेसोपोटामिया के कुल क्षेत्र से कई गुना बड़ा था।"]],q:[["हड़प्पा की विधिवत खुदाई किसने करवाई?",["दयाराम साहनी","राखालदास बनर्जी","जॉन मार्शल","जॉन ब्रंटन"],0],["'मोहनजोदड़ो' का सिंधी अर्थ क्या है?",["मुर्दों का टीला","पवित्र नगर","जल का घर","राजा का महल"],0]]},
+{t:"नगर योजना",m:3,b:[["h","ग्रिड पद्धति"],["p","नगर शतरंज के बोर्ड जैसे बसे थे; सड़कें एक-दूसरे को 90° पर काटती थीं।"],["l",["दुर्ग (गढ़ी): पश्चिम में ऊँचा क्षेत्र","निचला नगर: पूर्व में आम नागरिकों की बस्ती","पकी ईंटों का अनुपात 4:2:1"]],["h","जल-निकासी"],["p","हर घर की नाली गली की ढकी नाली से जुड़ती थी, जिसमें सफाई के लिए ढक्कन लगे थे।"],["f","💡 धोलावीरा अपवाद है: यह दो नहीं, तीन भागों में बँटा था।"]],q:[["हड़प्पा की ईंटों का मानक अनुपात क्या था?",["4:2:1","3:2:1","2:2:1","5:3:1"],0],["दुर्ग (Citadel) किस दिशा में बना होता था?",["पश्चिम","पूर्व","उत्तर","दक्षिण"],0]]},
+{t:"समाज, धर्म और कला",m:3,b:[["h","कला"],["p","मोहनजोदड़ो की कांस्य नर्तकी लगभग 4 इंच की है और लॉस्ट-वैक्स तकनीक से बनी थी।"],["h","धर्म और लिपि"],["l",["मंदिर का कोई प्रमाण नहीं मिला","पशुपति शिव की मुहर: योगी के चारों ओर चार पशु","लिपि चित्रात्मक है और दाएँ से बाएँ लिखी जाती थी; अब तक पढ़ी नहीं जा सकी"]],["f","💡 चन्हूड़ो से काजल और लिपस्टिक जैसी शृंगार सामग्री के साक्ष्य मिले हैं।"]],q:[["कांस्य नर्तकी किस तकनीक से बनी थी?",["लॉस्ट-वैक्स","साँचा ढलाई","हथौड़ा पीटाई","नक्काशी"],0],["हड़प्पा लिपि किस दिशा में लिखी जाती थी?",["दाएँ से बाएँ","बाएँ से दाएँ","ऊपर से नीचे","दोनों तरफ"],0]]},
+{t:"कृषि, व्यापार और स्थल",m:4,b:[["p","कपास सबसे पहले सिंधु घाटी में उगाई गई; यूनानी इसे 'सिंडन' कहते थे। सिक्के नहीं थे, लेनदेन वस्तु-विनिमय से होता था।"],["h","प्रमुख स्थल"],["t",[["स्थल","नदी","खास खोज"],["हड़प्पा","रावी","12 अन्न भंडार"],["लोथल","भोगवा","गोदीवाड़ा (बंदरगाह)"],["कालीबंगन","घग्घर","जुते खेत, अग्निकुंड"]]],["f","💡 लोथल दुनिया का सबसे पुराना ज्ञात मानव-निर्मित बंदरगाह है।"]],q:[["सबसे प्राचीन ज्ञात गोदीवाड़ा किस स्थल पर मिला?",["लोथल","हड़प्पा","कालीबंगन","चन्हूड़ो"],0],["यूनानी लोग कपास को क्या कहते थे?",["सिंडन","मेलुहा","सिंधु","कार्पस"],0]]},
+{t:"पतन और हमारी विरासत",m:3,b:[["h","पतन के कारण"],["l",["जलवायु परिवर्तन और सूखा (सर्वाधिक मान्य)","नदियों की बाढ़","विदेशी व्यापार में गिरावट"]],["h","क्या सीखे?"],["l",["पहला खोजा स्थल: हड़प्पा (1921)","कांस्य-युगीन सभ्यता; लोहे का ज्ञान नहीं","भारत में सबसे बड़ा स्थल: राखीगढ़ी"]]],q:[["पतन का सर्वाधिक मान्य कारण क्या माना जाता है?",["जलवायु परिवर्तन और सूखा","आर्यों का आक्रमण","भूकंप","महामारी"],0],["भारत की सीमा में सबसे बड़ा हड़प्पा स्थल कौन-सा है?",["राखीगढ़ी","धोलावीरा","लोथल","कालीबंगन"],0]]}];
+var F=[
+[["p","लगभग 4500 साल पहले जब दुनिया के कई हिस्सों में इंसान कबीलों में भटक रहा था, तब भारत की उत्तर-पश्चिमी भूमि पर एक अत्यंत विकसित और शांतप्रिय सभ्यता फल-फूल रही थी। इसे हम <b>सिंधु घाटी सभ्यता</b> या <b>हड़प्पा सभ्यता</b> के नाम से जानते हैं।"],["h","1. अनपेक्षित खोज"],["p","साल 1856 में जब कराची से लाहौर के बीच रेलवे ट्रैक बिछाया जा रहा था, तब ब्रिटिश इंजीनियरों जॉन ब्रंटन और विलियम ब्रंटन को गिट्टी की कमी पड़ी। उन्होंने पास के एक पुराने टीले से पकी हुई लाल ईंटें निकालकर पटरियों के नीचे बिछाना शुरू कर दिया। वे इस बात से पूरी तरह अनजान थे कि वे जिस मलबे को तोड़ रहे थे, वह दुनिया की सबसे पुरानी नगर सभ्यताओं में से एक का हिस्सा था।"],["p","इस ऐतिहासिक रहस्य पर से पर्दा कई दशकों बाद हटा:"],["l",["<b>1921:</b> रायबहादुर <b>दयाराम साहनी</b> ने पंजाब (पाकिस्तान) में रावी नदी के तट पर <b>हड़प्पा</b> की विधिवत खुदाई करवाई।","<b>1922:</b> <b>राखालदास बनर्जी</b> ने सिंध में सिंधु नदी के किनारे <b>मोहनजोदड़ो</b> (सिंधी में अर्थ: 'मुर्दों का टीला') को खोज निकाला।","<b>1924:</b> ASI के महानिदेशक <b>सर जॉन मार्शल</b> ने दुनिया के सामने औपचारिक घोषणा की कि भारत में मिस्र और मेसोपोटामिया के समकालीन एक महान नगर सभ्यता मौजूद थी।"]],["h","2. सभ्यता का समय-चक्र (Timeline)"],["p","रेडियो-कार्बन विधि (C-14) के वैज्ञानिक विश्लेषण के अनुसार इस सभ्यता को तीन चरणों में समझा जाता है:"],["l",["<b>प्रारंभिक चरण (3300 – 2600 ईसा पूर्व):</b> ग्रामीण जीवन से नगरों की ओर अग्रसर होने का दौर।","<b>परिपक्व चरण (2600 – 1900 ईसा पूर्व):</b> स्वर्ण काल, जिसमें भव्य नगर, व्यापार और उन्नत तकनीक अपने चरम पर थी।","<b>उत्तर/पतन चरण (1900 – 1300 ईसा पूर्व):</b> नगर व्यवस्था का धीरे-धीरे टूटना और ग्रामीण स्वरूप में लौटना।"]],["h","3. भौगोलिक सीमाएं (चारों छोर)"],["p","यह सभ्यता किसी एक नदी तक सीमित नहीं थी, बल्कि लगभग <b>13 लाख वर्ग किलोमीटर</b> के विशाल त्रिभुजाकार दायरे में फैली थी। इसके चारों अंतिम बिंदु:"],["l",["<b>उत्तरी सीमा:</b> मांडा (जम्मू-कश्मीर, चिनाब नदी)","<b>दक्षिणी सीमा:</b> दैमाबाद (महाराष्ट्र, प्रवरा नदी)","<b>पूर्वी सीमा:</b> आलमगीरपुर (उत्तर प्रदेश, हिंडन नदी)","<b>पश्चिमी सीमा:</b> सुत्कागेनडोर (बलूचिस्तान, दाश्त नदी)"]],["f","💡 रोचक तथ्य: अपने फैलाव में सिंधु घाटी सभ्यता उस दौर की मिस्र और मेसोपोटामिया की सभ्यताओं के कुल क्षेत्रफल से भी कई गुना बड़ी थी।"]],
+[["p","हड़प्पा संस्कृति की सबसे बड़ी पहचान उसकी सुनियोजित नगर-निर्माण कला थी। उस समय दुनिया भर में कहीं भी ऐसी नागरिक स्वच्छता और इंजीनियरिंग व्यवस्था देखने को नहीं मिलती थी।"],["h","1. ग्रिड पद्धति (Grid Pattern)"],["p","नगर शतरंज के बोर्ड की तरह बसे थे। सड़कें बिल्कुल सीधी थीं और एक-दूसरे को <b>90 डिग्री (समकोण)</b> पर काटती थीं।"],["l",["हवा चलने पर मुख्य चौराहों की धूल अपने आप उड़कर गलियों से बाहर चली जाती थी।","अधिकांश शहर दो भागों में बंटे थे:","<b>दुर्ग या गढ़ी (Citadel):</b> पश्चिम दिशा में ऊँचे चबूतरे पर; प्रशासनिक इमारतें और शासक वर्ग।","<b>निचला नगर (Lower Town):</b> पूर्व दिशा में बड़ा मैदानी इलाका; आम नागरिक, शिल्पी और व्यापारी।","<i>अपवाद: गुजरात का <b>धोलावीरा</b> तीन भागों (दुर्ग, मध्यम नगर, निचला नगर) में विभाजित था।</i>"]],["h","2. बेजोड़ जल-निकासी व्यवस्था"],["p","हड़प्पावासियों की जल-निकासी आज के कई आधुनिक कस्बों से भी बेहतर थी:"],["l",["हर घर के स्नानघर और रसोई का गंदा पानी दीवार के रास्ते बाहर निकलता था।","पानी गली की पक्की नाली में गिरता, जो शहर के मुख्य भूमिगत नाले से जुड़ जाती थी।","नालियाँ पकी ईंटों और चूने-जिप्सम से पूरी तरह ढकी रहती थीं।","नियमित सफाई के लिए निश्चित दूरी पर ढक्कन (Manholes) लगे थे।"]],["h","3. भवनों की बनावट"],["l",["धूप में सुखाई ईंटों के बजाय <b>भट्टी में पकी ईंटों</b> का व्यापक उपयोग; अनुपात हमेशा <b>4:2:1</b> (लंबाई : चौड़ाई : मोटाई)।","मकान एक या दो मंजिला, बीच में खुला आँगन और चारों ओर हवादार कमरे।","मुख्य दरवाजे चौड़ी सड़क पर नहीं, <b>पीछे की शांत गलियों में</b> खुलते थे। <i>(लोथल अपवाद: दरवाजे मुख्य सड़क पर)।</i>"]],["h","4. दो प्रमुख विशाल संरचनाएं"],["l",["<b>विशाल स्नानागार (मोहनजोदड़ो):</b> ईंटों का बड़ा पक्का जलकुंड, उत्तर और दक्षिण में सीढ़ियाँ। रिसाव रोकने के लिए जोड़ों पर <b>प्राकृतिक बिटुमेन (डामर)</b> का लेप। धार्मिक अनुष्ठानों पर सामूहिक स्नान के लिए।","<b>विशाल अन्नागार:</b> हड़प्पा और मोहनजोदड़ो दोनों जगह अनाज के विशाल गोदाम; नमी से बचाने के लिए विशेष वेंटिलेशन।"]]],
+[["p","सिंधु सभ्यता का समाज व्यापार और कला को महत्व देने वाला समाज था। यहाँ से किसी बड़े महल, राजा के सिंहासन या युद्ध के घातक हथियारों के अवशेष नहीं मिले हैं।"],["h","1. समाज और दैनिक जीवन"],["l",["भारी संख्या में मिली मातृ-मूर्तियों के आधार पर समाज को <b>मातृ-सत्तात्मक</b> माना जाता है।","लोग सूती और ऊनी दोनों तरह के वस्त्र पहनते थे।","स्त्री-पुरुष दोनों को सजने-संवरने का शौक था; सोने, चांदी, तांबे और कीमती पत्थरों के कंगन, हार और कर्णफूल पहनते थे।","<b>चन्हूड़ो</b> से तांबे का दर्पण, हाथीदांत की कंघी, काजल और <b>लिपस्टिक</b> जैसी शृंगार सामग्री के साक्ष्य मिले हैं।"]],["h","2. बेमिसाल कला और शिल्प"],["l",["<b>कांस्य की नर्तकी:</b> मोहनजोदड़ो से प्राप्त लगभग 4 इंच की मूर्ति, <b>लॉस्ट-वैक्स पद्धति</b> (मोम पिघलाकर ढालना) से बनी।","<b>दाढ़ी वाले पुरोहित (Priest King):</b> सेलखड़ी (स्टीएटाइट) पत्थर की शांत मुद्रा वाली आवक्ष मूर्ति, शरीर पर नक्काशीदार शॉल।","<b>खिलौने और मुहरें:</b> पकी मिट्टी के पहियों वाले छकड़ा, सीटी बजाने वाली चिड़ियाँ और गर्दन हिलाने वाले बैल; बच्चों के मनोरंजन का पूरा ध्यान रखा जाता था।"]],["h","3. धार्मिक विश्वास: बिना मंदिर की प्रकृति पूजा"],["l",["पूरी सभ्यता में <b>मंदिर का एक भी प्रमाण नहीं</b> मिला।","<b>पशुपति शिव की मुहर:</b> मोहनजोदड़ो की मुहर में तीन सींग वाला योगी पद्मासन में बैठा है; चारों ओर चार पशु (हाथी, बाघ, गैंडा, भैंसा) और पैरों के पास दो हिरण। इसे शिव का 'आद्य-रूप' (प्रोटो-शिवा) कहा गया है।","लोग पीपल, अग्नि (कालीबंगन का अग्निकुंड), जल, नाग और एक-सींग वाले कल्पित पशु (Unicorn) की उपासना करते थे।"]],["h","4. अनसुलझी लिपि"],["l",["लिपि <b>भाव-चित्रात्मक</b> थी; लगभग 400 चिन्ह मिले, जिनमें मछली और अंग्रेज़ी 'U' जैसा आकार सबसे ज्यादा दोहराया गया।","यह <b>दाएँ से बाएँ</b> लिखी जाती थी।","आधुनिक वैज्ञानिक इसे अभी तक पूरी तरह नहीं पढ़ पाए हैं।"]]],
+[["p","आर्थिक समृद्धि का मूल आधार उन्नत खेती और दूर-दराज के देशों के साथ चलने वाला समुद्री व स्थलीय व्यापार था।"],["h","1. कृषि और पशुपालन"],["l",["<b>कपास:</b> सबसे पहले कपास उगाने का श्रेय सिंधु घाटी के किसानों को है। यूनानी इसे <b>‘सिंडन’</b> कहते थे, जो 'सिंधु' से निकला।","गेहूँ, जौ, सरसों, मटर और तिल की फसलें; लोथल और रंगपुर से <b>चावल की भूसी</b> के साक्ष्य।","कूबड़ वाला सांड़, बैल, भेड़, बकरी और सुअर पाले जाते थे। सामान्य जीवन में घोड़े का प्रचलन नहीं था, यद्यपि सुरकोटदा से घोड़े की अस्थियों के कुछ संदिग्ध अवशेष मिले हैं।"]],["h","2. राष्ट्रीय और अंतर्राष्ट्रीय व्यापार"],["l",["सिक्कों का प्रचलन नहीं था; लेनदेन <b>वस्तु-विनिमय</b> से होता था।","मेसोपोटामिया के अभिलेखों में सिंधु क्षेत्र के लिए <b>‘मेलुहा’</b> शब्द मिलता है।","<b>लोथल (गुजरात):</b> संसार का सबसे प्राचीन मानव-निर्मित बंदरगाह (गोदीवाड़ा); यहाँ से फारस की खाड़ी और मेसोपोटामिया के लिए जहाज जाते थे।","आयात: <b>तांबा</b> खेतड़ी (राजस्थान) और ओमान से; <b>टिन</b> अफगानिस्तान और ईरान से; <b>लाजवर्द</b> (नीला पत्थर) बदख्शां (अफगानिस्तान) से।"]],["h","3. प्रमुख स्थलों की तुलनात्मक सारणी"],["t",[["स्थल","नदी","वर्तमान स्थिति","महत्वपूर्ण खोज"],["हड़प्पा","रावी","पंजाब (पाक.)","छह-छह की कतार वाले 12 अन्न भंडार, कब्रिस्तान R-37"],["मोहनजोदड़ो","सिंधु","सिंध (पाक.)","विशाल स्नानागार, कांस्य नर्तकी, पशुपति मुहर"],["लोथल","भोगवा","गुजरात","पक्की ईंटों का गोदीवाड़ा, चावल के दाने, फारस की मुहर"],["कालीबंगन","घग्घर","राजस्थान","जुते खेत के साक्ष्य, काली चूड़ियाँ, हवन कुंड"],["धोलावीरा","लूनी/मनहर","गुजरात (कच्छ)","जल संचयन प्रणाली, 10 बड़े अक्षरों का साइनबोर्ड"],["चन्हूड़ो","सिंधु","सिंध (पाक.)","मनके और आभूषण का कारखाना (बिना दुर्ग का नगर)"],["राखीगढ़ी","घग्घर","हरियाणा","भारत में हड़प्पा सभ्यता का सबसे बड़ा स्थल"]]]],
+[["p","लगभग 1900 ईसा पूर्व के बाद यह भव्य सभ्यता धीरे-धीरे बिखरने लगी। बड़े नगर खाली हो गए और लोग छोटी ग्रामीण बस्तियों में बस गए।"],["h","1. पतन के संभावित कारण"],["p","किसी एक घटना से इतनी विशाल सभ्यता समाप्त नहीं हो सकती थी; कई प्राकृतिक और पारिस्थितिक कारण रहे:"],["l",["<b>जलवायु परिवर्तन और सूखा (सर्वाधिक मान्य):</b> वर्षा चक्र बदला, घग्घर-हाकरा (प्राचीन सरस्वती) जैसी नदियाँ सूखीं, खेती ठप हुई और लोग पूरब में गंगा घाटी की ओर पलायन कर गए।","<b>नदियों की बाढ़:</b> मोहनजोदड़ो में गाद और रेत के कई स्तर बताते हैं कि सिंधु की बाढ़ ने शहर को बार-बार डुबोया।","<b>व्यापारिक पतन:</b> मेसोपोटामिया के आंतरिक संकटों से विदेशी व्यापार रुका और अर्थव्यवस्था कमजोर हुई।","<b>बाहरी आक्रमण का पुराना सिद्धांत:</b> मोर्टिमर व्हीलर जैसे इतिहासकारों ने आर्यों के आक्रमण को कारण माना था, पर आधुनिक साक्ष्यों में बड़े पैमाने पर युद्ध या नरसंहार के संकेत नहीं मिले।"]],["h","2. आधुनिक भारत को हड़प्पा की देन"],["l",["<b>नगर योजना:</b> चंडीगढ़ हड़प्पा की समकोण (90°) ग्रिड पद्धति पर बसाया गया है।","<b>धार्मिक निरंतरता:</b> पशुपति रूप में शिव की पूजा, पीपल का सम्मान, योग-ध्यान की मुद्राएँ और <b>स्वास्तिक चिन्ह</b>।","<b>स्वच्छता का मॉडल:</b> घर से बंद नालियों द्वारा गंदे पानी की निकासी और नगर-नियोजन की अवधारणा स्मार्ट सिटी की पूर्वज है।"]],["h","क्या सीखे? (Key Learnings)"],["l",["<b>पहला खोजा स्थल:</b> हड़प्पा (1921, दयाराम साहनी)।","<b>कांस्य-युगीन</b> सभ्यता; <b>लोहे का ज्ञान बिल्कुल नहीं</b> था।","<b>त्रिभुजाकार</b> फैलाव: उत्तर में जम्मू से दक्षिण में महाराष्ट्र तक।","<b>लोथल:</b> विश्व का सबसे पुराना ज्ञात गोदीवाड़ा।","<b>धोलावीरा:</b> 3 भागों में बँटा, वर्षा जल संचयन के लिए प्रसिद्ध।","कपास उगाने वाले संसार के पहले लोग हड़प्पावासी।","ईंटों का निश्चित पैमाना <b>4:2:1</b>।"]]]];
+var K="gkbook:v1",S={read:{},att:{},pg:0,fs:17,full:0};
+try{var x=JSON.parse(localStorage.getItem(K));if(x)S=Object.assign(S,x)}catch(e){}
+function sv(){try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}}
+var $=function(i){return document.getElementById(i)},A=$("app"),view="shelf";
+function st(s,t){var p=s/t*100;return p>=90?3:p>=70?2:p>=40?1:0}
+function prog(){return Object.keys(S.read).length/P.length*100}
+var LIVE="सिंधु घाटी सभ्यता",TREE=[
+{n:"India GK",t:[
+{n:"इतिहास",s:[{n:"प्राचीन भारत",c:[LIVE,"वैदिक काल","महाजनपद काल","मौर्य साम्राज्य","गुप्त साम्राज्य"]},{n:"मध्यकालीन भारत",c:["दिल्ली सल्तनत","मुगलकाल","भक्ति और सूफी आंदोलन"]},{n:"आधुनिक भारत",c:["1857 का विद्रोह","गांधीवादी चरण","संविधान निर्माण"]}]},
+{n:"भूगोल",s:[{n:"भारत का भूगोल",c:["भू-आकृतिक प्रदेश","अपवाह तंत्र","जलवायु और मृदा"]}]},
+{n:"भारतीय राजव्यवस्था",s:[{n:"संविधान",c:["प्रस्तावना","मूल अधिकार","राष्ट्रपति और संसद"]}]},
+{n:"भारतीय अर्थव्यवस्था",s:[{n:"आधार",c:["अर्थव्यवस्था के क्षेत्र","बैंकिंग","बजट और कर"]}]},
+{n:"सामान्य विज्ञान",s:[{n:"भौतिक विज्ञान",c:["मापन","गति के नियम"]},{n:"जीव विज्ञान",c:["कोशिका","पाचन तंत्र"]}]}]},
+{n:"World GK",t:[{n:"विश्व भूगोल",s:[{n:"ब्रह्मांड",c:["आकाशगंगा और तारे","सौरमंडल"]}]},{n:"अंतर्राष्ट्रीय संगठन",s:[{n:"संयुक्त राष्ट्र",c:["अंग और महासचिव"]}]}]}];
+function cnt(){var n=0,l=0;TREE.forEach(function(a){a.t.forEach(function(t){t.s.forEach(function(s){s.c.forEach(function(c){n++;if(c==LIVE)l++})})})});return[n,l]}
+function lv(){var n=Object.keys(S.read).length,a=P.reduce(function(x,p){return x+p.m},0),z=n==0?["○","नहीं पढ़ा","u"]:n<P.length?["◐","जारी "+n+"/"+P.length,"p"]:["✓","पढ़ लिया","d"];
+return'<button class="ch live" data-live="1"><span><b class="ic '+z[2]+'">'+z[0]+"</b> "+LIVE+'<br><small class="cn">⏱ लगभग '+a+" मिनट संक्षिप्त · "+(a+20)+" मिनट पूरा · "+P.length+' अध्याय</small></span><span class="chip">'+z[1]+"</span></button>"}
+function dots(i){$("dots").innerHTML=P.map(function(p,k){var r=S.read[k];return'<button class="dt'+(r?" r":"")+(k==i?" c":"")+'" data-k="'+k+'" aria-label="अध्याय '+(k+1)+(r?" पढ़ा":" नहीं पढ़ा")+'">'+(r?"✓":k+1)+"</button>"}).join("");
+$("dots").querySelectorAll(".dt").forEach(function(b){b.onclick=function(){rd(+b.dataset.k);scrollTo(0,0)}})}
+function dt(nm,inn,n,lv,op){return'<details class="d'+lv+'"'+(op?" open":"")+"><summary><b>"+nm+'</b><span class="cn">'+n+" अध्याय</span></summary>"+inn+"</details>"}
+function tree(q){q=(q||"").trim().toLowerCase();var m=function(x){return!q||x.toLowerCase().indexOf(q)>-1},out="";
+TREE.forEach(function(a){var th="",ta=0,aL=0;a.t.forEach(function(t){var sh="",ts=0,tL=0;t.s.forEach(function(s){var ch="",n=0;s.c.forEach(function(c){if(m(c)||m(s.n)||m(t.n)||m(a.n)){n++;ch+=c==LIVE?lv():'<div class="ch"><span>'+c+'</span><span class="chip">जल्द आ रहा है</span></div>'}});
+if(n){var sl=s.c.indexOf(LIVE)>-1;tL=tL||sl;sh+=dt(s.n,ch,n,3,q||sl);ts+=n}});
+if(ts){aL=aL||tL;th+=dt(t.n,sh,ts,2,q||tL);ta+=ts}});
+if(ta)out+=dt(a.n,th,ta,1,q||aL)});
+$("tr").innerHTML=out||'<p style="color:var(--mut)">कोई अध्याय नहीं मिला। दूसरा शब्द आज़माएँ।</p>';
+A.querySelectorAll("[data-live]").forEach(function(b){b.onclick=function(){rd(S.pg||0)}})}
+function shelf(){view="shelf";$("ttl").textContent="GK Book";var k=cnt();
+A.innerHTML='<div class="crumb">GK Book › अनुक्रमणिका</div><h1>GK Book</h1><p style="color:var(--mut);margin:0">पूरी अनुक्रमणिका: उप-श्रेणी → विषय → उप-विषय → अध्याय · '+k[0]+" अध्याय, "+k[1]+' उपलब्ध</p><input class="srch" id="sq" placeholder="अध्याय या विषय खोजें…" aria-label="खोजें"><div class="cn" style="margin-bottom:6px">○ नहीं पढ़ा · ◐ जारी · ✓ पढ़ लिया</div><div id="tr"></div>';
+$("sq").oninput=function(){tree(this.value)};tree("")}
+function blk(b){var k=b[0],v=b[1];
+if(k=="h")return"<h2>"+v+"</h2>";if(k=="p")return"<p>"+v+"</p>";if(k=="f")return'<div class="fact">'+v+"</div>";
+if(k=="l")return"<ul>"+v.map(function(i){return"<li>"+i+"</li>"}).join("")+"</ul>";
+return'<div class="tw"><table>'+v.map(function(r,i){return"<tr>"+r.map(function(c){return i?"<td>"+c+"</td>":"<th>"+c+"</th>"}).join("")+"</tr>"}).join("")+"</table></div>"}
+function qcard(i){var a=S.att[i]||[],best=a.length?Math.max.apply(0,a.map(function(z){return z.s/z.t})):0,l=a[a.length-1],s=a.length?st(Math.round(best*P[i].q.length),P[i].q.length):0;
+return'<div class="qc"><b>इस अध्याय का क्विज़</b><div class="stars">'+"★".repeat(s)+"☆".repeat(3-s)+'</div><div style="color:var(--mut);font-size:14px">'+(a.length?"बेस्ट "+Math.round(best*100)+"% · पिछला "+l.s+"/"+l.t+" · "+a.length+" प्रयास":"अभी तक खेला नहीं")+'</div><div class="row"><button class="btn" id="pl">'+(a.length?"फिर खेलें":"क्विज़ खेलें")+'</button>'+(a.length?'<button class="btn g" id="rs">रीसेट</button>':"")+"</div></div>"}
+function rd(i){view="read";S.pg=i;sv();var p=P[i];$("ttl").textContent="अध्याय "+(i+1)+" / "+P.length;
+A.innerHTML='<div class="crumb"><a href="#" id="bk" style="color:var(--pri)">← अनुक्रमणिका</a></div><div class="bar" style="margin:0 0 12px"><i style="width:'+((i+1)/P.length*100)+'%"></i></div><div class="dots" id="dots"></div><div class="nav" style="margin:0 0 12px"><button class="btn'+(S.full?' g':'')+'" id="ms">संक्षिप्त पाठ</button><button class="btn'+(S.full?'':' g')+'" id="mf">पूरा पाठ</button></div><article class="art" style="font-size:'+S.fs+'px"><h1 style="font-size:1.5em">'+p.t+'</h1><div style="color:var(--mut);font-size:.8em">'+(S.full?p.m+4:p.m)+' मिनट का पाठ</div>'+(S.full?F[i]:p.b).map(blk).join("")+"</article>"+qcard(i)+
+'<div class="nav"><button class="btn g" id="pv"'+(i?"":" disabled")+'>← पिछला</button><button class="btn" id="nx"'+(i<P.length-1?"":" disabled")+'>अगला →</button></div>';
+$("bk").onclick=function(e){e.preventDefault();shelf()};$("pv").onclick=function(){rd(i-1);scrollTo(0,0)};$("nx").onclick=function(){rd(i+1);scrollTo(0,0)};
+$("ms").onclick=function(){S.full=0;sv();rd(i)};$("mf").onclick=function(){S.full=1;sv();rd(i)};dots(i);var qc=document.querySelector(".qc");if("IntersectionObserver"in window){var io=new IntersectionObserver(function(e){if(e[0].isIntersecting&&!S.read[i]){S.read[i]=1;sv();dots(i);io.disconnect()}});io.observe(qc)}else{S.read[i]=1;sv();dots(i)}
+$("pl").onclick=function(){qz(i)};if($("rs"))$("rs").onclick=function(){if(confirm("इस अध्याय का स्कोर रीसेट करें?")){delete S.att[i];sv();rd(i)}}}
+function sh(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
+function qz(i){var qs=sh(P[i].q).map(function(q){var o=sh(q[1].map(function(t,n){return[t,n==q[2]]}));return{q:q[0],o:o}}),n=0,sc=0,o=document.createElement("div");o.className="ov";document.body.appendChild(o);
+function show(){var q=qs[n],done=false;o.innerHTML='<div><div style="display:flex;justify-content:space-between"><b>प्रश्न '+(n+1)+"/"+qs.length+'</b><button class="ib" id="x">✕ बंद</button></div><h2 style="font-size:20px">'+q.q+"</h2>"+q.o.map(function(z,k){return'<button class="opt" data-k="'+k+'">'+z[0]+"</button>"}).join("")+'<div id="nb"></div></div>';
+$("x").onclick=function(){o.remove()};
+o.querySelectorAll(".opt").forEach(function(b){b.onclick=function(){if(done)return;done=true;var ok=q.o[b.dataset.k][1];if(ok)sc++;o.querySelectorAll(".opt").forEach(function(c,k){c.classList.add(q.o[k][1]?"ok":(c==b?"no":"x"))});
+$("nb").innerHTML='<button class="btn" id="go">'+(n<qs.length-1?"आगे →":"नतीजा देखें")+"</button>";$("go").onclick=function(){n++;n<qs.length?show():fin()}}})}
+function fin(){(S.att[i]=S.att[i]||[]).push({s:sc,t:qs.length,d:Date.now()});sv();var s=st(sc,qs.length);
+o.innerHTML='<div><div class="big">'+sc+" / "+qs.length+'</div><div class="stars" style="text-align:center">'+"★".repeat(s)+"☆".repeat(3-s)+'</div><p style="text-align:center">'+(s==3?"शानदार!":s?"अच्छा प्रयास!":"अध्याय दोबारा पढ़ें और फिर कोशिश करें।")+'</p><div class="row" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><button class="btn" id="rp">फिर खेलें</button><button class="btn g" id="bb">किताब पर लौटें</button></div></div>';
+$("rp").onclick=function(){o.remove();qz(i)};$("bb").onclick=function(){o.remove();rd(i)}}
+show()}
+var T=["light","sepia","dark"];
+$("th").onclick=function(){var c=T.indexOf(document.documentElement.dataset.theme||"light");document.documentElement.dataset.theme=T[(c+1)%3]};
+$("fm").onclick=function(){S.fs=Math.max(14,S.fs-1);sv();if(view=="read")rd(S.pg)};$("fp").onclick=function(){S.fs=Math.min(24,S.fs+1);sv();if(view=="read")rd(S.pg)};
+shelf();
+</script></body></html>

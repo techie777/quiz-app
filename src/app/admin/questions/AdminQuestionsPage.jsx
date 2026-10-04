@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAdmin } from "@/context/AdminContext";
+import { useData } from "@/context/DataContext";
 import styles from "@/styles/AdminQuestions.module.css";
 import toast from "react-hot-toast";
 import {
@@ -28,6 +30,8 @@ import {
 
 export default function AdminQuestionsPage() {
   const { adminUser } = useAdmin();
+  const { quizzes: quizCategories } = useData();
+  const searchParams = useSearchParams();
   const allowed = adminUser?.role === "master" || adminUser?.permissions?.questions !== false;
 
   // Active Tab
@@ -47,7 +51,17 @@ export default function AdminQuestionsPage() {
 
   // Filters
   const [search, setSearch] = useState("");
-  const [selectedCat, setSelectedCat] = useState("all");
+  const initialCategory = searchParams?.get("category") || "all";
+  const [selectedCat, setSelectedCat] = useState(initialCategory);
+
+  // Sync category from URL parameter when navigation occurs
+  useEffect(() => {
+    const catFromUrl = searchParams?.get("category");
+    if (catFromUrl && catFromUrl !== selectedCat) {
+      setSelectedCat(catFromUrl);
+      setPage(1);
+    }
+  }, [searchParams]);
   const [selectedTopic, setSelectedTopic] = useState("all");
   const [selectedDiff, setSelectedDiff] = useState("all");
   const [selectedAudience, setSelectedAudience] = useState("all");
@@ -765,14 +779,27 @@ export default function AdminQuestionsPage() {
                   setPage(1);
                 }}
                 className={styles.select}
-                style={{ width: "auto", minWidth: "170px" }}
+                style={{ width: "auto", minWidth: "200px" }}
               >
                 <option value="all">📁 All Categories</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
+                {quizCategories && quizCategories.length > 0 && (
+                  <optgroup label="── Quiz Categories ──">
+                    {quizCategories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.emoji || "📁"} {c.name || c.topic} ({c.questionCount || 0} Qs)
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                {categories && categories.length > 0 && (
+                  <optgroup label="── Taxonomy Groups ──">
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
               </select>
 
               {/* Topic */}
@@ -981,22 +1008,38 @@ export default function AdminQuestionsPage() {
                           )}
                         </td>
                         <td>
-                          <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                            {q.options_list?.map((opt, idx) => (
-                              <div
-                                key={idx}
-                                style={{
-                                  fontSize: "0.82rem",
-                                  fontWeight: idx === q.correct_index ? 700 : 400,
-                                  color: idx === q.correct_index ? "#059669" : "var(--text-secondary)",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 4,
-                                }}
-                              >
-                                {idx === q.correct_index ? <Check size={12} /> : "•"} {opt}
-                              </div>
-                            ))}
+                          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                            {q.options_list?.map((opt, idx) => {
+                              const isCorrect = idx === q.correct_index;
+                              return (
+                                <div
+                                  key={idx}
+                                  style={{
+                                    fontSize: "0.8rem",
+                                    fontWeight: isCorrect ? 700 : 400,
+                                    color: isCorrect ? "#047857" : "var(--text-secondary)",
+                                    background: isCorrect ? "rgba(16, 185, 129, 0.12)" : "transparent",
+                                    border: isCorrect ? "1px solid rgba(16, 185, 129, 0.3)" : "1px solid transparent",
+                                    borderRadius: "6px",
+                                    padding: "2px 8px",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 6,
+                                  }}
+                                >
+                                  {isCorrect ? (
+                                    <span style={{ color: "#10b981", display: "inline-flex" }}>
+                                      <CheckCircle2 size={13} />
+                                    </span>
+                                  ) : (
+                                    <span style={{ opacity: 0.35, fontSize: "0.75rem" }}>•</span>
+                                  )}
+                                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                    {opt}
+                                  </span>
+                                </div>
+                              );
+                            })}
                           </div>
                         </td>
                         <td>

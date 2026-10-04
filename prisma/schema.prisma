@@ -135,6 +135,10 @@ model Category {
   isTrending              Boolean     @default(false)
   chips                   String      @default("[]")
   sortOrder               Int         @default(0)
+  sort_order              Int?        @default(0)
+  image_url               String?
+  group                   String?     @default("core")
+  status                  String?     @default("coming_soon")
   showSubCategoriesOnHome Boolean     @default(false)
   attemptCount            Int         @default(0)
 
@@ -194,15 +198,15 @@ model Question {
   explanation   String?
   explanationHi String?
 
-  categoryId String   @db.ObjectId
-  category Category @relation(fields: [categoryId], references: [id])
+  categoryId String?   @db.ObjectId
+  category Category? @relation(fields: [categoryId], references: [id])
 
   favourites Favourite[]
 
   // Step 4 Data Foundation fields
   text_hi         String?
   text_en         String?
-  options_list    String[]    @default([])
+  options_list    Json?
   correct_index   Int         @default(0)
   explanation_hi  String?
   explanation_en  String?

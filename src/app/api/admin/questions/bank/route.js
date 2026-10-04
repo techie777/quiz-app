@@ -28,35 +28,58 @@ export async function GET(request) {
     const reviewDue = searchParams.get("reviewDue") === "true";
 
     const db = await getDb();
+    const andConditions = [];
     const query = {};
 
     // 1. Text Search
     if (search) {
-      query.$or = [
-        { text_hi: { $regex: search, $options: "i" } },
-        { text_en: { $regex: search, $options: "i" } },
-        { text: { $regex: search, $options: "i" } },
-        { tags: { $in: [new RegExp(search, "i")] } },
-      ];
+      andConditions.push({
+        $or: [
+          { text_hi: { $regex: search, $options: "i" } },
+          { text_en: { $regex: search, $options: "i" } },
+          { text: { $regex: search, $options: "i" } },
+          { tags: { $in: [new RegExp(search, "i")] } },
+        ]
+      });
     }
 
     // 2. Category & Topic
     if (categoryId && categoryId !== "all") {
       if (ObjectId.isValid(categoryId)) {
-        query.$or = (query.$or || []).concat([
-          { category_id: new ObjectId(categoryId) },
-          { categoryId: new ObjectId(categoryId) },
-        ]);
+        andConditions.push({
+          $or: [
+            { category_id: new ObjectId(categoryId) },
+            { categoryId: new ObjectId(categoryId) },
+            { category_id: categoryId },
+            { categoryId: categoryId },
+          ]
+        });
       } else {
-        query.category_id = categoryId;
+        andConditions.push({
+          $or: [
+            { category_id: categoryId },
+            { categoryId: categoryId }
+          ]
+        });
       }
     }
 
     if (topicId && topicId !== "all") {
       if (ObjectId.isValid(topicId)) {
-        query.topic_id = new ObjectId(topicId);
+        andConditions.push({
+          $or: [
+            { topic_id: new ObjectId(topicId) },
+            { topicId: topicId },
+            { topic_id: topicId }
+          ]
+        });
       } else {
-        query.topic_id = topicId;
+        andConditions.push({
+          $or: [
+            { topic_id: topicId },
+            { topicId: topicId }
+          ]
+        });
       }
     }
 
@@ -112,11 +135,12 @@ export async function GET(request) {
       query.review_by = { $lte: new Date() };
     }
 
+    const finalQuery = andConditions.length > 0 ? { ...query, $and: andConditions } : query;
     const skip = (page - 1) * limit;
 
     const [questions, total] = await Promise.all([
-      db.collection("Question").find(query).sort({ updatedAt: -1 }).skip(skip).limit(limit).toArray(),
-      db.collection("Question").countDocuments(query),
+      db.collection("Question").find(finalQuery).sort({ updatedAt: -1 }).skip(skip).limit(limit).toArray(),
+      db.collection("Question").countDocuments(finalQuery),
     ]);
 
     // Format output
