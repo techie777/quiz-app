@@ -266,6 +266,31 @@ export const FULL_PAGES = [
   ]
 ];
 
+// Unified structured pages array for chapters
+export const PAGES = SHORT_PAGES.map((sp, idx) => ({
+  pageNumber: idx + 1,
+  title: sp.t,
+  readingTimeShort: sp.m || 1,
+  readingTimeFull: (sp.m || 1) + 2,
+  P: sp.b.map((block) => ({
+    type: block[0],
+    text: typeof block[1] === "string" ? block[1] : undefined,
+    items: Array.isArray(block[1]) ? block[1] : undefined,
+  })),
+  F: (FULL_PAGES[idx] || []).map((block) => ({
+    type: block[0],
+    text: typeof block[1] === "string" ? block[1] : undefined,
+    items: Array.isArray(block[1]) ? block[1] : undefined,
+  })),
+  q: sp.q.map((question, qIdx) => ({
+    id: `q_${idx}_${qIdx}`,
+    text: question[0],
+    options: question[1],
+    answer: question[2],
+    explanation: "",
+  })),
+}));
+
 // Tree structure matching gk-book.html
 export const BOOK_TREE = [
   {

@@ -25,6 +25,7 @@ export default function GkBookIndexPage() {
   if (activeChapter) {
     return (
       <GkBookReader
+        chapterSlug={activeChapter}
         initialPage={activePage}
         onBackToIndex={handleBackToIndex}
       />

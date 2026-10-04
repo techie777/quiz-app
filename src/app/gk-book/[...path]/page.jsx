@@ -17,8 +17,12 @@ export default function GkBookPathPage() {
     router.push("/gk-book");
   };
 
+  const pathArray = params?.path || [];
+  const chapterSlug = Array.isArray(pathArray) ? pathArray[pathArray.length - 1] : (pathArray || "sindhu-ghati");
+
   return (
     <GkBookReader
+      chapterSlug={chapterSlug}
       initialPage={initialPage}
       onBackToIndex={handleBackToIndex}
     />

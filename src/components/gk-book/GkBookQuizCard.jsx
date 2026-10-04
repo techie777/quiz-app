@@ -33,9 +33,9 @@ export default function GkBookQuizCard({
     
     // Shuffle question list
     const qList = [...questions].sort(() => Math.random() - 0.5).map((q) => {
-      const qText = q[0];
-      const origOpts = q[1];
-      const correctIdx = q[2];
+      const qText = typeof q.text === "string" ? q.text : q[0];
+      const origOpts = Array.isArray(q.options) ? q.options : q[1] || [];
+      const correctIdx = typeof q.answer === "number" ? q.answer : (typeof q[2] === "number" ? q[2] : 0);
       
       // Pair options with their boolean correctness
       const optPairs = origOpts.map((text, idx) => ({

@@ -13,7 +13,11 @@ import {
   LIVE_CHAPTER,
 } from "@/lib/gk-book/seedData";
 
-export default function GkBookReader({ initialPage = 0, onBackToIndex }) {
+export default function GkBookReader({
+  initialPage = 0,
+  chapterSlug = "sindhu-ghati",
+  onBackToIndex,
+}) {
   // Local state synced with localStorage "gkbook:v1"
   const [pageIndex, setPageIndex] = useState(initialPage);
   const [isFull, setIsFull] = useState(false);
@@ -22,8 +26,29 @@ export default function GkBookReader({ initialPage = 0, onBackToIndex }) {
   const [readPages, setReadPages] = useState({});
   const [attempts, setAttempts] = useState({});
   const [isMounted, setIsMounted] = useState(false);
+  const [chapterData, setChapterData] = useState(null);
 
   const quizCardRef = useRef(null);
+
+  // Load chapter dynamically from DB API with fallback
+  useEffect(() => {
+    let isCancelled = false;
+    async function loadChapter() {
+      try {
+        const res = await fetch(`/api/gk-book/chapters/${chapterSlug}`);
+        const data = await res.json();
+        if (!isCancelled && data.success && data.chapter) {
+          setChapterData(data.chapter);
+        }
+      } catch (err) {
+        console.warn("[GkBookReader] Failed to fetch chapter from API, using seed:", err);
+      }
+    }
+    loadChapter();
+    return () => {
+      isCancelled = true;
+    };
+  }, [chapterSlug]);
 
   // Load saved settings & progress from localStorage on mount
   useEffect(() => {
@@ -64,9 +89,12 @@ export default function GkBookReader({ initialPage = 0, onBackToIndex }) {
     }
   };
 
+  const dynamicPages = chapterData?.pages || [];
+  const totalPagesCount = dynamicPages.length > 0 ? dynamicPages.length : SHORT_PAGES.length;
+
   // Switch Page
   const goToPage = (newIndex) => {
-    if (newIndex < 0 || newIndex >= SHORT_PAGES.length) return;
+    if (newIndex < 0 || newIndex >= totalPagesCount) return;
     setPageIndex(newIndex);
     saveState({ pg: newIndex });
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -97,7 +125,6 @@ export default function GkBookReader({ initialPage = 0, onBackToIndex }) {
     if (!el) return;
 
     if (!("IntersectionObserver" in window)) {
-      // Fallback
       if (!readPages[pageIndex]) {
         const updated = { ...readPages, [pageIndex]: 1 };
         setReadPages(updated);
@@ -138,22 +165,27 @@ export default function GkBookReader({ initialPage = 0, onBackToIndex }) {
 
   // Reset Quiz Score for this page
   const handleResetScore = (pIdx) => {
+    if (!window.confirm("क्या आप वाकई इस पृष्ठ का स्कोर रीसेट करना चाहते हैं?")) {
+      return;
+    }
     const updated = { ...attempts };
     delete updated[pIdx];
     setAttempts(updated);
     saveState({ att: updated });
   };
 
-  const currentPage = SHORT_PAGES[pageIndex] || SHORT_PAGES[0];
-  const fullBlocks = FULL_PAGES[pageIndex] || [];
-  const currentBlocks = isFull ? fullBlocks : currentPage.b;
-  const readMin = isFull ? (currentPage.m || 3) + 4 : currentPage.m || 3;
-  const progressPct = ((pageIndex + 1) / SHORT_PAGES.length) * 100;
+  const currentPage = dynamicPages[pageIndex] || SHORT_PAGES[pageIndex] || SHORT_PAGES[0];
+  const shortBlocks = currentPage.P || currentPage.b || [];
+  const fullBlocks = currentPage.F || FULL_PAGES[pageIndex] || [];
+  const currentBlocks = isFull ? fullBlocks : shortBlocks;
+  const readMin = isFull ? (currentPage.readingTimeFull || (currentPage.m || 3) + 3) : (currentPage.readingTimeShort || currentPage.m || 3);
+  const progressPct = ((pageIndex + 1) / totalPagesCount) * 100;
 
   // Render individual content block
   const renderBlock = (block, idx) => {
-    const type = block[0];
-    const val = block[1];
+    if (!block) return null;
+    const type = block.type || block[0];
+    const val = block.text !== undefined ? block.text : (block.items !== undefined ? block.items : block[1]);
 
     if (type === "h") {
       return (
@@ -276,7 +308,7 @@ export default function GkBookReader({ initialPage = 0, onBackToIndex }) {
             type="button"
             className={`${styles.btn} ${styles.btnSec} ${pageIndex === SHORT_PAGES.length - 1 ? styles.btnDisabled : ""}`}
             onClick={() => goToPage(pageIndex + 1)}
-            disabled={pageIndex === SHORT_PAGES.length - 1}
+            disabled={pageIndex === totalPagesCount - 1}
             style={{ minHeight: "36px", padding: "6px 14px", fontSize: "13px" }}
           >
             अगला ›
@@ -290,7 +322,7 @@ export default function GkBookReader({ initialPage = 0, onBackToIndex }) {
 
         {/* Page Dots Navigation */}
         <div className={styles.dots}>
-          {SHORT_PAGES.map((p, idx) => {
+          {(dynamicPages.length > 0 ? dynamicPages : SHORT_PAGES).map((p, idx) => {
             const isRead = Boolean(readPages[idx]);
             const isCurrent = idx === pageIndex;
             let dotClass = styles.dot;
@@ -332,7 +364,7 @@ export default function GkBookReader({ initialPage = 0, onBackToIndex }) {
         {/* Article Body */}
         <article className={styles.art} style={{ fontSize: `${fontSize}px` }}>
           <h1 style={{ fontSize: "1.5em", margin: "0 0 4px", fontWeight: 800 }}>
-            {currentPage.t}
+            {currentPage.title || currentPage.t}
           </h1>
           <div style={{ color: "var(--mut)", fontSize: "0.85em", marginBottom: "16px" }}>
             ⏱ {readMin} मिनट का पाठ {isFull ? "(विस्तृत अध्ययन)" : "(संक्षिप्त बिंदु)"}
@@ -345,7 +377,7 @@ export default function GkBookReader({ initialPage = 0, onBackToIndex }) {
         <div ref={quizCardRef}>
           <GkBookQuizCard
             pageIndex={pageIndex}
-            questions={currentPage.q}
+            questions={currentPage.q || []}
             attempts={attempts[pageIndex] || []}
             onRecordAttempt={handleRecordAttempt}
             onResetScore={handleResetScore}
@@ -364,9 +396,9 @@ export default function GkBookReader({ initialPage = 0, onBackToIndex }) {
           </button>
           <button
             type="button"
-            className={`${styles.btn} ${pageIndex === SHORT_PAGES.length - 1 ? styles.btnDisabled : ""}`}
+            className={`${styles.btn} ${pageIndex === totalPagesCount - 1 ? styles.btnDisabled : ""}`}
             onClick={() => goToPage(pageIndex + 1)}
-            disabled={pageIndex === SHORT_PAGES.length - 1}
+            disabled={pageIndex === totalPagesCount - 1}
             style={{ marginLeft: "auto" }}
           >
             अगला अध्याय →
