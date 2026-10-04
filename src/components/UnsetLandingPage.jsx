@@ -507,63 +507,105 @@ export default function UnsetLandingPage() {
         </div>
       </section>
 
-      {/* ── LIVE TASTE QUESTION (Below the fold) ── */}
-      <section className="w-full max-w-xl mx-auto">
-        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-sm">
-          <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-slate-100">
-            <div className="flex items-center gap-2">
-              <span className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                <Sparkles size={15} />
-              </span>
-              <span className="text-xs sm:text-sm font-bold text-slate-800">
-                {isHindi ? "तुरंत खेलकर देखें (Live Taste)" : "Try a Question Right Now"}
-              </span>
-            </div>
-            <button
-              onClick={handlePlayTasteSet}
-              className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
-            >
-              <span>{isHindi ? "पूरा सेट खेलें" : "Play Full Set"}</span>
-              <ArrowRight size={13} />
-            </button>
-          </div>
+      {/* ── 5TH LAYER: INDIA GK DIGITAL BOOK BANNER & ACCESSIBILITY ── */}
+      <section className="w-full max-w-5xl mx-auto mt-2 mb-8">
+        <div className="relative overflow-hidden rounded-3xl p-5 sm:p-7 bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-900 text-white border-2 border-indigo-500/40 shadow-xl shadow-indigo-950/40">
+          {/* Decorative ambient background glows */}
+          <div className="absolute -top-24 -right-24 w-72 h-72 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
 
-          <p className="text-xs sm:text-sm font-semibold text-slate-900 mb-3 leading-snug">
-            {liveQuestion.text}
-          </p>
+          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+            {/* Left Content */}
+            <div className="flex-1 text-center md:text-left">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-amber-300 text-xs font-black uppercase tracking-wider mb-3">
+                <span>📖 {isHindi ? "डिजिटल बुक प्लेटफ़ॉर्म" : "Digital Book Hub"}</span>
+                <span>·</span>
+                <span className="text-emerald-400 font-extrabold">{isHindi ? "नया फ़ीचर (NEW)" : "NEW FEATURE"}</span>
+              </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            {liveQuestion.options.map((opt, idx) => {
-              const isSelected = selectedOption === opt;
-              const isCorrect = opt === liveQuestion.correctAnswer;
-              let btnStyle =
-                "bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-200";
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-white tracking-tight mb-2">
+                {isHindi
+                  ? "India GK: आपकी हर जरूरत के लिए डिजिटल बुक"
+                  : "India GK: A Digital Book For All Your Needs"}
+              </h2>
 
-              if (hasAnswered) {
-                if (isCorrect) {
-                  btnStyle = "bg-emerald-50 text-emerald-900 border-emerald-400 font-bold";
-                } else if (isSelected) {
-                  btnStyle = "bg-rose-50 text-rose-900 border-rose-300 font-semibold";
-                }
-              }
+              <p className="text-xs sm:text-sm text-indigo-200/90 leading-relaxed mb-4 max-w-xl">
+                {isHindi
+                  ? "अध्याय दर अध्याय संरचित अध्ययन, संक्षिप्त (Quick Revision) व विस्तृत (Deep Study) पठन, और हर पृष्ठ के अंत में स्व-निहित अभ्यास क्विज़।"
+                  : "Chapter-by-chapter structured learning with Short & Full reading modes and interactive self-contained quiz cards on every page."}
+              </p>
 
-              return (
-                <button
-                  key={idx}
-                  onClick={() => !hasAnswered && handleLiveTasteOption(opt)}
-                  disabled={hasAnswered}
-                  className={`p-2.5 rounded-xl border text-xs text-left transition-all flex items-center justify-between gap-1.5 ${btnStyle}`}
+              {/* Feature pills */}
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-5 text-[11px] font-bold text-indigo-100">
+                <span className="px-2.5 py-1 rounded-lg bg-white/10 border border-white/10 backdrop-blur-xs">
+                  ⚡ {isHindi ? "संक्षिप्त व विस्तृत मोड" : "Short & Full Modes"}
+                </span>
+                <span className="px-2.5 py-1 rounded-lg bg-white/10 border border-white/10 backdrop-blur-xs">
+                  🎯 {isHindi ? "हर पृष्ठ पर क्विज़ कार्ड" : "Page Quiz Cards"}
+                </span>
+                <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-400/30 text-emerald-300">
+                  ✓ {isHindi ? "100% मुफ्त पठन" : "100% Free Access"}
+                </span>
+              </div>
+
+              {/* CTA & Chapter Dropdown */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <Link
+                  href="/gk-book/sindhu-ghati"
+                  className="px-5 py-3 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-slate-950 font-black text-sm shadow-lg shadow-amber-500/25 flex items-center justify-center gap-2 active:scale-98 transition-all"
                 >
-                  <span className="line-clamp-1">{opt}</span>
-                  {hasAnswered && isCorrect && (
-                    <CheckCircle2 size={14} className="text-emerald-600 flex-shrink-0" />
-                  )}
-                  {hasAnswered && isSelected && !isCorrect && (
-                    <XCircle size={14} className="text-rose-600 flex-shrink-0" />
-                  )}
-                </button>
-              );
-            })}
+                  <span>{isHindi ? "किताब पढ़ना शुरू करें" : "Read Digital Book"}</span>
+                  <ArrowRight size={16} />
+                </Link>
+
+                {/* Chapter Dropdown Quick Jump */}
+                <div className="relative">
+                  <select
+                    className="w-full sm:w-auto px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 text-white border border-white/20 text-xs font-semibold outline-none cursor-pointer backdrop-blur-xs transition-colors"
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        router.push(e.target.value);
+                      }
+                    }}
+                    defaultValue=""
+                  >
+                    <option value="" disabled className="bg-slate-900 text-slate-400">
+                      {isHindi ? "▼ सीधे अध्याय पर जाएं..." : "▼ Jump to Chapter..."}
+                    </option>
+                    <option value="/gk-book/sindhu-ghati" className="bg-slate-900 text-white">
+                      1. सिंधु घाटी सभ्यता — विस्तार व नगर नियोजन (5 पृष्ठ · Live)
+                    </option>
+                    <option value="/gk-book" className="bg-slate-900 text-white">
+                      2. वैदिक काल एवं महाजनपद (Upcoming)
+                    </option>
+                    <option value="/gk-book" className="bg-slate-900 text-white">
+                      3. मौर्य साम्राज्य एवं चाणक्य (Upcoming)
+                    </option>
+                    <option value="/gk-book" className="bg-slate-900 text-white">
+                      📚 {isHindi ? "पूरी अनुक्रमणिका देखें (All Chapters)" : "View Full Shelf"}
+                    </option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Book Cover Thumbnail Preview */}
+            <div className="w-36 sm:w-44 flex-shrink-0 group perspective">
+              <Link href="/gk-book/sindhu-ghati" className="block relative">
+                <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-black/60 border-2 border-indigo-400/40 transform group-hover:scale-105 group-hover:-rotate-1 transition-all duration-300 aspect-[3/4] bg-slate-800">
+                  <img
+                    src="/images/gk-book/india-gk-cover.jpg"
+                    alt="India GK Digital Book Cover"
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-2.5">
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-amber-400 text-slate-950 shadow-xs">
+                      {isHindi ? "लाइव पढ़ें" : "Read Live"}
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            </div>
           </div>
         </div>
       </section>

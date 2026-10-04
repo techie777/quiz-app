@@ -13,6 +13,7 @@ import {
   Trophy,
   FileText,
   Compass,
+  BookOpen,
   User,
   LogOut,
   Heart,
@@ -32,6 +33,8 @@ import styles from "@/styles/SmartNavigation.module.css";
 
 const fallbackNavigationItems = [
   { key: "home", href: "/", Icon: Home, label: "Home", labelHi: "होम" },
+  { key: "gkBook", href: "/gk-book", Icon: BookOpen, label: "My Books", labelHi: "मेरी पुस्तकें" },
+  { key: "funFacts", href: "/fun-facts", Icon: Sparkles, label: "Fun Facts", labelHi: "रोचक तथ्य" },
   { key: "learn", href: "/learn", Icon: Sparkles, label: "Learn", labelHi: "सीखें" },
   { key: "quizzes", href: "/quizzes", Icon: Gamepad2, label: "Play", labelHi: "खेलें" },
   { key: "currentAffairs", href: "/daily-current-affairs", Icon: Newspaper, label: "Current Affairs", labelHi: "करेंट अफेयर्स" },
