@@ -9,6 +9,7 @@ export function UIProvider({ children }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
+  const [isPlayMenuOpen, setIsPlayMenuOpen] = useState(false);
   const [engineTheme, setEngineTheme] = useState("indigo");
   const pathname = usePathname();
 
@@ -19,6 +20,7 @@ export function UIProvider({ children }) {
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
+    setIsPlayMenuOpen(false);
   }, [pathname]);
 
   const toggleMobileMenu = () => {
@@ -34,6 +36,10 @@ export function UIProvider({ children }) {
 
   const openTutorial = () => setIsTutorialOpen(true);
   const closeTutorial = () => setIsTutorialOpen(false);
+
+  const openPlayMenu = () => setIsPlayMenuOpen(true);
+  const closePlayMenu = () => setIsPlayMenuOpen(false);
+  const togglePlayMenu = () => setIsPlayMenuOpen((prev) => !prev);
 
   const updateEngineTheme = (theme) => {
     setEngineTheme(theme);
@@ -52,6 +58,10 @@ export function UIProvider({ children }) {
         isTutorialOpen,
         openTutorial,
         closeTutorial,
+        isPlayMenuOpen,
+        openPlayMenu,
+        closePlayMenu,
+        togglePlayMenu,
         engineTheme,
         updateEngineTheme,
       }}

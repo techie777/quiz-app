@@ -44,7 +44,7 @@ const fallbackNavigationItems = [
 ];
 
 export default function SmartNavigation() {
-  const { isMobileMenuOpen, closeMobileMenu, openTutorial } = useUI();
+  const { isMobileMenuOpen, closeMobileMenu, openTutorial, openPlayMenu } = useUI();
   const { isHindi } = useLanguage();
   const { tier } = useTier();
   const { isPro } = useMonetization();
@@ -218,7 +218,15 @@ export default function SmartNavigation() {
                       <Link
                         href={item.href}
                         className={`${styles.menuLink} ${isActive ? styles.activeLink : ""}`}
-                        onClick={closeMobileMenu}
+                        onClick={(e) => {
+                          if (item.key === "quizzes") {
+                            e.preventDefault();
+                            closeMobileMenu();
+                            openPlayMenu();
+                          } else {
+                            closeMobileMenu();
+                          }
+                        }}
                       >
                         <span className={styles.menuLinkIcon}>
                           <Icon size={18} />

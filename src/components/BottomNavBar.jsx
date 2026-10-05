@@ -8,6 +8,7 @@ import { useTier, TIERS } from "@/context/TierContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { DEFAULT_MODULES_CONFIG } from "@/lib/modulesConfig";
 import { useData } from "@/context/DataContext";
+import { useUI } from "@/context/UIContext";
 
 /**
  * Standard 5-tab destinations: Home · GK · Play · Current · Facts
@@ -180,6 +181,7 @@ export default function BottomNavBar() {
   const { tier, hasSavedTier, mounted: tierMounted } = useTier();
   const { isHindi } = useLanguage();
   const { modules } = useData();
+  const { openPlayMenu } = useUI();
 
   // Hide on Unset Landing Page (root with no saved tier)
   if (pathname === "/" && (!tierMounted || !hasSavedTier)) {
@@ -235,11 +237,14 @@ export default function BottomNavBar() {
                 key={item.id}
                 className="relative flex-1 flex flex-col items-center justify-center"
               >
-                <Link
-                  href={item.href}
-                  prefetch={true}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    openPlayMenu();
+                  }}
                   title={label}
-                  className="group relative -top-4 sm:-top-5 focus:outline-none min-w-[52px] min-h-[52px] flex items-center justify-center"
+                  className="group relative -top-4 sm:-top-5 focus:outline-none min-w-[52px] min-h-[52px] flex items-center justify-center cursor-pointer bg-transparent border-0"
                   aria-label={label}
                 >
                   <motion.div
@@ -254,7 +259,7 @@ export default function BottomNavBar() {
                       {shortLabel}
                     </span>
                   </motion.div>
-                </Link>
+                </button>
               </div>
             );
           }
