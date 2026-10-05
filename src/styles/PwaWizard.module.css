@@ -1,0 +1,650 @@
+/* src/styles/PwaWizard.module.css */
+
+/* Floating trigger pill (minimized state) */
+.floatingPill {
+  position: fixed;
+  bottom: 82px; /* Clears mobile BottomNavBar (64px) + margin */
+  left: 16px;
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: #ffffff;
+  padding: 8px 14px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 8px 24px -4px rgba(79, 70, 229, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: pillEntrance 0.4s ease-out;
+  user-select: none;
+}
+
+.floatingPill:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 12px 28px -4px rgba(79, 70, 229, 0.55);
+}
+
+.pillIconBadge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+}
+
+@media (min-width: 768px) {
+  .floatingPill {
+    bottom: 24px;
+    left: 24px;
+  }
+}
+
+/* Floating Banner Prompt */
+.bannerPrompt {
+  position: fixed;
+  bottom: 78px; /* Above BottomNavBar on mobile */
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 440px;
+  z-index: 1060;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: #ffffff;
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.14) inset;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: bannerSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (min-width: 768px) {
+  .bannerPrompt {
+    bottom: 28px;
+    max-width: 460px;
+  }
+}
+
+.closeButton {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s ease;
+}
+
+.closeButton:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.bannerHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-right: 28px;
+}
+
+.appIconWrap {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
+  font-size: 22px;
+  position: relative;
+  overflow: hidden;
+}
+
+.appIconImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 14px;
+}
+
+.bannerInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bannerTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bannerTitle {
+  font-size: 15px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+}
+
+.verifiedBadge {
+  background: #3b82f6;
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 5px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.bannerSubtitle {
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.3;
+}
+
+.bannerPerkTags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  flex-wrap: wrap;
+}
+
+.perkPill {
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 8px;
+  border-radius: 9999px;
+  color: rgba(255, 255, 255, 0.85);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.bannerActionRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.btnPrimary {
+  flex: 1;
+  background: #ffffff;
+  color: #0f172a;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.btnPrimary:hover {
+  background: #f1f5f9;
+  transform: translateY(-1px);
+}
+
+.btnWizardGuide {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btnWizardGuide:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Full Wizard Modal Overlay */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2500;
+  background: rgba(10, 15, 30, 0.75);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: overlayFadeIn 0.25s ease-out;
+}
+
+.modalDialog {
+  background: #0f172a;
+  color: #ffffff;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  animation: modalScaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Modal Header */
+.modalHeader {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.modalCloseBtn {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modalCloseBtn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+.modalIconBox {
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+  flex-shrink: 0;
+  font-size: 26px;
+}
+
+.modalAppTitle {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modalRatingRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.65);
+  margin-top: 2px;
+}
+
+.ratingStars {
+  color: #fbbf24;
+  font-size: 12px;
+}
+
+/* Wizard Stepper Tabs */
+.stepperTabs {
+  display: flex;
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 6px 16px;
+  gap: 6px;
+}
+
+.stepTab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.55);
+  padding: 8px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.stepTabActive {
+  background: rgba(99, 102, 241, 0.18);
+  color: #a5b4fc;
+  font-weight: 700;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.stepNumber {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10.5px;
+}
+
+.stepTabActive .stepNumber {
+  background: #6366f1;
+  color: #ffffff;
+}
+
+/* Modal Scrollable Body */
+.modalBody {
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Feature Perks Grid */
+.featuresGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+@media (min-width: 480px) {
+  .featuresGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.featureCard {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: border-color 0.2s ease;
+}
+
+.featureCard:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.featureIconWrap {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.featureTitle {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.featureDesc {
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.4;
+}
+
+/* Platform Switcher Chips */
+.platformSwitcher {
+  display: flex;
+  gap: 8px;
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  margin-bottom: 8px;
+}
+
+.platformChip {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.18s ease;
+}
+
+.platformChipActive {
+  background: #ffffff;
+  color: #0f172a;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+/* Step Card Walkthrough */
+.walkthroughList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.walkthroughStep {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+
+.walkthroughBadge {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.walkthroughText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.walkthroughTitle {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.walkthroughDesc {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.4;
+}
+
+.keyHighlight {
+  color: #38bdf8;
+  font-weight: 700;
+}
+
+/* Modal Footer Actions */
+.modalFooter {
+  padding: 16px 24px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.modalInstallBtn {
+  flex: 1;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #ffffff;
+  border: none;
+  border-radius: 14px;
+  padding: 12px 18px;
+  font-size: 14.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.modalInstallBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(99, 102, 241, 0.5);
+}
+
+.modalSecondaryBtn {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  padding: 12px 18px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.modalSecondaryBtn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+/* Success Celebration Container */
+.successContainer {
+  text-align: center;
+  padding: 24px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.successIcon {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  box-shadow: 0 10px 24px rgba(16, 185, 129, 0.4);
+  margin-bottom: 4px;
+}
+
+/* Animations */
+@keyframes pillEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes bannerSlideUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 20px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+@keyframes overlayFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalScaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}

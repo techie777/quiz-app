@@ -8,6 +8,7 @@ import { CATEGORY_SLUG_TO_FILE, getCategoryCardImageUrl, getCategoryGradientHue 
 export default function CategoryCard({ category, isHindi = false }) {
   const router = useRouter();
   const [imgError, setImgError] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   if (!category) return null;
 
@@ -55,6 +56,8 @@ export default function CategoryCard({ category, isHindi = false }) {
   return (
     <div
       onClick={handleClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
@@ -63,7 +66,7 @@ export default function CategoryCard({ category, isHindi = false }) {
       className={`c-card ${!isLive ? "is-soon" : "is-live"}`}
       style={{
         background: "var(--card, #ffffff)",
-        border: "1px solid var(--line, #e8eaf5)",
+        border: isHovered ? "1px solid rgba(99, 102, 241, 0.4)" : "1px solid var(--line, #e8eaf5)",
         borderRadius: "18px",
         overflow: "hidden",
         cursor: "pointer",
@@ -71,7 +74,11 @@ export default function CategoryCard({ category, isHindi = false }) {
         flexDirection: "column",
         WebkitTapHighlightColor: "transparent",
         userSelect: "none",
-        transition: "transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease",
+        transform: isHovered ? "translateY(-4px)" : "none",
+        boxShadow: isHovered
+          ? "0 14px 28px -6px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(99, 102, 241, 0.25)"
+          : "0 2px 6px rgba(0, 0, 0, 0.04)",
+        transition: "transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease",
       }}
     >
       {/* 1. Square 1:1 thumbnail */}
@@ -90,23 +97,36 @@ export default function CategoryCard({ category, isHindi = false }) {
         <span className="c-emoji" aria-hidden="true">{emoji}</span>
         
         {!imgError && imageSrc && (
-          <img
-            src={imageSrc}
-            alt={enTitle}
-            width={300}
-            height={300}
-            loading="lazy"
-            onError={() => setImgError(true)}
-            style={{
-              position: "absolute",
-              inset: 0,
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              filter: !isLive ? "saturate(0.55)" : "none",
-              opacity: !isLive ? 0.85 : 1,
-            }}
-          />
+          <>
+            <img
+              src={imageSrc}
+              alt={enTitle}
+              width={300}
+              height={300}
+              loading="lazy"
+              onError={() => setImgError(true)}
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                filter: !isLive ? "saturate(0.55)" : "none",
+                opacity: !isLive ? 0.85 : 1,
+                transform: isHovered ? "scale(1.06)" : "scale(1)",
+                transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+              }}
+            />
+            {/* Subtle bottom vignette for depth */}
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                background: "linear-gradient(to top, rgba(15, 23, 42, 0.35) 0%, rgba(15, 23, 42, 0) 45%)",
+                pointerEvents: "none",
+              }}
+            />
+          </>
         )}
 
         {/* 2. Status pill overlaid at top-left */}
@@ -119,11 +139,12 @@ export default function CategoryCard({ category, isHindi = false }) {
             background: isLive ? "#16a34a" : "rgba(20, 22, 43, 0.72)",
             color: "#ffffff",
             fontSize: "10.5px",
-            fontWeight: 600,
+            fontWeight: 700,
             padding: "3px 8px",
             borderRadius: "99px",
-            backdropFilter: "blur(4px)",
-            WebkitBackdropFilter: "blur(4px)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
             lineHeight: 1.2,
             zIndex: 2,
             maxWidth: "calc(100% - 16px)",
