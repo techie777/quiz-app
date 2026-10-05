@@ -125,6 +125,7 @@ export default function CategorySetsPage() {
 
   const [timer, setTimer] = useState(0);
   const [language, setLanguage] = useState(globalLang);
+  const [learningMode, setLearningMode] = useState("quiz"); // 'quiz' | 'flashcard' | 'read'
   const [selectedSet, setSelectedSet] = useState(null);
   const [isStarting, setIsStarting] = useState(false);
   const [searchQuestion, setSearchQuestion] = useState("");
@@ -499,13 +500,13 @@ export default function CategorySetsPage() {
           topic: category?.topic,
         },
         () => {
-          startQuizDirectly(set);
+          handlePlay(set);
         }
       );
       return;
     }
 
-    startQuizDirectly(set);
+    handlePlay(set);
   };
 
   const paginatedSets = useMemo(() => {
@@ -671,7 +672,8 @@ export default function CategorySetsPage() {
     } else {
       startQuizSet(category.id, targetQuestions, timer, language, selectedSet.index, category.topic + topicSuffix, true);
     }
-    router.push(`/quiz/${category.slug || category.id}`);
+    const setIdx = selectedSet.index || 1;
+    router.push(`/quiz/${category.slug || category.id}?set=${setIdx}&mode=${learningMode}`);
   };
 
   const toggleAnswer = (idx) => {
@@ -1395,6 +1397,58 @@ export default function CategorySetsPage() {
               </div>
             )}
 
+            {/* Learning Mode Selection (Quiz / Flashcards / Read) */}
+            <div className={styles.settingGroup}>
+              <div className={styles.settingLabelRow}>
+                <span className={styles.settingLabelText}>
+                  🎯 {isHindi ? 'सीखने का तरीका चुनें' : 'Choose Learning Mode'}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  className={`p-2.5 sm:p-3 rounded-2xl border-2 flex flex-col items-center gap-1 text-center transition-all ${
+                    learningMode === "quiz"
+                      ? "border-indigo-600 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-extrabold shadow-sm"
+                      : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-slate-300"
+                  }`}
+                  onClick={() => setLearningMode("quiz")}
+                >
+                  <span className="text-xl">🎯</span>
+                  <span className="text-xs font-bold">{isHindi ? "क्विज़ मोड" : "Quiz Mode"}</span>
+                  <span className="text-[10px] text-slate-400 hidden sm:inline">4 {isHindi ? "विकल्प" : "Options"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`p-2.5 sm:p-3 rounded-2xl border-2 flex flex-col items-center gap-1 text-center transition-all ${
+                    learningMode === "flashcard"
+                      ? "border-purple-600 bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 font-extrabold shadow-sm"
+                      : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-slate-300"
+                  }`}
+                  onClick={() => setLearningMode("flashcard")}
+                >
+                  <span className="text-xl">🗂️</span>
+                  <span className="text-xs font-bold">{isHindi ? "फ़्लैशकार्ड्स" : "Flashcards"}</span>
+                  <span className="text-[10px] text-slate-400 hidden sm:inline">{isHindi ? "फ्लिप कार्ड" : "3D Flip"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`p-2.5 sm:p-3 rounded-2xl border-2 flex flex-col items-center gap-1 text-center transition-all ${
+                    learningMode === "read"
+                      ? "border-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-extrabold shadow-sm"
+                      : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-slate-300"
+                  }`}
+                  onClick={() => setLearningMode("read")}
+                >
+                  <span className="text-xl">📖</span>
+                  <span className="text-xs font-bold">{isHindi ? "रीड मोड" : "Read Mode"}</span>
+                  <span className="text-[10px] text-slate-400 hidden sm:inline">{isHindi ? "व्याख्या सहित" : "Study Sheet"}</span>
+                </button>
+              </div>
+            </div>
+
             {/* Action Buttons */}
             <div className={styles.modalActionsCompact}>
               <button
@@ -1406,10 +1460,10 @@ export default function CategorySetsPage() {
                 {isStarting ? (
                   <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
                     <span className={styles.spinnerInline} />
-                    <span>{isHindi ? 'प्रश्नोत्तरी शुरू हो रही है...' : 'Launching Quiz...'}</span>
+                    <span>{isHindi ? 'शुरू हो रहा है...' : 'Launching...'}</span>
                   </span>
                 ) : (
-                  <>🚀 {isMixMode ? (isHindi ? 'चुनौती शुरू करें' : 'Start Challenge') : (selectedSet.progress?.isComplete ? (isHindi ? 'फिर से अभ्यास करें' : 'Practice Again') : (isHindi ? 'अभ्यास शुरू करें' : 'Start Practice'))}</>
+                  <>🚀 {learningMode === 'flashcard' ? (isHindi ? 'फ़्लैशकार्ड्स शुरू करें' : 'Start Flashcards') : learningMode === 'read' ? (isHindi ? 'रीड मोड खोलें' : 'Open Read Mode') : isMixMode ? (isHindi ? 'चुनौती शुरू करें' : 'Start Challenge') : (selectedSet.progress?.isComplete ? (isHindi ? 'फिर से अभ्यास करें' : 'Practice Again') : (isHindi ? 'अभ्यास शुरू करें' : 'Start Practice'))}</>
                 )}
               </button>
               <button className={styles.btnLaterCompact} onClick={closeModal} disabled={isStarting}>

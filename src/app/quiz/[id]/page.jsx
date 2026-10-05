@@ -25,6 +25,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Heart,
+  Layers,
 } from "lucide-react";
 import styles from "@/styles/QuizEngine.module.css";
 import timerStyles from "@/styles/Timer.module.css";
@@ -39,6 +40,8 @@ import { getMascotForCategory, stopMascotSpeech } from "@/config/mascots";
 import Link from "next/link";
 import { showRewarded } from "@/lib/adProvider";
 import SetPreviewModal from "@/components/SetPreviewModal";
+import QuizFlashcardDeck from "@/components/quiz/QuizFlashcardDeck";
+import QuizReadModeView from "@/components/quiz/QuizReadModeView";
 
 // Persistent-Fix Local Timer Component
 const QuizTimerComponent = ({ seconds, onExpire, onTimeLow, questionKey, isPaused }) => {
@@ -207,6 +210,10 @@ function QuizEngineContent() {
   const [showStory, setShowStory] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
   const [showReadModal, setShowReadModal] = useState(false);
+  const initialMode = searchParams?.get("mode") || "quiz";
+  const [activeMode, setActiveMode] = useState(
+    initialMode === "flashcard" ? "flashcard" : initialMode === "read" ? "read" : "quiz"
+  );
   const [referrer, setReferrer] = useState(null);
   
   // New feature states
@@ -597,27 +604,44 @@ function QuizEngineContent() {
     }
   }, [resetQuiz, referrer, router, params?.id, category]);
 
-  const handleGoToReadMode = useCallback(() => {
-    setShowReadModal(true);
-  }, []);
+  const handleSwitchMode = useCallback((mode) => {
+    setActiveMode(mode);
+    setShowReadModal(false);
+    if (typeof window !== "undefined" && params?.id) {
+      const activeSet = selectedSetIndex || Number(setQueryParam) || 1;
+      window.history.replaceState(null, "", `/quiz/${params.id}?set=${activeSet}&mode=${mode}`);
+    }
+  }, [params?.id, selectedSetIndex, setQueryParam]);
 
-  // Open read mode if mode=read is in URL
+  const handleGoToReadMode = useCallback(() => {
+    handleSwitchMode("read");
+  }, [handleSwitchMode]);
+
+  // Sync mode from searchParams
   useEffect(() => {
-    if (searchParams?.get("mode") === "read") {
-      setShowReadModal(true);
+    const modeParam = searchParams?.get("mode");
+    if (modeParam === "read") {
+      setActiveMode("read");
+      setShowReadModal(false);
+    } else if (modeParam === "flashcard") {
+      setActiveMode("flashcard");
+      setShowReadModal(false);
+    } else if (modeParam === "quiz") {
+      setActiveMode("quiz");
+      setShowReadModal(false);
     }
   }, [searchParams]);
 
-  // Ensure set query parameter is always visible in the URL bar for Quiz Mode
+  // Ensure set and mode query parameters are always visible in the URL bar
   useEffect(() => {
     if (typeof window !== 'undefined' && params?.id) {
       const activeSet = selectedSetIndex || Number(setQueryParam) || Math.floor((currentIndex || 0) / 20) + 1 || 1;
-      const expectedSearch = `?set=${activeSet}`;
-      if (!window.location.search.includes("set=")) {
+      const expectedSearch = `?set=${activeSet}&mode=${activeMode}`;
+      if (!window.location.search.includes("set=") || !window.location.search.includes("mode=")) {
         window.history.replaceState(null, "", `/quiz/${params.id}${expectedSearch}`);
       }
     }
-  }, [params?.id, selectedSetIndex, setQueryParam, currentIndex]);
+  }, [params?.id, selectedSetIndex, setQueryParam, currentIndex, activeMode]);
 
   // Set up global navigation handlers
   useEffect(() => {
@@ -1048,7 +1072,7 @@ function QuizEngineContent() {
                         }
                       }}
                       questionKey={currentQuestion.id}
-                      isPaused={isPaused || showStory || showExplanation}
+                      isPaused={isPaused || showStory || showExplanation || activeMode !== "quiz"}
                     />
                   </div>
                 )}
@@ -1126,6 +1150,18 @@ function QuizEngineContent() {
                           type="button"
                           className={styles.menuItem}
                           onClick={() => {
+                            setShowMoreMenu(false);
+                            handleSwitchMode(activeMode === "flashcard" ? "quiz" : "flashcard");
+                          }}
+                        >
+                          <Layers size={16} />
+                          <span>{activeMode === "flashcard" ? (language === "hi" ? "क्विज़ मोड" : "Quiz Mode") : (language === "hi" ? "फ़्लैशकार्ड्स मोड" : "Flashcards Mode")}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          className={styles.menuItem}
+                          onClick={() => {
                             toggleSound();
                           }}
                         >
@@ -1165,54 +1201,127 @@ function QuizEngineContent() {
               </div>
             </div>
 
-            {/* Progress Bar */}
-            <ProgressBar current={currentIndex} total={questions.length} showPercentage={false} />
-
-            {/* Question */}
-            {currentQuestion && (
-              <div className={`${isPaused || showStory ? styles.pausedContent : ""} ${questionTransition ? styles.transitioning : ""}`}>
-                <QuestionCardV2
-                  key={currentQuestion.id}
-                  question={currentQuestion}
-                  onAnswer={handleSubmitAnswer}
-                  favouriteIds={favouriteIds}
-                  quizId={params?.id}
-                  disabled={isPaused || showStory || status === "finished"}
-                  userAnswer={currentQuestion.userAnswer}
-                  showHint={showHint}
-                  removedOptions={removedOptions}
-                  audienceStats={audienceStats}
-                  showExplanation={showExplanation}
-                  onCloseExplanation={handleCloseExplanation}
-                  explanation={currentQuestion.explanation}
-                  language={language}
-                />
+            {/* Mode Switcher Pill */}
+            <div className="w-full flex items-center justify-between gap-2 my-2.5 px-0.5">
+              <div className="inline-flex items-center p-1 rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 backdrop-blur-md shadow-xs">
+                <button
+                  type="button"
+                  onClick={() => handleSwitchMode("quiz")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
+                    activeMode === "quiz"
+                      ? "bg-indigo-600 text-white shadow-sm"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                >
+                  <span>🎯</span>
+                  <span>{language === "hi" ? "क्विज़" : "Quiz"}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSwitchMode("flashcard")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
+                    activeMode === "flashcard"
+                      ? "bg-purple-600 text-white shadow-sm"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                >
+                  <span>🗂️</span>
+                  <span>{language === "hi" ? "फ़्लैशकार्ड्स" : "Flashcards"}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSwitchMode("read")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
+                    activeMode === "read"
+                      ? "bg-emerald-600 text-white shadow-sm"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                >
+                  <span>📖</span>
+                  <span>{language === "hi" ? "रीड मोड" : "Read"}</span>
+                </button>
               </div>
-            )}
 
-            {/* Bottom Bar: ONLY Back and Next */}
-            <div className={styles.quizBottomBar}>
-              <button
-                type="button"
-                className={styles.bottomNavBtn}
-                onClick={handleBack}
-                disabled={currentIndex === 0}
-                aria-label={language === "hi" ? "पिछला प्रश्न" : "Previous Question"}
-              >
-                <ArrowLeft size={18} />
-                <span>{language === "hi" ? "पीछे" : "Back"}</span>
-              </button>
-
-              <button
-                type="button"
-                className={`${styles.bottomNavBtn} ${styles.bottomNextBtn}`}
-                onClick={moveToNextQuestion}
-                aria-label={currentIndex >= questions.length - 1 ? (language === "hi" ? "समाप्त करें" : "Finish") : (language === "hi" ? "आगे" : "Next")}
-              >
-                <span>{currentIndex >= questions.length - 1 ? (language === "hi" ? "समाप्त करें" : "Finish") : (language === "hi" ? "आगे" : "Next")}</span>
-                <ArrowRight size={18} />
-              </button>
+              <div className="text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 bg-slate-100/90 dark:bg-slate-800/80 px-2.5 py-1 rounded-xl border border-slate-200/80 dark:border-slate-700/50">
+                {language === "hi" ? `सेट ${selectedSetIndex || setQueryParam || 1}` : `Set ${selectedSetIndex || setQueryParam || 1}`}
+              </div>
             </div>
+
+            {/* Mode Content: Read Mode OR Flashcard Deck OR Timed Quiz */}
+            {activeMode === "read" ? (
+              <QuizReadModeView
+                questions={originalQuestions && originalQuestions.length > 0 ? originalQuestions : questions}
+                categoryTopic={category?.topic || mixedSectionName || "Quiz"}
+                setIndex={selectedSetIndex || Number(setQueryParam) || 1}
+                language={language}
+                onSwitchToQuiz={() => handleSwitchMode("quiz")}
+                onSwitchToFlashcard={() => handleSwitchMode("flashcard")}
+              />
+            ) : activeMode === "flashcard" ? (
+              <>
+                <ProgressBar current={currentIndex} total={questions.length} showPercentage={false} />
+                <QuizFlashcardDeck
+                  questions={questions}
+                  currentIndex={currentIndex}
+                  onIndexChange={(newIdx) => {
+                    goToQuestion?.(newIdx);
+                  }}
+                  categoryTopic={category?.topic || mixedSectionName || "Quiz"}
+                  language={language}
+                  onSwitchToQuiz={() => handleSwitchMode("quiz")}
+                  onSwitchToRead={() => handleSwitchMode("read")}
+                  onFinish={handleEndQuiz}
+                />
+              </>
+            ) : (
+              <>
+                <ProgressBar current={currentIndex} total={questions.length} showPercentage={false} />
+                {currentQuestion && (
+                  <div className={`${isPaused || showStory ? styles.pausedContent : ""} ${questionTransition ? styles.transitioning : ""}`}>
+                    <QuestionCardV2
+                      key={currentQuestion.id}
+                      question={currentQuestion}
+                      onAnswer={handleSubmitAnswer}
+                      favouriteIds={favouriteIds}
+                      quizId={params?.id}
+                      disabled={isPaused || showStory || status === "finished"}
+                      userAnswer={currentQuestion.userAnswer}
+                      showHint={showHint}
+                      removedOptions={removedOptions}
+                      audienceStats={audienceStats}
+                      showExplanation={showExplanation}
+                      onCloseExplanation={handleCloseExplanation}
+                      explanation={currentQuestion.explanation}
+                      language={language}
+                    />
+                  </div>
+                )}
+
+                {/* Bottom Bar: ONLY Back and Next */}
+                <div className={styles.quizBottomBar}>
+                  <button
+                    type="button"
+                    className={styles.bottomNavBtn}
+                    onClick={handleBack}
+                    disabled={currentIndex === 0}
+                    aria-label={language === "hi" ? "पिछला प्रश्न" : "Previous Question"}
+                  >
+                    <ArrowLeft size={18} />
+                    <span>{language === "hi" ? "पीछे" : "Back"}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`${styles.bottomNavBtn} ${styles.bottomNextBtn}`}
+                    onClick={moveToNextQuestion}
+                    aria-label={currentIndex >= questions.length - 1 ? (language === "hi" ? "समाप्त करें" : "Finish") : (language === "hi" ? "आगे" : "Next")}
+                  >
+                    <span>{currentIndex >= questions.length - 1 ? (language === "hi" ? "समाप्त करें" : "Finish") : (language === "hi" ? "आगे" : "Next")}</span>
+                    <ArrowRight size={18} />
+                  </button>
+                </div>
+              </>
+            )}
 
             {/* Celebration Animation */}
             {celebrationAnimation && (
@@ -1538,18 +1647,7 @@ function QuizEngineContent() {
       {/* Ad Simulation Overlay */}
       {showingAd && <AdOverlay onComplete={handleAdComplete} />}
 
-      {/* Read Mode (Sheet Order Questions Preview & Reader) */}
-      {showReadModal && (
-        <SetPreviewModal
-          isOpen={showReadModal}
-          onClose={() => setShowReadModal(false)}
-          set={{
-            index: selectedSetIndex || Number(setQueryParam) || 1,
-            questions: originalQuestions && originalQuestions.length > 0 ? originalQuestions : questions,
-          }}
-          categoryTopic={category?.topic || mixedSectionName || "Quiz"}
-        />
-      )}
+      {/* Read Mode is now directly rendered in-page by QuizReadModeView without any dialog popup */}
     </main>
     </div>
   );
