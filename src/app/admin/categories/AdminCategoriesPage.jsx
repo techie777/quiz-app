@@ -7,6 +7,9 @@ import { useAdmin } from "@/context/AdminContext";
 import styles from "@/styles/AdminCategories.module.css";
 import toast from "react-hot-toast";
 import CategorySearchSelect from "@/components/admin/CategorySearchSelect";
+import SetManagerModal from "@/components/admin/SetManagerModal";
+import SubCategoryManagerModal from "@/components/admin/SubCategoryManagerModal";
+import ContentCoverageModal from "@/components/admin/ContentCoverageModal";
 
 const EMPTY_CAT = { id: "", topic: "", topicHi: "", emoji: "", description: "", descriptionHi: "", categoryClass: "", hidden: false, image: "", image_url: "", group: "core", status: "coming_soon", sort_order: 0, sortOrder: 0, parentId: "", showSubCategoriesOnHome: false, storyText: "", storyImage: "", originalLang: "en", isTrending: false, chips: [] };
 
@@ -23,8 +26,12 @@ async function submitPending(type, payload) {
   }
 }
 
-const EditForm = ({ category, onSave, onCancel, isNew = false, quizzes = [], settings = {}, editingId, isSubmitting = false }) => {
+const EditForm = ({ category, onSave, onCancel, isNew = false, quizzes = [], settings = {}, editingId, isSubmitting = false, onOpenSubCatModal }) => {
   const [form, setForm] = useState(category);
+  const linkedSubs = useMemo(() => {
+    if (!category?.id) return [];
+    return (quizzes || []).filter((c) => c?.parentId === category.id);
+  }, [quizzes, category?.id]);
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -212,6 +219,59 @@ const EditForm = ({ category, onSave, onCancel, isNew = false, quizzes = [], set
           />
         </div>
 
+        {!isNew && !form.parentId && (
+          <div className={styles.field} style={{ gridColumn: '1 / -1', background: '#f8fafc', padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
+              <div>
+                <span style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a' }}>
+                  📁 Linked Sub-Categories ({linkedSubs.length})
+                </span>
+                <span style={{ fontSize: '0.78rem', color: '#64748b', marginLeft: '8px' }}>
+                  Sub-categories displayed under this master category
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => onOpenSubCatModal && onOpenSubCatModal(category)}
+                className={styles.manageSubsBtn}
+              >
+                ⚙️ Manage / Add / Deselect Sub-Categories
+              </button>
+            </div>
+            {linkedSubs.length === 0 ? (
+              <div style={{ fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic' }}>
+                No sub-categories linked yet. Click &ldquo;Manage / Add / Deselect Sub-Categories&rdquo; to link or create sub-categories.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {linkedSubs.map((sub) => (
+                  <span
+                    key={sub.id}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '4px 10px',
+                      background: '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '99px',
+                      fontSize: '0.8rem',
+                      color: '#1e293b',
+                      fontWeight: 600,
+                    }}
+                  >
+                    <span>{sub.emoji || '📁'}</span>
+                    <span>{sub.topic}</span>
+                    <span style={{ fontSize: '0.72rem', color: '#4338ca', background: '#e0e7ff', padding: '1px 6px', borderRadius: '4px' }}>
+                      {sub.questionCount || 0} Qs
+                    </span>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className={styles.field}>
           <label>Original Language</label>
           <select
@@ -348,7 +408,7 @@ const EditForm = ({ category, onSave, onCancel, isNew = false, quizzes = [], set
 };
 
 export default function AdminCategoriesPage() {
-  const { quizzes, settings, addCategory, updateCategory, deleteCategory, reorderCategories } = useData();
+  const { quizzes, settings, addCategory, updateCategory, deleteCategory, reorderCategories, refreshQuizzes } = useData();
   const { adminUser } = useAdmin();
   const isJr = adminUser?.role === "jr";
   const allowed = adminUser?.role === "master" || adminUser?.permissions?.categories !== false;
@@ -360,6 +420,14 @@ export default function AdminCategoriesPage() {
   const [healthFilter, setHealthFilter] = useState("all"); // "all", "ready", "progress", "empty"
   const [search, setSearch] = useState("");
   const [expandedParents, setExpandedParents] = useState({});
+  const [setModalConfig, setSetModalConfig] = useState(null); // { category, tab: 'review' | 'paste' }
+  const [subCatModalCategory, setSubCatModalCategory] = useState(null); // category to manage subcategories for
+  const [coverageModalOpen, setCoverageModalOpen] = useState(false);
+  const [coverageInitialCategory, setCoverageInitialCategory] = useState(null);
+
+  const openSetModal = (category, tab = "review") => {
+    setSetModalConfig({ category, tab });
+  };
 
   const toggleParentExpand = (catId) => {
     setExpandedParents((prev) => ({
@@ -385,6 +453,17 @@ export default function AdminCategoriesPage() {
     });
 
     return { empty, progress, ready, total: (quizzes || []).length };
+  }, [quizzes]);
+
+  // Category Type Counts
+  const typeCounts = useMemo(() => {
+    const list = quizzes || [];
+    return {
+      total: list.length,
+      regular: list.filter(c => !(c?.categoryClass || '').includes('govt-exam') && !(c?.categoryClass || '').includes('image-quiz')).length,
+      govtExams: list.filter(c => (c?.categoryClass || '').includes('govt-exam')).length,
+      imageQuizzes: list.filter(c => (c?.categoryClass || '').includes('image-quiz')).length,
+    };
   }, [quizzes]);
 
   // Main Categories Filtered
@@ -414,6 +493,15 @@ export default function AdminCategoriesPage() {
         if (healthFilter === "progress") return count > 0 && count < 20;
         if (healthFilter === "ready") return count >= 20;
         return true;
+      })
+      .sort((a, b) => {
+        const aOrder = a.sortOrder ?? a.sort_order ?? 9999;
+        const bOrder = b.sortOrder ?? b.sort_order ?? 9999;
+        if (aOrder !== bOrder) return aOrder - bOrder;
+        const aCount = a?.questionCount || 0;
+        const bCount = b?.questionCount || 0;
+        if (bCount !== aCount) return bCount - aCount;
+        return (a.topic || "").localeCompare(b.topic || "");
       });
   }, [quizzes, activeTab, search, healthFilter]);
 
@@ -526,90 +614,108 @@ export default function AdminCategoriesPage() {
   return (
     <div className={styles.page}>
       
-      {/* Header Banner */}
-      <div className={styles.headerRow}>
-        <div className={styles.headerLeft}>
-          <h1 className={styles.title}>Quiz Categories</h1>
+      {/* 1. Clean Page Header */}
+      <div className={styles.header}>
+        <div className={styles.headerText}>
+          <div className={styles.titleWithCount}>
+            <h1 className={styles.title}>Quiz Categories</h1>
+            <span className={styles.totalBadge}>{(quizzes || []).length}</span>
+          </div>
           <p className={styles.subtitle}>
-            Manage exam topics, sub-categories, language versions & set readiness
+            Manage main categories, sub-categories, language versions & set readiness
           </p>
         </div>
-        <button className={styles.addBtn} onClick={openAdd}>
-          <span>+ Add New Category</span>
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <button
+            type="button"
+            className={styles.coverageHeaderBtn}
+            onClick={() => {
+              setCoverageInitialCategory(null);
+              setCoverageModalOpen(true);
+            }}
+            title="View & manage syllabus/chapters covered across categories"
+          >
+            📖 Chapters Covered
+          </button>
+          <button
+            type="button"
+            className={styles.pasteSetHeaderBtn}
+            onClick={() => openSetModal(null, "paste")}
+            title="Paste 20 questions from Excel to create a set"
+          >
+            📋 Paste New Set
+          </button>
+          <button className={styles.addBtn} onClick={openAdd}>
+            + Add Category
+          </button>
+        </div>
       </div>
 
-      {/* Control & Filter Center */}
-      <div className={styles.controlBar}>
-        
-        {/* Vertical Type Tabs */}
+      {/* 2. Unified Toolbar (1 Clean Row) */}
+      <div className={styles.toolbar}>
         <div className={styles.typeTabs}>
           <button 
             className={`${styles.typeTabBtn} ${activeTab === 'all' ? styles.typeTabBtnActive : ''}`}
             onClick={() => setActiveTab("all")}
           >
-            <span>🌐 All Categories ({(quizzes || []).length})</span>
+            All <span className={styles.tabCount}>({typeCounts.total})</span>
           </button>
           <button 
             className={`${styles.typeTabBtn} ${activeTab === 'quizzes' ? styles.typeTabBtnActive : ''}`}
             onClick={() => setActiveTab("quizzes")}
           >
-            <span>📝 Regular quizzes ({(quizzes || []).filter(c => !(c?.categoryClass || '').includes('govt-exam') && !(c?.categoryClass || '').includes('image-quiz')).length})</span>
+            Regular <span className={styles.tabCount}>({typeCounts.regular})</span>
           </button>
           <button 
             className={`${styles.typeTabBtn} ${activeTab === 'govt-exams' ? styles.typeTabBtnActive : ''}`}
             onClick={() => setActiveTab("govt-exams")}
           >
-            <span>🏛️ Govt Exams ({(quizzes || []).filter(c => (c?.categoryClass || '').includes('govt-exam')).length})</span>
+            Govt Exams <span className={styles.tabCount}>({typeCounts.govtExams})</span>
           </button>
           <button 
             className={`${styles.typeTabBtn} ${activeTab === 'image-quizzes' ? styles.typeTabBtnActive : ''}`}
             onClick={() => setActiveTab("image-quizzes")}
           >
-            <span>🖼️ Image Quizzes ({(quizzes || []).filter(c => (c?.categoryClass || '').includes('image-quiz')).length})</span>
+            Image Quizzes <span className={styles.tabCount}>({typeCounts.imageQuizzes})</span>
           </button>
         </div>
 
-        {/* Health & Search Controls */}
-        <div className={styles.subFiltersRow}>
-          <div className={styles.healthTabs}>
-            <button
-              className={`${styles.healthTabBtn} ${healthFilter === 'all' ? styles.healthTabBtnActive : ''}`}
-              onClick={() => setHealthFilter("all")}
-            >
-              All ({healthStats.total})
-            </button>
-            <button
-              className={`${styles.healthTabBtn} ${healthFilter === 'empty' ? styles.healthTabBtnActive : ''}`}
-              onClick={() => setHealthFilter("empty")}
-            >
-              🔴 Empty ({healthStats.empty})
-            </button>
-            <button
-              className={`${styles.healthTabBtn} ${healthFilter === 'progress' ? styles.healthTabBtnActive : ''}`}
-              onClick={() => setHealthFilter("progress")}
-            >
-              🟡 In Progress ({healthStats.progress})
-            </button>
-            <button
-              className={`${styles.healthTabBtn} ${healthFilter === 'ready' ? styles.healthTabBtnActive : ''}`}
-              onClick={() => setHealthFilter("ready")}
-            >
-              🟢 Ready ({healthStats.ready})
-            </button>
+        <div className={styles.toolbarRight}>
+          <select
+            value={healthFilter}
+            onChange={(e) => setHealthFilter(e.target.value)}
+            className={styles.statusSelect}
+            aria-label="Filter status"
+          >
+            <option value="all">All Status ({healthStats.total})</option>
+            <option value="ready">🟢 Ready ({healthStats.ready})</option>
+            <option value="progress">🟡 In Progress ({healthStats.progress})</option>
+            <option value="empty">🔴 Empty ({healthStats.empty})</option>
+          </select>
+
+          <div className={styles.searchWrapper}>
+            <span className={styles.searchIcon}>🔍</span>
+            <input
+              className={styles.searchInput}
+              placeholder="Search categories..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className={styles.clearSearchBtn}
+                title="Clear search"
+              >
+                ✕
+              </button>
+            )}
           </div>
-
-          <input
-            className={styles.searchInput}
-            placeholder="Search category title..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
         </div>
-
       </div>
 
-      {/* Categories List */}
+      {/* 3. Categories List */}
       <div className={styles.list}>
         {editingId === "new" && (
           <EditForm 
@@ -621,6 +727,7 @@ export default function AdminCategoriesPage() {
             settings={settings}
             editingId={editingId}
             isSubmitting={isSubmitting}
+            onOpenSubCatModal={setSubCatModalCategory}
           />
         )}
 
@@ -631,18 +738,18 @@ export default function AdminCategoriesPage() {
           const hasSubs = childSubs.length > 0;
           const isExpanded = !!expandedParents[cat.id] || (search.trim().length > 0);
 
-          let statusLabel = `${sets} ${sets === 1 ? 'SET' : 'SETS'} READY`;
-          let pillClass = styles.pillReady;
+          let statusText = `${sets} ${sets === 1 ? 'Set' : 'Sets'} Ready`;
+          let statusClass = styles.statusReady;
           if (count === 0) {
-            statusLabel = "NEEDS CONTENT";
-            pillClass = styles.pillEmpty;
+            statusText = "Needs Content";
+            statusClass = styles.statusEmpty;
           } else if (count < 20) {
-            statusLabel = "IN PROGRESS";
-            pillClass = styles.pillWarning;
+            statusText = "In Progress";
+            statusClass = styles.statusProgress;
           }
 
           return (
-            <div key={cat.id}>
+            <div key={cat.id} className={styles.categoryItemWrapper}>
               <div
                 className={styles.row}
                 draggable={editingId === null}
@@ -651,67 +758,122 @@ export default function AdminCategoriesPage() {
                 onDragEnd={handleDragEnd}
                 onDragOver={(e) => e.preventDefault()}
               >
-                <div className={styles.rowInfo}>
-                  <span className={styles.dragHandle} title="Drag to reorder">
-                    ☰
-                  </span>
-                  {cat.image ? (
-                    <img src={cat.image} alt="" className={styles.rowImage} />
-                  ) : (
-                    <span className={styles.emoji}>{cat.emoji || "📁"}</span>
-                  )}
+                {/* Left Info Column */}
+                <div className={styles.rowLeft}>
+                  <span className={styles.dragHandle} title="Drag to reorder">⋮⋮</span>
+                  
+                  <div className={styles.avatarBox}>
+                    {cat.image ? (
+                      <img src={cat.image} alt="" className={styles.rowImage} />
+                    ) : (
+                      <span className={styles.emoji}>{cat.emoji || "📁"}</span>
+                    )}
+                  </div>
                   
                   <div className={styles.nameGroup}>
-                    <span className={styles.name}>
-                      {cat.topic}
+                    <div className={styles.titleLine}>
+                      <span className={styles.categoryTitle}>{cat.topic}</span>
                       <span className={`${styles.langBadge} ${cat.originalLang === 'hi' ? styles.langHi : styles.langEn}`}>
                         {cat.originalLang === 'hi' ? 'HI' : 'EN'}
                       </span>
-                    </span>
-                    {cat.description && <span className={styles.desc}>{cat.description}</span>}
+                      {cat.isTrending && <span className={styles.badgeTrending}>🔥 Trending</span>}
+                      {cat.showSubCategoriesOnHome && (
+                        <span className={styles.badgeHome} title="Sub-categories shown on home page">🏠 Home</span>
+                      )}
+                    </div>
+
+                    <div className={styles.metaLine}>
+                      {hasSubs ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <button
+                            type="button"
+                            onClick={() => toggleParentExpand(cat.id)}
+                            className={`${styles.subsToggleBtn} ${isExpanded ? styles.subsToggleBtnOpen : ''}`}
+                            title={isExpanded ? "Collapse subcategories" : "Expand subcategories"}
+                          >
+                            <span>📁 {childSubs.length} sub-categories</span>
+                            <span>{isExpanded ? "▴" : "▾"}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSubCatModalCategory(cat)}
+                            className={styles.subsToggleBtn}
+                            style={{ color: '#166534', background: '#f0fdf4', borderColor: '#bbf7d0' }}
+                            title="Manage, add, or deselect sub-categories"
+                          >
+                            ⚙️ Manage
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setSubCatModalCategory(cat)}
+                          className={styles.subsToggleBtn}
+                          style={{ color: '#4338ca', background: '#eef2ff', borderColor: '#c7d2fe' }}
+                          title="Link or add subcategories to this category"
+                        >
+                          + Link Sub-Categories
+                        </button>
+                      )}
+                      {cat.description && (
+                        <span className={styles.descText} title={cat.description}>
+                          {cat.description}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                <div className={styles.rowMeta}>
-                  {cat.showSubCategoriesOnHome && (
-                    <span className={styles.homeBadge} title="Sub-categories shown on home page">🏠</span>
-                  )}
-                  {cat.isTrending && <span className={styles.trendingBadge}>🔥 Trending</span>}
-                  
-                  <span className={`${styles.statusPill} ${pillClass}`}>{statusLabel}</span>
-                  <span className={styles.count}>{count} Qs</span>
-
-                  {hasSubs && (
+                {/* Right Meta Column */}
+                <div className={styles.rowRight}>
+                  <div className={styles.statsGroup}>
                     <button
                       type="button"
-                      onClick={() => toggleParentExpand(cat.id)}
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "5px",
-                        padding: "5px 10px",
-                        borderRadius: "8px",
-                        border: "1px solid var(--card-border, #e2e8f0)",
-                        background: isExpanded ? "rgba(99, 102, 241, 0.12)" : "var(--bg-secondary)",
-                        color: isExpanded ? "#6366f1" : "var(--text-secondary)",
-                        fontSize: "0.78rem",
-                        fontWeight: 700,
-                        cursor: "pointer",
-                        transition: "all 0.2s ease",
-                      }}
-                      title={isExpanded ? "Collapse subcategories" : "Expand subcategories"}
+                      className={`${styles.statusBadge} ${statusClass} ${styles.statusBadgeClickable}`}
+                      onClick={() => openSetModal(cat, "review")}
+                      title="Click to review & manage sets for this category"
                     >
-                      <span>{isExpanded ? "▾" : "▸"}</span>
-                      <span>{childSubs.length} Sub-categories</span>
+                      ● {statusText}
                     </button>
-                  )}
+                    <span className={styles.questionCount}>
+                      <strong>{count.toLocaleString()}</strong> Qs
+                    </span>
+                  </div>
 
-                  <div className={styles.actions}>
-                    <Link href={`/admin/questions?category=${cat.id}`} className={styles.addQBtn}>
-                      <span>+ Add Qs</span>
+                  <div className={styles.actionGroup}>
+                    <button
+                      type="button"
+                      className={styles.manageSubsBtn}
+                      onClick={() => setSubCatModalCategory(cat)}
+                      title={`Manage Sub-Categories for ${cat.topic} (${childSubs.length} linked)`}
+                    >
+                      📁 Sub-Cats ({childSubs.length})
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.chaptersActionBtn}
+                      onClick={() => {
+                        setCoverageInitialCategory(cat);
+                        setCoverageModalOpen(true);
+                      }}
+                      title={`View & manage syllabus chapters covered for ${cat.topic}`}
+                    >
+                      📖 Chapters
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.setsActionBtn}
+                      onClick={() => openSetModal(cat, "review")}
+                      title="Manage Sets (Review, Edit, Hide, Delete)"
+                    >
+                      📦 Sets
+                    </button>
+                    <Link href={`/admin/questions?category=${cat.id}`} className={styles.addQuestionsBtn}>
+                      + Add Qs
                     </Link>
                     <button
-                      className={styles.iconBtn}
+                      type="button"
+                      className={styles.iconActionBtn}
                       onClick={() =>
                         isJr
                           ? submitPending("update_category", {
@@ -724,30 +886,40 @@ export default function AdminCategoriesPage() {
                     >
                       {cat.hidden ? "🙈" : "👁️"}
                     </button>
-                    <button className={styles.iconBtn} onClick={() => openEdit(cat)}>
+                    <button
+                      type="button"
+                      className={styles.iconActionBtn}
+                      onClick={() => openEdit(cat)}
+                      title="Edit category"
+                    >
                       ✏️
                     </button>
                     <button
-                      className={`${styles.iconBtn} ${styles.deleteBtn}`}
+                      type="button"
+                      className={`${styles.iconActionBtn} ${styles.deleteActionBtn}`}
                       onClick={() => setConfirm(cat.id)}
+                      title="Delete category"
                     >
                       🗑️
                     </button>
                   </div>
                 </div>
 
+                {/* Confirm Delete Bar */}
                 {confirm === cat.id && (
                   <div className={styles.confirmBar}>
-                    <span>{`Delete "${cat.topic}" and all its questions?`}</span>
-                    <button
-                      className={styles.confirmYes}
-                      onClick={() => handleDelete(cat.id)}
-                    >
-                      Yes, Delete
-                    </button>
-                    <button className={styles.confirmNo} onClick={() => setConfirm(null)}>
-                      Cancel
-                    </button>
+                    <span>Delete &ldquo;{cat.topic}&rdquo; and all its questions?</span>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <button
+                        className={styles.confirmYes}
+                        onClick={() => handleDelete(cat.id)}
+                      >
+                        Delete
+                      </button>
+                      <button className={styles.confirmNo} onClick={() => setConfirm(null)}>
+                        Cancel
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -762,35 +934,71 @@ export default function AdminCategoriesPage() {
                   settings={settings}
                   editingId={editingId}
                   isSubmitting={isSubmitting}
+                  onOpenSubCatModal={setSubCatModalCategory}
                 />
               )}
 
-              {/* Render Sub-categories (Accordion) */}
+              {/* Sub-categories Accordion */}
               {hasSubs && isExpanded && (
-                <div className={styles.subRows}>
+                <div className={styles.subRowsContainer}>
                   {childSubs.map((sub) => (
-                    <div key={sub.id} className={`${styles.row} ${styles.subRow}`}>
-                      <div className={styles.rowInfo}>
-                        <span className={styles.subIndicator}>↳</span>
-                        {sub.image ? (
-                          <img src={sub.image} alt="" className={styles.rowImage} />
-                        ) : (
-                          <span className={styles.emoji}>{sub.emoji || "📁"}</span>
-                        )}
-                        <div className={styles.nameGroup}>
-                          <span className={styles.name}>{sub.topic}</span>
-                          {sub.description && <span className={styles.desc}>{sub.description}</span>}
+                    <div key={sub.id} className={styles.subRowItem}>
+                      <div className={styles.subRowLeft}>
+                        <span className={styles.subTreeIcon}>↳</span>
+                        <div className={styles.avatarBoxSmall}>
+                          {sub.image ? (
+                            <img src={sub.image} alt="" className={styles.rowImageSmall} />
+                          ) : (
+                            <span className={styles.emojiSmall}>{sub.emoji || "📁"}</span>
+                          )}
+                        </div>
+                        <div className={styles.subNameGroup}>
+                          <span className={styles.subTitle}>{sub.topic}</span>
+                          {sub.description && (
+                            <span className={styles.subDescText}>{sub.description}</span>
+                          )}
                         </div>
                       </div>
 
-                      <div className={styles.rowMeta}>
-                        <span className={styles.count}>{sub.questionCount || 0} Qs</span>
-                        <div className={styles.actions}>
-                          <Link href={`/admin/questions?category=${sub.id}`} className={styles.addQBtn}>
-                            <span>+ Add Qs</span>
+                      <div className={styles.subRowRight}>
+                        <button
+                          type="button"
+                          className={`${styles.statusBadgeSmall} ${styles.statusBadgeClickable}`}
+                          onClick={() => openSetModal(sub, "review")}
+                          title="Click to review & manage sets for this subcategory"
+                        >
+                          📦 {Math.ceil((sub.questionCount || 0) / 20)} Sets
+                        </button>
+                        <span className={styles.questionCountSmall}>
+                          <strong>{(sub.questionCount || 0).toLocaleString()}</strong> Qs
+                        </span>
+
+                        <div className={styles.actionGroup}>
+                          <button
+                            type="button"
+                            className={styles.chaptersActionBtnSmall}
+                            onClick={() => {
+                              setCoverageInitialCategory(sub);
+                              setCoverageModalOpen(true);
+                            }}
+                            title={`View & manage chapters covered for ${sub.topic}`}
+                          >
+                            📖 Chapters
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.setsActionBtnSmall}
+                            onClick={() => openSetModal(sub, "review")}
+                            title="Manage Sets"
+                          >
+                            📦 Sets
+                          </button>
+                          <Link href={`/admin/questions?category=${sub.id}`} className={styles.addQuestionsBtnSmall}>
+                            + Add Qs
                           </Link>
                           <button
-                            className={styles.iconBtn}
+                            type="button"
+                            className={styles.iconActionBtnSmall}
                             onClick={() =>
                               isJr
                                 ? submitPending("update_category", {
@@ -799,16 +1007,23 @@ export default function AdminCategoriesPage() {
                                   })
                                 : updateCategory(sub.id, { hidden: !sub.hidden })
                             }
-                            title={sub.hidden ? "Show category" : "Hide category"}
+                            title={sub.hidden ? "Show" : "Hide"}
                           >
                             {sub.hidden ? "🙈" : "👁️"}
                           </button>
-                          <button className={styles.iconBtn} onClick={() => openEdit(sub)}>
+                          <button
+                            type="button"
+                            className={styles.iconActionBtnSmall}
+                            onClick={() => openEdit(sub)}
+                            title="Edit"
+                          >
                             ✏️
                           </button>
                           <button
-                            className={`${styles.iconBtn} ${styles.deleteBtn}`}
+                            type="button"
+                            className={`${styles.iconActionBtnSmall} ${styles.deleteActionBtn}`}
                             onClick={() => setConfirm(sub.id)}
+                            title="Delete"
                           >
                             🗑️
                           </button>
@@ -817,16 +1032,18 @@ export default function AdminCategoriesPage() {
 
                       {confirm === sub.id && (
                         <div className={styles.confirmBar}>
-                          <span>{`Delete "${sub.topic}" and all its questions?`}</span>
-                          <button
-                            className={styles.confirmYes}
-                            onClick={() => handleDelete(sub.id)}
-                          >
-                            Yes, Delete
-                          </button>
-                          <button className={styles.confirmNo} onClick={() => setConfirm(null)}>
-                            Cancel
-                          </button>
+                          <span>Delete &ldquo;{sub.topic}&rdquo;?</span>
+                          <div style={{ display: "flex", gap: "8px" }}>
+                            <button
+                              className={styles.confirmYes}
+                              onClick={() => handleDelete(sub.id)}
+                            >
+                              Delete
+                            </button>
+                            <button className={styles.confirmNo} onClick={() => setConfirm(null)}>
+                              Cancel
+                            </button>
+                          </div>
                         </div>
                       )}
 
@@ -839,6 +1056,7 @@ export default function AdminCategoriesPage() {
                           settings={settings}
                           editingId={editingId}
                           isSubmitting={isSubmitting}
+                          onOpenSubCatModal={setSubCatModalCategory}
                         />
                       )}
                     </div>
@@ -856,6 +1074,39 @@ export default function AdminCategoriesPage() {
           </div>
         )}
       </div>
+
+      {/* Set Manager Modal */}
+      {setModalConfig && (
+        <SetManagerModal
+          isOpen={!!setModalConfig}
+          onClose={() => setSetModalConfig(null)}
+          initialCategory={setModalConfig.category}
+          allCategories={quizzes || []}
+          onRefresh={refreshQuizzes}
+          initialTab={setModalConfig.tab || "review"}
+        />
+      )}
+
+      {/* Sub-Category Manager Modal */}
+      {subCatModalCategory && (
+        <SubCategoryManagerModal
+          isOpen={!!subCatModalCategory}
+          onClose={() => setSubCatModalCategory(null)}
+          category={subCatModalCategory}
+          onUpdated={refreshQuizzes}
+        />
+      )}
+
+      {/* Syllabus & Content Coverage Modal */}
+      {coverageModalOpen && (
+        <ContentCoverageModal
+          isOpen={coverageModalOpen}
+          onClose={() => setCoverageModalOpen(false)}
+          initialCategory={coverageInitialCategory}
+          allCategories={quizzes || []}
+          onRefresh={refreshQuizzes}
+        />
+      )}
 
     </div>
   );

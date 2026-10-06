@@ -105,11 +105,26 @@ export default function HotQuizzesRow() {
               const formatBadge = isHindi ? fmt.labelHi : fmt.badge;
               const hasImgError = Boolean(imgErrors[quiz.id]);
 
+              const targetHref = `/quiz/${quiz.slug || quiz.id}?set=1`;
               return (
-                <div
+                <Link
                   key={quiz.id}
-                  onClick={() => handleCardClick(quiz)}
-                  className="w-[140px] shrink-0 rounded-2xl bg-white dark:bg-slate-900 border transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer select-none flex flex-col justify-between overflow-hidden group"
+                  href={targetHref}
+                  prefetch={true}
+                  onClick={() => {
+                    if (quiz.questions && quiz.questions.length > 0) {
+                      startQuizSet(
+                        quiz.slug || quiz.id,
+                        quiz.questions,
+                        30,
+                        isHindi ? "hi" : "en",
+                        1,
+                        isHindi && quiz.titleHi ? quiz.titleHi : quiz.title,
+                        true
+                      );
+                    }
+                  }}
+                  className="w-[140px] shrink-0 rounded-2xl bg-white dark:bg-slate-900 border transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer select-none flex flex-col justify-between overflow-hidden group no-underline text-inherit"
                   style={{
                     scrollSnapAlign: "start",
                     borderColor: fmt.border,
@@ -166,7 +181,7 @@ export default function HotQuizzesRow() {
                       </span>
                     </div>
                   </div>
-                </div>
+                </Link>
               );
             })}
       </div>

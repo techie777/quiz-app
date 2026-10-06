@@ -7,14 +7,14 @@
 
 /* ===== Explorer Home Redesign Tokens ===== */
 :root {
-  --bg: #f6f7fc;
+  --bg: #edf5fc;
   --card: #ffffff;
   --ink: #14162b;
   --mute: #6b7190;
-  --line: #e8eaf5;
+  --line: #dbeafe;
   --pri: #4f46e5;
   --pri2: #7c5cff;
-  --soft: #eef0ff;
+  --soft: #e0f2fe;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -61,10 +61,15 @@
   font-family: var(--font-family-base) !important;
 }
 
+a, button, [role="button"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
 html {
   font-size: 16px;
   scroll-behavior: smooth;
-  overflow-x: hidden;
+  overflow-x: clip;
   max-width: 100%;
 }
 
@@ -77,7 +82,7 @@ body {
   background: var(--bg-primary);
   color: var(--text-primary);
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow-x: clip;
   max-width: 100%;
   width: 100%;
   overflow-wrap: break-word;

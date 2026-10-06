@@ -17,6 +17,7 @@ import SmartNavigation from '@/components/SmartNavigation';
 import BottomNavBar from '@/components/BottomNavBar';
 import ModuleRouteGuard from '@/components/ModuleRouteGuard';
 import MainContentWrapper from '@/components/MainContentWrapper';
+import NextTopLoader from 'nextjs-toploader';
 
 const poppins = Poppins({ 
   subsets: ['latin', 'latin-ext'],
@@ -137,6 +138,17 @@ export default function RootLayout({ children }) {
         <link rel="manifest" href="/site.webmanifest" />
       </head>
       <body style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }} className="antialiased" suppressHydrationWarning>
+        <NextTopLoader
+          color="#6366f1"
+          initialPosition={0.08}
+          crawlSpeed={200}
+          height={3}
+          crawl={true}
+          showSpinner={false}
+          easing="ease"
+          speed={200}
+          shadow="0 0 10px #6366f1,0 0 5px #6366f1"
+        />
         <Suspense fallback={null}>
         </Suspense>
         <ScrollToTop />

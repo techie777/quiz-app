@@ -25,6 +25,9 @@ export async function PUT(request, { params }) {
   if (body.explanationHi !== undefined) data.explanationHi = body.explanationHi || null;
 
   const question = await prisma.question.update({ where: { id }, data });
+  if (globalThis.__CATEGORY_CACHE__) globalThis.__CATEGORY_CACHE__.clear();
+  if (globalThis.__ADMIN_SETS_CACHE__) globalThis.__ADMIN_SETS_CACHE__.clear();
+
   return NextResponse.json({ 
     ...question, 
     options: safeJsonParse(question.options),
@@ -44,5 +47,8 @@ export async function DELETE(request, { params }) {
   await prisma.favourite.deleteMany({ where: { questionId: id } });
   
   await prisma.question.delete({ where: { id } });
+  if (globalThis.__CATEGORY_CACHE__) globalThis.__CATEGORY_CACHE__.clear();
+  if (globalThis.__ADMIN_SETS_CACHE__) globalThis.__ADMIN_SETS_CACHE__.clear();
+
   return NextResponse.json({ success: true });
 }

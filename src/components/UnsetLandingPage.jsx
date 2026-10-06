@@ -33,15 +33,17 @@ export default function UnsetLandingPage() {
     const activeCats = Array.isArray(quizzes)
       ? quizzes.filter((c) => !c.hidden)
       : [];
+    // Only aggregate top-level parent categories to prevent double counting subcategories
+    const mainCats = activeCats.filter((c) => !c.parentId);
     const catCount = activeCats.length;
-    const qCount = activeCats.reduce(
+    const qCount = mainCats.reduce(
       (acc, c) => acc + (c.questionCount ?? c.questions?.length ?? 0),
       0
     );
 
     return {
       totalCategories: Math.max(catCount, 52),
-      totalQuestions: Math.max(qCount, 4261),
+      totalQuestions: qCount > 0 ? qCount : 6834,
     };
   }, [quizzes]);
 
@@ -178,7 +180,11 @@ export default function UnsetLandingPage() {
   ];
 
   return (
-    <div className="w-full min-h-[calc(100vh-70px)] px-4 py-4 sm:py-8 max-w-7xl mx-auto flex flex-col items-center select-none pb-20">
+    <div className="w-full min-h-screen bg-gradient-to-b from-[#e8f3fc] via-[#edf6fd] to-[#e4f1fc] dark:from-[#090e20] dark:via-[#0b132b] dark:to-[#030712] relative overflow-hidden">
+      {/* Peaceful Ambient Sky-Blue Aura */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[450px] bg-gradient-to-b from-sky-200/40 via-blue-100/20 to-transparent blur-3xl pointer-events-none -z-0 dark:from-sky-900/15" />
+
+      <div className="w-full min-h-[calc(100vh-70px)] px-4 py-4 sm:py-8 max-w-7xl mx-auto flex flex-col items-center select-none pb-20 relative z-10">
       {/* ── HERO SECTION ── */}
       <section className="w-full text-center max-w-3xl mx-auto mb-6 sm:mb-8">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200/80 text-indigo-600 text-xs font-bold uppercase tracking-wider mb-2.5">
@@ -612,6 +618,7 @@ export default function UnsetLandingPage() {
           </div>
         </div>
       </section>
+      </div>
     </div>
   );
 }

@@ -209,10 +209,51 @@ export default function MasterHubPage() {
     return map;
   }, [quizzes]);
 
-  // Filtered 40 Main Categories by Curated Quick Filter Chip
+  // Filtered Main Categories by Curated Quick Filter Chip with 3-tier sequence:
+  // 1. Top 15 categories requested by user in exact sequence
+  // 2. Categories with active questions in database (sorted descending by count)
+  // 3. Categories without questions at the end
   const displayedMainCategories = useMemo(() => {
-    return filterCategoriesByChip(MAIN_CATEGORIES, selectedChip);
-  }, [selectedChip]);
+    const base = filterCategoriesByChip(MAIN_CATEGORIES, selectedChip);
+    if (selectedChip !== "all") return base;
+
+    const top15Slugs = [
+      "india-gk",
+      "world-gk",
+      "india-history",
+      "india-geography",
+      "science",
+      "human-body",
+      "animals-nature",
+      "space-universe",
+      "technology",
+      "sports",
+      "brain-riddles",
+      "amazing-facts",
+      "entertainment",
+      "food",
+      "money-business",
+    ];
+
+    const top15 = [];
+    const rest = [];
+
+    base.forEach((cat) => {
+      const idx = top15Slugs.indexOf(cat.slug);
+      if (idx !== -1) {
+        top15[idx] = cat;
+      } else {
+        rest.push(cat);
+      }
+    });
+
+    const withData = rest.filter((c) => (dbCountMap.get(c.slug) || 0) > 0);
+    withData.sort((a, b) => (dbCountMap.get(b.slug) || 0) - (dbCountMap.get(a.slug) || 0));
+
+    const withoutData = rest.filter((c) => (dbCountMap.get(c.slug) || 0) === 0);
+
+    return [...top15.filter(Boolean), ...withData, ...withoutData];
+  }, [selectedChip, dbCountMap]);
 
   // Ensure quizzes are populated if initial mount was empty
   useEffect(() => {

@@ -158,6 +158,7 @@ export default function SmartNavigation() {
                 <div className={styles.userActions}>
                   <Link
                     href="/profile"
+                    prefetch={true}
                     className={styles.profileBtn}
                     onClick={closeMobileMenu}
                   >
@@ -217,6 +218,7 @@ export default function SmartNavigation() {
                     <li key={item.href}>
                       <Link
                         href={item.href}
+                        prefetch={true}
                         className={`${styles.menuLink} ${isActive ? styles.activeLink : ""}`}
                         onClick={(e) => {
                           if (item.key === "quizzes") {
@@ -247,6 +249,7 @@ export default function SmartNavigation() {
                 <li>
                   <Link
                     href="/my-favourites"
+                    prefetch={true}
                     className={`${styles.menuLink} ${pathname === "/my-favourites" ? styles.activeLink : ""}`}
                     onClick={closeMobileMenu}
                   >
@@ -268,6 +271,7 @@ export default function SmartNavigation() {
                   <li>
                     <Link
                       href="/profile"
+                      prefetch={true}
                       className={`${styles.menuLink} ${pathname === "/profile" ? styles.activeLink : ""}`}
                       onClick={closeMobileMenu}
                     >
@@ -288,6 +292,7 @@ export default function SmartNavigation() {
                 <li>
                   <Link
                     href="/pro"
+                    prefetch={true}
                     className={`${styles.menuLink} ${pathname === "/pro" ? styles.activeLink : ""}`}
                     onClick={closeMobileMenu}
                   >

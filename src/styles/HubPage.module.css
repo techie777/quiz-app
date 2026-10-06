@@ -1,23 +1,23 @@
 .container {
   min-height: 100vh;
-  background: radial-gradient(circle at 50% 0%, #f8fafc, #ffffff);
+  background: radial-gradient(circle at 50% 0%, #e8f3fc 0%, #edf6fd 40%, #e4f1fc 100%);
   padding-bottom: 4rem;
 }
 
 [data-theme='dark'] .container {
-  background: radial-gradient(circle at 50% 0%, #0a0e27, #020617);
+  background: radial-gradient(circle at 50% 0%, #0d152c 0%, #090e20 50%, #030712 100%);
 }
 
 .heroContent {
   max-width: 1300px;
   margin: 0 auto;
   padding: 1.15rem 1.25rem 3rem;
-  background: var(--bg-primary);
+  background: transparent;
   color: var(--text-primary);
 }
 
 [data-theme='dark'] .heroContent {
-  background: var(--bg-primary);
+  background: transparent;
 }
 
 .heroHeader {

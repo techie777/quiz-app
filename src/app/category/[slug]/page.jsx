@@ -49,6 +49,9 @@ function detectQuizLanguage(questions) {
 
 const SETS_PER_PAGE = 8;
 
+// Client in-memory cache for ultra-fast 0ms category & set loading
+const CLIENT_CATEGORY_CACHE = new Map();
+
 export default function CategorySetsPage() {
   const params = useParams();
   const router = useRouter();
@@ -57,6 +60,9 @@ export default function CategorySetsPage() {
   const topicParam = searchParams?.get("topic") || null;
   const tagParam = searchParams?.get("tag") || null;
   const setParam = searchParams?.get("set") || null;
+
+  const slugKey = params?.slug;
+  const cachedInitial = slugKey ? CLIENT_CATEGORY_CACHE.get(slugKey) : null;
 
   const [selectedSubCategory, setSelectedSubCategory] = useState(subParam);
   const [selectedTopic, setSelectedTopic] = useState(topicParam);
@@ -69,7 +75,7 @@ export default function CategorySetsPage() {
   const { tier } = useTier();
   const effectiveSetSize = tier === "kids" ? 10 : 20;
 
-  const [category, setCategory] = useState(null);
+  const [category, setCategory] = useState(cachedInitial?.category || null);
 
   // Sync state if query params change
   useEffect(() => {
@@ -83,15 +89,20 @@ export default function CategorySetsPage() {
   }, [category, params?.slug]);
 
   const availableSubCategories = useMemo(() => {
-    if (mainCategoryConfig?.subcategories?.length > 0) {
-      return mainCategoryConfig.subcategories;
+    // Database is the single authoritative source of truth.
+    // If admin unlinked or removed all subcategories, show none (empty array).
+    if (category && Array.isArray(category.subCategories) && category.subCategories.length > 0) {
+      return category.subCategories.map((sc) => ({
+        id: sc.id || sc._id,
+        name: sc.topic || sc.name,
+        nameHi: sc.topicHi || sc.nameHi || "",
+        slug: sc.slug,
+        topics: Array.isArray(sc.chips) ? sc.chips : [],
+        questionCount: sc.questionCount || 0,
+      }));
     }
-    return (category?.subCategories || []).map((sc) => ({
-      name: sc.topic,
-      slug: sc.slug,
-      topics: [],
-    }));
-  }, [mainCategoryConfig, category]);
+    return [];
+  }, [category]);
 
   const activeSubCategoryObj = useMemo(() => {
     if (!selectedSubCategory) return null;
@@ -107,10 +118,11 @@ export default function CategorySetsPage() {
   const availableTopics = useMemo(() => {
     return activeSubCategoryObj?.topics || [];
   }, [activeSubCategoryObj]);
-  const [questions, setQuestions] = useState([]);
-  const [loading, setLoading] = useState(true);
+
+  const [questions, setQuestions] = useState(cachedInitial?.questions || []);
+  const [loading, setLoading] = useState(!cachedInitial);
   const [error, setError] = useState(null);
-  const [questionsLoaded, setQuestionsLoaded] = useState(false);
+  const [questionsLoaded, setQuestionsLoaded] = useState(!!cachedInitial);
   const [setSize, setSetSize] = useState(20);
   const [activeModalSet, setActiveModalSet] = useState(null);
   const [previewSet, setPreviewSet] = useState(null);
@@ -208,68 +220,56 @@ export default function CategorySetsPage() {
     }
   }, [globalLang]);
 
-  // Load category metadata first
+  // Ultra-light single fetch with instant client cache & background revalidation
   useEffect(() => {
-    if (params.slug) {
+    if (!params.slug) return;
+    const currentSlug = params.slug;
+    const cached = CLIENT_CATEGORY_CACHE.get(currentSlug);
+
+    // If already in client cache, skip spinner and show immediately!
+    if (!cached) {
       setLoading(true);
-      setError(null);
-      fetch(`/api/categories/${params.slug}?metaOnly=true`, { cache: 'no-store' })
-        .then(res => {
-          if (!res.ok) throw new Error("Category not found");
-          return res.json();
-        })
-        .then(async data => {
-          if (data.error) throw new Error(data.error);
-          
-          let finalCategory = data;
-          
-          // Use DB translation if available
-          if (globalLang === 'hi' && data.topicHi) {
-            finalCategory = { ...data, topic: data.topicHi, description: data.descriptionHi || data.description };
-          } else if (globalLang === 'hi' && !isHindiText(data.topic)) {
-            // Fallback to auto-translate if DB field is missing
-            try {
-              const metaRes = await fetch("/api/translate", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ text: [data.topic, data.description || ""], from: 'en', to: 'hi' }),
-              });
-              if (metaRes.ok) {
-                const { translations } = await metaRes.json();
-                finalCategory = { ...data, topic: translations[0], description: translations[1] };
-              }
-            } catch (e) {
-              console.error("Initial meta translation failed:", e);
-            }
-          }
+    }
+    setError(null);
 
-          setCategory(finalCategory);
-          setLoading(false);
+    fetch(`/api/categories/${currentSlug}?t=${Date.now()}`, { cache: "no-store" })
+      .then((res) => {
+        if (!res.ok) throw new Error("Category not found");
+        return res.json();
+      })
+      .then((data) => {
+        if (data.error) throw new Error(data.error);
 
-          // Background fetch all questions
-          fetch(`/api/categories/${params.slug}`, { cache: 'no-store' })
-            .then(res => res.json())
-            .then(fullData => {
-              setQuestions(fullData.questions || []);
-              setQuestionsLoaded(true);
-              
-              // If global language is Hindi, also translate these questions
-              if (globalLang === 'hi') {
-                const currentContentLang = detectQuizLanguage(fullData.questions);
-                if (currentContentLang === 'en') {
-                  handleLanguageToggle('hi', fullData.questions);
-                }
-              }
-            })
-            .catch(err => console.error("Error loading questions:", err));
-        })
-        .catch(err => {
-          console.error("Error loading category:", err);
+        let finalCategory = data;
+        if (globalLang === "hi" && data.topicHi) {
+          finalCategory = {
+            ...data,
+            topic: data.topicHi,
+            description: data.descriptionHi || data.description,
+          };
+        }
+
+        const qs = Array.isArray(data.questions) ? data.questions : [];
+
+        // Save to client cache for instant 0ms subsequent loads
+        CLIENT_CATEGORY_CACHE.set(currentSlug, {
+          category: finalCategory,
+          questions: qs,
+        });
+
+        setCategory(finalCategory);
+        setQuestions(qs);
+        setQuestionsLoaded(true);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error loading category data:", err);
+        if (!cached) {
           setError(err.message);
           setLoading(false);
-        });
-    }
-  }, [params.slug]);
+        }
+      });
+  }, [params.slug, globalLang]);
 
   // Fetch progress
   useEffect(() => {
@@ -316,13 +316,51 @@ export default function CategorySetsPage() {
     const pool = tier === "adults" ? displayedQuestions : questions;
     if (!pool || pool.length === 0) return [];
 
-    return generateSmartQuizSets({
+    const generated = generateSmartQuizSets({
       questions: pool,
       category,
       selectedSubCategory: activeSubCategoryObj?.name || null,
       selectedTopic: selectedTopic || null,
       effectiveSetSize: effectiveSetSize || 20,
       rulesMode: "dynamic",
+    });
+
+    const quizSetsList = Array.isArray(category.quizSets) ? category.quizSets : [];
+    const quizSetMap = new Map();
+    quizSetsList.forEach((qs) => {
+      quizSetMap.set(qs.setIndex, qs);
+    });
+
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+    const nowTime = Date.now();
+
+    return generated.map((s) => {
+      const persisted = quizSetMap.get(s.index);
+
+      // Check if persisted set was created in the last 7 days
+      const persistedCreatedAt = persisted?.createdAt;
+      const isPersistedNew = Boolean(
+        persistedCreatedAt &&
+        !isNaN(new Date(persistedCreatedAt).getTime()) &&
+        (nowTime - new Date(persistedCreatedAt).getTime()) <= SEVEN_DAYS_MS
+      );
+
+      // Check if any question in this set was created/added in the last 7 days
+      const hasRecentQuestions = Array.isArray(s.questions) && s.questions.some((q) => {
+        if (!q?.createdAt) return false;
+        const qTime = new Date(q.createdAt).getTime();
+        return !isNaN(qTime) && (nowTime - qTime) <= SEVEN_DAYS_MS;
+      });
+
+      const isNew = Boolean(persisted?.isNew || isPersistedNew || hasRecentQuestions);
+
+      return {
+        ...s,
+        title: persisted?.title || s.title,
+        titleHi: persisted?.titleHi || s.titleHi,
+        createdAt: persistedCreatedAt || (hasRecentQuestions ? new Date() : null),
+        isNew: isNew,
+      };
     });
   }, [category, displayedQuestions, questions, effectiveSetSize, tier, activeSubCategoryObj, selectedTopic]);
 
@@ -964,20 +1002,21 @@ export default function CategorySetsPage() {
               </div>
             </div>
 
-            {/* Simple tiles "Set 1 · 20 Qs" with Tag Display & Nice Loading Indicator */}
+            {/* Ultra-light skeleton set tiles during initial load */}
             {!questionsLoaded ? (
-              <div className="py-16 px-4 flex flex-col items-center justify-center text-center rounded-2xl border border-dashed border-indigo-200/80 dark:border-indigo-900/40 bg-indigo-50/20 dark:bg-indigo-950/10">
-                <div className="relative w-14 h-14 mb-4">
-                  <div className="absolute inset-0 rounded-full border-4 border-indigo-200 dark:border-indigo-900 animate-ping opacity-25"></div>
-                  <div className="w-14 h-14 rounded-full border-4 border-t-indigo-600 border-r-indigo-500 border-b-transparent border-l-transparent animate-spin"></div>
-                  <div className="absolute inset-0 flex items-center justify-center text-lg">✨</div>
-                </div>
-                <p className="text-sm font-black text-slate-800 dark:text-slate-100 animate-pulse">
-                  {isHindi ? "क्विज़ सेट्स और प्रश्न लोड हो रहे हैं..." : "Loading quiz sets & progressive questions..."}
-                </p>
-                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-sm">
-                  {isHindi ? "प्रगतिशील स्तर (सरल ➔ मध्यम ➔ कठिन) तैयार किया जा रहा है" : "Organizing sets in progressive difficulty: Easy ➔ Medium ➔ Hard"}
-                </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-pulse">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div
+                    key={i}
+                    className="w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 bg-white/60 dark:bg-slate-900/40 min-h-[52px]"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-slate-200 dark:bg-slate-800/80"></div>
+                      <div className="h-4 w-28 bg-slate-200 dark:bg-slate-800/80 rounded"></div>
+                    </div>
+                    <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800/60"></div>
+                  </div>
+                ))}
               </div>
             ) : filteredSets.length > 0 ? (
               <>
@@ -1015,6 +1054,12 @@ export default function CategorySetsPage() {
                           <div className="flex flex-col min-w-0">
                             <span className="text-sm font-extrabold text-slate-900 dark:text-white truncate flex items-center gap-1.5">
                               <span>{isHindi ? `सेट ${set.index} · ${set.questions.length} प्रश्न` : `Set ${set.index} · ${set.questions.length} Qs`}</span>
+                              {set.isNew && (
+                                <span className="px-2 py-0.5 rounded-full text-[9.5px] font-black bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-xs tracking-wider inline-flex items-center gap-0.5">
+                                  <span>✨</span>
+                                  <span>{isHindi ? "नया" : "NEW"}</span>
+                                </span>
+                              )}
                               {isHighlighted && (
                                 <span className="px-1.5 py-0.2 rounded text-[10px] font-black uppercase tracking-wider bg-indigo-100 dark:bg-indigo-900/50 text-indigo-800 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/40">
                                   MATCH

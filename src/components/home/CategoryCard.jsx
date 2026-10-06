@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { CATEGORY_SLUG_TO_FILE, getCategoryCardImageUrl, getCategoryGradientHue } from "@/lib/categoryCardImages";
@@ -34,53 +35,42 @@ export default function CategoryCard({ category, isHindi = false }) {
   const emoji = category.icon || category.emoji || "📚";
   const imageSrc = getCategoryCardImageUrl(category);
 
-  const handleClick = (e) => {
+  const handleComingSoonClick = (e) => {
     e.preventDefault();
-    if (!isLive) {
-      toast("Coming soon — we'll notify you", {
-        icon: "⏳",
-        style: {
-          borderRadius: "99px",
-          background: "var(--card, #181b33)",
-          color: "var(--ink, #f1f2ff)",
-          border: "1px solid var(--line, #262a4a)",
-          fontSize: "13px",
-          fontWeight: 600,
-        },
-      });
-      return;
-    }
-    router.push(`/category/${slug}`);
+    toast("Coming soon — we'll notify you", {
+      icon: "⏳",
+      style: {
+        borderRadius: "99px",
+        background: "var(--card, #181b33)",
+        color: "var(--ink, #f1f2ff)",
+        border: "1px solid var(--line, #262a4a)",
+        fontSize: "13px",
+        fontWeight: 600,
+      },
+    });
   };
 
-  return (
-    <div
-      onClick={handleClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") handleClick(e);
-      }}
-      className={`c-card ${!isLive ? "is-soon" : "is-live"}`}
-      style={{
-        background: "var(--card, #ffffff)",
-        border: isHovered ? "1px solid rgba(99, 102, 241, 0.4)" : "1px solid var(--line, #e8eaf5)",
-        borderRadius: "18px",
-        overflow: "hidden",
-        cursor: "pointer",
-        display: "flex",
-        flexDirection: "column",
-        WebkitTapHighlightColor: "transparent",
-        userSelect: "none",
-        transform: isHovered ? "translateY(-4px)" : "none",
-        boxShadow: isHovered
-          ? "0 14px 28px -6px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(99, 102, 241, 0.25)"
-          : "0 2px 6px rgba(0, 0, 0, 0.04)",
-        transition: "transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease",
-      }}
-    >
+  const cardStyle = {
+    background: "var(--card, #ffffff)",
+    border: isHovered ? "1px solid rgba(99, 102, 241, 0.4)" : "1px solid var(--line, #e8eaf5)",
+    borderRadius: "18px",
+    overflow: "hidden",
+    cursor: "pointer",
+    display: "flex",
+    flexDirection: "column",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    textDecoration: "none",
+    color: "inherit",
+    transform: isHovered ? "translateY(-4px)" : "none",
+    boxShadow: isHovered
+      ? "0 14px 28px -6px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(99, 102, 241, 0.25)"
+      : "0 2px 6px rgba(0, 0, 0, 0.04)",
+    transition: "transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease",
+  };
+
+  const CardInner = (
+    <>
       {/* 1. Square 1:1 thumbnail */}
       <div
         className="c-thumbnail"
@@ -223,6 +213,43 @@ export default function CategoryCard({ category, isHindi = false }) {
           </div>
         )}
       </div>
-    </div>
+    </>
+  );
+
+  if (!isLive) {
+    return (
+      <div
+        onClick={handleComingSoonClick}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") handleComingSoonClick(e);
+        }}
+        className="c-card is-soon"
+        style={cardStyle}
+      >
+        {CardInner}
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      href={`/category/${slug}`}
+      prefetch={true}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onPointerDown={() => {
+        try {
+          router.prefetch(`/category/${slug}`);
+        } catch {}
+      }}
+      className="c-card is-live block no-underline text-inherit"
+      style={cardStyle}
+    >
+      {CardInner}
+    </Link>
   );
 }
