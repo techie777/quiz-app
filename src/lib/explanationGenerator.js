@@ -12,18 +12,30 @@ function isHindiText(text) {
 export function getDynamicExplanation(question, isHindi = false) {
   if (!question) return "";
 
+  const hiExp = question.hindiExplanation || question.explanationHi || question.explanation_hi;
+  const enExp = question.englishExplanation || question.explanationEn || question.explanation_en;
+
   // Check if an explicit explanation already exists in the requested language
-  if (isHindi && question.explanationHi && question.explanationHi.trim() !== "") {
-    return question.explanationHi;
-  }
-  if (!isHindi && question.explanation && question.explanation.trim() !== "") {
-    return question.explanation;
-  }
-  if (question.explanation && question.explanation.trim() !== "") {
-    return question.explanation;
-  }
-  if (question.explanationHi && question.explanationHi.trim() !== "") {
-    return question.explanationHi;
+  if (isHindi) {
+    if (hiExp && typeof hiExp === "string" && hiExp.trim() !== "") {
+      return hiExp.trim();
+    }
+    if (question.explanation && typeof question.explanation === "string" && question.explanation.trim() !== "" && isHindiText(question.explanation)) {
+      return question.explanation.trim();
+    }
+    if (question.explanation && typeof question.explanation === "string" && question.explanation.trim() !== "") {
+      return question.explanation.trim();
+    }
+  } else {
+    if (enExp && typeof enExp === "string" && enExp.trim() !== "") {
+      return enExp.trim();
+    }
+    if (question.explanation && typeof question.explanation === "string" && question.explanation.trim() !== "" && !isHindiText(question.explanation)) {
+      return question.explanation.trim();
+    }
+    if (question.explanation && typeof question.explanation === "string" && question.explanation.trim() !== "") {
+      return question.explanation.trim();
+    }
   }
 
   const qText = question.text || question.prompt || "";

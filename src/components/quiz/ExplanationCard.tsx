@@ -48,12 +48,25 @@ export default function ExplanationCard({
     setMascotState(isCorrect ? "correct" : "wrong");
   }, [question?.id, isCorrect]);
 
+  // Detect whether active mode is Hindi based on prop, localStorage, or Devanagari text
+  const isActuallyHindi = useMemo(() => {
+    if (isHindi) return true;
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("app-language");
+      if (stored === "hi") return true;
+    }
+    if (question && /[\u0900-\u097F]/.test(question.text || question.textHi || question.question || "")) {
+      return true;
+    }
+    return false;
+  }, [isHindi, question]);
+
   // Clean explanation text in active language (strictly NEVER shows English when UI is Hindi)
   const explanationText = useMemo(() => {
     if (!question) return "";
 
     let correctText = "";
-    if (isHindi && question.optionsHi && question.correctAnswerIndex !== undefined && question.optionsHi[question.correctAnswerIndex]) {
+    if (isActuallyHindi && question.optionsHi && question.correctAnswerIndex !== undefined && question.optionsHi[question.correctAnswerIndex]) {
       correctText = String(question.optionsHi[question.correctAnswerIndex]).trim();
     } else if (question.correctAnswer) {
       correctText = String(question.correctAnswer).trim();
@@ -61,27 +74,37 @@ export default function ExplanationCard({
       correctText = String(question.options[question.correctAnswerIndex]).trim();
     }
 
-    if (isHindi) {
-      // 1. Check dedicated Hindi explanation fields
-      const hiExp = question.explanationHi || question.explanation_hi;
+    if (isActuallyHindi) {
+      // 1. Check dedicated Hindi explanation fields (all common database schema keys)
+      const hiExp = question.hindiExplanation || question.explanationHi || question.explanation_hi;
       if (hiExp && typeof hiExp === "string" && hiExp.trim()) {
         return hiExp.trim();
       }
-      // 2. Check general explanation field ONLY if it contains Devanagari (Hindi) script
+      // 2. Check general explanation field (contains Devanagari Hindi script)
       if (
         question.explanation &&
         typeof question.explanation === "string" &&
+        question.explanation.trim() &&
         /[\u0900-\u097F]/.test(question.explanation)
       ) {
         return question.explanation.trim();
       }
-      // 3. Fallback: Clean Hindi template (NEVER show English explanation when UI is Hindi)
+      // 3. Check notes or solution fields
+      const altExp = question.notes || question.solution;
+      if (altExp && typeof altExp === "string" && altExp.trim() && /[\u0900-\u097F]/.test(altExp)) {
+        return altExp.trim();
+      }
+      // 4. Any explanation field present if non-empty
+      if (question.explanation && typeof question.explanation === "string" && question.explanation.trim()) {
+        return question.explanation.trim();
+      }
+      // 5. Fallback: Clean Hindi template
       return correctText
         ? `इस प्रश्न का सही उत्तर "${correctText}" है।`
         : "इस प्रश्न का सही उत्तर ऊपर दिया गया विकल्प है।";
     } else {
       // English mode
-      const enExp = question.explanation || question.explanationEn || question.explanation_en;
+      const enExp = question.englishExplanation || question.explanationEn || question.explanation_en || question.explanation;
       if (enExp && typeof enExp === "string" && enExp.trim()) {
         return enExp.trim();
       }
@@ -89,7 +112,7 @@ export default function ExplanationCard({
         ? `The correct answer is "${correctText}".`
         : "The correct answer is indicated in the options above.";
     }
-  }, [question, isHindi]);
+  }, [question, isActuallyHindi]);
 
   // Ensure speech synthesis is completely stopped whenever opened/unmounted
   useEffect(() => {

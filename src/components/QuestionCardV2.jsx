@@ -32,7 +32,7 @@ export default function QuestionCardV2({
   quizId,
   categoryName,
 }) {
-  const isHindi = language === 'hi';
+  const isHindi = language === 'hi' || (typeof window !== "undefined" && localStorage.getItem("app-language") === "hi") || (Boolean(question && /[\u0900-\u097F]/.test(question.text || question.textHi || question.question || "")));
   const { data: session, status } = useSession();
   const router = useRouter();
   const { soundEnabled, quizSessionId, combo } = useQuiz();

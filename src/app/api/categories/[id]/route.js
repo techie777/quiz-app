@@ -160,6 +160,14 @@ export async function GET(request, { params }) {
             subCategory: 1,
             subject: 1,
             subjectName: 1,
+            explanation: 1,
+            explanation_hi: 1,
+            explanationHi: 1,
+            hindiExplanation: 1,
+            explanation_en: 1,
+            explanationEn: 1,
+            englishExplanation: 1,
+            language: 1,
             createdAt: 1,
           }
         }).toArray();
@@ -185,18 +193,33 @@ export async function GET(request, { params }) {
           ? q.correct
           : (typeof q.correct_index === 'number' ? q.correct_index : 0);
 
+        const hindiExp = q.hindiExplanation || q.explanationHi || q.explanation_hi || (q.explanation && /[\u0900-\u097F]/.test(q.explanation) ? q.explanation : "") || "";
+        const englishExp = q.englishExplanation || q.explanationEn || q.explanation_en || (!/[\u0900-\u097F]/.test(q.explanation || "") ? q.explanation : "") || "";
+        const defaultExp = q.explanation || hindiExp || englishExp || "";
+
         return {
           id: q._id.toString(),
+          _id: q._id.toString(),
           text: q.text || q.text_en || "",
           textHi: q.textHi || q.text_hi || null,
           options: opts,
           optionsHi: optsHi,
           correctAnswer: q.correctAnswer || (opts[correctIdx] || ""),
           correct: correctIdx,
+          correctIndex: correctIdx,
+          correct_index: correctIdx,
           difficulty: q.difficulty || (q.difficulty_level === 3 ? "hard" : q.difficulty_level === 2 ? "medium" : "easy"),
           tags: Array.isArray(q.tags) ? q.tags : [],
           topic: q.topic || q.topicName || "",
           subCategory: q.subCategory || q.subject || q.subjectName || "",
+          explanation: defaultExp,
+          explanationHi: hindiExp || defaultExp,
+          explanation_hi: hindiExp || defaultExp,
+          hindiExplanation: hindiExp || defaultExp,
+          explanationEn: englishExp || defaultExp,
+          explanation_en: englishExp || defaultExp,
+          englishExplanation: englishExp || defaultExp,
+          language: q.language || (hindiExp ? "hi" : "en"),
           createdAt: q.createdAt || null,
         };
       });
@@ -223,6 +246,10 @@ export async function GET(request, { params }) {
         tags: Array.isArray(q.tags) ? q.tags : [],
         topic: q.topic || "",
         subCategory: q.subCategory || "",
+        explanation: q.explanation || q.explanationHi || "",
+        explanationHi: q.explanationHi || q.explanation || "",
+        explanation_hi: q.explanationHi || q.explanation || "",
+        hindiExplanation: q.explanationHi || q.explanation || "",
         createdAt: q.createdAt || null,
       }));
       totalQuestionCount = allQuestions.length;

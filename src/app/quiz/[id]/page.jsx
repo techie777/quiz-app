@@ -375,7 +375,7 @@ function QuizEngineContent() {
     async function loadQuizDirectly() {
       setIsAutoLoading(true);
       try {
-        const lang = language || "en";
+        const lang = language || (typeof window !== "undefined" && localStorage.getItem("app-language")) || "hi";
         // 1. Try fetching set questions
         const setRes = await fetch(`/api/gk/topic-sets?setId=${encodeURIComponent(params.id)}&language=${lang}`);
         if (setRes.ok) {

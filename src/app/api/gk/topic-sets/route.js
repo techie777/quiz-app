@@ -97,8 +97,15 @@ export async function GET(req) {
             correctIndex: q.correctIndex !== undefined ? q.correctIndex : q.correct_index,
             difficulty: q.difficulty,
             difficulty_level: q.difficulty_level,
-            explanation: language === "hi" && q.explanationHi ? q.explanationHi : q.explanation,
-            explanationHi: q.explanationHi,
+            explanation: language === "hi"
+              ? (q.explanationHi || q.explanation_hi || q.hindiExplanation || (q.explanation && /[\u0900-\u097F]/.test(q.explanation) ? q.explanation : "") || q.explanation || "")
+              : (q.explanationEn || q.explanation_en || q.englishExplanation || q.explanation || ""),
+            explanationHi: q.explanationHi || q.explanation_hi || q.hindiExplanation || (q.explanation && /[\u0900-\u097F]/.test(q.explanation) ? q.explanation : "") || "",
+            explanation_hi: q.explanation_hi || q.explanationHi || q.hindiExplanation || (q.explanation && /[\u0900-\u097F]/.test(q.explanation) ? q.explanation : "") || "",
+            hindiExplanation: q.hindiExplanation || q.explanationHi || q.explanation_hi || (q.explanation && /[\u0900-\u097F]/.test(q.explanation) ? q.explanation : "") || "",
+            explanationEn: q.explanationEn || q.explanation_en || q.englishExplanation || q.explanation || "",
+            explanation_en: q.explanation_en || q.explanationEn || q.englishExplanation || q.explanation || "",
+            englishExplanation: q.englishExplanation || q.explanationEn || q.explanation_en || q.explanation || "",
             examTags: Array.isArray(q.examTags) ? q.examTags : (Array.isArray(q.exam) ? q.exam : []),
             subTopic: q.subTopic,
             questionType: q.questionType,
