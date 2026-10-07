@@ -87,6 +87,8 @@ export default function MyBooksHomeSection({ isHindi = false }) {
     },
   ];
 
+  const [activeBookIndex, setActiveBookIndex] = useState(0);
+
   return (
     <section className="mb-6">
       {/* Section Header */}
@@ -98,12 +100,12 @@ export default function MyBooksHomeSection({ isHindi = false }) {
               className="text-base sm:text-lg font-bold leading-tight"
               style={{ color: "var(--ink, #14162b)" }}
             >
-              {isHindi ? "मेरी डिजिटल पुस्तकें (My Books)" : "Digital Books (My Books)"}
+              {isHindi ? "डिजिटल पुस्तकें (GK Books)" : "Digital Books (GK Books)"}
             </h2>
             <p className="text-[11px] sm:text-xs" style={{ color: "var(--mute, #6b7190)" }}>
               {isHindi
-                ? "अध्याय दर अध्याय संरचित डिजिटल बुक्स + प्रत्येक पृष्ठ पर स्व-मूल्यांकन क्विज़"
-                : "Structured chapter-by-chapter books with page-end self-quizzes"}
+                ? "अध्याय दर अध्याय संरचित डिजिटल बुक्स · अनुक्रमणिका व स्व-मूल्यांकन क्विज़"
+                : "Structured chapter-by-chapter books with index & page-end quizzes"}
             </p>
           </div>
         </div>
@@ -117,147 +119,190 @@ export default function MyBooksHomeSection({ isHindi = false }) {
         </Link>
       </div>
 
-      {/* Featured Live Books: India GK & World GK */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 mb-3.5">
-        {LIVE_BOOKS.map((book) => (
-          <div
-            key={book.id}
-            className="p-4 sm:p-5 rounded-2xl text-white relative overflow-hidden flex flex-col justify-between"
-            style={{
-              background: book.bgGradient,
-              boxShadow: "0 8px 24px rgba(15, 23, 42, 0.25)",
-              border: "1px solid rgba(255, 255, 255, 0.15)",
-            }}
-          >
-            {/* Glow ambient background */}
+      {/* Featured Live Books: Horizontal Scroll Carousel with Dot Indicators */}
+      <div className="relative">
+        <div
+          onScroll={(e) => {
+            const scrollLeft = e.currentTarget.scrollLeft;
+            const width = e.currentTarget.offsetWidth;
+            const idx = Math.round(scrollLeft / (width * 0.85));
+            setActiveBookIndex(Math.min(idx, LIVE_BOOKS.length - 1));
+          }}
+          className="flex overflow-x-auto snap-x snap-mandatory gap-3.5 pb-2 no-scrollbar"
+        >
+          {LIVE_BOOKS.map((book) => (
             <div
-              className="absolute -top-12 -right-12 w-44 h-44 rounded-full blur-2xl pointer-events-none"
-              style={{ background: book.glowColor }}
-            />
+              key={book.id}
+              className="snap-start shrink-0 w-[90%] sm:w-[480px] p-4 sm:p-5 rounded-2xl text-white relative overflow-hidden flex flex-col justify-between"
+              style={{
+                background: book.bgGradient,
+                boxShadow: "0 8px 24px rgba(15, 23, 42, 0.25)",
+                border: "1px solid rgba(255, 255, 255, 0.15)",
+              }}
+            >
+              {/* Glow ambient background */}
+              <div
+                className="absolute -top-12 -right-12 w-44 h-44 rounded-full blur-2xl pointer-events-none"
+                style={{ background: book.glowColor }}
+              />
 
-            <div>
-              <div className="flex items-start gap-3.5 sm:gap-4 mb-3 relative z-10">
-                {/* Book Cover Thumbnail */}
-                <Link
-                  href={book.bookUrl}
-                  className="w-24 sm:w-28 aspect-[3/4] rounded-xl overflow-hidden shadow-xl border border-white/20 shrink-0 transform hover:scale-105 transition-transform bg-slate-900 group relative block"
-                >
-                  <img
-                    src={book.cover}
-                    alt={book.title}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-1">
-                    <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-400 text-slate-950">
-                      {isHindi ? "पढ़ें" : "Read"}
-                    </span>
-                  </div>
-                </Link>
-
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-1.5 mb-1">
-                    <span className="px-2 py-0.5 rounded-full text-[9.5px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">
-                      ✓ {book.badge}
-                    </span>
-                    <span className="px-1.5 py-0.5 rounded-full text-[9.5px] font-bold bg-white/10 text-slate-200">
-                      {book.stats}
-                    </span>
-                  </div>
-
-                  <h3 className="text-base sm:text-lg font-black text-white leading-tight mb-1">
-                    {book.title}
-                  </h3>
-                  <p className="text-[11.5px] text-slate-200/90 line-clamp-2 leading-snug mb-2">
-                    {book.subtitle}
-                  </p>
-
-                  {/* Feature pills */}
-                  <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-slate-200/80">
-                    {book.features.map((feat, fIdx) => (
-                      <span key={fIdx} className="bg-black/20 px-1.5 py-0.5 rounded">
-                        {feat}
+              <div>
+                <div className="flex items-start gap-3.5 sm:gap-4 mb-3 relative z-10">
+                  {/* Book Cover Thumbnail - Always links to Index page */}
+                  <Link
+                    href={book.bookUrl}
+                    className="w-24 sm:w-28 aspect-[3/4] rounded-xl overflow-hidden shadow-xl border border-white/20 shrink-0 transform hover:scale-105 transition-transform bg-slate-900 group relative block"
+                    title={isHindi ? `${book.title} की अनुक्रमणिका (Index) खोलें` : `Open ${book.title} Index`}
+                  >
+                    <img
+                      src={book.cover}
+                      alt={book.title}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-1">
+                      <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-400 text-slate-950">
+                        {isHindi ? "अनुक्रमणिका" : "Index"}
                       </span>
-                    ))}
+                    </div>
+                  </Link>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                      <span className="px-2 py-0.5 rounded-full text-[9.5px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">
+                        ✓ {book.badge}
+                      </span>
+                      <span className="px-1.5 py-0.5 rounded-full text-[9.5px] font-bold bg-white/10 text-slate-200">
+                        {book.stats}
+                      </span>
+                    </div>
+
+                    <Link
+                      href={book.bookUrl}
+                      className="block group/title"
+                    >
+                      <h3 className="text-base sm:text-lg font-black text-white leading-tight mb-1 group-hover/title:text-amber-300 transition-colors">
+                        {book.title}
+                      </h3>
+                    </Link>
+                    <p className="text-[11.5px] text-slate-200/90 line-clamp-2 leading-snug mb-2">
+                      {book.subtitle}
+                    </p>
+
+                    {/* Feature pills */}
+                    <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-slate-200/80">
+                      {book.features.map((feat, fIdx) => (
+                        <span key={fIdx} className="bg-black/20 px-1.5 py-0.5 rounded">
+                          {feat}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Action buttons */}
-            <div className="flex items-center gap-2 pt-2 border-t border-white/10 relative z-10 mt-auto">
-              <Link
-                href={book.bookUrl}
-                className="flex-1 px-3 py-2 rounded-xl text-xs font-bold bg-amber-400 hover:bg-amber-300 text-slate-950 flex items-center justify-center gap-1 shadow-md transition-all active:scale-95"
-              >
-                <span>{isHindi ? "किताब खोलें" : "Open Book"}</span>
-                <ArrowRight size={13} />
-              </Link>
+              {/* Action buttons - both lead to Index page */}
+              <div className="flex items-center gap-2 pt-2 border-t border-white/10 relative z-10 mt-auto">
+                <Link
+                  href={book.bookUrl}
+                  className="flex-1 px-3 py-2 rounded-xl text-xs font-bold bg-amber-400 hover:bg-amber-300 text-slate-950 flex items-center justify-center gap-1 shadow-md transition-all active:scale-95"
+                >
+                  <span>{isHindi ? "📖 अनुक्रमणिका (Index) खोलें" : "📖 Open Book Index"}</span>
+                  <ArrowRight size={13} />
+                </Link>
 
-              <Link
-                href={book.readUrl}
-                className="px-3 py-2 rounded-xl text-xs font-bold bg-white/15 hover:bg-white/20 text-white flex items-center justify-center gap-1 border border-white/20 transition-all active:scale-95"
-                title={book.firstChapterTitle}
-              >
-                <span>⚡ {isHindi ? "शुरू करें" : "Start"}</span>
-              </Link>
+                <Link
+                  href={book.bookUrl}
+                  className="px-3 py-2 rounded-xl text-xs font-bold bg-white/15 hover:bg-white/20 text-white flex items-center justify-center gap-1 border border-white/20 transition-all active:scale-95"
+                  title={isHindi ? "अध्याय सूची देखें" : "View Chapter List"}
+                >
+                  <span>{isHindi ? "अध्याय सूची" : "Chapters"}</span>
+                </Link>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
+
+        {/* Repeating Circle Dots Indicators */}
+        <div className="flex items-center justify-center gap-2 py-2 mb-2">
+          {LIVE_BOOKS.map((_, dotIdx) => (
+            <span
+              key={dotIdx}
+              className={`rounded-full transition-all duration-200 ${
+                activeBookIndex === dotIdx
+                  ? "w-5 h-2 bg-indigo-600 dark:bg-indigo-400"
+                  : "w-2 h-2 bg-slate-300 dark:bg-slate-700"
+              }`}
+            />
+          ))}
+        </div>
       </div>
 
-      {/* Upcoming Books Grid: MP GK, UP GK, Rajasthan GK */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {UPCOMING_BOOKS.map((book) => (
-          <div
-            key={book.id}
-            className="p-3 rounded-2xl border transition-all flex items-center gap-3 bg-white dark:bg-slate-900"
-            style={{
-              borderColor: "var(--line, #e8eaf5)",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.03)",
-            }}
-          >
-            {/* Book Cover Thumbnail */}
-            <div className="w-14 sm:w-16 aspect-[3/4] rounded-lg overflow-hidden shadow-md border border-slate-200 dark:border-slate-800 shrink-0 bg-slate-100 dark:bg-slate-800 relative">
-              <img
-                src={book.cover}
-                alt={book.title}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
-                <span className="text-[8.5px] font-black uppercase px-1 py-0.5 rounded bg-amber-400/90 text-slate-950">
-                  {book.badge}
+      {/* Upcoming State Books: Single-row horizontal scrollable strip (MP, UP, Rajasthan GK) */}
+      <div className="mt-1">
+        <div className="flex items-center justify-between mb-2 px-1">
+          <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+            <span>🏛️</span>
+            <span>{isHindi ? "राज्य सामान्य ज्ञान (शीघ्र आ रहा है)" : "State GK Books (Upcoming)"}</span>
+          </span>
+          <span className="text-[10px] text-slate-400">
+            {isHindi ? "दाएं स्वाइप करें →" : "Swipe right →"}
+          </span>
+        </div>
+
+        {/* One row horizontal scroll section saving vertical space on mobile! */}
+        <div className="flex overflow-x-auto gap-3 pb-1 no-scrollbar snap-x">
+          {UPCOMING_BOOKS.map((book) => (
+            <div
+              key={book.id}
+              className="snap-start shrink-0 min-w-[250px] sm:min-w-[280px] p-3 rounded-2xl border transition-all flex items-center gap-3 bg-white dark:bg-slate-900 hover:shadow-sm"
+              style={{
+                borderColor: "var(--line, #e8eaf5)",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.03)",
+              }}
+            >
+              {/* Book Cover Thumbnail */}
+              <div className="w-14 sm:w-16 aspect-[3/4] rounded-lg overflow-hidden shadow-md border border-slate-200 dark:border-slate-800 shrink-0 bg-slate-100 dark:bg-slate-800 relative">
+                <img
+                  src={book.cover}
+                  alt={book.title}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
+                  <span className="text-[8.5px] font-black uppercase px-1 py-0.5 rounded bg-amber-400/90 text-slate-950">
+                    {book.badge}
+                  </span>
+                </div>
+              </div>
+
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1 mb-0.5">
+                  <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                    ⏳ {book.badge}
+                  </span>
+                </div>
+
+                <h4
+                  className="text-xs font-bold truncate leading-snug mb-0.5"
+                  style={{ color: "var(--ink, #14162b)" }}
+                >
+                  {book.title}
+                </h4>
+                <p
+                  className="text-[11px] line-clamp-1 leading-normal mb-1.5"
+                  style={{ color: "var(--mute, #6b7190)" }}
+                >
+                  {book.subtitle}
+                </p>
+
+                <span className="text-[10px] text-slate-400 block truncate">
+                  🎯 {book.exams}
                 </span>
               </div>
             </div>
-
-            {/* Info */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1 mb-0.5">
-                <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
-                  ⏳ {book.badge}
-                </span>
-              </div>
-
-              <h4
-                className="text-xs font-bold truncate leading-snug mb-0.5"
-                style={{ color: "var(--ink, #14162b)" }}
-              >
-                {book.title}
-              </h4>
-              <p
-                className="text-[11px] line-clamp-1 leading-normal mb-1.5"
-                style={{ color: "var(--mute, #6b7190)" }}
-              >
-                {book.subtitle}
-              </p>
-
-              <span className="text-[10px] text-slate-400 block truncate">
-                🎯 {book.exams}
-              </span>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </section>
   );

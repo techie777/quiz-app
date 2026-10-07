@@ -413,23 +413,61 @@ export default function DailyCurrentAffairsPage() {
     } catch {}
   }, []);
 
-  const toggleBookmark = useCallback((storyId) => {
+  const toggleBookmark = useCallback((storyId, storyObj = null) => {
+    const targetStory = storyObj || stories.find((s) => s.id === storyId) || activeStory || { id: storyId };
+    
     setBookmarkedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(storyId)) {
-        next.delete(storyId);
-      } else {
+      const isAdding = !next.has(storyId);
+      
+      if (isAdding) {
         next.add(storyId);
+      } else {
+        next.delete(storyId);
       }
+      
       try {
         localStorage.setItem("ca_bookmarked_ids", JSON.stringify(Array.from(next)));
+        
+        // Also sync full story notes list in localStorage for /notes
+        let existingNotes = [];
+        try {
+          const raw = localStorage.getItem("user_ca_notes");
+          if (raw) existingNotes = JSON.parse(raw);
+        } catch {}
+
+        if (isAdding) {
+          const noteItem = {
+            id: targetStory.id,
+            heading: targetStory.headline || targetStory.heading || "करेंट अफेयर्स अपडेट",
+            description: targetStory.content || targetStory.description || targetStory.summary || "",
+            category: targetStory.category || "General",
+            date: targetStory.date || selectedDate,
+            keyPoints: targetStory.keyPoints || [],
+          };
+          const updatedNotes = [noteItem, ...existingNotes.filter((n) => n.id !== storyId)];
+          localStorage.setItem("user_ca_notes", JSON.stringify(updatedNotes));
+          toast.success(globalIsHindi ? "📌 नोट्स में सहेजा गया! (मेरे नोट्स में देखें)" : "📌 Saved to My Notes!");
+        } else {
+          const updatedNotes = existingNotes.filter((n) => n.id !== storyId);
+          localStorage.setItem("user_ca_notes", JSON.stringify(updatedNotes));
+          toast(globalIsHindi ? "नोट्स से हटाया गया" : "Removed from Notes");
+        }
+
+        // Sync with server API (authenticated users)
+        fetch("/api/current-affairs/favourites", {
+          method: isAdding ? "POST" : "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ currentAffairId: storyId }),
+        }).catch(() => {});
+
         if (typeof navigator !== "undefined" && navigator.vibrate) {
           navigator.vibrate(10);
         }
       } catch {}
       return next;
     });
-  }, []);
+  }, [stories, activeStory, selectedDate, globalIsHindi]);
 
   // Fetch /api/current-affairs for selectedDate
   useEffect(() => {
@@ -540,17 +578,43 @@ export default function DailyCurrentAffairsPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // Safe helper to extract key points for any story (DB or sample)
+  const getStoryKeyPoints = (story) => {
+    if (!story) return [];
+    let kps = globalIsHindi && Array.isArray(story.keyPointsHi) && story.keyPointsHi.length > 0
+      ? story.keyPointsHi
+      : Array.isArray(story.keyPoints) && story.keyPoints.length > 0
+      ? story.keyPoints
+      : [];
+
+    if (kps.length === 0) {
+      const point1 = (globalIsHindi && story.oneLinerHi ? story.oneLinerHi : story.oneLiner) ||
+                     (globalIsHindi && story.headlineHi ? story.headlineHi : story.headline) ||
+                     (globalIsHindi && story.summaryHi ? story.summaryHi : story.summary) ||
+                     "Current Affairs Key Fact";
+      const desc = (globalIsHindi && story.contentHi ? story.contentHi : story.content) || "";
+      const sentences = desc ? desc.split(/[.!?।]\s+/).filter(Boolean) : [];
+      const point2 = sentences[1] || (globalIsHindi ? "परीक्षा के लिए महत्वपूर्ण आंकड़े और संदर्भ।" : "Key figures, data, and exam relevance.");
+      const point3 = sentences[2] || (globalIsHindi ? "राष्ट्रीय और अंतरराष्ट्रीय स्तर पर रणनीतिक प्रभाव।" : "Strategic implications and policy impact.");
+      kps = [point1, point2, point3];
+    }
+    return kps;
+  };
+
   // Open Screen 3: Flashcards Deck from Today's Key Points
   const openTodayKeyPointsDeck = () => {
     const deck = [];
-    stories.forEach((story) => {
-      const kps = globalIsHindi && story.keyPointsHi ? story.keyPointsHi : story.keyPoints;
+    (stories || []).forEach((story) => {
+      const kps = getStoryKeyPoints(story);
+      const headline = (globalIsHindi && story.headlineHi ? story.headlineHi : story.headline) || "Current Affairs";
+      const category = story.category || "General";
+
       kps.forEach((point, pIdx) => {
         deck.push({
-          id: `${story.id}-kp-${pIdx}`,
+          id: `${story.id || "ca"}-kp-${pIdx}`,
           storyId: story.id,
-          category: story.category,
-          storyHeadline: globalIsHindi && story.headlineHi ? story.headlineHi : story.headline,
+          category: category,
+          storyHeadline: headline,
           pointNumber: pIdx + 1,
           keyPointText: point,
           deepDive:
@@ -572,12 +636,16 @@ export default function DailyCurrentAffairsPage() {
 
   // Open Screen 3: Flashcards Deck for a Single Story
   const openStoryKeyPointsDeck = (story) => {
-    const kps = globalIsHindi && story.keyPointsHi ? story.keyPointsHi : story.keyPoints;
+    if (!story) return;
+    const kps = getStoryKeyPoints(story);
+    const headline = (globalIsHindi && story.headlineHi ? story.headlineHi : story.headline) || "Current Affairs";
+    const category = story.category || "General";
+
     const deck = kps.map((point, pIdx) => ({
-      id: `${story.id}-single-${pIdx}`,
+      id: `${story.id || "ca"}-single-${pIdx}`,
       storyId: story.id,
-      category: story.category,
-      storyHeadline: globalIsHindi && story.headlineHi ? story.headlineHi : story.headline,
+      category: category,
+      storyHeadline: headline,
       pointNumber: pIdx + 1,
       keyPointText: point,
       deepDive:
@@ -760,31 +828,46 @@ export default function DailyCurrentAffairsPage() {
                   </div>
                 </div>
               )}
-              controls={
+              controls={({ next, prev }) => (
                 <div className={styles.fcControls}>
-                  <button className={styles.fcRoundBtn} onClick={handlePrevCard} disabled={fcIndex === 0} aria-label="Previous card">
+                  <button
+                    className={styles.fcRoundBtn}
+                    onClick={() => {
+                      if (typeof prev === "function") prev();
+                      else handlePrevCard();
+                    }}
+                    disabled={fcIndex === 0}
+                    aria-label="Previous card"
+                  >
                     <ArrowLeft size={18} />
                   </button>
                   <button
                     className={`${styles.fcRoundBtn} ${isFav ? styles.fcFavActive : ""}`}
                     onClick={() => {
-                      setFcFavIds((prev) => {
-                        const next = new Set(prev);
-                        if (next.has(currentCard.id)) next.delete(currentCard.id);
-                        else next.add(currentCard.id);
-                        return next;
+                      if (!currentCard) return;
+                      setFcFavIds((prevSet) => {
+                        const nextSet = new Set(prevSet);
+                        if (nextSet.has(currentCard.id)) nextSet.delete(currentCard.id);
+                        else nextSet.add(currentCard.id);
+                        return nextSet;
                       });
                     }}
                     aria-label="Save card to favourites"
                   >
                     <Heart size={18} fill={isFav ? "#ef4444" : "none"} />
                   </button>
-                  <button className={styles.fcNextBtn} onClick={handleNextCard}>
+                  <button
+                    className={styles.fcNextBtn}
+                    onClick={() => {
+                      if (typeof next === "function") next();
+                      else handleNextCard();
+                    }}
+                  >
                     <span>{globalIsHindi ? "अगला" : "Next"}</span>
                     <ArrowRight size={16} />
                   </button>
                 </div>
-              }
+              )}
             />
           ) : (
             <div className={styles.emptyState}>
@@ -818,8 +901,9 @@ export default function DailyCurrentAffairsPage() {
             <div className={styles.readerHeaderActions}>
               <button
                 className={`${styles.readerActionBtn} ${isBookmarked ? styles.readerActionBtnActive : ""}`}
-                onClick={() => toggleBookmark(activeStory.id)}
-                aria-label="Bookmark story"
+                onClick={() => toggleBookmark(activeStory.id, activeStory)}
+                aria-label={isBookmarked ? "Remove from notes" : "Save to notes"}
+                title={isBookmarked ? "नोट्स से हटाएं" : "नोट्स में जोड़ें"}
               >
                 <Bookmark size={18} fill={isBookmarked ? "#4F46E5" : "none"} />
               </button>
@@ -970,25 +1054,39 @@ export default function DailyCurrentAffairsPage() {
           </div>
         </div>
 
-        {/* 2. Title Row: Current Affairs + Calendar Picker */}
+        {/* 2. Title Row: Current Affairs + Calendar Picker + My Notes */}
         <div className={styles.titleRow}>
           <h1 className={styles.pageTitle}>
             {globalIsHindi ? "करंट अफेयर्स" : "Current Affairs"}
           </h1>
-          <div className={styles.calendarBtn} title={globalIsHindi ? "तारीख चुनें" : "Select date"}>
-            <Calendar size={18} />
-            <input
-              type="date"
-              value={selectedDate}
-              max={getTodayDateString()}
-              onChange={(e) => {
-                if (e.target.value) {
-                  setSelectedDate(e.target.value);
-                  setAnchorDate(e.target.value);
-                }
+          <div className="flex items-center gap-2">
+            <Link
+              href="/notes"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95"
+              style={{
+                background: "var(--pri, #4f46e5)",
+                color: "#ffffff",
+                textDecoration: "none"
               }}
-              className={styles.calendarHiddenInput}
-            />
+              title={globalIsHindi ? "सहेजे गए नोट्स देखें" : "View Saved Notes"}
+            >
+              <span>📖 {globalIsHindi ? "मेरे नोट्स" : "My Notes"}</span>
+            </Link>
+            <div className={styles.calendarBtn} title={globalIsHindi ? "तारीख चुनें" : "Select date"}>
+              <Calendar size={18} />
+              <input
+                type="date"
+                value={selectedDate}
+                max={getTodayDateString()}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    setSelectedDate(e.target.value);
+                    setAnchorDate(e.target.value);
+                  }
+                }}
+                className={styles.calendarHiddenInput}
+              />
+            </div>
           </div>
         </div>
 

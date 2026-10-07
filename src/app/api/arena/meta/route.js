@@ -52,7 +52,7 @@ export async function GET(req) {
     // 1. Process all main Category items (70 categories)
     (categories || []).forEach(c => {
       const idStr = c._id.toString();
-      const count = countMap.get(idStr) || countMap.get(c.slug) || 20;
+      const count = countMap.get(idStr) || countMap.get(c.slug) || (Array.isArray(c.questions) ? c.questions.length : 0);
       uniqueCatsMap.set(idStr, {
         id: idStr,
         name: c.topic || c.name || 'General',
@@ -93,7 +93,7 @@ export async function GET(req) {
     (taxonomyCats || []).forEach(c => {
       const idStr = c._id.toString();
       if (!uniqueCatsMap.has(idStr)) {
-        const count = countMap.get(idStr) || countMap.get(c.slug) || 20;
+        const count = countMap.get(idStr) || countMap.get(c.slug) || 0;
         const iconKey = String(c.icon || '').toLowerCase().trim();
         const resolvedEmoji = TAXONOMY_ICON_EMOJIS[iconKey] || (iconKey.length <= 4 && iconKey ? iconKey : '🎯');
         uniqueCatsMap.set(idStr, {

@@ -15,6 +15,7 @@ import {
   ChevronRight,
   BookOpen,
   Swords,
+  Zap,
   Shuffle,
   Layers,
   ChevronDown,
@@ -235,8 +236,8 @@ export default function GkTopicSetsPage() {
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
               }`}
             >
-              <span>⚔️</span>
-              <span>{isHindi ? "क्विज़ अखाड़ा (Arena)" : "Quiz Arena"}</span>
+              <span>⚡</span>
+              <span>{isHindi ? "GK टेस्ट इंजन" : "GK Test Engine"}</span>
             </button>
           </div>
         </div>
@@ -438,11 +439,11 @@ export default function GkTopicSetsPage() {
                   {isHindi ? "कस्टम क्विज़" : "Custom Quiz"}
                 </span>
                 <div className="text-xs font-black leading-tight">
-                  {isHindi ? "क्विज़ अखाड़ा (Arena)" : "Quiz Arena"}
+                  {isHindi ? "GK टेस्ट इंजन" : "GK Test Engine"}
                 </div>
               </div>
               <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-                <Swords size={14} />
+                <Zap size={14} />
               </div>
             </Link>
           </div>

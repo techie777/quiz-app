@@ -271,8 +271,8 @@ export default function GkHubPage() {
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
               }`}
             >
-              <span>⚔️</span>
-              <span>{isHindi ? "क्विज़ अखाड़ा (Arena)" : "Quiz Arena"}</span>
+              <span>⚡</span>
+              <span>{isHindi ? "GK टेस्ट इंजन" : "GK Test Engine"}</span>
             </button>
           </div>
         </div>

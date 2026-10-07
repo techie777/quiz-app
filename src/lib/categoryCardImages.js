@@ -45,34 +45,54 @@ export const CATEGORY_SLUG_TO_FILE = {
   "travel-tourism": "travel.webp",
   "general-knowledge": "general-knowledge.webp",
   "current-affairs": "current-affairs.webp",
+  "indian-history": "history.webp",
+  "human-body": "science.webp",
+  "amazing-facts": "fun-viral.webp",
+  "indian-kingdoms": "history.webp",
+  "animals-nature": "animals.webp",
+  "money-business": "business.webp",
+  "brain-riddles": "reasoning.webp",
 };
 
 /**
  * Canonical Slug Aliases Map
- * Maps short or legacy database slugs to canonical 40 category slugs
+ * Maps short or legacy database slugs to canonical category slugs
  */
 export const SLUG_ALIASES = {
   "indian-states": "indian-states-uts",
+  "indian-states-gk": "indian-states-uts",
   "religion": "religion-spirituality",
+  "religious-gk": "religion-spirituality",
   "heritage": "heritage-monuments",
   "space": "space-astronomy",
+  "space-universe": "space-astronomy",
   "language": "language-grammar",
   "business": "business-economy",
+  "money-business": "business-economy",
   "politics": "politics-government",
   "environment": "environment-nature",
   "food": "food-cuisine",
   "defence": "defence-military",
   "brands": "brands-companies",
   "lifestyle": "lifestyle-everyday-knowledge",
-  "animals": "animals-wildlife",
+  "animals": "animals-nature",
+  "animals-wildlife": "animals-nature",
   "plants": "plants-agriculture",
   "inventions": "inventions-discoveries",
   "travel": "travel-tourism",
   "theatre": "theatre-performing-arts",
   "kids-family": "kids-family-quiz",
   "fun-viral": "fun-viral-quiz",
+  "fun-viral-quiz": "amazing-facts",
   "reasoning": "reasoning-brain-games",
+  "brain-riddles": "reasoning-brain-games",
   "awards": "awards-achievements",
+  "india-history": "indian-history",
+  "history-gk": "indian-history",
+  "indian-kingdom-gk": "indian-kingdoms",
+  "biology-gk": "human-body",
+  "general-science": "science",
+  "sports-gk": "sports",
 };
 
 /**

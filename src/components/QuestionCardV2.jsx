@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useQuiz } from "@/context/QuizContext";
-import { playCorrectSound, playWrongSound, playTapSound, playStreakSound } from "@/lib/sounds";
+import { playCorrectSound, playWrongSound, playTapSound, playStreakSound, triggerHaptic } from "@/lib/sounds";
 import { shareQuestion } from "@/lib/shareHelper";
 import { toggleQuestionFavourite, isQuestionFavourited } from "@/lib/favouritesHelper";
 import { Share2, Heart, X, ArrowRight } from "lucide-react";
@@ -14,6 +14,7 @@ import { getDynamicExplanation } from "@/lib/explanationGenerator";
 import ExplanationCard from "@/components/quiz/ExplanationCard";
 import { useTier } from "@/context/TierContext";
 import confetti from "canvas-confetti";
+import { MAIN_CATEGORIES } from "@/lib/mainCategoriesConfig";
 
 export default function QuestionCardV2({
   question,
@@ -29,6 +30,7 @@ export default function QuestionCardV2({
   audienceStats,
   favouriteIds,
   quizId,
+  categoryName,
 }) {
   const isHindi = language === 'hi';
   const { data: session, status } = useSession();
@@ -139,8 +141,9 @@ export default function QuestionCardV2({
   const handleSelect = (originalIndex) => {
     if (revealed || disabled || !question) return;
     
-    // Task 3.5: Tap bubble sound on selection
+    // Tap bubble sound and tactile vibration on selection
     if (soundEnabled) playTapSound();
+    triggerHaptic(15);
 
     const selectedOptionText = String(question.options[originalIndex] || "").trim();
     const correctAnswerText = String(question.correctAnswer || "").trim();
@@ -159,6 +162,7 @@ export default function QuestionCardV2({
             playCorrectSound();
           }
         }
+        triggerHaptic(20);
         try {
           confetti({
             particleCount: 65,
@@ -170,6 +174,7 @@ export default function QuestionCardV2({
         } catch {}
       } else {
         if (soundEnabled) playWrongSound();
+        triggerHaptic(35);
         setShakingType("animate-vibrate");
         setTimeout(() => setShakingType(""), 500);
       }
@@ -199,51 +204,105 @@ export default function QuestionCardV2({
     ? "bg-[#FEE2E2] text-[#DC2626] border-[#FCA5A5]"
     : "bg-[#FEF3C7] text-[#D97706] border-[#FDE68A]";
 
+  // Derive category display label
+  const categoryLabel = useMemo(() => {
+    // 1. Direct on question object
+    const rawCat = isHindi
+      ? (question?.categoryNameHi || question?.categoryName || question?.topicNameHi || question?.topicName || question?.category || question?.topic || question?.subTopic)
+      : (question?.categoryName || question?.topicName || question?.category || question?.topic || question?.subTopic);
+    
+    // Look up canonical mapping from MAIN_CATEGORIES if rawCat is a slug or id
+    const candidateSlug = String(rawCat || question?.categoryId || quizId || "").toLowerCase().trim();
+    if (candidateSlug) {
+      const match = MAIN_CATEGORIES.find(
+        (c) =>
+          c.slug?.toLowerCase() === candidateSlug ||
+          String(c.id) === candidateSlug ||
+          (c.name && c.name.toLowerCase() === candidateSlug) ||
+          (c.nameHi && c.nameHi.toLowerCase() === candidateSlug)
+      );
+      if (match) {
+        return isHindi ? (match.nameHi || match.name) : (match.name || match.nameHi);
+      }
+    }
+    
+    if (rawCat && typeof rawCat === "string" && rawCat.trim() && !/^[0-9a-fA-F]{24}$/.test(rawCat)) {
+      return rawCat.trim();
+    }
+
+    // 2. Prop categoryName if passed
+    if (categoryName && typeof categoryName === "string" && categoryName.trim() && !/^[0-9a-fA-F]{24}$/.test(categoryName)) {
+      const matchProp = MAIN_CATEGORIES.find(
+        (c) =>
+          c.slug?.toLowerCase() === categoryName.toLowerCase().trim() ||
+          (c.name && c.name.toLowerCase() === categoryName.toLowerCase().trim())
+      );
+      if (matchProp) {
+        return isHindi ? (matchProp.nameHi || matchProp.name) : (matchProp.name || matchProp.nameHi);
+      }
+      return categoryName.trim();
+    }
+
+    // 3. From quizId if it matches MAIN_CATEGORIES
+    if (quizId && quizId !== "arena") {
+      const match = MAIN_CATEGORIES.find(
+        (c) => c.slug?.toLowerCase() === String(quizId).toLowerCase() || String(c.id) === String(quizId)
+      );
+      if (match) {
+        return isHindi ? (match.nameHi || match.name) : match.name;
+      }
+    }
+
+    return null;
+  }, [question, isHindi, quizId, categoryName]);
+
   return (
     <div className={`${styles.questionSection} ${shakingType ? styles[shakingType] || shakingType : ""}`}>
       <div className={styles.questionCard}>
-        {/* Top Difficulty Badge Row + Favourite & Share Actions (Right-aligned) */}
+        {/* Top Difficulty Badge Row + Centered Category Badge + Favourite & Share Actions (Right) */}
         <div className="flex items-center justify-between w-full mb-3 gap-2">
-          {/* Difficulty Badge & Dynamic Combo Multiplier */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border shrink-0 ${diffBadgeStyle}`}>
+          {/* Difficulty Badge (Left) */}
+          <div className="flex items-center shrink-0">
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${diffBadgeStyle}`}>
               <span className="w-1.5 h-1.5 rounded-full bg-current" />
               <span>{diffLabel}</span>
             </span>
-
-            {combo >= 2 && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-black bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm animate-pulse">
-                <span>🔥</span>
-                <span>{combo}x {isHindi ? "कॉम्बो" : "Combo"}</span>
-                <span className="text-[10px] opacity-90 hidden sm:inline">(+{combo * 5} XP)</span>
-              </span>
-            )}
           </div>
 
-          {/* Favourite & Share Actions in the same row */}
+          {/* Centered Category Badge (in small neat font, nicely placed in center of this row) */}
+          {categoryLabel ? (
+            <div className="flex-1 flex justify-center px-1 min-w-0">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold bg-indigo-50/90 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200/70 dark:border-indigo-800/60 truncate select-none shadow-2xs">
+                <span className="text-[9px]">🏷️</span>
+                <span className="truncate max-w-[130px] sm:max-w-[200px]">{categoryLabel}</span>
+              </span>
+            </div>
+          ) : (
+            <div className="flex-1" />
+          )}
+
+          {/* Favourite & Share Actions (Right, Icon-only without text) */}
           <div className="flex items-center gap-1.5 shrink-0">
             <button
               type="button"
               onClick={handleFavClick}
               title={isHindi ? (fav ? "पसंदीदा से हटाएं" : "पसंदीदा में जोड़ें") : (fav ? "Remove from favourites" : "Add to favourites")}
-              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold border transition-all active:scale-95 ${
+              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl border transition-all active:scale-95 flex items-center justify-center cursor-pointer ${
                 fav
                   ? "bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800"
                   : "bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 border-slate-200/80 dark:border-slate-700 hover:text-rose-500 hover:border-rose-200"
               }`}
             >
-              <Heart size={13} fill={fav ? "#ef4444" : "none"} color={fav ? "#ef4444" : "currentColor"} />
-              <span>{isHindi ? "पसंदीदा" : "Fav"}</span>
+              <Heart size={14} fill={fav ? "#ef4444" : "none"} color={fav ? "#ef4444" : "currentColor"} />
             </button>
             <button
               type="button"
               onClick={handleShare}
               disabled={sharing}
               title={isHindi ? "साझा करें" : "Share this question"}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 border border-slate-200/80 dark:border-slate-700 hover:text-indigo-600 hover:border-indigo-200 active:scale-95 transition-all"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 border border-slate-200/80 dark:border-slate-700 hover:text-indigo-600 hover:border-indigo-200 active:scale-95 transition-all flex items-center justify-center cursor-pointer"
             >
-              <Share2 size={13} />
-              <span>{isHindi ? "साझा करें" : "Share"}</span>
+              <Share2 size={14} />
             </button>
           </div>
         </div>

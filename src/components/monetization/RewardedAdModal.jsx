@@ -52,16 +52,13 @@ export default function RewardedAdModal() {
   };
 
   const handleDismiss = () => {
-    if (rewardGranted) {
-      handleClaimReward();
-      return;
+    // Directly grant reward / allow continue so testing is never blocked
+    if (activeAd?.onReward) {
+      activeAd.onReward();
+    } else if (activeAd?.onDismiss) {
+      activeAd.onDismiss();
     }
-    if (window.confirm("Close ad now? You will not receive the reward to continue.")) {
-      if (activeAd?.onDismiss) {
-        activeAd.onDismiss();
-      }
-      setActiveAd(null);
-    }
+    setActiveAd(null);
   };
 
   return (
@@ -286,15 +283,17 @@ export default function RewardedAdModal() {
             <button
               onClick={handleDismiss}
               style={{
-                background: "none",
-                border: "none",
+                background: "#EEF2FF",
+                border: "1px solid #C7D2FE",
                 fontSize: "12px",
-                color: "#94A3B8",
+                fontWeight: 600,
+                color: "#4F46E5",
+                borderRadius: "8px",
                 cursor: "pointer",
-                padding: "4px 8px",
+                padding: "6px 12px",
               }}
             >
-              Skip
+              आगे बढ़ें (Skip & Continue) →
             </button>
           </div>
         </div>

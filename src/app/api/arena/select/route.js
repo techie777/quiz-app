@@ -117,6 +117,13 @@ export async function POST(req) {
         explanation_hi: q.explanation_hi || '',
         topicId: q.topic_id ? q.topic_id.toString() : null,
         categoryId: (q.categoryId || q.category_id) ? (q.categoryId || q.category_id).toString() : null,
+        category: q.category || q.categoryName || q.category_name || (q.categoryId || q.category_id ? (q.categoryId || q.category_id).toString() : null),
+        categoryName: q.categoryName || q.category_name || q.category || q.topicName || q.topic_name || null,
+        categoryNameHi: q.categoryNameHi || q.category_name_hi || q.topicNameHi || q.topic_name_hi || null,
+        topic: q.topic || q.topicName || q.topic_name || null,
+        topicName: q.topicName || q.topic_name || q.topic || null,
+        topicNameHi: q.topicNameHi || q.topic_name_hi || null,
+        subTopic: q.subTopic || q.sub_topic || null,
       };
     });
 

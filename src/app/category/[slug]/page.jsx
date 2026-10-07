@@ -768,8 +768,8 @@ export default function CategorySetsPage() {
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
               }`}
             >
-              <span>⚔️</span>
-              <span>{isHindi ? "क्विज़ अखाड़ा (Arena)" : "Quiz Arena"}</span>
+              <span>⚡</span>
+              <span>{isHindi ? "GK टेस्ट इंजन" : "GK Test Engine"}</span>
             </button>
           </div>
           <p className="text-[11px] text-slate-400 mt-2 text-center">
@@ -1015,6 +1015,11 @@ export default function CategorySetsPage() {
                           <div className="flex flex-col min-w-0">
                             <span className="text-sm font-extrabold text-slate-900 dark:text-white truncate flex items-center gap-1.5">
                               <span>{isHindi ? `सेट ${set.index} · ${set.questions.length} प्रश्न` : `Set ${set.index} · ${set.questions.length} Qs`}</span>
+                              {(!info.isComplete || set.isNew || set.index <= 3) && (
+                                <span className="px-1.5 py-0.5 rounded-md text-[9.5px] font-black uppercase tracking-wider bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+                                  {isHindi ? "नया" : "NEW"}
+                                </span>
+                              )}
                               {isHighlighted && (
                                 <span className="px-1.5 py-0.2 rounded text-[10px] font-black uppercase tracking-wider bg-indigo-100 dark:bg-indigo-900/50 text-indigo-800 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/40">
                                   MATCH
@@ -1055,8 +1060,8 @@ export default function CategorySetsPage() {
                               <span>{info.bestScore !== null ? `${info.bestScore}/${info.total}` : (isHindi ? "पूर्ण" : "Done")}</span>
                             </span>
                           ) : (
-                            <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center group-hover:bg-indigo-700 transition-colors shadow-xs">
-                              <Play size={12} fill="currentColor" className="translate-x-0.5" />
+                            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 text-white flex items-center justify-center shadow-md shadow-indigo-500/25 group-hover:scale-105 group-hover:shadow-indigo-500/40 transition-all active:scale-95">
+                              <Play size={13} fill="currentColor" className="translate-x-0.5" />
                             </div>
                           )}
                         </div>

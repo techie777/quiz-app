@@ -521,7 +521,7 @@ export default function AdminSettingsPage() {
         {/* Quiz Arena Module */}
         <div className={styles.toggleRow}>
           <div>
-            <span className={styles.toggleLabel}>Quiz Arena (Custom Engine)</span>
+            <span className={styles.toggleLabel}>GK Test Engine</span>
             <p className={styles.toggleDesc}>
               Custom quiz builder, category multi-select, and arena challenges.
             </p>

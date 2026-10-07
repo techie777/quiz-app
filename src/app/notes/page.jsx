@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useData } from "@/context/DataContext";
 import styles from "@/styles/Notes.module.css";
 import Link from "next/link";
@@ -21,37 +21,66 @@ function formatDate(d) {
 export default function NotesPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { quizzes } = useData();
   const [favourites, setFavourites] = useState([]);
   const [caFavourites, setCaFavourites] = useState([]);
   const [quizFavIds, setQuizFavIds] = useState([]);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("all");
-  const [section, setSection] = useState("questions"); // "questions" | "currentAffairs" | "quizzes"
+  const [section, setSection] = useState(() => searchParams?.get("section") || "questions");
   const [loading, setLoading] = useState(true);
   const [reading, setReading] = useState(null);
 
   useEffect(() => {
-    if (status === "unauthenticated") router.push("/");
+    // 1. Always load local notes from localStorage so all users see their notes immediately
+    try {
+      const rawCaNotes = localStorage.getItem("user_ca_notes");
+      if (rawCaNotes) {
+        const parsed = JSON.parse(rawCaNotes);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setCaFavourites(parsed);
+          // If user specifically opened notes and questions are empty, switch to CA
+          if (searchParams?.get("section") === "currentAffairs") {
+            setSection("currentAffairs");
+          }
+        }
+      }
+    } catch {}
+
+    // 2. If authenticated, fetch server items and merge
     if (status === "authenticated" && !session?.user?.isAdmin) {
       fetch("/api/favourites")
         .then((r) => r.json())
-        .then((data) => { setFavourites(data); })
-        .catch(() => setLoading(false));
+        .then((data) => { if (Array.isArray(data)) setFavourites(data); })
+        .catch(() => {});
 
       fetch("/api/current-affairs/favourites")
         .then((r) => r.json())
-        .then((data) => { setCaFavourites(Array.isArray(data.items) ? data.items : []); })
+        .then((data) => {
+          const serverItems = Array.isArray(data.items) ? data.items : [];
+          setCaFavourites((prev) => {
+            const merged = [...serverItems];
+            const ids = new Set(serverItems.map((i) => i.id));
+            prev.forEach((p) => {
+              if (p?.id && !ids.has(p.id)) {
+                merged.push(p);
+                ids.add(p.id);
+              }
+            });
+            return merged;
+          });
+        })
         .catch(() => {});
 
       fetch("/api/category-favourites")
         .then((r) => r.json())
-        .then((data) => { setQuizFavIds(Array.isArray(data.ids) ? data.ids : []); })
+        .then((data) => { if (Array.isArray(data.ids)) setQuizFavIds(data.ids); })
         .catch(() => {});
-
-      setLoading(false);
     }
-  }, [status, session, router]);
+
+    setLoading(false);
+  }, [status, session, searchParams]);
 
   const categories = useMemo(() => {
     const cats = {};
@@ -98,12 +127,25 @@ export default function NotesPage() {
   };
 
   const handleRemoveCA = async (currentAffairId) => {
+    setCaFavourites((prev) => prev.filter((x) => x.id !== currentAffairId));
+    try {
+      const raw = localStorage.getItem("user_ca_notes");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        localStorage.setItem("user_ca_notes", JSON.stringify(parsed.filter((n) => n.id !== currentAffairId)));
+      }
+      const rawIds = localStorage.getItem("ca_bookmarked_ids");
+      if (rawIds) {
+        const ids = JSON.parse(rawIds);
+        localStorage.setItem("ca_bookmarked_ids", JSON.stringify(ids.filter((id) => id !== currentAffairId)));
+      }
+    } catch {}
+
     await fetch("/api/current-affairs/favourites", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ currentAffairId }),
-    });
-    setCaFavourites((prev) => prev.filter((x) => x.id !== currentAffairId));
+    }).catch(() => {});
   };
 
   const handleRemoveQuiz = async (categoryId) => {

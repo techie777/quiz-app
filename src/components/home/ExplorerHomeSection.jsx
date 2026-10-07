@@ -348,124 +348,201 @@ export default function ExplorerHomeSection({
         })}
       </div>
 
-      {/* 4. Daily Quiz Banner */}
-      <div
-        className="hero-daily-banner flex justify-between items-center p-4 rounded-2xl mb-4 text-white"
-        style={{
-          background:
-            "linear-gradient(135deg, var(--pri, #4f46e5), var(--pri2, #7c5cff))",
-          borderRadius: "20px",
-          padding: "16px",
-          boxShadow: "0 8px 24px rgba(79, 70, 229, 0.22)",
-        }}
-      >
-        <div>
-          <b className="text-base sm:text-lg font-bold block">
-            ⚡ {isHindi ? "दैनिक क्विज़" : "Daily Quiz"}
-          </b>
-          <p className="text-xs opacity-90 mt-0.5">
-            {isHindi ? "10 प्रश्न · 3 मिनट" : "10 questions · 3 mins"}
-          </p>
-        </div>
-        <Link
-          href="/daily-quiz"
-          className="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white text-indigo-600 active:scale-95 transition-transform"
-          style={{
-            border: 0,
-            background: "#ffffff",
-            color: "var(--pri, #4f46e5)",
-            font: "700 13px Poppins, sans-serif",
-            borderRadius: "12px",
-            padding: "10px 16px",
-            textDecoration: "none",
-            display: "inline-block",
-          }}
-        >
-          {isHindi ? "अभी खेलें" : "Play now"}
-        </Link>
-      </div>
-
-      {/* 📚 My Books Section: India GK + Upcoming MP GK / UP GK */}
-      <MyBooksHomeSection isHindi={isHindi} />
-
-      {/* Quiz Arena compact card for Explorer (kept in position) */}
-      <ArenaPromptCard audience="explorer" className="mb-3" />
-
-      {/* Hot Quizzes Row (kept in position) */}
-      <div className="mb-4">
-        <HotQuizzesRow />
-      </div>
-
-      {/* 5. Play now Section: Live categories first */}
-      {liveCategories.length > 0 && (
-        <section className="mb-6">
-          <h2
-            className="flex items-center justify-between text-sm sm:text-base font-bold my-2 px-1"
-            style={{ color: "var(--ink, #14162b)" }}
+      {/* ── CONDITIONAL RENDER: DEDICATED FILTER SCREEN vs MAIN HOME CONTENT ── */}
+      {searchQuery.trim().length > 0 ? (
+        <section className="py-2 animate-fadeIn">
+          {/* Header Bar: Back to Home + Result Counter */}
+          <div 
+            className="flex items-center justify-between gap-3 mb-4 p-3 rounded-2xl"
+            style={{
+              background: "var(--card, #ffffff)",
+              border: "1px solid var(--line, #e8eaf5)",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.03)"
+            }}
           >
-            <span>{isHindi ? "अभी खेलें" : "Play now"}</span>
-            <span
-              className="text-xs font-semibold"
-              style={{ color: "var(--mute, #6b7190)" }}
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all active:scale-95"
+              style={{
+                background: "var(--soft, #eef0ff)",
+                color: "var(--pri, #4f46e5)",
+                border: "1px solid rgba(79, 70, 229, 0.2)"
+              }}
             >
-              {liveCategories.length} {isHindi ? "लाइव" : "live"}
-            </span>
-          </h2>
-          <div
-            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"
-            style={{ gap: "12px" }}
-          >
-            {liveCategories.map((category) => (
-              <CategoryCard
-                key={category.slug}
-                category={category}
-                isHindi={isHindi}
-              />
-            ))}
+              ← {isHindi ? "होम पर लौटें" : "Back to Home"}
+            </button>
+            <div className="text-right">
+              <span className="text-xs font-bold block" style={{ color: "var(--mute, #6b7190)" }}>
+                {isHindi ? "फ़िल्टर परिणाम" : "Filter Screen"}
+              </span>
+              <span className="text-xs font-semibold" style={{ color: "var(--ink, #14162b)" }}>
+                {filteredCategories.length} {isHindi ? "श्रेणियां मिलीं" : "categories found"}
+              </span>
+            </div>
           </div>
-        </section>
-      )}
 
-      {/* 6. Coming soon Section: The rest */}
-      {soonCategories.length > 0 && (
-        <section className="mb-6">
-          <h2
-            className="flex items-center justify-between text-sm sm:text-base font-bold my-2 px-1"
-            style={{ color: "var(--ink, #14162b)" }}
-          >
-            <span>{isHindi ? "जल्द आ रहा है" : "Coming soon"}</span>
-            <span
-              className="text-xs font-semibold"
-              style={{ color: "var(--mute, #6b7190)" }}
+          {/* Filtered Results Grid */}
+          {filteredCategories.length > 0 ? (
+            <div
+              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"
+              style={{ gap: "12px" }}
             >
-              {soonCategories.length} {isHindi ? "श्रेणियां" : "categories"}
-            </span>
-          </h2>
-          <div
-            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"
-            style={{ gap: "12px" }}
-          >
-            {soonCategories.map((category) => (
-              <CategoryCard
-                key={category.slug}
-                category={category}
-                isHindi={isHindi}
-              />
-            ))}
-          </div>
+              {filteredCategories.map((category) => (
+                <CategoryCard
+                  key={category.slug}
+                  category={category}
+                  isHindi={isHindi}
+                />
+              ))}
+            </div>
+          ) : (
+            <div
+              className="py-16 text-center rounded-3xl p-6"
+              style={{
+                background: "var(--card, #ffffff)",
+                border: "1px solid var(--line, #e8eaf5)"
+              }}
+            >
+              <div className="text-4xl mb-3">🔍</div>
+              <h3 className="text-base font-bold mb-1" style={{ color: "var(--ink, #14162b)" }}>
+                {isHindi ? "कोई परिणाम नहीं मिला" : "No matching categories found"}
+              </h3>
+              <p className="text-xs mb-4" style={{ color: "var(--mute, #6b7190)" }}>
+                {isHindi
+                  ? `"${searchQuery}" के लिए कोई श्रेणी नहीं मिली। लोकप्रिय विषय चुनें:`
+                  : `No categories match "${searchQuery}". Try popular topics:`}
+              </p>
+              <div className="flex flex-wrap justify-center gap-2">
+                {["India GK", "Science", "Sports", "History", "Cities"].map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => setSearchQuery(tag)}
+                    className="px-3 py-1.5 text-xs font-semibold rounded-full transition-all"
+                    style={{
+                      background: "var(--soft, #eef0ff)",
+                      color: "var(--pri, #4f46e5)",
+                      border: "1px solid rgba(79, 70, 229, 0.15)"
+                    }}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
-      )}
+      ) : (
+        <>
+          {/* 4. Daily Quiz Banner */}
+          <div
+            className="hero-daily-banner flex justify-between items-center p-4 rounded-2xl mb-4 text-white"
+            style={{
+              background:
+                "linear-gradient(135deg, var(--pri, #4f46e5), var(--pri2, #7c5cff))",
+              borderRadius: "20px",
+              padding: "16px",
+              boxShadow: "0 8px 24px rgba(79, 70, 229, 0.22)",
+            }}
+          >
+            <div>
+              <b className="text-base sm:text-lg font-bold block">
+                ⚡ {isHindi ? "दैनिक क्विज़" : "Daily Quiz"}
+              </b>
+              <p className="text-xs opacity-90 mt-0.5">
+                {isHindi ? "10 प्रश्न · 3 मिनट" : "10 questions · 3 mins"}
+              </p>
+            </div>
+            <Link
+              href="/daily-quiz"
+              className="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white text-indigo-600 active:scale-95 transition-transform"
+              style={{
+                border: 0,
+                background: "#ffffff",
+                color: "var(--pri, #4f46e5)",
+                font: "700 13px Poppins, sans-serif",
+                borderRadius: "12px",
+                padding: "10px 16px",
+                textDecoration: "none",
+                display: "inline-block",
+              }}
+            >
+              {isHindi ? "अभी खेलें" : "Play now"}
+            </Link>
+          </div>
 
-      {/* 7. Empty search state */}
-      {!hasResults && (
-        <div
-          className="py-12 text-center"
-          style={{ color: "var(--mute, #6b7190)" }}
-        >
-          <p className="text-sm font-medium">
-            {isHindi ? "कोई परिणाम नहीं मिला।" : "No match found."}
-          </p>
-        </div>
+          {/* 📚 My Books Section: India GK + Upcoming MP GK / UP GK */}
+          <MyBooksHomeSection isHindi={isHindi} />
+
+          {/* Quiz Arena compact card for Explorer (kept in position) */}
+          <ArenaPromptCard audience="explorer" className="mb-3" />
+
+          {/* Hot Quizzes Row (kept in position) */}
+          <div className="mb-4">
+            <HotQuizzesRow />
+          </div>
+
+          {/* 5. Play now Section: Live categories first */}
+          {liveCategories.length > 0 && (
+            <section className="mb-6">
+              <h2
+                className="flex items-center justify-between text-sm sm:text-base font-bold my-2 px-1"
+                style={{ color: "var(--ink, #14162b)" }}
+              >
+                <span>{isHindi ? "अभी खेलें" : "Play now"}</span>
+                <span
+                  className="text-xs font-semibold"
+                  style={{ color: "var(--mute, #6b7190)" }}
+                >
+                  {liveCategories.length} {isHindi ? "लाइव" : "live"}
+                </span>
+              </h2>
+              <div
+                className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"
+                style={{ gap: "12px" }}
+              >
+                {liveCategories.map((category) => (
+                  <CategoryCard
+                    key={category.slug}
+                    category={category}
+                    isHindi={isHindi}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* 6. Coming soon Section: The rest */}
+          {soonCategories.length > 0 && (
+            <section className="mb-6">
+              <h2
+                className="flex items-center justify-between text-sm sm:text-base font-bold my-2 px-1"
+                style={{ color: "var(--ink, #14162b)" }}
+              >
+                <span>{isHindi ? "जल्द आ रहा है" : "Coming soon"}</span>
+                <span
+                  className="text-xs font-semibold"
+                  style={{ color: "var(--mute, #6b7190)" }}
+                >
+                  {soonCategories.length} {isHindi ? "श्रेणियां" : "categories"}
+                </span>
+              </h2>
+              <div
+                className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"
+                style={{ gap: "12px" }}
+              >
+                {soonCategories.map((category) => (
+                  <CategoryCard
+                    key={category.slug}
+                    category={category}
+                    isHindi={isHindi}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+        </>
       )}
     </div>
   );

@@ -17,10 +17,26 @@ export async function GET(request, { params }) {
     // Determine if we should search by ID or Slug
     const isObjectId = id.length === 24 && /^[0-9a-fA-F]{24}$/.test(id);
     
+    // Resolve any potential database aliases for canonical categories
+    const candidateSlugs = [id];
+    if (id === "indian-history") candidateSlugs.push("india-history", "history-gk", "history");
+    if (id === "indian-geography") candidateSlugs.push("india-geography");
+    if (id === "indian-kingdoms") candidateSlugs.push("indian-kingdom-gk", "gulam-vansh");
+    if (id === "human-body") candidateSlugs.push("biology-gk", "life-sciences-biology");
+    if (id === "amazing-facts") candidateSlugs.push("fun-viral-quiz", "static-gk-trivia");
+    if (id === "animals-nature") candidateSlugs.push("animals-wildlife", "animals-birds");
+    if (id === "business-economy") candidateSlugs.push("money-business", "economy-gk");
+    if (id === "reasoning-brain-games") candidateSlugs.push("brain-riddles", "logical-analytical-reasoning");
+    if (id === "space-astronomy") candidateSlugs.push("space-universe");
+    if (id === "food-cuisine") candidateSlugs.push("food");
+    if (id === "indian-states-uts") candidateSlugs.push("indian-states-gk");
+    if (id === "religion-spirituality") candidateSlugs.push("religious-gk");
+    if (id === "science") candidateSlugs.push("general-science", "physics-gk", "chemistry-gk");
+
     const category = await prisma.category.findFirst({
       where: isObjectId 
-        ? { OR: [{ id }, { slug: id }] } 
-        : { slug: id },
+        ? { OR: [{ id }, { slug: { in: candidateSlugs } }] } 
+        : { slug: { in: candidateSlugs } },
       include: { 
         questions: metaOnly ? { select: { id: true } } : true 
       },
