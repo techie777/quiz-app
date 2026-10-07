@@ -22,40 +22,34 @@ export default function MyBooksHomeSection({ isHindi = false }) {
       id: "india-gk",
       title: isHindi ? "भारत सामान्य ज्ञान (India GK)" : "India General Knowledge (India GK)",
       subtitle: isHindi
-        ? "सिंधु घाटी सभ्यता, वैदिक काल, मौर्य साम्राज्य, नदियां, भूगोल, राजव्यवस्था एवं भारतीय संविधान का सम्पूर्ण डिजिटल अध्ययन।"
-        : "Indus Valley Civilization, Vedic Era, Maurya Empire, Rivers, Geography & Indian Constitution.",
+        ? "प्राचीन, मध्यकालीन व आधुनिक भारत, भूगोल एवं संविधान का अध्याय-वार अध्ययन।"
+        : "Ancient, Medieval & Modern India, Geography & Constitution.",
       cover: "/images/gk-book/india-gk-cover.jpg",
       bgGradient: "linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%)",
       glowColor: "rgba(245, 158, 11, 0.15)",
       badge: isHindi ? "लाइव उपलब्ध" : "Live Available",
-      stats: isHindi ? "5 विषय · 15+ अध्याय · 25+ पृष्ठ" : "5 Topics · 15+ Chapters · 25+ Pages",
       bookUrl: "/gk-book?book=india-gk",
       readUrl: "/gk-book/sindhu-ghati",
-      firstChapterTitle: isHindi ? "अध्याय 1: सिंधु घाटी सभ्यता" : "Ch 1: Indus Valley Civilization",
       features: [
-        isHindi ? "⚡ संक्षिप्त व विस्तृत नोट्स" : "⚡ Short & Full Modes",
-        isHindi ? "🎯 हर पृष्ठ पर क्विज़" : "🎯 Page Quiz Cards",
-        isHindi ? "✓ 100% फ्री" : "✓ 100% Free",
+        isHindi ? "⚡ अध्याय-वार नोट्स" : "⚡ Chapter Notes",
+        isHindi ? "🎯 अभ्यास क्विज़" : "🎯 Practice Quiz",
       ],
     },
     {
       id: "world-gk",
       title: isHindi ? "विश्व सामान्य ज्ञान (World GK)" : "World General Knowledge (World GK)",
       subtitle: isHindi
-        ? "ब्रह्मांड, सौरमंडल, विश्व के महाद्वीप व महासागर, अंतर्राष्ट्रीय सीमाएं तथा संयुक्त राष्ट्र (UN) व वैश्विक संगठन।"
-        : "Universe, Solar System, World Continents, Oceans, International Boundaries & United Nations (UN).",
+        ? "ब्रह्मांड, सौरमंडल, विश्व के महाद्वीप व वैश्विक संगठनों का विस्तृत अध्ययन।"
+        : "Universe, Solar System, Continents & Global Organizations.",
       cover: "/images/gk-book/world-gk-cover.jpg",
       bgGradient: "linear-gradient(135deg, #09203f 0%, #17365d 50%, #1e4a7a 100%)",
       glowColor: "rgba(56, 189, 248, 0.2)",
       badge: isHindi ? "लाइव उपलब्ध" : "Live Available",
-      stats: isHindi ? "2 विषय · 4 अध्याय · 12+ पृष्ठ" : "2 Topics · 4 Chapters · 12+ Pages",
       bookUrl: "/gk-book?book=world-gk",
       readUrl: "/gk-book?book=world-gk&chapter=solar-system&page=1",
-      firstChapterTitle: isHindi ? "अध्याय 1: सौरमंडल (Solar System)" : "Ch 1: The Solar System",
       features: [
-        isHindi ? "🌍 विश्व भूगोल व खगोलिकी" : "🌍 World Geography & Astronomy",
-        isHindi ? "🏛️ अंतर्राष्ट्रीय संगठन (UN/WTO)" : "🏛️ International Agencies",
-        isHindi ? "🎯 हर पृष्ठ पर क्विज़" : "🎯 Page Quiz Cards",
+        isHindi ? "🌍 विश्व भूगोल व खगोलिकी" : "🌍 World Geography",
+        isHindi ? "🎯 अभ्यास क्विज़" : "🎯 Practice Quiz",
       ],
     },
   ];
@@ -104,8 +98,8 @@ export default function MyBooksHomeSection({ isHindi = false }) {
             </h2>
             <p className="text-[11px] sm:text-xs" style={{ color: "var(--mute, #6b7190)" }}>
               {isHindi
-                ? "अध्याय दर अध्याय संरचित डिजिटल बुक्स · अनुक्रमणिका व स्व-मूल्यांकन क्विज़"
-                : "Structured chapter-by-chapter books with index & page-end quizzes"}
+                ? "अध्याय-वार संरचित नोट्स व स्व-मूल्यांकन क्विज़"
+                : "Structured chapter notes & self-assessment quizzes"}
             </p>
           </div>
         </div>
@@ -147,34 +141,26 @@ export default function MyBooksHomeSection({ isHindi = false }) {
                 style={{ background: book.glowColor }}
               />
 
-            <div>
-              <div className="flex items-start gap-3.5 sm:gap-4 mb-3 relative z-10">
-                {/* Book Cover Thumbnail - Always links to Index page */}
-                <Link
-                  href={book.bookUrl}
-                  className="w-24 sm:w-28 aspect-[3/4] rounded-xl overflow-hidden shadow-xl border border-white/20 shrink-0 transform hover:scale-105 transition-transform bg-slate-900 group relative block"
-                  title={isHindi ? `${book.title} की अनुक्रमणिका (Index) खोलें` : `Open ${book.title} Index`}
-                >
-                  <img
-                    src={book.cover}
-                    alt={book.title}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-1">
-                    <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-400 text-slate-950">
-                      {isHindi ? "अनुक्रमणिका" : "Index"}
-                    </span>
-                  </div>
-                </Link>
+              <div>
+                <div className="flex items-start gap-3.5 sm:gap-4 mb-3 relative z-10">
+                  {/* Book Cover Thumbnail - Clean 3D shadow with no yellow overlay */}
+                  <Link
+                    href={book.bookUrl}
+                    className="w-24 sm:w-28 aspect-[3/4] rounded-xl overflow-hidden shadow-xl border border-white/20 shrink-0 transform hover:scale-105 transition-transform bg-slate-900 block"
+                    title={isHindi ? `${book.title} खोलें` : `Open ${book.title}`}
+                  >
+                    <img
+                      src={book.cover}
+                      alt={book.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </Link>
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-1.5 mb-1">
-                      <span className="px-2 py-0.5 rounded-full text-[9.5px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
                         ✓ {book.badge}
-                      </span>
-                      <span className="px-1.5 py-0.5 rounded-full text-[9.5px] font-bold bg-white/10 text-slate-200">
-                        {book.stats}
                       </span>
                     </div>
 
@@ -186,14 +172,14 @@ export default function MyBooksHomeSection({ isHindi = false }) {
                         {book.title}
                       </h3>
                     </Link>
-                    <p className="text-[11.5px] text-slate-200/90 line-clamp-2 leading-snug mb-2">
+                    <p className="text-[11.5px] sm:text-xs text-slate-200/90 line-clamp-2 leading-relaxed mb-2.5">
                       {book.subtitle}
                     </p>
 
-                    {/* Feature pills */}
-                    <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-slate-200/80">
+                    {/* Feature micro-pills */}
+                    <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-slate-200/90">
                       {book.features.map((feat, fIdx) => (
-                        <span key={fIdx} className="bg-black/20 px-1.5 py-0.5 rounded">
+                        <span key={fIdx} className="bg-white/10 px-2 py-0.5 rounded-md border border-white/10">
                           {feat}
                         </span>
                       ))}
@@ -202,22 +188,14 @@ export default function MyBooksHomeSection({ isHindi = false }) {
                 </div>
               </div>
 
-              {/* Action buttons - both lead to Index page */}
-              <div className="flex items-center gap-2 pt-2 border-t border-white/10 relative z-10 mt-auto">
+              {/* Single Clean Prominent Action CTA Button */}
+              <div className="pt-2.5 border-t border-white/10 relative z-10 mt-2">
                 <Link
                   href={book.bookUrl}
-                  className="flex-1 px-3 py-2 rounded-xl text-xs font-bold bg-amber-400 hover:bg-amber-300 text-slate-950 flex items-center justify-center gap-1 shadow-md transition-all active:scale-95"
+                  className="w-full px-4 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-amber-400 via-amber-500 to-orange-400 hover:from-amber-300 hover:to-orange-300 text-slate-950 flex items-center justify-center gap-2 shadow-md shadow-amber-500/20 transition-all active:scale-98"
                 >
-                  <span>{isHindi ? "📖 अनुक्रमणिका (Index) खोलें" : "📖 Open Book Index"}</span>
-                  <ArrowRight size={13} />
-                </Link>
-
-                <Link
-                  href={book.bookUrl}
-                  className="px-3 py-2 rounded-xl text-xs font-bold bg-white/15 hover:bg-white/20 text-white flex items-center justify-center gap-1 border border-white/20 transition-all active:scale-95"
-                  title={isHindi ? "अध्याय सूची देखें" : "View Chapter List"}
-                >
-                  <span>{isHindi ? "अध्याय सूची" : "Chapters"}</span>
+                  <span>{isHindi ? "📖 पुस्तक पढ़ें (Read Book)" : "📖 Read Book"}</span>
+                  <ArrowRight size={14} />
                 </Link>
               </div>
             </div>
@@ -242,12 +220,12 @@ export default function MyBooksHomeSection({ isHindi = false }) {
       {/* Upcoming State Books: Single-row horizontal scrollable strip (MP, UP, Rajasthan GK) */}
       <div className="mt-1">
         <div className="flex items-center justify-between mb-2 px-1">
-          <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+          <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
             <span>🏛️</span>
-            <span>{isHindi ? "राज्य सामान्य ज्ञान (शीघ्र आ रहा है)" : "State GK Books (Upcoming)"}</span>
+            <span>{isHindi ? "राज्य सामान्य ज्ञान (State GK)" : "State GK Books"}</span>
           </span>
-          <span className="text-[10px] text-slate-400">
-            {isHindi ? "दाएं स्वाइप करें →" : "Swipe right →"}
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">
+            {isHindi ? "शीघ्र आ रहा है" : "Coming Soon"}
           </span>
         </div>
 
@@ -262,23 +240,18 @@ export default function MyBooksHomeSection({ isHindi = false }) {
                 boxShadow: "0 2px 8px rgba(0,0,0,0.03)",
               }}
             >
-              {/* Book Cover Thumbnail */}
-              <div className="w-14 sm:w-16 aspect-[3/4] rounded-lg overflow-hidden shadow-md border border-slate-200 dark:border-slate-800 shrink-0 bg-slate-100 dark:bg-slate-800 relative">
+              {/* Book Cover Thumbnail - Clean artwork with NO yellow overlay */}
+              <div className="w-14 sm:w-16 aspect-[3/4] rounded-lg overflow-hidden shadow-md border border-slate-200 dark:border-slate-800 shrink-0 bg-slate-100 dark:bg-slate-800">
                 <img
                   src={book.cover}
                   alt={book.title}
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
-                  <span className="text-[8.5px] font-black uppercase px-1 py-0.5 rounded bg-amber-400/90 text-slate-950">
-                    {book.badge}
-                  </span>
-                </div>
               </div>
 
               {/* Info */}
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1 mb-0.5">
+                <div className="flex items-center gap-1 mb-1">
                   <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
                     ⏳ {book.badge}
                   </span>
@@ -291,7 +264,7 @@ export default function MyBooksHomeSection({ isHindi = false }) {
                   {book.title}
                 </h4>
                 <p
-                  className="text-[11px] line-clamp-1 leading-normal mb-1.5"
+                  className="text-[11px] line-clamp-1 leading-normal mb-1"
                   style={{ color: "var(--mute, #6b7190)" }}
                 >
                   {book.subtitle}

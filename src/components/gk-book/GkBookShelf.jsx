@@ -153,44 +153,17 @@ export default function GkBookShelf({ onSelectBook, onSelectChapter }) {
           </span>
         </div>
 
-        {/* Hero Section */}
+        {/* Clean, Clutter-Free Hero Section */}
         <div className={styles.shelfHero}>
           <span className={styles.shelfHeroTag}>
-            📖 डिजिटल पुस्तकालय · Digital Library
+            📖 डिजिटल पुस्तकालय
           </span>
           <h1 className={styles.shelfHeroTitle}>
             मेरी डिजिटल पुस्तकें (My Books)
           </h1>
           <p className={styles.shelfHeroDesc}>
-            अध्याय दर अध्याय संरचित डिजिटल बुक्स — विस्तृत व संक्षिप्त नोट्स, महत्वपूर्ण तथ्य और प्रत्येक अध्याय के अंत में स्व-मूल्यांकन क्विज़।
+            अध्याय-वार संरचित नोट्स, महत्वपूर्ण तथ्य और अभ्यास क्विज़।
           </p>
-
-          <div className={styles.shelfStatsRow}>
-            <div className={styles.shelfStatsItem}>
-              <span>📚</span>
-              <span>
-                कुल पुस्तकें: <b className={styles.shelfStatsNum}>{BOOKS_CATALOG.length}</b>
-              </span>
-            </div>
-            <div className={styles.shelfStatsItem}>
-              <span>⚡</span>
-              <span>
-                लाइव पुस्तकें: <b className={styles.shelfStatsNum} style={{ color: "var(--ok)" }}>2</b>
-              </span>
-            </div>
-            <div className={styles.shelfStatsItem}>
-              <span>📝</span>
-              <span>
-                कुल अध्याय: <b className={styles.shelfStatsNum}>100+</b>
-              </span>
-            </div>
-            <div className={styles.shelfStatsItem}>
-              <span>🎯</span>
-              <span>
-                स्व-मूल्यांकन: <b className={styles.shelfStatsNum}>हर पृष्ठ पर क्विज़</b>
-              </span>
-            </div>
-          </div>
         </div>
 
         {/* 1.1 SMART RESUME BANNER: "जहां छोड़ा था वहीं से शुरू करें" */}
@@ -416,8 +389,8 @@ export default function GkBookShelf({ onSelectBook, onSelectChapter }) {
                       </div>
                     )}
 
-                    {/* Stats */}
-                    {book.stats && (
+                    {/* Stats - Only for live books */}
+                    {isLive && book.stats && (
                       <div
                         className={styles.mutedText}
                         style={{ fontSize: "12px", marginBottom: "14px" }}
@@ -458,7 +431,7 @@ export default function GkBookShelf({ onSelectBook, onSelectChapter }) {
                         </>
                       ) : (
                         <button type="button" disabled className={styles.bookBtnDisabled}>
-                          <span>⏳ {book.badgeLabel} (Coming Soon)</span>
+                          <span>⏳ {book.badgeLabel}</span>
                         </button>
                       )}
                     </div>
