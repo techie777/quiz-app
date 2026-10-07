@@ -243,19 +243,34 @@ export default function BottomNavBar() {
                     e.preventDefault();
                     openPlayMenu();
                   }}
-                  title={label}
-                  className="group relative -top-4 sm:-top-5 focus:outline-none min-w-[52px] min-h-[52px] flex items-center justify-center cursor-pointer bg-transparent border-0"
+                  className="group relative -top-5 sm:-top-6 focus:outline-none min-w-[56px] min-h-[56px] flex items-center justify-center cursor-pointer bg-transparent border-0"
                   aria-label={label}
                 >
+                  {/* Ambient Breathing Pulse Glow */}
+                  <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-violet-600 via-purple-500 to-indigo-600 blur-md opacity-60 group-hover:opacity-100 transition-opacity animate-pulse pointer-events-none" />
+
                   <motion.div
-                    whileTap={{ scale: 0.94 }}
+                    whileHover={{ scale: 1.08 }}
+                    whileTap={{ scale: 0.92 }}
                     transition={{ type: "spring", stiffness: 450, damping: 25 }}
-                    className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-2xl sm:rounded-full bg-gradient-to-tr from-[#6366F1] to-[#8B5CF6] flex flex-col items-center justify-center text-white ring-4 ring-white dark:ring-slate-900 shadow-lg shadow-indigo-500/30 transition-transform"
+                    className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-[#7C3AED] via-[#6366F1] to-[#4F46E5] flex flex-col items-center justify-center text-white ring-4 ring-white dark:ring-slate-900 shadow-xl shadow-purple-600/40 border border-purple-300/30 overflow-hidden cursor-pointer"
                   >
-                    <span className="text-xl sm:text-2xl leading-none">
-                      {item.emoji || "▶"}
-                    </span>
-                    <span className="text-[10px] font-black uppercase tracking-wider mt-0.5 leading-none">
+                    {/* Top glass reflection highlight */}
+                    <div className="absolute -top-3 inset-x-0 h-6 bg-gradient-to-b from-white/40 to-transparent rounded-full pointer-events-none" />
+
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-white/20 backdrop-blur-xs mb-0.5 shadow-inner">
+                      <svg
+                        width="13"
+                        height="13"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        className="translate-x-0.5 drop-shadow-sm text-white"
+                      >
+                        <polygon points="5 3 19 12 5 21 5 3" />
+                      </svg>
+                    </div>
+
+                    <span className="text-[10px] sm:text-[10.5px] font-black uppercase tracking-wider leading-none text-white drop-shadow-xs">
                       {shortLabel}
                     </span>
                   </motion.div>

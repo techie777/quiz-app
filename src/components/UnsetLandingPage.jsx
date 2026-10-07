@@ -157,9 +157,9 @@ export default function UnsetLandingPage() {
     },
     {
       id: TIERS.ADULTS,
-      name: isHindi ? "एक्सप्लोरर" : "Explorer",
-      tagline: isHindi ? "जीके व परीक्षा" : "GK & Exams",
-      badge: "FOR EVERYONE",
+      name: isHindi ? "सामान्य ज्ञान" : "GK Hub",
+      tagline: isHindi ? "40+ और भी अन्य क्विज़" : "40+ More Quizzes",
+      badge: "POPULAR",
       icon: Compass,
       iconBg: "bg-indigo-100 text-indigo-600",
       badgeBg: "bg-indigo-100 text-indigo-800 border-indigo-200/80",
@@ -168,8 +168,8 @@ export default function UnsetLandingPage() {
     },
     {
       id: TIERS.ARENA,
-      name: isHindi ? "क्विज़ एरिना" : "Quiz Arena",
-      tagline: isHindi ? "कस्टम क्विज़" : "Custom Quizzes",
+      name: isHindi ? "GK टेस्ट इंजन" : "GK Test Engine",
+      tagline: isHindi ? "कस्टम टेस्ट अभ्यास" : "Custom Test Engine",
       badge: "NEW",
       icon: Zap,
       iconBg: "bg-violet-100 text-violet-600",
@@ -187,20 +187,25 @@ export default function UnsetLandingPage() {
       <div className="w-full min-h-[calc(100vh-70px)] px-4 py-4 sm:py-8 max-w-7xl mx-auto flex flex-col items-center select-none pb-20 relative z-10">
       {/* ── HERO SECTION ── */}
       <section className="w-full text-center max-w-3xl mx-auto mb-6 sm:mb-8">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200/80 text-indigo-600 text-xs font-bold uppercase tracking-wider mb-2.5">
-          <Sparkles size={13} className="fill-indigo-500" />
-          <span>{isHindi ? "बहुउद्देशीय क्विज़ व शिक्षा मंच" : "All-in-One Quiz & Learning Platform"}</span>
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800 text-amber-700 dark:text-amber-400 text-xs font-bold uppercase tracking-wider mb-2.5 shadow-2xs">
+          <Sparkles size={13} className="fill-amber-500" />
+          <span>{isHindi ? "🇮🇳 भारत का अपना निःशुल्क ज्ञान व क्विज़ मंच · 100% मुफ्त" : "India's Free Knowledge & Quiz Platform"}</span>
         </div>
 
-        <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-2">
-          {isHindi ? "आज कौन खेल रहा है?" : "Who's Playing Today?"}
+        <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-2">
+          {isHindi ? "सपनों को दें ज्ञान की उड़ान, हर दिन कुछ नया सीखें" : "Empowering Every Learner, Every Dream"}
         </h1>
 
-        <p className="text-xs sm:text-base text-slate-500 font-medium max-w-2xl mx-auto">
+        <p className="text-xs sm:text-base text-slate-600 dark:text-slate-300 font-medium max-w-2xl mx-auto leading-relaxed">
           {isHindi
-            ? "रोचक ट्रिविया, स्कूल की पढ़ाई या सरकारी परीक्षा मॉक टेस्ट — अपनी रुचि और आयु के अनुसार सही अनुभव चुनें।"
-            : "Fun rapid trivia, school curriculum revision, or competitive exam prep — choose your personalized experience to begin."}
+            ? "गाँव हो या शहर, स्कूल की पढ़ाई हो या प्रतियोगी परीक्षा का सपना — यहाँ हर दिन 10 मिनट का अभ्यास आपके भविष्य को नई दिशा दे सकता है।"
+            : "From school curriculum to competitive exams and lifelong curiosity — choose your personalized experience and learn for free every day."}
         </p>
+
+        {/* Emotional Motivation Strip */}
+        <div className="mt-2 text-xs font-semibold text-indigo-600 dark:text-indigo-400 italic">
+          {isHindi ? "✨ \"यहाँ हर सवाल सिर्फ एक प्रश्न नहीं, आपके सपनों को सच करने की एक मजबूत सीढ़ी है।\"" : "✨ Knowledge is the key to unlocking your true potential."}
+        </div>
 
         {/* Stats Strip */}
         <div className="mt-3.5 flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs sm:text-sm text-slate-600 font-semibold">
@@ -217,7 +222,7 @@ export default function UnsetLandingPage() {
           </span>
           <span className="text-slate-300">·</span>
           <span className="text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/80 font-bold text-xs">
-            {isHindi ? "हर दिन मुफ्त खेलें" : "Free to play every day"}
+            {isHindi ? "हर दिन 100% मुफ्त" : "Free to play every day"}
           </span>
           <span className="text-slate-300">·</span>
           <Link
@@ -293,7 +298,7 @@ export default function UnsetLandingPage() {
             </h2>
             <p className="text-xs text-slate-500 leading-relaxed mb-4">
               {isHindi
-                ? "रंगीन चित्र-टाइल्स, बिना टाइमर का तनाव और चमचमाते स्टार इनाम!"
+                ? "नन्हे कदमों की पहली उड़ान — रंगीन चित्र-टाइल्स, बिना टाइमर का तनाव और चमचमाते स्टार इनाम!"
                 : "Playful picture-tiles, 10-question sets, zero timer pressure & star stickers."}
             </p>
 
@@ -356,7 +361,7 @@ export default function UnsetLandingPage() {
             </h2>
             <p className="text-xs text-slate-500 leading-relaxed mb-4">
               {isHindi
-                ? "स्कूल विषय क्विज़, केबीसी-स्टाइल ट्रिविया, दैनिक स्ट्रीक और XP स्कोर!"
+                ? "मेहनत से संवरेगा आपका कल — स्कूल पाठ्यक्रम, बोर्ड परीक्षा रिवीज़न, दैनिक स्ट्रीक और आत्मविश्वास!"
                 : "Curriculum revision, KBC trivia, daily study streaks & XP progression."}
             </p>
 
@@ -413,11 +418,11 @@ export default function UnsetLandingPage() {
             </div>
 
             <h2 className="text-xl font-black text-slate-900 mb-1.5">
-              {isHindi ? "एक्सप्लोरर (Explorer)" : "Explorer"}
+              {isHindi ? "सामान्य ज्ञान (GK Hub)" : "Explorer (GK)"}
             </h2>
             <p className="text-xs text-slate-500 leading-relaxed mb-4">
               {isHindi
-                ? "ट्रिविया, सामान्य ज्ञान, करेंट अफेयर्स व परीक्षा"
+                ? "सपनों की सरकारी नौकरी और संपूर्ण ज्ञान — SSC, रेलवे, राज्य परीक्षाओं और ज्ञान संवर्धन का सच्चा साथी!"
                 : "Trivia, GK, Current Affairs & Exam Series"}
             </p>
 
@@ -472,11 +477,11 @@ export default function UnsetLandingPage() {
             </div>
 
             <h2 className="text-xl font-black text-slate-900 mb-1.5">
-              {isHindi ? "क्विज़ एरीना (Quiz Arena)" : "Quiz Arena"}
+              {isHindi ? "GK टेस्ट इंजन" : "GK Test Engine"}
             </h2>
             <p className="text-xs text-slate-500 leading-relaxed mb-4">
               {isHindi
-                ? "अपनी पसंद का क्विज़ बनाएं, कमजोर विषयों का अभ्यास करें और मुकाबला करें!"
+                ? "कस्टम क्विज़ इंजन — विषय, कठिनाई व टाइमर चुनकर लगातार प्रश्नों का असीमित अभ्यास करें!"
                 : "Build custom quiz challenges, filter categories, train weak spots & challenge friends."}
             </p>
 
@@ -507,7 +512,7 @@ export default function UnsetLandingPage() {
             type="button"
             className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-700 hover:to-pink-700 text-white font-bold text-sm shadow-md shadow-violet-500/20 flex items-center justify-center gap-2 group-hover:gap-3 transition-all"
           >
-            <span>{isHindi ? "एरीना में जाएं" : "Enter Quiz Arena"}</span>
+            <span>{isHindi ? "GK टेस्ट इंजन शुरू करें" : "Start GK Test Engine"}</span>
             <ArrowRight size={16} />
           </button>
         </div>

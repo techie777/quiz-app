@@ -18,6 +18,7 @@ import { EntitlementProvider } from "@/context/EntitlementContext";
 import LockedSetBottomSheet from "@/components/monetization/LockedSetBottomSheet";
 import RewardedAdModal from "@/components/monetization/RewardedAdModal";
 import AgeGateModal from "@/components/monetization/AgeGateModal";
+import GlobalTouchFeedback from "@/components/GlobalTouchFeedback";
 
 function ProgressSyncHandler() {
   const { data: session, status } = useSession();
@@ -88,6 +89,7 @@ export default function Providers({ children }) {
                 <LockedSetBottomSheet />
                 <RewardedAdModal />
                 <AgeGateModal />
+                <GlobalTouchFeedback />
               </UIProvider>
             </EntitlementProvider>
           </TierProvider>

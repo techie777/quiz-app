@@ -100,10 +100,10 @@ export const TIER_CONFIG = {
   },
   arena: {
     id: "arena",
-    label: "Quiz Arena",
-    labelHi: "क्विज़ एरीना",
-    shortLabel: "Arena",
-    shortLabelHi: "एरीना",
+    label: "GK Test Engine",
+    labelHi: "GK टेस्ट इंजन",
+    shortLabel: "GK Test Engine",
+    shortLabelHi: "GK टेस्ट इंजन",
     tagline: "Build Your Own Custom Quiz",
     taglineHi: "अपना कस्टमाइज़्ड क्विज़ खुद बनाएं",
     ageRange: "All levels",
@@ -116,16 +116,16 @@ export const TIER_CONFIG = {
     glowColor: "rgba(139, 92, 246, 0.3)",
     gradient: "linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)",
     greeting: {
-      en: "Quiz Arena ⚡",
-      hi: "क्विज़ एरीना ⚡",
+      en: "GK Test Engine ⚡",
+      hi: "GK टेस्ट इंजन ⚡",
     },
     subtitle: {
-      en: "Build your custom quiz, train weak topics and compete with friends.",
-      hi: "अपनी पसंद का क्विज़ बनाएं, कमजोर विषयों का अभ्यास करें और मुकाबला करें।",
+      en: "Build your custom quiz, train weak topics and practice continuously.",
+      hi: "अपनी पसंद का क्विज़ बनाएं, कमजोर विषयों का अभ्यास करें और लगातार टेस्ट दें।",
     },
     badge: {
-      en: "Custom Arena",
-      hi: "कस्टम एरीना",
+      en: "GK Test Engine",
+      hi: "GK टेस्ट इंजन",
     },
   },
 };

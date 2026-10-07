@@ -16,6 +16,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import {
   BookOpen,
   MoreHorizontal,
+  Settings,
   Users,
   Volume2,
   VolumeX,
@@ -835,12 +836,8 @@ function QuizEngineContent() {
         const next = prev + 1;
         if (next >= 5) {
           setMascotState('celebrate');
-          setShowStreakToast(true);
         } else {
           setMascotState('correct');
-          if (next >= 3) {
-            setShowStreakToast(true);
-          }
         }
         return next;
       });
@@ -943,7 +940,7 @@ function QuizEngineContent() {
 
   // Task 3.6: Themed loading screen with animations
   if (status === "idle" || !questions || questions.length === 0) {
-    const loadingText = language === "hi" ? "प्रश्नोत्तरी लोड हो रही है..." : "Loading Quiz Arena...";
+    const loadingText = language === "hi" ? "प्रश्नोत्तरी लोड हो रही है..." : "Loading GK Test Engine...";
     const subText = language === "hi" ? "प्रश्नों को तैयार और शफल किया जा रहा है" : "Preparing questions & shuffling options...";
     return (
       <div className={`min-h-screen w-full flex flex-col items-center justify-center p-4 transition-all duration-500 ${themeClasses[engineTheme] || themeClasses.indigo}`}>
@@ -1041,26 +1038,6 @@ function QuizEngineContent() {
               </div>
 
               <div className={styles.topCenter} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexShrink: 0 }}>
-                {mascot && (
-                  <div className="shrink-0 flex items-center justify-center cursor-pointer" title={`${mascot.name} - Tap to hear voice`}>
-                    <MascotPlayer
-                      characterId={mascot.id}
-                      state={mascotState}
-                      size={38}
-                      isMuted={true}
-                      allowAudioClick={true}
-                      speechText={mascot.dialogues[mascotState === 'correct' ? 'clapping' : mascotState === 'wrong' ? 'disappointed' : mascotState === 'celebrate' ? 'celebrating' : mascotState] || mascot.dialogues.idle}
-                      language={language}
-                      onStateComplete={(completed) => {
-                        if (completed === 'correct' || completed === 'wrong' || completed === 'celebrate') {
-                          if (!showExplanation) {
-                            setMascotState('idle');
-                          }
-                        }
-                      }}
-                    />
-                  </div>
-                )}
                 {tier !== "kids" && timerSetting > 0 && status === "active" && currentQuestion && (
                   <div className="shrink-0 flex items-center">
                     <QuizTimerComponent
@@ -1106,17 +1083,17 @@ function QuizEngineContent() {
                     <span className={styles.lifelineLabel}>50:50</span>
                   </button>
 
-                  {/* More Menu (•••) */}
+                  {/* Settings Menu Button */}
                   <div className={styles.moreMenuContainer} ref={moreMenuRef}>
                     <button
                       type="button"
                       className={`${styles.moreMenuBtn} ${showMoreMenu ? styles.active : ""}`}
                       onClick={() => setShowMoreMenu(prev => !prev)}
-                      title="More options"
-                      aria-label="More options"
+                      title={language === "hi" ? "सेटिंग्स" : "Settings"}
+                      aria-label="Settings"
                       aria-expanded={showMoreMenu}
                     >
-                      <MoreHorizontal size={20} />
+                      <Settings size={18} />
                     </button>
 
                     {showMoreMenu && (
@@ -1241,10 +1218,6 @@ function QuizEngineContent() {
                   <span>{language === "hi" ? "रीड मोड" : "Read"}</span>
                 </button>
               </div>
-
-              <div className="text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 bg-slate-100/90 dark:bg-slate-800/80 px-2.5 py-1 rounded-xl border border-slate-200/80 dark:border-slate-700/50">
-                {language === "hi" ? `सेट ${selectedSetIndex || setQueryParam || 1}` : `Set ${selectedSetIndex || setQueryParam || 1}`}
-              </div>
             </div>
 
             {/* Mode Content: Read Mode OR Flashcard Deck OR Timed Quiz */}
@@ -1284,6 +1257,12 @@ function QuizEngineContent() {
                       onAnswer={handleSubmitAnswer}
                       favouriteIds={favouriteIds}
                       quizId={params?.id}
+                      categoryName={
+                        category?.topic ||
+                        (category ? (language === "hi" ? category.nameHi || category.name : category.name || category.nameHi) : "") ||
+                        mixedSectionName ||
+                        ""
+                      }
                       disabled={isPaused || showStory || status === "finished"}
                       userAnswer={currentQuestion.userAnswer}
                       showHint={showHint}
@@ -1511,6 +1490,35 @@ function QuizEngineContent() {
 
               <button
                 type="button"
+                onClick={() => {
+                  setShowMidQuizGate(false);
+                  setMidQuizPassed(true);
+                  if (resumeQuiz) resumeQuiz();
+                  goToQuestion(currentIndex + 1);
+                }}
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  background: "#F1F5F9",
+                  color: "#334155",
+                  border: "1px solid #CBD5E1",
+                  borderRadius: "12px",
+                  fontWeight: 600,
+                  fontSize: "13px",
+                  cursor: "pointer",
+                  minHeight: "40px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "6px",
+                }}
+              >
+                <span>⏩</span>
+                <span>{language === "hi" ? "विज्ञापन छोड़ें और आगे बढ़ें" : "Skip Ad & Continue Quiz"}</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={confirmExitQuiz}
                 style={{
                   background: "none",
@@ -1526,17 +1534,6 @@ function QuizEngineContent() {
             </div>
           </div>
         </div>
-      )}
-
-      {/* Mascot Streak Celebration Toast */}
-      {showStreakToast && (
-        <MascotStreakToast
-          streak={consecutiveStreak}
-          categoryOrSlug={category || params?.id}
-          tier={tier}
-          soundEnabled={soundEnabled}
-          onDismiss={() => setShowStreakToast(false)}
-        />
       )}
 
       {/* Result Rewarded Ad Gate */}

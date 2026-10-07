@@ -86,6 +86,60 @@ export default function Footer() {
   const isStaticPage = STATIC_PAGE_ROUTES.some((route) => pathname === route || pathname?.startsWith(`${route}/`));
   const isFullFooterPage = isMasterLandingPage || isStaticPage;
 
+  // --- Dynamic SEO Data Logic (Must be called unconditionally before any early return) ---
+  const dynamicSEOData = useMemo(() => {
+    // Curated high-relevance fallbacks in case quizzes are loading or not yet cached
+    const fallbackCategories = [
+      { id: "india-gk", topic: isHindi ? "भारत सामान्य ज्ञान" : "India GK", slug: "india-gk", count: 120 },
+      { id: "world-gk", topic: isHindi ? "विश्व सामान्य ज्ञान" : "World GK", slug: "world-gk", count: 80 },
+      { id: "indian-history", topic: isHindi ? "भारतीय इतिहास" : "Indian History", slug: "indian-history", count: 95 },
+      { id: "indian-geography", topic: isHindi ? "भारतीय भूगोल" : "Indian Geography", slug: "indian-geography", count: 70 },
+      { id: "science", topic: isHindi ? "सामान्य विज्ञान" : "Science GK", slug: "science", count: 85 },
+      { id: "sports", topic: isHindi ? "खेलकूद" : "Sports Trivia", slug: "sports", count: 60 },
+      { id: "technology", topic: isHindi ? "कंप्यूटर व तकनीक" : "Technology", slug: "technology", count: 50 },
+      { id: "entertainment", topic: isHindi ? "मनोरंजन व सिनेमा" : "Entertainment", slug: "entertainment", count: 45 },
+      { id: "indian-states-uts", topic: isHindi ? "भारतीय राज्य" : "Indian States", slug: "indian-states-uts", count: 65 },
+      { id: "space-astronomy", topic: isHindi ? "अंतरिक्ष व खगोल" : "Space & Astronomy", slug: "space-astronomy", count: 40 },
+    ];
+
+    const source = Array.isArray(quizzes) && quizzes.length > 0
+      ? quizzes.filter((q) => !q.hidden)
+      : fallbackCategories;
+
+    const getCount = (q) =>
+      q.questionCount ??
+      q.count ??
+      q.questionsCount ??
+      q._count?.questions ??
+      (Array.isArray(q.questions) ? q.questions.length : 0);
+
+    // 1. Top 8-10 Popular Categories (by question count)
+    const popular = [...source]
+      .sort((a, b) => getCount(b) - getCount(a))
+      .slice(0, 8)
+      .map((q) => ({
+        id: q.id || q.slug,
+        label: `${q.topicHi && isHindi ? q.topicHi : q.topic || q.name} ${isHindi ? "क्विज़" : "Quiz"}`,
+        href: `/category/${q.slug || q.id}`,
+      }));
+
+    // 2. 6 Most Recent Additions
+    const recent = [...source]
+      .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+      .slice(0, 6)
+      .map((q) => ({
+        id: q.id || q.slug,
+        label: q.topicHi && isHindi ? q.topicHi : q.topic || q.name,
+        href: `/category/${q.slug || q.id}`,
+      }));
+
+    // 3. SEO Tag Cloud
+    const allTopics = source.map((q) => (q.topicHi && isHindi ? q.topicHi : q.topic || q.name)).filter(Boolean);
+    const tags = Array.from(new Set(allTopics)).sort().slice(0, 16);
+
+    return { popular, recent, tags };
+  }, [quizzes, isHindi]);
+
   // Hub/SEO pages get a slim one-line footer (Privacy · Terms · Support)
   if (!isFullFooterPage) {
     return (
@@ -111,31 +165,6 @@ export default function Footer() {
     typeof settings?.footerBrandDesc === "string" && settings.footerBrandDesc.trim()
       ? settings.footerBrandDesc
       : t("footer.brandDesc");
-
-  // --- Dynamic SEO Data Logic ---
-  const dynamicSEOData = useMemo(() => {
-    if (!quizzes || quizzes.length === 0) return { popular: [], recent: [], tags: [] };
-
-    const activeQuizzes = quizzes.filter((q) => !q.hidden && q.questions && q.questions.length > 0);
-
-    // 1. Top 10 Popular Categories (by question count)
-    const popular = [...activeQuizzes]
-      .sort((a, b) => (b.questions?.length || 0) - (a.questions?.length || 0))
-      .slice(0, 10)
-      .map((q) => ({ id: q.id, label: `${q.topic} ${isHindi ? "क्विज़" : "Quiz"}`, href: `/category/${q.slug || q.id}` }));
-
-    // 2. 6 Most Recent Challenges
-    const recent = [...activeQuizzes]
-      .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
-      .slice(0, 6)
-      .map((q) => ({ id: q.id, label: q.topic, href: `/category/${q.slug || q.id}` }));
-
-    // 3. SEO Tag Cloud
-    const allTopics = activeQuizzes.map((q) => q.topic);
-    const tags = Array.from(new Set(allTopics)).sort().slice(0, 20);
-
-    return { popular, recent, tags };
-  }, [quizzes, isHindi]);
 
   return (
     <footer className={styles.footer}>

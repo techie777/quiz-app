@@ -59,7 +59,7 @@ export default function OnboardingGuideModal({ isOpen, onClose }) {
     },
     {
       id: "arena",
-      title: isHindi ? "4. क्विज़ एरिना (Quiz Arena)" : "4. Quiz Arena (Custom Engine)",
+      title: isHindi ? "4. GK टेस्ट इंजन (GK Test Engine)" : "4. GK Test Engine",
       desc: isHindi
         ? "अपनी पसंद का क्विज़ बनाएं: श्रेणियां, प्रश्नों की संख्या, कठिनाई स्तर और टाइमर खुद सेट करें।"
         : "Build your own custom quiz: pick categories, question count, difficulty, and timer in 2 taps.",

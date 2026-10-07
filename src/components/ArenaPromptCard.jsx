@@ -29,7 +29,7 @@ export default function ArenaPromptCard({ audience = "all", className = "" }) {
           <div>
             <div className="flex items-center gap-2 mb-0.5">
               <span className="text-sm sm:text-base font-extrabold text-[#1E1B4B] tracking-tight">
-                {isHindi ? "क्विज़ एरिना" : "Quiz Arena"}
+                {isHindi ? "GK टेस्ट इंजन" : "GK Test Engine"}
               </span>
               <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#EDE9FE] text-[#6D28D9] border border-violet-200/60">
                 {isHindi ? "नया" : "NEW"}

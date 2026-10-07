@@ -159,3 +159,62 @@ export function playTickerSound() {
   // A short, high-pitched "tick" sound
   playTone(880, 0.05, "sine", 0.1);
 }
+
+/**
+ * Modern tactile touch/tap sound effect for buttons and links
+ */
+export function playTouchSound() {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    // Crisp, subtle modern UI tap (pleasant mechanical click/pop)
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(650, now);
+    osc.frequency.exponentialRampToValueAtTime(300, now + 0.035);
+
+    gain.gain.setValueAtTime(0.18, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.04);
+  } catch (e) {
+    // Graceful fallback
+  }
+}
+
+/**
+ * Haptic vibration feedback for mobile devices
+ */
+export function triggerHaptic(duration = 15) {
+  try {
+    if (typeof window !== "undefined" && typeof navigator !== "undefined" && "vibrate" in navigator) {
+      navigator.vibrate(duration);
+    }
+  } catch (e) {
+    // Ignore unsupported vibration
+  }
+}
+
+let lastTouchTime = 0;
+/**
+ * Combined touch voice/sound and vibration feedback for all links and buttons
+ */
+export function playTouchFeedback() {
+  const now = Date.now();
+  if (now - lastTouchTime < 45) return;
+  lastTouchTime = now;
+
+  playTouchSound();
+  triggerHaptic(15);
+}
+

@@ -8,6 +8,7 @@ export default function GkBookQuizCard({
   pageIndex = 0,
   questions = [],
   attempts = [],
+  pageAttempts,
   onRecordAttempt,
   onResetScore,
 }) {
@@ -19,25 +20,25 @@ export default function GkBookQuizCard({
   const [isCompleted, setIsCompleted] = useState(false);
   const [shuffledQuiz, setShuffledQuiz] = useState([]);
 
-  // Compute best score percentage and stars
-  const hasAttempted = Array.isArray(attempts) && attempts.length > 0;
+  // Support both pageAttempts and attempts props
+  const effectiveAttempts = (pageAttempts && pageAttempts.length > 0) ? pageAttempts : (attempts || []);
+  const hasAttempted = Array.isArray(effectiveAttempts) && effectiveAttempts.length > 0;
+  
   const bestPct = hasAttempted
-    ? Math.max(...attempts.map((a) => (a.t > 0 ? (a.s / a.t) * 100 : 0)))
+    ? Math.max(...effectiveAttempts.map((a) => (a.t > 0 ? (a.s / a.t) * 100 : 0)))
     : 0;
-  const lastAttempt = hasAttempted ? attempts[attempts.length - 1] : null;
+  const lastAttempt = hasAttempted ? effectiveAttempts[effectiveAttempts.length - 1] : null;
   const starCount = hasAttempted ? calculateStars(bestPct, 100) : 0;
 
   // Shuffle questions and options
   const handleStartQuiz = () => {
     if (!questions || questions.length === 0) return;
     
-    // Shuffle question list
     const qList = [...questions].sort(() => Math.random() - 0.5).map((q) => {
       const qText = typeof q.text === "string" ? q.text : q[0];
       const origOpts = Array.isArray(q.options) ? q.options : q[1] || [];
       const correctIdx = typeof q.answer === "number" ? q.answer : (typeof q[2] === "number" ? q[2] : 0);
       
-      // Pair options with their boolean correctness
       const optPairs = origOpts.map((text, idx) => ({
         text,
         isCorrect: idx === correctIdx,
@@ -75,10 +76,10 @@ export default function GkBookQuizCard({
       setSelectedOptionIndex(null);
       setIsAnswered(false);
     } else {
-      // Finished quiz
-      const finalScore = score + (selectedOptionIndex !== null && shuffledQuiz[currentQIndex]?.options[selectedOptionIndex]?.isCorrect ? 0 : 0);
+      const currentIsCorrect = selectedOptionIndex !== null && shuffledQuiz[currentQIndex]?.options[selectedOptionIndex]?.isCorrect;
+      const finalScore = score + (isAnswered ? 0 : (currentIsCorrect ? 1 : 0));
       const attemptData = {
-        s: finalScore,
+        s: score,
         t: shuffledQuiz.length,
         d: Date.now(),
       };
@@ -97,41 +98,62 @@ export default function GkBookQuizCard({
   };
 
   const handleReset = () => {
-    if (window.confirm("इस अध्याय का स्कोर रीसेट करें?")) {
+    if (window.confirm("क्या आप इस अध्याय का टेस्ट स्कोर रीसेट करना चाहते हैं?")) {
       if (onResetScore) onResetScore(pageIndex);
     }
   };
 
+  if (!questions || questions.length === 0) {
+    return null;
+  }
+
   return (
     <section className={styles.quizCard} aria-label="अध्याय क्विज़ कार्ड">
-      <b className={styles.quizCardTitle}>इस अध्याय का क्विज़</b>
-      
-      {/* Star display */}
-      <div className={styles.stars} aria-label={`${starCount} सितारे`}>
-        {"★".repeat(starCount) + "☆".repeat(3 - starCount)}
+      <div className={styles.quizCardHeader}>
+        <div className={styles.quizCardTitleRow}>
+          <span className={styles.quizCardBadge}>🎯 अध्याय टेस्ट</span>
+          <b className={styles.quizCardTitle}>त्वरित अभ्यास क्विज़</b>
+        </div>
+        
+        {/* Star rating display */}
+        <div className={styles.stars} aria-label={`${starCount} सितारे`}>
+          {"★".repeat(starCount) + "☆".repeat(3 - starCount)}
+        </div>
       </div>
 
-      {/* Meta text */}
-      <div className={styles.quizCardMeta}>
-        {hasAttempted
-          ? `बेस्ट ${Math.round(bestPct)}% · पिछला ${lastAttempt?.s}/${lastAttempt?.t} · ${attempts.length} प्रयास`
-          : "अभी तक खेला नहीं"}
+      {/* Score and Meta info */}
+      <div className={styles.quizCardBody}>
+        {hasAttempted ? (
+          <div className={styles.scoreRow}>
+            <div className={styles.scorePill}>
+              बेस्ट स्कोर: <span className="font-bold text-indigo-600 dark:text-indigo-400">{Math.round(bestPct)}%</span>
+            </div>
+            <div className={styles.scoreDetail}>
+              पिछला परिणाम: {lastAttempt?.s}/{lastAttempt?.t} ({effectiveAttempts.length} प्रयास)
+            </div>
+          </div>
+        ) : (
+          <div className={styles.scorePrompt}>
+            इस अध्याय के मुख्य बिंदुओं पर आधारित {questions.length} प्रश्न हल करें और अपनी समझ परखें।
+          </div>
+        )}
       </div>
 
       {/* Action buttons */}
       <div className={styles.quizCardRow}>
         <button
           type="button"
-          className={styles.btn}
+          className={styles.quizBtnPrimary}
           onClick={handleStartQuiz}
         >
-          {hasAttempted ? "फिर खेलें" : "क्विज़ खेलें"}
+          {hasAttempted ? "🔄 फिर से खेलें" : "🚀 क्विज़ शुरू करें"}
         </button>
         {hasAttempted && (
           <button
             type="button"
-            className={`${styles.btn} ${styles.btnSec}`}
+            className={styles.quizBtnSecondary}
             onClick={handleReset}
+            title="स्कोर रीसेट करें"
           >
             रीसेट
           </button>
@@ -144,10 +166,10 @@ export default function GkBookQuizCard({
           <div className={styles.overlayContent}>
             {!isCompleted ? (
               <div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                  <b style={{ fontSize: "15px" }}>
+                <div className={styles.overlayHeader}>
+                  <div className={styles.qCounter}>
                     प्रश्न {currentQIndex + 1} / {shuffledQuiz.length}
-                  </b>
+                  </div>
                   <button
                     type="button"
                     className={styles.iconBtn}
@@ -158,11 +180,19 @@ export default function GkBookQuizCard({
                   </button>
                 </div>
 
-                <h2 style={{ fontSize: "20px", margin: "16px 0", color: "var(--tx)", lineHeight: "1.4" }}>
+                {/* Progress bar */}
+                <div className={styles.quizProgressBar}>
+                  <div 
+                    className={styles.quizProgressFill} 
+                    style={{ width: `${((currentQIndex + 1) / shuffledQuiz.length) * 100}%` }}
+                  />
+                </div>
+
+                <h2 className={styles.qQuestionText}>
                   {shuffledQuiz[currentQIndex]?.question}
                 </h2>
 
-                <div style={{ margin: "14px 0" }}>
+                <div className={styles.qOptionsList}>
                   {shuffledQuiz[currentQIndex]?.options.map((opt, optIdx) => {
                     let optClass = styles.optionBtn;
                     if (isAnswered) {
@@ -178,8 +208,12 @@ export default function GkBookQuizCard({
                         type="button"
                         className={optClass}
                         onClick={() => handleSelectOption(optIdx)}
+                        disabled={isAnswered}
                       >
-                        {opt.text}
+                        <span className={styles.optLetter}>{String.fromCharCode(65 + optIdx)}</span>
+                        <span className="flex-1">{opt.text}</span>
+                        {isAnswered && opt.isCorrect && <span className="ml-2 font-bold text-green-600">✓</span>}
+                        {isAnswered && !opt.isCorrect && optIdx === selectedOptionIndex && <span className="ml-2 font-bold text-red-500">✗</span>}
                       </button>
                     );
                   })}
@@ -189,17 +223,17 @@ export default function GkBookQuizCard({
                   <div style={{ marginTop: "16px" }}>
                     <button
                       type="button"
-                      className={styles.btn}
+                      className={styles.quizBtnPrimary}
                       onClick={handleNextQuestion}
-                      style={{ width: "100%" }}
+                      style={{ width: "100%", justifyContent: "center" }}
                     >
-                      {currentQIndex < shuffledQuiz.length - 1 ? "आगे →" : "नतीजा देखें"}
+                      {currentQIndex < shuffledQuiz.length - 1 ? "अगला प्रश्न →" : "नतीजा देखें 🏆"}
                     </button>
                   </div>
                 )}
               </div>
             ) : (
-              <div style={{ textAlign: "center" }}>
+              <div style={{ textAlign: "center", padding: "10px 0" }}>
                 <div className={styles.bigScore}>
                   {score} / {shuffledQuiz.length}
                 </div>
@@ -208,15 +242,15 @@ export default function GkBookQuizCard({
                   const finalStars = calculateStars(score, shuffledQuiz.length);
                   return (
                     <>
-                      <div className={styles.stars} style={{ fontSize: "32px", textAlign: "center", margin: "8px 0" }}>
+                      <div className={styles.stars} style={{ fontSize: "36px", textAlign: "center", margin: "10px 0" }}>
                         {"★".repeat(finalStars) + "☆".repeat(3 - finalStars)}
                       </div>
-                      <p style={{ textAlign: "center", fontSize: "16px", margin: "12px 0 24px", fontWeight: "600" }}>
+                      <p style={{ textAlign: "center", fontSize: "16px", margin: "12px 0 24px", fontWeight: "600", color: "var(--tx)" }}>
                         {finalStars === 3
-                          ? "शानदार!"
+                          ? "🌟 शानदार प्रदर्शन! आप इस अध्याय में निपुण हो गए हैं!"
                           : finalStars >= 1
-                          ? "अच्छा प्रयास!"
-                          : "अध्याय दोबारा पढ़ें और फिर कोशिश करें।"}
+                          ? "👍 अच्छा प्रयास! थोड़ा और अभ्यास करें।"
+                          : "📖 अध्याय दोबारा पढ़ें और फिर से कोशिश करें।"}
                       </p>
                     </>
                   );
@@ -225,14 +259,14 @@ export default function GkBookQuizCard({
                 <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
                   <button
                     type="button"
-                    className={styles.btn}
+                    className={styles.quizBtnPrimary}
                     onClick={handleStartQuiz}
                   >
-                    फिर खेलें
+                    🔄 फिर खेलें
                   </button>
                   <button
                     type="button"
-                    className={`${styles.btn} ${styles.btnSec}`}
+                    className={styles.quizBtnSecondary}
                     onClick={handleCloseOverlay}
                   >
                     किताब पर लौटें

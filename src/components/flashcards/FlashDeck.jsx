@@ -300,7 +300,7 @@ export default function FlashDeck({
       </div>
 
       {/* External Controls */}
-      {controls && controls({ next, prev, isFlipped, flip, currentIndex })}
+      {controls && (typeof controls === "function" ? controls({ next, prev, isFlipped, flip, currentIndex }) : controls)}
     </>
   );
 }
