@@ -1,15 +1,44 @@
 .header {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 1100;
-  background: var(--bg-primary);
-  border-bottom: 1px solid var(--card-border);
+  background: rgba(237, 245, 252, 0.88);
+  border-bottom: 1px solid rgba(191, 219, 254, 0.45);
   height: 56px;
   width: 100%;
   max-width: 100%;
   display: flex;
   align-items: center;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:global([data-theme='dark']) .header {
+  background: rgba(11, 19, 43, 0.88);
+  border-bottom: 1px solid rgba(30, 41, 59, 0.6);
+}
+
+.header.scrolled {
+  background: rgba(245, 250, 255, 0.95);
+  box-shadow: 0 4px 20px -2px rgba(186, 230, 253, 0.35);
+  border-bottom-color: rgba(147, 197, 253, 0.4);
+}
+
+:global([data-theme='dark']) .header.scrolled {
+  background: rgba(14, 16, 32, 0.92);
+  box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.45);
+  border-bottom-color: rgba(99, 102, 241, 0.25);
+}
+
+.headerSpacer {
+  height: 56px;
+  width: 100%;
+  flex-shrink: 0;
 }
 
 .container {
@@ -106,6 +135,10 @@
 
 @media (max-width: 768px) {
   .header {
+    height: 52px;
+  }
+
+  .headerSpacer {
     height: 52px;
   }
 

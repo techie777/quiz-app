@@ -45,6 +45,14 @@ export const CATEGORY_SLUG_TO_FILE = {
   "travel-tourism": "travel.webp",
   "general-knowledge": "general-knowledge.webp",
   "current-affairs": "current-affairs.webp",
+  "human-body": "human-body.webp",
+  "amazing-facts": "amazing-facts.webp",
+  "india-history": "india-history.webp",
+  "india-geography": "india-geography.webp",
+  "animals-nature": "animals-nature.webp",
+  "space-universe": "space-universe.webp",
+  "brain-riddles": "brain-riddles.webp",
+  "food": "food.webp",
 };
 
 /**

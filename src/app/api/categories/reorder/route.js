@@ -16,5 +16,7 @@ export async function POST(request) {
     prisma.category.update({ where: { id }, data: { sortOrder: index } })
   );
   await prisma.$transaction(updates);
+  if (globalThis.__CATEGORY_CACHE__) globalThis.__CATEGORY_CACHE__.clear();
+  if (globalThis.__ADMIN_SETS_CACHE__) globalThis.__ADMIN_SETS_CACHE__.clear();
   return NextResponse.json({ success: true });
 }

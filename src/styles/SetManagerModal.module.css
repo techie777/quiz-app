@@ -1,0 +1,1263 @@
+/* ========================================================================= */
+/* Set Manager Modal Styles - Modern, Sleek & Clutter-Free                 */
+/* ========================================================================= */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal {
+  background: var(--bg-primary, #ffffff);
+  border: 1px solid var(--card-border, #e2e8f0);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 1180px;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+  from { transform: translateY(16px) scale(0.98); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* Modal Header */
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--card-border, #e2e8f0);
+  background: var(--bg-primary, #ffffff);
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.headerIcon {
+  font-size: 1.5rem;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+}
+
+.titleArea {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.modalTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary, #0f172a);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.targetBadge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.modalSubtitle {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #64748b);
+  margin: 0;
+}
+
+.closeBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--card-border, #e2e8f0);
+  background: transparent;
+  color: var(--text-secondary, #64748b);
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.closeBtn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+/* Modal Navigation Tabs */
+.tabBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 24px;
+  background: var(--bg-secondary, #f8fafc);
+  border-bottom: 1px solid var(--card-border, #e2e8f0);
+}
+
+.tabsGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tabBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary, #64748b);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tabBtn:hover {
+  color: var(--text-primary, #0f172a);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.tabBtnActive {
+  background: #ffffff;
+  color: #4f46e5;
+  border-color: #c7d2fe;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.tabBadge {
+  font-size: 0.72rem;
+  padding: 1px 6px;
+  border-radius: 99px;
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+/* Category Filter Bar */
+.filterBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.filterLabel {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary, #64748b);
+}
+
+.catSelect {
+  padding: 6px 10px;
+  font-size: 0.82rem;
+  border-radius: 6px;
+  border: 1px solid var(--card-border, #cbd5e1);
+  background: #ffffff;
+  color: var(--text-primary, #0f172a);
+  outline: none;
+  cursor: pointer;
+}
+
+/* Modal Body */
+.modalBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ------------------------------------------------------------------------- */
+/* Tab 1: Existing Sets Styles                                               */
+/* ------------------------------------------------------------------------- */
+
+.setsList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.setCard {
+  border: 1px solid var(--card-border, #e2e8f0);
+  border-radius: 12px;
+  background: var(--bg-primary, #ffffff);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+  transition: border-color 0.15s ease;
+}
+
+.setCard:hover {
+  border-color: #cbd5e1;
+}
+
+.setCardHidden {
+  opacity: 0.75;
+  background: #fafafa;
+}
+
+.isDragging {
+  opacity: 0.45;
+  border: 2px dashed #6366f1 !important;
+  transform: scale(0.99);
+}
+
+.dragOver {
+  border-top: 3px solid #6366f1 !important;
+}
+
+.dragHandle {
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 6px;
+  color: #94a3b8;
+  font-size: 1.15rem;
+  user-select: none;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.dragHandle:hover {
+  color: #4f46e5;
+  background: #eef2ff;
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+}
+
+.badgeNew {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #ffffff;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  padding: 2px 7px;
+  border-radius: 99px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.25);
+  letter-spacing: 0.02em;
+  animation: pulseGlow 2.5s infinite ease-in-out;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.dateTimeMeta {
+  font-size: 0.72rem;
+  color: #64748b;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f8fafc;
+  padding: 2px 7px;
+  border-radius: 5px;
+  border: 1px solid #e2e8f0;
+}
+
+.exportBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 9px;
+  border-radius: 6px;
+  border: 1px solid #c7d2fe;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.exportBtn:hover {
+  background: #e0e7ff;
+  border-color: #a5b4fc;
+}
+
+.exportAllBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 7px;
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.exportAllBtn:hover {
+  background: #dcfce7;
+  border-color: #86efac;
+}
+
+.setHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  cursor: pointer;
+  background: #ffffff;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.setHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.setIndexBadge {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #eef2ff;
+  color: #4338ca;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.88rem;
+  border: 1px solid #c7d2fe;
+}
+
+.setTitles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.setTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.setName {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary, #0f172a);
+}
+
+.setNameHi {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #64748b);
+}
+
+.setHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.diffStats {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.diffEasy {
+  color: #16a34a;
+  background: #dcfce7;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.diffMedium {
+  color: #d97706;
+  background: #fef3c7;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.diffHard {
+  color: #dc2626;
+  background: #fee2e2;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.diffExpert {
+  color: #7c3aed;
+  background: #ede9fe;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.qCountBadge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-secondary, #475569);
+  background: #f1f5f9;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.statusPublished {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #15803d;
+  background: #dcfce7;
+  padding: 3px 8px;
+  border-radius: 99px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.statusHidden {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #b45309;
+  background: #fef3c7;
+  padding: 3px 8px;
+  border-radius: 99px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.setActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.actionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 9px;
+  border-radius: 6px;
+  border: 1px solid var(--card-border, #cbd5e1);
+  background: #ffffff;
+  color: var(--text-primary, #0f172a);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.actionBtn:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.actionBtnDanger {
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+.actionBtnDanger:hover {
+  background: #fef2f2;
+  border-color: #f87171;
+}
+
+.toggleExpandBtn {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #64748b);
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+
+/* Questions Accordion Details */
+.questionsList {
+  border-top: 1px solid var(--card-border, #f1f5f9);
+  background: var(--bg-secondary, #f8fafc);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.questionItem {
+  background: #ffffff;
+  border: 1px solid var(--card-border, #e2e8f0);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.questionTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.questionNumber {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #6366f1;
+  background: #eef2ff;
+  padding: 2px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.questionText {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-primary, #0f172a);
+  flex: 1;
+}
+
+.questionMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.metaTag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.optionsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .optionsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.optionCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.84rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: var(--text-primary, #1e293b);
+}
+
+.optionCardCorrect {
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #15803d;
+  font-weight: 600;
+}
+
+.correctIcon {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+/* ------------------------------------------------------------------------- */
+/* Tab 2: Excel Copy-Paste Table Styles                                      */
+/* ------------------------------------------------------------------------- */
+
+.pasteContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Quick Instruction Banner */
+.instructionBanner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+}
+
+.bannerIcon {
+  font-size: 1.25rem;
+}
+
+.bannerContent {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.bannerTitle {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1e40af;
+}
+
+.bannerText {
+  font-size: 0.8rem;
+  color: #1e3a8a;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Target Selector Row */
+.targetConfigRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: #ffffff;
+  padding: 12px 16px;
+  border: 1px solid var(--card-border, #e2e8f0);
+  border-radius: 10px;
+}
+
+.targetFields {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.fieldGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fieldGroup label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary, #475569);
+}
+
+.fieldGroup select,
+.fieldGroup input {
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  border-radius: 6px;
+  border: 1px solid var(--card-border, #cbd5e1);
+  background: #ffffff;
+  color: var(--text-primary, #0f172a);
+}
+
+/* Big Interactive Paste Dropzone */
+.pasteDropzone {
+  border: 2px dashed #818cf8;
+  border-radius: 12px;
+  background: #faf5ff;
+  padding: 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.pasteDropzone:hover,
+.pasteDropzone:focus-within {
+  background: #f3e8ff;
+  border-color: #6366f1;
+}
+
+.pasteDropzoneIcon {
+  font-size: 2rem;
+}
+
+.pasteDropzoneTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #4338ca;
+  margin: 0;
+}
+
+.pasteDropzoneHint {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.hiddenTextarea {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+/* Parsed Stats Overview */
+.parsedStatsBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.statsLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.countStatusOk {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #15803d;
+  background: #dcfce7;
+  padding: 4px 10px;
+  border-radius: 99px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.countStatusWarn {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #b45309;
+  background: #fef3c7;
+  padding: 4px 10px;
+  border-radius: 99px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.statsRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.clearBtn {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.clearBtn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+/* Pre-formatted Interactive Table matching Excel format */
+.tableWrapper {
+  border: 1px solid var(--card-border, #e2e8f0);
+  border-radius: 10px;
+  overflow-x: auto;
+  background: #ffffff;
+  max-height: 480px;
+}
+
+.excelTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  text-align: left;
+}
+
+.excelTable thead {
+  position: sticky;
+  top: 0;
+  background: #f1f5f9;
+  z-index: 10;
+}
+
+.excelTable th {
+  padding: 10px 12px;
+  font-weight: 700;
+  color: #334155;
+  border-bottom: 2px solid #cbd5e1;
+  white-space: nowrap;
+}
+
+.excelTable td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #0f172a;
+  vertical-align: middle;
+}
+
+.excelTable tr:hover td {
+  background: #f8fafc;
+}
+
+.cellInput {
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  font-size: 0.82rem;
+  color: #0f172a;
+  font-family: inherit;
+}
+
+.cellInput:focus {
+  border-color: #6366f1;
+  background: #ffffff;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+}
+
+.tableDiffBadge {
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.diffSelect {
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.ansBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #dcfce7;
+  color: #15803d;
+  font-weight: 700;
+  font-size: 0.76rem;
+}
+
+.removeRowBtn {
+  background: transparent;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.removeRowBtn:hover {
+  background: #fee2e2;
+}
+
+/* Modal Footer */
+.modalFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  border-top: 1px solid var(--card-border, #e2e8f0);
+  background: #ffffff;
+}
+
+.footerLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--text-secondary, #64748b);
+}
+
+.footerRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cancelBtn {
+  padding: 8px 16px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  cursor: pointer;
+}
+
+.cancelBtn:hover {
+  background: #f1f5f9;
+}
+
+.submitBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 20px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  border-radius: 8px;
+  border: none;
+  background: #4f46e5;
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
+  transition: all 0.15s ease;
+}
+
+.submitBtn:hover {
+  background: #4338ca;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+}
+
+.submitBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Question & Tag Editing Styles */
+.editQBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.editQBtn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.editQForm {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.editQTextarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.editOptionsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .editOptionsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.editOptionRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+
+.editOptionRowCorrect {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.correctRadio {
+  cursor: pointer;
+}
+
+.editOptionInput {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.84rem;
+  color: #0f172a;
+}
+
+.editMetaRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.editSelect, .editInput {
+  padding: 6px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-family: inherit;
+  background: #ffffff;
+}
+
+.editActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.saveQBtn {
+  padding: 6px 14px;
+  background: #16a34a;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.saveQBtn:hover {
+  background: #15803d;
+}
+
+.cancelQBtn {
+  padding: 6px 12px;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cancelQBtn:hover {
+  background: #e2e8f0;
+}
+
+.tagChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f1f5f9;
+  color: #4338ca;
+  border: 1px solid #e0e7ff;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  padding: 1px 6px;
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------------------------- */
+/* Bulk Selection & Deletion Controls                                        */
+/* ------------------------------------------------------------------------- */
+
+.bulkActionBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 16px;
+  background: #f8faff;
+  border: 1px solid #e0e7ff;
+  border-radius: 12px;
+  margin-bottom: 6px;
+  box-shadow: 0 1px 3px rgba(99, 102, 241, 0.05);
+}
+
+.bulkActionLeft {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.selectAllLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.bulkCheckbox {
+  width: 18px;
+  height: 18px;
+  accent-color: #4f46e5;
+  cursor: pointer;
+}
+
+.selectAllText {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.totalBadge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6366f1;
+  background: #e0e7ff;
+  padding: 1px 7px;
+  border-radius: 99px;
+}
+
+.selectedCounter {
+  font-size: 0.8rem;
+  color: #3730a3;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+
+.bulkActionRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bulkDeselectBtn {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.bulkDeselectBtn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.bulkDeleteBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #ffffff;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
+  transition: all 0.15s ease;
+}
+
+.bulkDeleteBtn:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  box-shadow: 0 3px 10px rgba(239, 68, 68, 0.4);
+  transform: translateY(-1px);
+}
+
+.bulkDeleteBtn:active {
+  transform: translateY(0);
+}
+
+.bulkDeleteBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.setCardCheckbox {
+  width: 18px;
+  height: 18px;
+  accent-color: #4f46e5;
+  cursor: pointer;
+  margin-right: 4px;
+}
+
+.setCardSelected {
+  border-color: #6366f1 !important;
+  background: #f8faff !important;
+  box-shadow: 0 0 0 1.5px rgba(99, 102, 241, 0.3) !important;
+}
+

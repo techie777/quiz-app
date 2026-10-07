@@ -6,6 +6,7 @@ import OnboardingModal from "@/components/OnboardingModal";
 import TierSelectionModal from "@/components/TierSelectionModal";
 import SplashScreen from "@/components/SplashScreen";
 import OnboardingGuideModal from "@/components/OnboardingGuideModal";
+import PlayMenuModal from "@/components/PlayMenuModal";
 
 export default function GlobalModals() {
   const {
@@ -14,6 +15,8 @@ export default function GlobalModals() {
     isTutorialOpen,
     openTutorial,
     closeTutorial,
+    isPlayMenuOpen,
+    closePlayMenu,
   } = useUI();
 
   // On mount, if splash was already shown in this session but onboarding guide not seen yet
@@ -47,6 +50,10 @@ export default function GlobalModals() {
       <OnboardingModal 
         isOpen={isOnboardingOpen} 
         onClose={closeOnboarding}
+      />
+      <PlayMenuModal
+        isOpen={isPlayMenuOpen}
+        onClose={closePlayMenu}
       />
     </>
   );

@@ -182,3 +182,4 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
+// Compiler refresh

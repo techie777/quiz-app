@@ -248,22 +248,23 @@ export async function GET(request) {
 
     // Explicitly map all fields to ensure they are returned correctly
     const result = paginatedCategories.map((cat) => {
-      const storedCount = typeof cat.questionCount === "number" ? cat.questionCount : (typeof cat.totalQuestions === "number" ? cat.totalQuestions : 0);
-      const childCount = cat.subCategories?.reduce((acc, sub) => acc + (sub._count?.questions || sub.questionCount || 0), 0) || 0;
       const directCount = cat._count?.questions || 0;
-      const qCount = Math.max(storedCount, directCount + childCount);
+      const childCount = cat.subCategories?.reduce((acc, sub) => acc + (sub._count?.questions || 0), 0) || 0;
+      const qCount = directCount + childCount;
       const subCatCount = cat.subCategories?.length || 0;
-      const mainConfig = getMainCategoryBySlug(cat.slug);
-      const configTopicCount = mainConfig?.subcategories?.reduce((acc, sub) => acc + (sub.topics?.length || 1), 0) || 0;
 
-      // Computed from DB: subcategories count, question sets, or config topics count
+      // Computed from DB: subcategories count, chips, or question sets
       let computedTopicsCount = 0;
       if (subCatCount > 0) {
-        computedTopicsCount = subCatCount * 10;
+        const totalChipsCount = (cat.subCategories || []).reduce((acc, sub) => {
+          const chips = safeJsonParse(sub.chips) || [];
+          return acc + (chips.length > 0 ? chips.length : 10);
+        }, 0);
+        computedTopicsCount = totalChipsCount;
       } else if (qCount > 0) {
         computedTopicsCount = Math.max(1, Math.min(100, Math.ceil(qCount / 10) * 10));
-      } else if (configTopicCount > 0) {
-        computedTopicsCount = configTopicCount;
+      } else {
+        computedTopicsCount = 0;
       }
 
       const currentStatus = cat.status || (qCount > 0 ? "live" : "coming_soon");
@@ -399,6 +400,9 @@ export async function POST(request) {
     });
     
     console.log("[API/categories] Category created successfully:", category.id);
+
+    if (globalThis.__CATEGORY_CACHE__) globalThis.__CATEGORY_CACHE__.clear();
+    if (globalThis.__ADMIN_SETS_CACHE__) globalThis.__ADMIN_SETS_CACHE__.clear();
 
     const normalized = {
       ...category,

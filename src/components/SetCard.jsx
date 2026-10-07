@@ -83,6 +83,11 @@ export default function SetCard({
   const progressPercent = Math.round(set?.progress?.progress || 0);
   const inProgress = progressPercent > 0 && !isComplete;
 
+  const isNewlyAdded = Boolean(
+    set?.isNew ||
+    (set?.createdAt && Date.now() - new Date(set.createdAt).getTime() <= 7 * 24 * 60 * 60 * 1000)
+  );
+
   const title = `${categoryTopic} ${isHindi ? "सेट" : "Set"} ${setIndex}`;
 
   // Grid / Poster Layout (Seekho Discovery Feed Pattern)
@@ -107,7 +112,7 @@ export default function SetCard({
       >
         {/* Poster Top Visual */}
         <div className="relative aspect-[4/4.2] sm:aspect-[4/4.5] w-full overflow-hidden bg-gradient-to-b from-indigo-900/40 via-slate-900/70 to-slate-950 flex flex-col justify-between p-3">
-          {/* Header row in poster: Lock + Count */}
+          {/* Header row in poster: Lock + Count + New */}
           <div className="flex items-center justify-between w-full z-10">
             {isLocked ? (
               <div
@@ -127,15 +132,22 @@ export default function SetCard({
               </span>
             )}
 
-            {isComplete ? (
-              <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md">
-                <CheckCircle2 size={13} strokeWidth={3} />
-              </div>
-            ) : (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-black/60 text-white/90 backdrop-blur-md border border-white/10">
-                📝 {qCount} Q
-              </span>
-            )}
+            <div className="flex items-center gap-1.5">
+              {isNewlyAdded && (
+                <span className="px-2 py-0.5 rounded-md text-[9.5px] font-black bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-xs">
+                  ✨ {isHindi ? "नया" : "NEW"}
+                </span>
+              )}
+              {isComplete ? (
+                <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md">
+                  <CheckCircle2 size={13} strokeWidth={3} />
+                </div>
+              ) : (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-black/60 text-white/90 backdrop-blur-md border border-white/10">
+                  📝 {qCount} Q
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Central Artwork / Visual */}
@@ -268,6 +280,13 @@ export default function SetCard({
             <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white truncate">
               {title}
             </h3>
+
+            {isNewlyAdded && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-xs">
+                <span>✨</span>
+                <span>{isHindi ? "नया" : "NEW"}</span>
+              </span>
+            )}
 
             {/* Question Count Chip */}
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700">

@@ -66,6 +66,9 @@ export async function POST(request) {
       },
     });
     console.log("[API/Questions] Question created successfully:", question.id);
+    if (globalThis.__CATEGORY_CACHE__) globalThis.__CATEGORY_CACHE__.clear();
+    if (globalThis.__ADMIN_SETS_CACHE__) globalThis.__ADMIN_SETS_CACHE__.clear();
+
     return NextResponse.json({ ...question, options: safeJsonParse(question.options) }, { status: 201 });
   } catch (error) {
     console.error("[API/Questions] POST error:", error);

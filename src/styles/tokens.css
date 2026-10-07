@@ -90,15 +90,15 @@
   --brand-gradient: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
 
   /* Shared Neutrals (WCAG AA text contrast: muted never lighter than #5B6475 on white) */
-  --bg-primary: #f8fafc;
+  --bg-primary: #edf5fc;
   --bg-secondary: #ffffff;
-  --bg-tertiary: #f1f5f9;
+  --bg-tertiary: #e2effa;
   --text-primary: #0f172a;
   --text-secondary: #334155;
   --text-muted: #5b6475;
   --text-on-brand: #ffffff;
-  --border-subtle: #e2e8f0;
-  --border-medium: #cbd5e1;
+  --border-subtle: #dbeafe;
+  --border-medium: #bfdbfe;
 
   --card-bg: #ffffff;
   --card-border: #e2e8f0;

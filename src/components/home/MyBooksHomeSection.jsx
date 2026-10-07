@@ -110,6 +110,7 @@ export default function MyBooksHomeSection({ isHindi = false }) {
 
         <Link
           href="/gk-book"
+          prefetch={true}
           className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 shrink-0"
         >
           <span>{isHindi ? "सभी पुस्तकें देखें" : "View Shelf"}</span>
@@ -140,6 +141,7 @@ export default function MyBooksHomeSection({ isHindi = false }) {
                 {/* Book Cover Thumbnail */}
                 <Link
                   href={book.bookUrl}
+                  prefetch={true}
                   className="w-24 sm:w-28 aspect-[3/4] rounded-xl overflow-hidden shadow-xl border border-white/20 shrink-0 transform hover:scale-105 transition-transform bg-slate-900 group relative block"
                 >
                   <img
@@ -188,6 +190,7 @@ export default function MyBooksHomeSection({ isHindi = false }) {
             <div className="flex items-center gap-2 pt-2 border-t border-white/10 relative z-10 mt-auto">
               <Link
                 href={book.bookUrl}
+                prefetch={true}
                 className="flex-1 px-3 py-2 rounded-xl text-xs font-bold bg-amber-400 hover:bg-amber-300 text-slate-950 flex items-center justify-center gap-1 shadow-md transition-all active:scale-95"
               >
                 <span>{isHindi ? "किताब खोलें" : "Open Book"}</span>
@@ -196,6 +199,7 @@ export default function MyBooksHomeSection({ isHindi = false }) {
 
               <Link
                 href={book.readUrl}
+                prefetch={true}
                 className="px-3 py-2 rounded-xl text-xs font-bold bg-white/15 hover:bg-white/20 text-white flex items-center justify-center gap-1 border border-white/20 transition-all active:scale-95"
                 title={book.firstChapterTitle}
               >

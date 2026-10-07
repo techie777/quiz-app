@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search, X, ArrowRight, CornerDownLeft, Sparkles, BookOpen } from "lucide-react";
 import { MAIN_CATEGORIES } from "@/lib/mainCategoriesConfig";
@@ -283,12 +284,13 @@ export default function CategorySearchBar({ dbCategories = [], className = "" })
                 {searchResults.map((item, idx) => {
                   const isSelected = selectedIndex === idx;
                   return (
-                    <button
+                    <Link
                       key={item.id}
-                      type="button"
+                      href={item.href}
+                      prefetch={true}
                       onClick={() => handleSelect(item)}
                       onMouseEnter={() => setSelectedIndex(idx)}
-                      className={`w-full text-left p-3 rounded-xl flex items-center justify-between gap-3 transition-colors ${
+                      className={`w-full text-left p-3 rounded-xl flex items-center justify-between gap-3 transition-colors no-underline ${
                         isSelected
                           ? "bg-indigo-50 dark:bg-indigo-950/60 text-indigo-900 dark:text-indigo-200"
                           : "hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-800 dark:text-slate-200"
@@ -331,7 +333,7 @@ export default function CategorySearchBar({ dbCategories = [], className = "" })
                         )}
                         <ArrowRight size={14} className="text-slate-400 group-hover:text-indigo-600" />
                       </div>
-                    </button>
+                    </Link>
                   );
                 })}
               </div>

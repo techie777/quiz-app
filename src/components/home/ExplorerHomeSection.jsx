@@ -144,21 +144,10 @@ export default function ExplorerHomeSection({
         dbCat?.imageUrl ||
         getCategoryCardImageUrl({ slug, image: dbCat?.image });
 
-      // Topics count: DB computed, question sets, or live reference topics
-      let topicsCount = dbCat?.topics_count || 0;
-      if (!topicsCount) {
-        if (qCount > 0) {
-          topicsCount = Math.max(1, Math.min(100, Math.ceil(qCount / 10) * 10));
-        } else if (liveCfg?.topics_count) {
-          topicsCount = liveCfg.topics_count;
-        } else {
-          const configTopicsCount =
-            mainCat.subcategories?.reduce(
-              (acc, s) => acc + (s.topics?.length || 1),
-              0
-            ) || 0;
-          topicsCount = configTopicsCount;
-        }
+      // Topics count: DB computed or question sets
+      let topicsCount = dbCat?.topics_count ?? 0;
+      if (!topicsCount && qCount > 0) {
+        topicsCount = Math.max(1, Math.min(100, Math.ceil(qCount / 10) * 10));
       }
 
       return {
@@ -245,9 +234,8 @@ export default function ExplorerHomeSection({
 
       {/* 2. Instant Search Bar (Fixed/Sticky under top header on scroll) */}
       <div
-        className="sticky z-40 py-2 backdrop-blur-md transition-all"
+        className="sticky top-[52px] sm:top-[56px] z-40 py-2 backdrop-blur-md transition-all"
         style={{
-          top: "56px",
           background: "var(--bg, #f6f7fc)",
           borderBottom: "1px solid var(--line, #e8eaf5)",
           marginLeft: "-6px",

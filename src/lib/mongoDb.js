@@ -21,7 +21,11 @@ export async function getDb() {
     dbUrl += (dbUrl.includes("?") ? "&" : "?") + "readPreference=primary";
   }
 
-  const client = new MongoClient(dbUrl);
+  const client = new MongoClient(dbUrl, {
+    family: 4,
+    tls: true,
+    tlsAllowInvalidCertificates: true,
+  });
   await client.connect();
   cachedClient = client;
   cachedDb = client.db("quizweb");

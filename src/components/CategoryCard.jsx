@@ -36,12 +36,12 @@ export default function CategoryCard({ category, onClick, customCountText, hideV
     }
   };
 
-  return (
+  const CardContent = (
     <motion.div
       whileHover={isComingSoon ? {} : { y: -3, scale: 1.01 }}
       whileTap={isComingSoon ? {} : { scale: 0.98 }}
       transition={{ duration: 0.15 }}
-      onClick={handleClick}
+      onClick={isComingSoon || onClick ? handleClick : undefined}
       className={`group relative bg-white hover:bg-[#FAFAFE] border rounded-2xl p-4 sm:p-5 shadow-sm transition-all duration-200 flex flex-col justify-between select-none min-h-[120px] sm:min-h-[135px] ${
         isComingSoon
           ? "border-slate-200 dark:border-slate-800 opacity-80 cursor-default"
@@ -108,5 +108,24 @@ export default function CategoryCard({ category, onClick, customCountText, hideV
         </div>
       )}
     </motion.div>
+  );
+
+  if (isComingSoon || onClick) {
+    return CardContent;
+  }
+
+  return (
+    <Link
+      href={targetHref}
+      prefetch={true}
+      className="block no-underline text-inherit"
+      onPointerDown={() => {
+        try {
+          router.prefetch(targetHref);
+        } catch {}
+      }}
+    >
+      {CardContent}
+    </Link>
   );
 }

@@ -44,7 +44,7 @@ const fallbackNavigationItems = [
 ];
 
 export default function SmartNavigation() {
-  const { isMobileMenuOpen, closeMobileMenu, openTutorial } = useUI();
+  const { isMobileMenuOpen, closeMobileMenu, openTutorial, openPlayMenu } = useUI();
   const { isHindi } = useLanguage();
   const { tier } = useTier();
   const { isPro } = useMonetization();
@@ -158,6 +158,7 @@ export default function SmartNavigation() {
                 <div className={styles.userActions}>
                   <Link
                     href="/profile"
+                    prefetch={true}
                     className={styles.profileBtn}
                     onClick={closeMobileMenu}
                   >
@@ -217,8 +218,17 @@ export default function SmartNavigation() {
                     <li key={item.href}>
                       <Link
                         href={item.href}
+                        prefetch={true}
                         className={`${styles.menuLink} ${isActive ? styles.activeLink : ""}`}
-                        onClick={closeMobileMenu}
+                        onClick={(e) => {
+                          if (item.key === "quizzes") {
+                            e.preventDefault();
+                            closeMobileMenu();
+                            openPlayMenu();
+                          } else {
+                            closeMobileMenu();
+                          }
+                        }}
                       >
                         <span className={styles.menuLinkIcon}>
                           <Icon size={18} />
@@ -239,6 +249,7 @@ export default function SmartNavigation() {
                 <li>
                   <Link
                     href="/my-favourites"
+                    prefetch={true}
                     className={`${styles.menuLink} ${pathname === "/my-favourites" ? styles.activeLink : ""}`}
                     onClick={closeMobileMenu}
                   >
@@ -260,6 +271,7 @@ export default function SmartNavigation() {
                   <li>
                     <Link
                       href="/profile"
+                      prefetch={true}
                       className={`${styles.menuLink} ${pathname === "/profile" ? styles.activeLink : ""}`}
                       onClick={closeMobileMenu}
                     >
@@ -280,6 +292,7 @@ export default function SmartNavigation() {
                 <li>
                   <Link
                     href="/pro"
+                    prefetch={true}
                     className={`${styles.menuLink} ${pathname === "/pro" ? styles.activeLink : ""}`}
                     onClick={closeMobileMenu}
                   >
