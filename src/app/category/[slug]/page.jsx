@@ -100,6 +100,10 @@ export default function CategorySetsPage() {
         questionCount: sc.questionCount || 0,
       }));
     }
+    // For india-gk, never show predefined static subcategories; only real DB subcategories
+    if (params?.slug === "india-gk") {
+      return [];
+    }
     // 2. Fallback to mainCategoryConfig taxonomy so official subcategories are always visible & organized
     if (mainCategoryConfig && Array.isArray(mainCategoryConfig.subcategories) && mainCategoryConfig.subcategories.length > 0) {
       return mainCategoryConfig.subcategories.map((sc) => ({
@@ -112,7 +116,7 @@ export default function CategorySetsPage() {
       }));
     }
     return [];
-  }, [category, mainCategoryConfig]);
+  }, [category, mainCategoryConfig, params?.slug]);
 
   const activeSubCategoryObj = useMemo(() => {
     if (!selectedSubCategory) return null;
