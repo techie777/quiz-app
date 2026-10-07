@@ -147,14 +147,13 @@ export default function MyBooksHomeSection({ isHindi = false }) {
                 style={{ background: book.glowColor }}
               />
 
-<<<<<<< HEAD
             <div>
               <div className="flex items-start gap-3.5 sm:gap-4 mb-3 relative z-10">
-                {/* Book Cover Thumbnail */}
+                {/* Book Cover Thumbnail - Always links to Index page */}
                 <Link
                   href={book.bookUrl}
-                  prefetch={true}
                   className="w-24 sm:w-28 aspect-[3/4] rounded-xl overflow-hidden shadow-xl border border-white/20 shrink-0 transform hover:scale-105 transition-transform bg-slate-900 group relative block"
+                  title={isHindi ? `${book.title} की अनुक्रमणिका (Index) खोलें` : `Open ${book.title} Index`}
                 >
                   <img
                     src={book.cover}
@@ -163,55 +162,10 @@ export default function MyBooksHomeSection({ isHindi = false }) {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-1">
                     <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-400 text-slate-950">
-                      {isHindi ? "पढ़ें" : "Read"}
+                      {isHindi ? "अनुक्रमणिका" : "Index"}
                     </span>
                   </div>
                 </Link>
-
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-1.5 mb-1">
-                    <span className="px-2 py-0.5 rounded-full text-[9.5px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">
-                      ✓ {book.badge}
-                    </span>
-                    <span className="px-1.5 py-0.5 rounded-full text-[9.5px] font-bold bg-white/10 text-slate-200">
-                      {book.stats}
-                    </span>
-                  </div>
-
-                  <h3 className="text-base sm:text-lg font-black text-white leading-tight mb-1">
-                    {book.title}
-                  </h3>
-                  <p className="text-[11.5px] text-slate-200/90 line-clamp-2 leading-snug mb-2">
-                    {book.subtitle}
-                  </p>
-
-                  {/* Feature pills */}
-                  <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-slate-200/80">
-                    {book.features.map((feat, fIdx) => (
-                      <span key={fIdx} className="bg-black/20 px-1.5 py-0.5 rounded">
-                        {feat}
-=======
-              <div>
-                <div className="flex items-start gap-3.5 sm:gap-4 mb-3 relative z-10">
-                  {/* Book Cover Thumbnail - Always links to Index page */}
-                  <Link
-                    href={book.bookUrl}
-                    className="w-24 sm:w-28 aspect-[3/4] rounded-xl overflow-hidden shadow-xl border border-white/20 shrink-0 transform hover:scale-105 transition-transform bg-slate-900 group relative block"
-                    title={isHindi ? `${book.title} की अनुक्रमणिका (Index) खोलें` : `Open ${book.title} Index`}
-                  >
-                    <img
-                      src={book.cover}
-                      alt={book.title}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-1">
-                      <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-400 text-slate-950">
-                        {isHindi ? "अनुक्रमणिका" : "Index"}
->>>>>>> backup-today-pre-merge
-                      </span>
-                    </div>
-                  </Link>
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
