@@ -158,6 +158,12 @@ export async function GET(request, { params }) {
             topic: 1,
             topicName: 1,
             subCategory: 1,
+            subCategoryId: 1,
+            categoryId: 1,
+            category_id: 1,
+            category: 1,
+            topicId: 1,
+            topic_id: 1,
             subject: 1,
             subjectName: 1,
             explanation: 1,
@@ -197,9 +203,21 @@ export async function GET(request, { params }) {
         const englishExp = q.englishExplanation || q.explanationEn || q.explanation_en || (!/[\u0900-\u097F]/.test(q.explanation || "") ? q.explanation : "") || "";
         const defaultExp = q.explanation || hindiExp || englishExp || "";
 
+        const catIdStr = q.categoryId ? q.categoryId.toString() : (q.category_id ? q.category_id.toString() : "");
+        const topicIdStr = q.topicId ? q.topicId.toString() : (q.topic_id ? q.topic_id.toString() : "");
+        const subCatIdStr = q.subCategoryId ? q.subCategoryId.toString() : topicIdStr;
+        const subCatName = (q.subCategory && q.subCategory !== "undefined")
+          ? q.subCategory
+          : (q.category && q.category !== category.name && q.category !== category.topic ? q.category : (q.subject || q.subjectName || ""));
+
         return {
           id: q._id.toString(),
           _id: q._id.toString(),
+          categoryId: catIdStr,
+          category_id: catIdStr,
+          category: q.category || "",
+          topicId: topicIdStr,
+          subCategoryId: subCatIdStr,
           text: q.text || q.text_en || "",
           textHi: q.textHi || q.text_hi || null,
           options: opts,
@@ -211,7 +229,7 @@ export async function GET(request, { params }) {
           difficulty: q.difficulty || (q.difficulty_level === 3 ? "hard" : q.difficulty_level === 2 ? "medium" : "easy"),
           tags: Array.isArray(q.tags) ? q.tags : [],
           topic: q.topic || q.topicName || "",
-          subCategory: q.subCategory || q.subject || q.subjectName || "",
+          subCategory: subCatName,
           explanation: defaultExp,
           explanationHi: hindiExp || defaultExp,
           explanation_hi: hindiExp || defaultExp,
@@ -280,6 +298,11 @@ export async function GET(request, { params }) {
               title: 1,
               titleHi: 1,
               status: 1,
+              categoryId: 1,
+              subCategoryId: 1,
+              topicId: 1,
+              questionIds: 1,
+              questionCount: 1,
               createdAt: 1,
               updatedAt: 1,
             }
@@ -292,6 +315,10 @@ export async function GET(request, { params }) {
           title: s.title,
           titleHi: s.titleHi,
           status: s.status,
+          categoryId: s.categoryId ? s.categoryId.toString() : "",
+          subCategoryId: s.subCategoryId ? s.subCategoryId.toString() : "",
+          topicId: s.topicId ? s.topicId.toString() : "",
+          questionCount: s.questionCount || (Array.isArray(s.questionIds) ? s.questionIds.length : 0),
           createdAt: s.createdAt,
           updatedAt: s.updatedAt,
         }));

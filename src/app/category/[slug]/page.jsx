@@ -305,18 +305,39 @@ export default function CategorySetsPage() {
     if (selectedTopic) {
       const topLower = selectedTopic.toLowerCase();
       const filtered = list.filter((q) => {
-        const full = `${q.text || ""} ${q.explanation || ""} ${q.subjectName || ""} ${q.topicName || ""}`.toLowerCase();
+        const full = `${q.text || ""} ${q.explanation || ""} ${q.subjectName || ""} ${q.topicName || ""} ${q.topic || ""}`.toLowerCase();
         return full.includes(topLower);
       });
-      if (filtered.length > 0) list = filtered;
+      list = filtered;
     } else if (activeSubCategoryObj) {
-      const subLower = activeSubCategoryObj.name?.toLowerCase() || "";
-      const topicMatches = activeSubCategoryObj.topics || [];
+      const subLower = (activeSubCategoryObj.name || activeSubCategoryObj.topic || "").toLowerCase();
+      const subSlug = (activeSubCategoryObj.slug || "").toLowerCase();
+      const subId = activeSubCategoryObj.id?.toString();
+      const topicMatches = (activeSubCategoryObj.topics || []).map((t) => String(t).toLowerCase());
+
+      const cleanNorm = (s) => String(s || "").toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]/g, "");
+      const targetNorm = cleanNorm(activeSubCategoryObj.name || activeSubCategoryObj.topic || activeSubCategoryObj.slug);
+
       const filtered = list.filter((q) => {
-        const full = `${q.text || ""} ${q.explanation || ""} ${q.subjectName || ""} ${q.topicName || ""}`.toLowerCase();
-        return full.includes(subLower) || topicMatches.some((t) => full.includes(t.toLowerCase()));
+        const qCatId = q.categoryId?.toString() || q.category_id?.toString();
+        const qTopicId = q.topicId?.toString() || q.topic_id?.toString();
+        const qSubId = q.subCategoryId?.toString();
+        const qSubCat = (q.subCategory || q.category || q.subject || "").toLowerCase();
+        const qSubNorm = cleanNorm(q.subCategory || q.category || q.subject || "");
+
+        // 1. Direct ID match
+        if (subId && (qCatId === subId || qTopicId === subId || qSubId === subId)) return true;
+
+        // 2. Direct normalized name or slug match
+        if (targetNorm && (qSubNorm.includes(targetNorm) || targetNorm.includes(qSubNorm))) return true;
+        if (subLower && qSubCat.includes(subLower)) return true;
+        if (subSlug && (qSubCat.includes(subSlug) || (q.topic || "").toLowerCase().includes(subSlug))) return true;
+
+        // 3. Match against subcategory topics/chips
+        const full = `${q.text || ""} ${q.explanation || ""} ${q.subjectName || ""} ${q.topicName || ""} ${q.topic || ""}`.toLowerCase();
+        return topicMatches.some((t) => full.includes(t));
       });
-      if (filtered.length > 0) list = filtered;
+      list = filtered;
     }
 
     if (!difficulty || difficulty === "ALL") return list;
@@ -327,7 +348,8 @@ export default function CategorySetsPage() {
 
   const sets = useMemo(() => {
     if (!category || !effectiveSetSize || effectiveSetSize <= 0) return [];
-    const pool = tier === "adults" ? displayedQuestions : questions;
+    const isFiltered = Boolean(activeSubCategoryObj || selectedTopic || (difficulty && difficulty !== "ALL"));
+    const pool = isFiltered ? displayedQuestions : (tier === "adults" ? displayedQuestions : questions);
     if (!pool || pool.length === 0) return [];
 
     const generated = generateSmartQuizSets({
@@ -340,8 +362,18 @@ export default function CategorySetsPage() {
     });
 
     const quizSetsList = Array.isArray(category.quizSets) ? category.quizSets : [];
+    // If active subcategory is selected, filter persisted sets for this subcategory
+    const relevantPersistedSets = activeSubCategoryObj
+      ? quizSetsList.filter((qs) => {
+          const qsSubId = qs.subCategoryId || qs.topicId || qs.categoryId;
+          const subIdStr = activeSubCategoryObj.id?.toString();
+          return qsSubId === subIdStr;
+        })
+      : quizSetsList;
+
     const quizSetMap = new Map();
-    quizSetsList.forEach((qs) => {
+    relevantPersistedSets.forEach((qs, idx) => {
+      quizSetMap.set(idx + 1, qs);
       quizSetMap.set(qs.setIndex, qs);
     });
 

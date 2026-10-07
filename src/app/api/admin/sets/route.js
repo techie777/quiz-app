@@ -486,15 +486,18 @@ export async function POST(req) {
       if (categoryDoc) catObjId = categoryDoc._id;
     }
 
-    // If subCategoryId wasn't passed, try to look up subcategory by name
+    // If subCategoryId wasn't passed, try to look up subcategory by name or from questions
     let subCategoryDoc = null;
+    const rawSubName = subCategoryName || questions[0]?.subCategory || questions[0]?.category;
     if (subCatObjId) {
       subCategoryDoc = await db.collection('Category').findOne({ _id: subCatObjId });
-    } else if (subCategoryName) {
-      subCategoryDoc = await db.collection('Category').findOne({
-        topic: { $regex: new RegExp(`^${subCategoryName.trim()}$`, 'i') },
-        parentId: catObjId,
-      });
+    } else if (rawSubName && catObjId) {
+      const cleanNorm = (s) => String(s || '').toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]/g, '');
+      const targetNorm = cleanNorm(rawSubName);
+      const childSubs = await db.collection('Category').find({ parentId: catObjId }).toArray();
+      subCategoryDoc = childSubs.find(
+        (c) => cleanNorm(c.topic) === targetNorm || cleanNorm(c.name) === targetNorm || cleanNorm(c.slug) === targetNorm
+      );
       if (subCategoryDoc) subCatObjId = subCategoryDoc._id;
     }
 
@@ -576,6 +579,8 @@ export async function POST(req) {
         categoryId: targetCatId,
         category_id: targetCatId,
         category: catNameResolved,
+        subCategory: subCategoryDoc?.topic || q.subCategory || catNameResolved,
+        subCategoryId: subCatObjId ? subCatObjId : null,
         masterCategory: categoryDoc?.topic || 'General',
         topicId: subCatObjId ? subCatObjId : null,
         topic_id: subCatObjId ? subCatObjId : null,
@@ -611,6 +616,7 @@ export async function POST(req) {
       const setDoc = {
         _id: new ObjectId(),
         categoryId: catObjId || targetCatId,
+        subCategoryId: subCatObjId || null,
         topicId: subCatObjId || null,
         setIndex: setIdx,
         title: title && questionDocs.length <= CHUNK_SIZE ? title : `Set ${setIdx}`,

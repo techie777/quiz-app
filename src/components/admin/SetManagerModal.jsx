@@ -451,8 +451,10 @@ export default function SetManagerModal({
       }
 
       if (detectedSub && matchedMainId) {
+        const clean = (s) => String(s || "").toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]/g, "");
+        const targetClean = clean(detectedSub);
         const matchedSub = allCategories.find(
-          c => c.parentId === matchedMainId && c.topic.toLowerCase().trim() === detectedSub.toLowerCase()
+          c => c.parentId === matchedMainId && (clean(c.topic) === targetClean || clean(c.name) === targetClean || clean(c.slug) === targetClean)
         );
         if (matchedSub) {
           setTargetSubCatId(matchedSub.id);
@@ -872,13 +874,22 @@ export default function SetManagerModal({
     setIsSubmitting(true);
     try {
       const targetCategoryObj = allCategories.find(c => c.id === targetCatId);
-      const targetSubCategoryObj = allCategories.find(c => c.id === targetSubCatId);
+      let resolvedSubCatId = targetSubCatId;
+      if (!resolvedSubCatId && parsedRows[0]?.subCategory && targetCatId) {
+        const clean = (s) => String(s || "").toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]/g, "");
+        const targetClean = clean(parsedRows[0].subCategory);
+        const autoSub = allCategories.find(
+          c => c.parentId === targetCatId && (clean(c.topic) === targetClean || clean(c.name) === targetClean || clean(c.slug) === targetClean)
+        );
+        if (autoSub) resolvedSubCatId = autoSub.id;
+      }
+      const targetSubCategoryObj = allCategories.find(c => c.id === resolvedSubCatId);
 
       const payload = {
         categoryId: targetCatId,
-        subCategoryId: targetSubCatId || null,
+        subCategoryId: resolvedSubCatId || null,
         categoryName: targetCategoryObj?.topic || "",
-        subCategoryName: targetSubCategoryObj?.topic || "",
+        subCategoryName: targetSubCategoryObj?.topic || parsedRows[0]?.subCategory || "",
         title: customTitle.trim() || undefined,
         questions: parsedRows.map(r => ({
           question: r.question,
@@ -890,6 +901,8 @@ export default function SetManagerModal({
           questionType: "MCQ",
           keywords: Array.isArray(r.keywords) ? r.keywords : (r.keywords ? [r.keywords] : []),
           keywordsEn: Array.isArray(r.keywords) ? r.keywords.join(", ") : (r.keywordsRaw || ""),
+          subCategory: r.subCategory || targetSubCategoryObj?.topic || "",
+          category: r.subCategory || targetSubCategoryObj?.topic || targetCategoryObj?.topic || "",
           subject: r.topicName || r.topic || targetSubCategoryObj?.topic || "",
           topic: r.topicName || r.topic || targetSubCategoryObj?.topic || "",
           hindiExplanation: r.hindiExplanation || "",
