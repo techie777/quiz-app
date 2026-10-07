@@ -347,9 +347,20 @@ export async function GET(req) {
           difficulty: 1,
           difficulty_level: 1,
           tags: 1,
+          keywords: 1,
+          keywordsEn: 1,
+          keywords_en: 1,
           questionType: 1,
           subCategory: 1,
           subject: 1,
+          topic: 1,
+          topicName: 1,
+          explanation: 1,
+          explanation_hi: 1,
+          explanation_en: 1,
+          hindiExplanation: 1,
+          englishExplanation: 1,
+          language: 1,
         }
       })
       .toArray();
@@ -372,6 +383,10 @@ export async function GET(req) {
           const correctIdx = typeof q.correct_index === 'number' ? q.correct_index : 0;
           const correctText = opts[correctIdx] || q.correctAnswer || opts[0] || '';
 
+          const isHindi = q.language === 'hi' || /[\u0900-\u097F]/.test(q.text || q.text_hi || '');
+          const hindiExp = q.hindiExplanation || q.explanation_hi || (isHindi ? q.explanation : '') || '';
+          const englishExp = q.englishExplanation || q.explanation_en || (!isHindi ? q.explanation : '') || '';
+
           return {
             _id: q._id.toString(),
             id: q._id.toString(),
@@ -383,11 +398,17 @@ export async function GET(req) {
             correct_index: correctIdx,
             difficulty: q.difficulty || (q.difficulty_level === 3 ? 'hard' : q.difficulty_level === 2 ? 'medium' : 'easy'),
             difficulty_level: q.difficulty_level || 1,
-            tags: q.tags || [],
+            tags: q.tags || q.keywords || [],
+            keywords: q.keywords || q.tags || [],
+            keywordsEn: q.keywordsEn || q.keywords_en || '',
             type: q.type || 'MCQ',
             subject: q.subject || q.subjectName || '',
             topic: q.topic || q.topicName || '',
-            explanation: q.explanation || q.explanation_en || '',
+            topicName: q.topic || q.topicName || '',
+            explanation: q.explanation || hindiExp || englishExp || '',
+            hindiExplanation: hindiExp,
+            englishExplanation: englishExp,
+            language: q.language || (isHindi ? 'hi' : 'en'),
           };
         })
         .filter(Boolean);
@@ -515,7 +536,13 @@ export async function POST(req) {
         : 0;
       const correctText = q.correctAnswer || options[correctIdx] || options[0] || '';
 
-      const isHindi = /[\u0900-\u097F]/.test(q.question || q.text || '');
+      const isHindi = q.language === 'hi' || /[\u0900-\u097F]/.test(q.question || q.text || '');
+      const hindiExp = q.hindiExplanation || q.explanation_hi || (isHindi ? q.explanation : '') || '';
+      const englishExp = q.englishExplanation || q.explanation_en || (!isHindi ? q.explanation : '') || '';
+      const keywordsList = Array.isArray(q.keywords) && q.keywords.length > 0
+        ? q.keywords
+        : (Array.isArray(q.tags) ? q.tags : []);
+      const keywordsStr = q.keywordsEn || q.keywords_en || (keywordsList.length > 0 ? keywordsList.join(', ') : '');
 
       return {
         _id: qId,
@@ -530,7 +557,18 @@ export async function POST(req) {
         difficulty: diff,
         difficulty_level: diffLevel,
         type: q.questionType || q.type || 'MCQ',
-        tags: Array.isArray(q.keywords) ? q.keywords : (Array.isArray(q.tags) ? q.tags : []),
+        tags: keywordsList,
+        keywords: keywordsList,
+        keywordsEn: keywordsStr,
+        keywords_en: keywordsStr,
+        explanation: hindiExp || englishExp || q.explanation || '',
+        explanation_hi: hindiExp,
+        explanation_en: englishExp,
+        explanationHi: hindiExp,
+        explanationEn: englishExp,
+        hindiExplanation: hindiExp,
+        englishExplanation: englishExp,
+        language: q.language || (isHindi ? 'hi' : 'en'),
         subject: q.subject || q.subjectName || '',
         subjectName: q.subject || q.subjectName || '',
         topic: q.topic || q.topicName || '',

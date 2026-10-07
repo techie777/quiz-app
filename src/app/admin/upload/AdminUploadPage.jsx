@@ -297,21 +297,23 @@ export default function AdminUploadPage() {
     };
 
     if (tType === "gk") {
-      mapping.question = findHeader("question", "text", "qtext") || headers[0] || "";
-      mapping.optionA = findHeader("option a", "option 1", "opt a", "opt1", "a") || headers[1] || "";
-      mapping.optionB = findHeader("option b", "option 2", "opt b", "opt2", "b") || headers[2] || "";
-      mapping.optionC = findHeader("option c", "option 3", "opt c", "opt3", "c") || headers[3] || "";
-      mapping.optionD = findHeader("option d", "option 4", "opt d", "opt4", "d") || headers[4] || "";
-      mapping.correctAnswer = findHeader("correct answer", "correct answer (1-4)", "answer", "correct", "ans") || headers[5] || "";
+      mapping.masterCategory = findHeader("main category", "maincategory", "master category", "mastercategory", "master_category") || (headers.length >= 10 ? headers[0] : "");
+      mapping.category = findHeader("sub category", "subcategory", "category") || (headers.length >= 10 ? headers[1] : "");
+      mapping.topic = findHeader("topic name", "topicname", "topic") || (headers.length >= 10 ? headers[2] : "");
+      mapping.examTags = findHeader("keywords/tags", "keywords", "tags", "keywords in english", "keyword", "exam tags", "examtags") || (headers.length >= 10 ? headers[3] : "");
+      mapping.question = findHeader("question", "questions", "text", "qtext") || (headers.length >= 10 ? headers[4] : headers[0]) || "";
+      mapping.optionA = findHeader("option a", "optiona", "option 1", "opt a", "opt1", "a") || (headers.length >= 10 ? headers[5] : headers[1]) || "";
+      mapping.optionB = findHeader("option b", "optionb", "option 2", "opt b", "opt2", "b") || (headers.length >= 10 ? headers[6] : headers[2]) || "";
+      mapping.optionC = findHeader("option c", "optionc", "option 3", "opt c", "opt3", "c") || (headers.length >= 10 ? headers[7] : headers[3]) || "";
+      mapping.optionD = findHeader("option d", "optiond", "option 4", "opt d", "opt4", "d") || (headers.length >= 10 ? headers[8] : headers[4]) || "";
+      mapping.correctAnswer = findHeader("correct answer", "correctanswer", "correct answer (1-4)", "answer", "correct", "ans") || (headers.length >= 10 ? headers[9] : headers[5]) || "";
+      mapping.difficulty = findHeader("difficulty", "level", "diff") || (headers.length >= 10 ? headers[10] : headers[6]) || "";
+      mapping.hindiExplanation = findHeader("hindi explanation", "hindiexplanation", "explanation_hi");
+      mapping.englishExplanation = findHeader("english explanation", "englishexplanation", "explanation_en");
+      mapping.explanation = findHeader("hindi explanation", "explanation", "exp", "solution", "notes") || (headers.length >= 12 ? headers[11] : "");
+      mapping.language = findHeader("language", "lang") || (headers.length >= 14 ? headers[13] : "");
       mapping.questionType = findHeader("question type", "questiontype", "type");
-      mapping.masterCategory = findHeader("master category", "mastercategory", "master_category", "main category", "maincategory");
-      mapping.category = findHeader("category", "sub category", "subcategory");
-      mapping.topic = findHeader("topic", "topic name", "topicname", "topic_name");
       mapping.subject = findHeader("subject", "subject name", "subjectname", "subject_name", "sub topic", "subtopic", "sub_topic");
-      mapping.difficulty = findHeader("difficulty", "level", "diff");
-      mapping.explanation = findHeader("explanation", "exp", "solution", "notes");
-      mapping.language = findHeader("language", "lang");
-      mapping.examTags = findHeader("exam tags", "examtags", "exam", "tags");
       mapping.subTopic = findHeader("sub topic", "subtopic", "sub_topic");
     } else {
       mapping.question = findHeader("question", "text") || headers[0] || "";

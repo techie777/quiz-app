@@ -166,7 +166,7 @@ export async function POST(req) {
         const rawCat = sheetCat || finalCatName;
         const rawTopic = getFieldByHeader(r, ["topic name", "topicname", "topic_name", "topic"]) || rawCat;
         const rawSubject = getFieldByHeader(r, ["subject", "subject name", "subjectname", "sub topic", "subtopic", "sub_topic"]) || rawTopic;
-        const rawKeywords = getFieldByHeader(r, ["keywords", "keywords in english", "keywords_en", "keyword", "keywordsen", "exam tags", "examtags", "tags"]);
+        const rawKeywords = getFieldByHeader(r, ["keywords/tags", "keywords", "keywords in english", "keywords_en", "keyword", "keywordsen", "exam tags", "examtags", "tags"]);
         const rawHindiExp = getFieldByHeader(r, ["hindi explanation", "hindiexplanation", "hindi_explanation", "explanation_hi", "explanation hi"]);
         const rawEnglishExp = getFieldByHeader(r, ["english explanation", "englishexplanation", "english_explanation", "explanation_en", "explanation en"]);
         const rawGenExp = getFieldByHeader(r, ["explanation", "exp", "solution", "notes"]);

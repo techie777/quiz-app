@@ -4,8 +4,23 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import toast from "react-hot-toast";
 import styles from "@/styles/SetManagerModal.module.css";
 
-// Parser for Excel TSV format (Columns A to M from user's sample)
-function parseExcelData(rawText) {
+// Parser for Excel copy-paste TSV data
+// Standard 14-Column Format requested by user:
+// Col 0 (A): Main Category
+// Col 1 (B): Sub category
+// Col 2 (C): Topic name
+// Col 3 (D): Keywords/tags
+// Col 4 (E): Question
+// Col 5 (F): Option A
+// Col 6 (G): Option B
+// Col 7 (H): Option C
+// Col 8 (I): Option D
+// Col 9 (J): Correct Answer
+// Col 10 (K): Difficulty
+// Col 11 (L): Hindi Explanation
+// Col 12 (M): English Explanation
+// Col 13 (N): Language
+export function parseExcelData(rawText) {
   if (!rawText || !rawText.trim()) return [];
 
   const lines = rawText.split(/\r?\n/).filter(line => line.trim().length > 0);
@@ -13,26 +28,83 @@ function parseExcelData(rawText) {
 
   const results = [];
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    // Split by tab (standard Excel copy format)
-    let cols = line.split("\t").map(col => col.trim().replace(/^"(.*)"$/, "$1").trim());
+  // Check if first line is a header row
+  const firstLine = lines[0];
+  const firstCols = firstLine.split("\t").map(col => col.trim().replace(/^"(.*)"$/, "$1").trim());
+  const firstLineLower = firstLine.toLowerCase();
 
-    // Skip header row if detected
-    const lineLower = line.toLowerCase();
-    if (
-      (lineLower.includes("category") || lineLower.includes("question")) &&
-      (lineLower.includes("option") || lineLower.includes("answer") || lineLower.includes("difficulty"))
-    ) {
-      continue;
-    }
+  const isHeaderRow =
+    (firstLineLower.includes("category") ||
+      firstLineLower.includes("topic") ||
+      firstLineLower.includes("keyword") ||
+      firstLineLower.includes("question")) &&
+    (firstLineLower.includes("option") ||
+      firstLineLower.includes("answer") ||
+      firstLineLower.includes("difficulty") ||
+      firstLineLower.includes("explanation") ||
+      firstLineLower.includes("sub category"));
+
+  // Default column index mapping matching the 14 standard columns
+  let colMap = {
+    mainCategory: 0,
+    subCategory: 1,
+    topic: 2,
+    keywords: 3,
+    question: 4,
+    optA: 5,
+    optB: 6,
+    optC: 7,
+    optD: 8,
+    answer: 9,
+    difficulty: 10,
+    hindiExplanation: 11,
+    englishExplanation: 12,
+    language: 13,
+  };
+
+  if (isHeaderRow) {
+    const findHeaderIdx = (aliases, defaultIdx = -1) => {
+      for (let i = 0; i < firstCols.length; i++) {
+        const hNorm = firstCols[i].toLowerCase().replace(/[^a-z0-9]/g, "");
+        for (const alias of aliases) {
+          const aNorm = alias.toLowerCase().replace(/[^a-z0-9]/g, "");
+          if (hNorm === aNorm || (aNorm.length >= 3 && hNorm.includes(aNorm))) {
+            return i;
+          }
+        }
+      }
+      return defaultIdx;
+    };
+
+    colMap = {
+      mainCategory: findHeaderIdx(["maincategory", "main category", "mastercategory", "master category"], 0),
+      subCategory: findHeaderIdx(["subcategory", "sub category"], 1),
+      topic: findHeaderIdx(["topicname", "topic name", "topic"], 2),
+      keywords: findHeaderIdx(["keywordstags", "keywords", "tags", "keyword", "examtags"], 3),
+      question: findHeaderIdx(["question", "questions", "text", "qtext"], 4),
+      optA: findHeaderIdx(["optiona", "option a", "opt a", "opt 1", "option 1"], 5),
+      optB: findHeaderIdx(["optionb", "option b", "opt b", "opt 2", "option 2"], 6),
+      optC: findHeaderIdx(["optionc", "option c", "opt c", "opt 3", "option 3"], 7),
+      optD: findHeaderIdx(["optiond", "option d", "opt d", "opt 4", "option 4"], 8),
+      answer: findHeaderIdx(["correctanswer", "correct answer", "answer", "correct", "ans"], 9),
+      difficulty: findHeaderIdx(["difficulty", "diff", "level"], 10),
+      hindiExplanation: findHeaderIdx(["hindiexplanation", "hindi explanation", "explanation_hi"], 11),
+      englishExplanation: findHeaderIdx(["englishexplanation", "english explanation", "explanation_en"], 12),
+      language: findHeaderIdx(["language", "lang"], 13),
+    };
+  }
+
+  const startIndex = isHeaderRow ? 1 : 0;
+
+  for (let i = startIndex; i < lines.length; i++) {
+    const line = lines[i];
+    let cols = line.split("\t").map(col => col.trim().replace(/^"(.*)"$/, "$1").trim());
 
     if (cols.length < 5) continue;
 
-    let category = "";
-    let subcategory = "";
+    let mainCategory = "";
+    let subCategory = "";
     let topic = "";
-    let subject = "";
     let keywords = "";
     let question = "";
     let optA = "";
@@ -40,27 +112,28 @@ function parseExcelData(rawText) {
     let optC = "";
     let optD = "";
     let answer = "";
-    let questionType = "Quick Choice";
     let difficulty = "Easy";
+    let hindiExplanation = "";
+    let englishExplanation = "";
+    let language = "Hindi";
 
-    // Standard 13-Column Format matching user Excel:
-    // A: Category, B: Subcategory, C: Topic, D: Subject, E: Keywords,
-    // F: Question, G: Option A, H: Option B, I: Option C, J: Option D,
-    // K: Answer, L: Question Type, M: Difficulty
-    if (cols.length >= 11) {
-      category = cols[0] || "";
-      subcategory = cols[1] || "";
-      topic = cols[2] || "";
-      subject = cols[3] || "";
-      keywords = cols[4] || "";
-      question = cols[5] || "";
-      optA = cols[6] || "";
-      optB = cols[7] || "";
-      optC = cols[8] || "";
-      optD = cols[9] || "";
-      answer = cols[10] || "";
-      questionType = cols[11] || "Quick Choice";
-      difficulty = cols[12] || "Easy";
+    // Standard 14-Column Format or Header-Mapped Format:
+    if (cols.length >= 9) {
+      const getVal = (idx) => (idx >= 0 && idx < cols.length ? cols[idx] : "");
+      mainCategory = getVal(colMap.mainCategory);
+      subCategory = getVal(colMap.subCategory);
+      topic = getVal(colMap.topic);
+      keywords = getVal(colMap.keywords);
+      question = getVal(colMap.question);
+      optA = getVal(colMap.optA);
+      optB = getVal(colMap.optB);
+      optC = getVal(colMap.optC);
+      optD = getVal(colMap.optD);
+      answer = getVal(colMap.answer);
+      difficulty = getVal(colMap.difficulty) || "Easy";
+      hindiExplanation = getVal(colMap.hindiExplanation);
+      englishExplanation = getVal(colMap.englishExplanation);
+      language = getVal(colMap.language);
     } else {
       // Fallback 7-column format: Question, OptA, OptB, OptC, OptD, Answer, Difficulty
       question = cols[0] || "";
@@ -78,15 +151,39 @@ function parseExcelData(rawText) {
 
     // Determine correct answer index
     let correctIdx = 0;
-    const ansTrim = (answer || "").toLowerCase().trim();
-    if (ansTrim === "a" || ansTrim === "option a" || ansTrim === "1") correctIdx = 0;
-    else if (ansTrim === "b" || ansTrim === "option b" || ansTrim === "2") correctIdx = 1;
-    else if (ansTrim === "c" || ansTrim === "option c" || ansTrim === "3") correctIdx = 2;
-    else if (ansTrim === "d" || ansTrim === "option d" || ansTrim === "4") correctIdx = 3;
-    else {
-      const matchIndex = options.findIndex(o => o.trim().toLowerCase() === ansTrim);
-      if (matchIndex !== -1) {
-        correctIdx = matchIndex;
+    const ansRaw = (answer || "").trim();
+    const ansLower = ansRaw.toLowerCase();
+
+    // 1. Check letter codes (A, B, C, D or Option A, Option B, etc., or 1, 2, 3, 4)
+    if (ansLower === "a" || ansLower === "option a" || ansLower === "opt a" || ansLower === "1") {
+      correctIdx = 0;
+    } else if (ansLower === "b" || ansLower === "option b" || ansLower === "opt b" || ansLower === "2") {
+      correctIdx = 1;
+    } else if (ansLower === "c" || ansLower === "option c" || ansLower === "opt c" || ansLower === "3") {
+      correctIdx = 2;
+    } else if (ansLower === "d" || ansLower === "option d" || ansLower === "opt d" || ansLower === "4") {
+      correctIdx = 3;
+    } else {
+      // 2. Exact match against option text
+      const exactIdx = options.findIndex(o => o && o.trim().toLowerCase() === ansLower);
+      if (exactIdx !== -1) {
+        correctIdx = exactIdx;
+      } else {
+        // 3. Relaxed / normalized text match (remove punctuation/extra spaces)
+        const norm = (s) => (s || "").replace(/[\s\-_.,()]/g, "").toLowerCase();
+        const normAns = norm(ansRaw);
+        const fuzzyIdx = options.findIndex(o => norm(o) === normAns);
+        if (fuzzyIdx !== -1) {
+          correctIdx = fuzzyIdx;
+        } else {
+          // 4. StartsWith / Includes fallback
+          const partialIdx = options.findIndex(
+            o => o && normAns && (norm(o).startsWith(normAns) || normAns.startsWith(norm(o)))
+          );
+          if (partialIdx !== -1) {
+            correctIdx = partialIdx;
+          }
+        }
       }
     }
 
@@ -98,23 +195,39 @@ function parseExcelData(rawText) {
     else if (diffLower.includes("med")) diffNorm = "medium";
     else diffNorm = "easy";
 
+    // Auto-detect language
+    const isHindiQuestion = /[\u0900-\u097F]/.test(question);
+    let langNorm = "hi";
+    const langLower = (language || "").toLowerCase().trim();
+    if (langLower.includes("en") || langLower.includes("eng")) langNorm = "en";
+    else if (langLower.includes("hi") || langLower.includes("hin")) langNorm = "hi";
+    else langNorm = isHindiQuestion ? "hi" : "en";
+
     // Keywords to tags array
     const tags = keywords
-      ? keywords.split(/[,،]+/).map(t => t.trim()).filter(Boolean)
+      ? keywords.split(/[,،;|]+/).map(t => t.trim()).filter(Boolean)
       : [];
 
     results.push({
-      category,
-      subcategory,
-      topic,
-      subject,
+      mainCategory: mainCategory || "India GK",
+      subCategory: subCategory || "",
+      category: subCategory || mainCategory || "",
+      topic: topic || "",
+      topicName: topic || "",
+      subject: topic || "",
       keywords: tags,
+      keywordsRaw: keywords,
       question,
       options,
       answer: options[correctIdx] || answer || options[0],
+      correctAnswer: options[correctIdx] || answer || options[0],
       correct_index: correctIdx,
-      questionType: questionType || "Quick Choice",
       difficulty: diffNorm,
+      hindiExplanation: hindiExplanation || "",
+      englishExplanation: englishExplanation || "",
+      explanation: hindiExplanation || englishExplanation || "",
+      language: langNorm,
+      questionType: "MCQ",
     });
   }
 
@@ -153,21 +266,23 @@ function isSetNew(setObj) {
 }
 
 // RFC 4180 compliant CSV export with UTF-8 BOM (\uFEFF) for Microsoft Excel
+// Standard 14 Columns matching user's template exactly
 function exportQuestionsToCSV(questions, filename, defaultCategory = "") {
   const headers = [
-    "Category",
-    "Subcategory",
-    "Topic",
-    "Subject",
-    "Keywords",
+    "Main Category",
+    "Sub category",
+    "Topic name",
+    "Keywords/tags",
     "Question",
     "Option A",
     "Option B",
     "Option C",
     "Option D",
-    "Answer",
-    "Question Type",
+    "Correct Answer",
     "Difficulty",
+    "Hindi Explanation",
+    "English Explanation",
+    "Language",
   ];
 
   const escapeCSV = (val) => {
@@ -186,11 +301,15 @@ function exportQuestionsToCSV(questions, filename, defaultCategory = "") {
       ? q.keywords.join(", ")
       : "";
 
+    const isHindi = /[\u0900-\u097F]/.test(q.text || q.question || "");
+    const hindiExp = q.hindiExplanation || q.explanation_hi || (q.language === "hi" || isHindi ? q.explanation : "") || "";
+    const englishExp = q.englishExplanation || q.explanation_en || (q.language === "en" || !isHindi ? q.explanation : "") || "";
+    const langStr = q.language ? (q.language === "hi" ? "Hindi" : "English") : (isHindi ? "Hindi" : "English");
+
     return [
-      escapeCSV(defaultCategory || q.category || ""),
-      escapeCSV(q.subcategory || q.subCategory || ""),
-      escapeCSV(q.topic || ""),
-      escapeCSV(q.subject || ""),
+      escapeCSV(q.masterCategory || defaultCategory || "India GK"),
+      escapeCSV(q.category || q.subcategory || q.subCategory || ""),
+      escapeCSV(q.topic || q.topicName || ""),
       escapeCSV(tagsStr),
       escapeCSV(q.text || q.text_en || q.question || ""),
       escapeCSV(opts[0] || ""),
@@ -198,8 +317,10 @@ function exportQuestionsToCSV(questions, filename, defaultCategory = "") {
       escapeCSV(opts[2] || ""),
       escapeCSV(opts[3] || ""),
       escapeCSV(ansText),
-      escapeCSV(q.type || q.questionType || "Quick Choice"),
-      escapeCSV(q.difficulty || "Easy"),
+      escapeCSV((q.difficulty || "Easy").charAt(0).toUpperCase() + (q.difficulty || "Easy").slice(1)),
+      escapeCSV(hindiExp),
+      escapeCSV(englishExp),
+      escapeCSV(langStr),
     ].join(",");
   });
 
@@ -314,14 +435,27 @@ export default function SetManagerModal({
       setParsedRows(parsed);
       toast.success(`Parsed ${parsed.length} questions from Excel!`);
 
-      // Auto-detect target category if first row has Category name matching our database
-      const detectedCatName = parsed[0]?.category;
-      if (detectedCatName) {
-        const matched = allCategories.find(
-          c => c.topic.toLowerCase() === detectedCatName.toLowerCase()
+      // Auto-detect target main category & subcategory if present in parsed rows
+      const detectedMain = (parsed[0]?.mainCategory || "").trim();
+      const detectedSub = (parsed[0]?.subCategory || parsed[0]?.category || "").trim();
+
+      let matchedMainId = targetCatId;
+      if (detectedMain) {
+        const matchedMain = allCategories.find(
+          c => !c.parentId && c.topic.toLowerCase().trim() === detectedMain.toLowerCase()
         );
-        if (matched) {
-          setTargetCatId(matched.id);
+        if (matchedMain) {
+          matchedMainId = matchedMain.id;
+          setTargetCatId(matchedMain.id);
+        }
+      }
+
+      if (detectedSub && matchedMainId) {
+        const matchedSub = allCategories.find(
+          c => c.parentId === matchedMainId && c.topic.toLowerCase().trim() === detectedSub.toLowerCase()
+        );
+        if (matchedSub) {
+          setTargetSubCatId(matchedSub.id);
         }
       }
     } else {
@@ -749,13 +883,21 @@ export default function SetManagerModal({
         questions: parsedRows.map(r => ({
           question: r.question,
           options: r.options,
-          answer: r.answer,
+          answer: r.options[r.correct_index] || r.answer || r.options[0],
+          correctAnswer: r.options[r.correct_index] || r.answer || r.options[0],
           correct_index: r.correct_index,
           difficulty: r.difficulty,
-          questionType: r.questionType,
-          keywords: r.keywords,
-          subject: r.subject,
-          topic: r.topic,
+          questionType: "MCQ",
+          keywords: Array.isArray(r.keywords) ? r.keywords : (r.keywords ? [r.keywords] : []),
+          keywordsEn: Array.isArray(r.keywords) ? r.keywords.join(", ") : (r.keywordsRaw || ""),
+          subject: r.topicName || r.topic || targetSubCategoryObj?.topic || "",
+          topic: r.topicName || r.topic || targetSubCategoryObj?.topic || "",
+          hindiExplanation: r.hindiExplanation || "",
+          englishExplanation: r.englishExplanation || "",
+          explanation: r.hindiExplanation || r.englishExplanation || r.explanation || "",
+          explanation_hi: r.hindiExplanation || "",
+          explanation_en: r.englishExplanation || "",
+          language: r.language || (r.hindiExplanation ? "hi" : "en"),
         })),
       };
 
@@ -1351,10 +1493,13 @@ export default function SetManagerModal({
                 <div className={styles.bannerIcon}>📋</div>
                 <div className={styles.bannerContent}>
                   <div className={styles.bannerTitle}>
-                    Excel Copy-Paste 20 Questions Set Importer
+                    Excel Copy-Paste 20 Questions Set Importer (Standard 14 Columns)
                   </div>
                   <p className={styles.bannerText}>
-                    Simply copy your 20 rows directly from Excel (Columns A to M: Category, Subcategory, Topic, Subject, Keywords, Question, Option A, B, C, D, Answer, Type, Difficulty).
+                    Copy rows directly from Excel in the standard 14-column format:
+                    <br />
+                    <code>Main Category · Sub category · Topic name · Keywords/tags · Question · Option A · Option B · Option C · Option D · Correct Answer · Difficulty · Hindi Explanation · English Explanation · Language</code>
+                    <br />
                     Click inside the dashed area below or press <strong>Ctrl + V</strong> to populate the table automatically!
                   </p>
                 </div>
@@ -1432,7 +1577,7 @@ export default function SetManagerModal({
                     Click here and press Ctrl + V to Paste Excel Data
                   </h4>
                   <p className={styles.pasteDropzoneHint}>
-                    Supports 13 columns (Category, Subcategory, Topic, Subject, Keywords, Question, Opt A, Opt B, Opt C, Opt D, Answer, Type, Difficulty)
+                    Standard 14 columns: Main Category, Sub category, Topic name, Keywords/tags, Question, Option A, B, C, D, Correct Answer, Difficulty, Hindi Explanation, English Explanation, Language
                   </p>
                   <textarea
                     className={styles.hiddenTextarea}
@@ -1488,13 +1633,15 @@ export default function SetManagerModal({
                         <tr>
                           <th style={{ width: "36px" }}>#</th>
                           <th style={{ minWidth: "220px" }}>Question</th>
-                          <th style={{ minWidth: "120px" }}>Option A</th>
-                          <th style={{ minWidth: "120px" }}>Option B</th>
-                          <th style={{ minWidth: "120px" }}>Option C</th>
-                          <th style={{ minWidth: "120px" }}>Option D</th>
-                          <th style={{ minWidth: "90px" }}>Correct</th>
-                          <th style={{ minWidth: "90px" }}>Difficulty</th>
-                          <th style={{ minWidth: "90px" }}>Type</th>
+                          <th style={{ minWidth: "115px" }}>Option A</th>
+                          <th style={{ minWidth: "115px" }}>Option B</th>
+                          <th style={{ minWidth: "115px" }}>Option C</th>
+                          <th style={{ minWidth: "115px" }}>Option D</th>
+                          <th style={{ minWidth: "135px" }}>Correct Answer</th>
+                          <th style={{ minWidth: "85px" }}>Difficulty</th>
+                          <th style={{ minWidth: "120px" }}>Topic / Tags</th>
+                          <th style={{ minWidth: "140px" }}>Explanation</th>
+                          <th style={{ minWidth: "55px" }}>Lang</th>
                           <th style={{ width: "36px" }}></th>
                         </tr>
                       </thead>
@@ -1506,6 +1653,7 @@ export default function SetManagerModal({
                               <input
                                 className={styles.cellInput}
                                 value={row.question}
+                                title={row.question}
                                 onChange={(e) => updateParsedRow(idx, "question", e.target.value)}
                               />
                             </td>
@@ -1513,6 +1661,7 @@ export default function SetManagerModal({
                               <input
                                 className={styles.cellInput}
                                 value={row.options[0] || ""}
+                                title={row.options[0] || ""}
                                 onChange={(e) => updateParsedOption(idx, 0, e.target.value)}
                               />
                             </td>
@@ -1520,6 +1669,7 @@ export default function SetManagerModal({
                               <input
                                 className={styles.cellInput}
                                 value={row.options[1] || ""}
+                                title={row.options[1] || ""}
                                 onChange={(e) => updateParsedOption(idx, 1, e.target.value)}
                               />
                             </td>
@@ -1527,6 +1677,7 @@ export default function SetManagerModal({
                               <input
                                 className={styles.cellInput}
                                 value={row.options[2] || ""}
+                                title={row.options[2] || ""}
                                 onChange={(e) => updateParsedOption(idx, 2, e.target.value)}
                               />
                             </td>
@@ -1534,23 +1685,32 @@ export default function SetManagerModal({
                               <input
                                 className={styles.cellInput}
                                 value={row.options[3] || ""}
+                                title={row.options[3] || ""}
                                 onChange={(e) => updateParsedOption(idx, 3, e.target.value)}
                               />
                             </td>
                             <td>
                               <select
                                 className={styles.diffSelect}
+                                style={{
+                                  background: "#f0fdf4",
+                                  borderColor: "#86efac",
+                                  fontWeight: 700,
+                                  color: "#166534",
+                                  maxWidth: "145px",
+                                }}
                                 value={row.correct_index}
                                 onChange={(e) => {
                                   const cIdx = parseInt(e.target.value, 10);
                                   updateParsedRow(idx, "correct_index", cIdx);
                                   updateParsedRow(idx, "answer", row.options[cIdx] || "");
+                                  updateParsedRow(idx, "correctAnswer", row.options[cIdx] || "");
                                 }}
                               >
-                                <option value={0}>A ({row.options[0]?.slice(0, 10) || "Opt A"})</option>
-                                <option value={1}>B ({row.options[1]?.slice(0, 10) || "Opt B"})</option>
-                                <option value={2}>C ({row.options[2]?.slice(0, 10) || "Opt C"})</option>
-                                <option value={3}>D ({row.options[3]?.slice(0, 10) || "Opt D"})</option>
+                                <option value={0}>A ({row.options[0]?.slice(0, 12) || "Opt A"})</option>
+                                <option value={1}>B ({row.options[1]?.slice(0, 12) || "Opt B"})</option>
+                                <option value={2}>C ({row.options[2]?.slice(0, 12) || "Opt C"})</option>
+                                <option value={3}>D ({row.options[3]?.slice(0, 12) || "Opt D"})</option>
                               </select>
                             </td>
                             <td>
@@ -1566,12 +1726,53 @@ export default function SetManagerModal({
                               </select>
                             </td>
                             <td>
+                              <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                                <input
+                                  className={styles.cellInput}
+                                  placeholder="Topic"
+                                  value={row.topicName || row.topic || ""}
+                                  onChange={(e) => {
+                                    updateParsedRow(idx, "topic", e.target.value);
+                                    updateParsedRow(idx, "topicName", e.target.value);
+                                  }}
+                                />
+                                {Array.isArray(row.keywords) && row.keywords.length > 0 && (
+                                  <span style={{ fontSize: "10px", color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "120px" }}>
+                                    🏷️ {row.keywords.join(", ")}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td>
                               <input
                                 className={styles.cellInput}
-                                style={{ width: "90px" }}
-                                value={row.questionType}
-                                onChange={(e) => updateParsedRow(idx, "questionType", e.target.value)}
+                                placeholder="Explanation..."
+                                value={row.hindiExplanation || row.englishExplanation || row.explanation || ""}
+                                title={row.hindiExplanation || row.englishExplanation || row.explanation || ""}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  updateParsedRow(idx, "explanation", val);
+                                  if (row.language === "hi") {
+                                    updateParsedRow(idx, "hindiExplanation", val);
+                                  } else {
+                                    updateParsedRow(idx, "englishExplanation", val);
+                                  }
+                                }}
                               />
+                            </td>
+                            <td>
+                              <span
+                                style={{
+                                  fontSize: "10.5px",
+                                  fontWeight: 800,
+                                  padding: "2px 6px",
+                                  borderRadius: "4px",
+                                  background: row.language === "hi" ? "#fef3c7" : "#e0e7ff",
+                                  color: row.language === "hi" ? "#92400e" : "#3730a3",
+                                }}
+                              >
+                                {row.language?.toUpperCase() || "HI"}
+                              </span>
                             </td>
                             <td>
                               <button
