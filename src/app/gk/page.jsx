@@ -575,10 +575,15 @@ export default function GkHubPage() {
                       const setsCount = topic.setsCount || 0;
                       const qCount = topic.questionCount || setsCount * 20;
 
+                      const isIndia = category.toLowerCase().includes("india");
+                      const targetHref = isIndia 
+                        ? `/category/india-gk?sub=${topic.id}`
+                        : `/category/world-gk?sub=${topic.id}`;
+
                       return (
                         <Link
                           key={topic.id}
-                          href={`/gk/${category.toLowerCase().includes("india") ? "india" : "world"}/topic/${topic.id}`}
+                          href={targetHref}
                           className="group relative p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 hover:border-purple-300 dark:hover:border-purple-800 hover:shadow-md hover:shadow-purple-500/5 transition-all flex flex-col justify-between min-h-[120px]"
                         >
                           <div>

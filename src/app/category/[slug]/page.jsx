@@ -89,20 +89,30 @@ export default function CategorySetsPage() {
   }, [category, params?.slug]);
 
   const availableSubCategories = useMemo(() => {
-    // Database is the single authoritative source of truth.
-    // If admin unlinked or removed all subcategories, show none (empty array).
+    // 1. From database category subCategories if populated
     if (category && Array.isArray(category.subCategories) && category.subCategories.length > 0) {
       return category.subCategories.map((sc) => ({
-        id: sc.id || sc._id,
+        id: sc.id || sc._id || sc.slug,
         name: sc.topic || sc.name,
         nameHi: sc.topicHi || sc.nameHi || "",
         slug: sc.slug,
-        topics: Array.isArray(sc.chips) ? sc.chips : [],
+        topics: Array.isArray(sc.chips) ? sc.chips : (Array.isArray(sc.topics) ? sc.topics : []),
         questionCount: sc.questionCount || 0,
       }));
     }
+    // 2. Fallback to mainCategoryConfig taxonomy so official subcategories are always visible & organized
+    if (mainCategoryConfig && Array.isArray(mainCategoryConfig.subcategories) && mainCategoryConfig.subcategories.length > 0) {
+      return mainCategoryConfig.subcategories.map((sc) => ({
+        id: sc.slug,
+        name: sc.name,
+        nameHi: sc.nameHi || sc.name,
+        slug: sc.slug,
+        topics: Array.isArray(sc.topics) ? sc.topics : [],
+        questionCount: 0,
+      }));
+    }
     return [];
-  }, [category]);
+  }, [category, mainCategoryConfig]);
 
   const activeSubCategoryObj = useMemo(() => {
     if (!selectedSubCategory) return null;

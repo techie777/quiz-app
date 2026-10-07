@@ -153,23 +153,30 @@ export async function POST(req) {
         const r = rows[i];
         const rowNum = i + 2;
 
-        // Read by header name (Rule 3)
-        const text = getFieldByHeader(r, ["question", "text", "qtext", "q_text"]);
+        // Read by header name (Rule 3 & Standard 14-Column Template)
+        const text = getFieldByHeader(r, ["questions", "question", "text", "qtext", "q_text"]);
         const optA = getFieldByHeader(r, ["option a", "optiona", "option 1", "opt a", "opt1", "a"]);
         const optB = getFieldByHeader(r, ["option b", "optionb", "option 2", "opt b", "opt2", "b"]);
         const optC = getFieldByHeader(r, ["option c", "optionc", "option 3", "opt c", "opt3", "c"]);
         const optD = getFieldByHeader(r, ["option d", "optiond", "option 4", "opt d", "opt4", "d"]);
         const rawAns = getFieldByHeader(r, ["correct answer", "correctanswer", "correct answer (1-4)", "answer", "correct", "ans"]);
         const rawDiff = getFieldByHeader(r, ["difficulty", "diff", "level"]);
-        const rawMaster = getFieldByHeader(r, ["master category", "mastercategory", "master_category", "main category", "maincategory"]) || "GK";
-        const sheetCat = getFieldByHeader(r, ["category", "sub category", "subcategory"]);
+        const rawMaster = getFieldByHeader(r, ["main category", "maincategory", "main_category", "master category", "mastercategory", "master_category"]) || "India GK";
+        const sheetCat = getFieldByHeader(r, ["sub category", "subcategory", "sub_category", "category"]);
         const rawCat = sheetCat || finalCatName;
-        const rawTopic = getFieldByHeader(r, ["topic", "topic name", "topicname", "topic_name"]) || rawCat;
-        const rawSubject = getFieldByHeader(r, ["subject", "subject name", "subjectname", "subject_name", "sub topic", "subtopic", "sub_topic"]) || rawTopic;
+        const rawTopic = getFieldByHeader(r, ["topic name", "topicname", "topic_name", "topic"]) || rawCat;
+        const rawSubject = getFieldByHeader(r, ["subject", "subject name", "subjectname", "sub topic", "subtopic", "sub_topic"]) || rawTopic;
+        const rawKeywords = getFieldByHeader(r, ["keywords", "keywords in english", "keywords_en", "keyword", "keywordsen", "exam tags", "examtags", "tags"]);
+        const rawHindiExp = getFieldByHeader(r, ["hindi explanation", "hindiexplanation", "hindi_explanation", "explanation_hi", "explanation hi"]);
+        const rawEnglishExp = getFieldByHeader(r, ["english explanation", "englishexplanation", "english_explanation", "explanation_en", "explanation en"]);
+        const rawGenExp = getFieldByHeader(r, ["explanation", "exp", "solution", "notes"]);
         const rawLang = getFieldByHeader(r, ["language", "lang"]) || "hi";
-        const rawExam = getFieldByHeader(r, ["exam tags", "examtags", "exam", "tags"]);
         const rawQType = getFieldByHeader(r, ["question type", "questiontype", "type"]) || "MCQ";
-        const explanation = getFieldByHeader(r, ["explanation", "exp", "solution", "notes"]);
+
+        const language = normalizeLanguage(rawLang);
+        const hindiExplanation = rawHindiExp || (language === "hi" ? rawGenExp : "");
+        const englishExplanation = rawEnglishExp || (language === "en" ? rawGenExp : "");
+        const explanation = (language === "hi" ? hindiExplanation : englishExplanation) || rawGenExp || hindiExplanation || englishExplanation || "";
 
         // Required text & options
         if (!text) {
@@ -193,11 +200,10 @@ export async function POST(req) {
 
         const difficulty = normalizeDifficulty(rawDiff) || "medium";
         const category = finalCatName;
-        const language = normalizeLanguage(rawLang);
 
-        // Exam tags
-        const examTags = rawExam
-          ? rawExam.split(/[,;|]/).map((t) => t.trim()).filter(Boolean)
+        // Keywords in English list
+        const keywordsList = rawKeywords
+          ? rawKeywords.split(/[,;|]/).map((t) => t.trim()).filter(Boolean)
           : [];
 
         // Hash for duplicate check
@@ -220,7 +226,12 @@ export async function POST(req) {
           subjectName: rawSubject,
           questionType: rawQType,
           explanation,
-          examTags,
+          hindiExplanation,
+          englishExplanation,
+          keywords: keywordsList,
+          keywordsEn: rawKeywords,
+          keywords_en: rawKeywords,
+          examTags: keywordsList,
           hash,
         });
       }
@@ -421,10 +432,16 @@ export async function POST(req) {
             correct_index: typeof q.correctIndex === "number" ? q.correctIndex : 0,
             difficulty: q.difficulty || "medium",
             difficulty_level: diffLevel,
-            explanation: q.explanation || "",
-            explanation_en: q.language === "en" ? q.explanation || "" : undefined,
-            explanation_hi: q.language === "hi" ? q.explanation || "" : undefined,
-            explanationHi: q.language === "hi" ? q.explanation || "" : undefined,
+            explanation: q.explanation || (q.language === "hi" ? q.hindiExplanation : q.englishExplanation) || "",
+            explanation_en: q.englishExplanation || (q.language === "en" ? q.explanation : undefined),
+            explanation_hi: q.hindiExplanation || (q.language === "hi" ? q.explanation : undefined),
+            explanationHi: q.hindiExplanation || (q.language === "hi" ? q.explanation : undefined),
+            explanationEn: q.englishExplanation || (q.language === "en" ? q.explanation : undefined),
+            hindiExplanation: q.hindiExplanation || undefined,
+            englishExplanation: q.englishExplanation || undefined,
+            keywords: q.keywords || [],
+            keywords_en: q.keywordsEn || q.keywords_en || (Array.isArray(q.keywords) ? q.keywords.join(", ") : "") || undefined,
+            keywordsEn: q.keywordsEn || q.keywords_en || (Array.isArray(q.keywords) ? q.keywords.join(", ") : "") || undefined,
             language: q.language || "hi",
             masterCategory: hier.masterCategory,
             categoryId: targetCategoryId,
@@ -440,9 +457,9 @@ export async function POST(req) {
             subjectSlug: hier.subjectSlug,
             subTopic: hier.subjectName,
             questionType: q.questionType || "MCQ",
-            examTags: q.examTags || [],
-            exam: q.examTags || [],
-            tags: q.examTags || [],
+            examTags: q.examTags || q.keywords || [],
+            exam: q.examTags || q.keywords || [],
+            tags: q.keywords || q.examTags || [],
             hash,
             status: "published",
             source: "Bulk Upload Sheet",

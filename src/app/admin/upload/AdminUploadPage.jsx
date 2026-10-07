@@ -31,89 +31,134 @@ import {
 
 const DIFFICULTIES = ["easy", "medium", "hard", "expert"];
 
-// Generate New GK Sample Template (.xlsx with 2 sheets) - Rule 3 compliant
+// Generate Standard 14-Column Excel Template (.xlsx) requested by user
 async function generateGkSampleXlsx() {
   const XLSX = await import("xlsx");
   const questionsData = [
     {
-      "Question": "सिंधु घाटी सभ्यता का प्रमुख बंदरगाह कौन सा था?",
+      "Main category": "India GK",
+      "Sub category": "Indian History",
+      "Topic name": "Ancient India",
+      "Keywords": "Indus Valley, Lothal, Harappa, Ancient Port",
+      "Questions": "सिंधु घाटी सभ्यता का प्रमुख बंदरगाह कौन सा था?",
       "Option A": "कालीबंगन",
       "Option B": "लोथल",
       "Option C": "रोपड़",
       "Option D": "मोहनजोदड़ो",
       "Correct Answer": "B",
-      "Question Type": "Explore",
-      "Master Category": "GK",
-      "Category": "India GK",
-      "Topic": "History",
-      "Subject": "Ancient India",
       "Difficulty": "Medium",
-      "Explanation": "लोथल गुजरात के भाल क्षेत्र में स्थित प्राचीन सिंधु घाटी सभ्यता का एक प्रमुख बंदरगाह शहर था।",
+      "Hindi Explanation": "लोथल गुजरात के भाल क्षेत्र में स्थित प्राचीन सिंधु घाटी सभ्यता का एक प्रमुख बंदरगाह शहर था।",
+      "English Explanation": "Lothal was one of the southernmost major port cities of the ancient Indus Valley Civilization located in Gujarat.",
       "Language": "hi",
-      "Exam Tags": "SSC CGL, State PSC, Railway",
     },
     {
-      "Question": "What is the capital city of France?",
-      "Option A": "London",
-      "Option B": "Berlin",
-      "Option C": "Paris",
-      "Option D": "Madrid",
-      "Correct Answer": "C",
-      "Question Type": "Explore",
-      "Master Category": "GK",
-      "Category": "World GK",
-      "Topic": "World Geography",
-      "Subject": "European Capitals",
+      "Main category": "India GK",
+      "Sub category": "Indian Geography",
+      "Topic name": "Rivers & Lakes",
+      "Keywords": "Ganga, Himalayas, Gangotri, Longest River",
+      "Questions": "Which is the longest river entirely flowing within India?",
+      "Option A": "Ganga",
+      "Option B": "Godavari",
+      "Option C": "Krishna",
+      "Option D": "Narmada",
+      "Correct Answer": "A",
       "Difficulty": "Easy",
-      "Explanation": "Paris is the capital and largest city of France, situated on the Seine River.",
+      "Hindi Explanation": "गंगा भारत की सबसे लंबी नदी है, जो गंगोत्री हिमनद से निकलती है।",
+      "English Explanation": "The Ganga is the longest river flowing entirely within India, originating from the Gangotri glacier.",
       "Language": "en",
-      "Exam Tags": "SSC, Railway, UPSC",
     },
     {
-      "Question": "Which celestial body in our solar system has the highest count of confirmed moons?",
-      "Option A": "Jupiter",
-      "Option B": "Saturn",
-      "Option C": "Uranus",
-      "Option D": "Neptune",
+      "Main category": "India GK",
+      "Sub category": "Indian Polity",
+      "Topic name": "Constitution",
+      "Keywords": "Constitution, Dr BR Ambedkar, Drafting Committee",
+      "Questions": "भारतीय संविधान की प्रारूप समिति के अध्यक्ष कौन थे?",
+      "Option A": "डॉ. राजेन्द्र प्रसाद",
+      "Option B": "डॉ. बी. आर. अम्बेडकर",
+      "Option C": "जवाहरलाल नेहरू",
+      "Option D": "सरदार वल्लभभाई पटेल",
       "Correct Answer": "B",
-      "Question Type": "Rapid Fire",
-      "Master Category": "GK",
-      "Category": "World GK",
-      "Topic": "Space & Astronomy",
-      "Subject": "Solar System",
-      "Difficulty": "Expert",
-      "Explanation": "Saturn currently holds the lead with 146 discovered and designated moons.",
-      "Language": "en",
-      "Exam Tags": "NDA, CDS, SSC",
+      "Difficulty": "Medium",
+      "Hindi Explanation": "डॉ. भीमराव अम्बेडकर संविधान सभा की प्रारूप समिति के अध्यक्ष थे और उन्हें संविधान का जनक माना जाता है।",
+      "English Explanation": "Dr. B.R. Ambedkar was the Chairman of the Drafting Committee of the Indian Constituent Assembly.",
+      "Language": "hi",
     },
   ];
 
   const allowedValues = [
-    { "Field": "Category", "Allowed Values": "India GK, World GK", "Description": "Sub Category under Master Category" },
-    { "Field": "Topic", "Allowed Values": "History, Geography, Polity, Science...", "Description": "Main topic" },
-    { "Field": "Subject", "Allowed Values": "Ancient India, Medieval India...", "Description": "Specific subject under topic (Rule 3)" },
-    { "Field": "Difficulty", "Allowed Values": "Easy, Medium, Hard, Expert", "Description": "7 Easy + 7 Medium + 6 Hard/Expert per set" },
-    { "Field": "Language", "Allowed Values": "Hindi, English, hi, en", "Description": "Language of the question" },
-    { "Field": "Correct Answer", "Allowed Values": "A, B, C, D (or 1, 2, 3, 4, or exact option text)", "Description": "Normalized automatically to 0..3 index" },
-    { "Field": "Question Type", "Allowed Values": "Learn, Rapid Fire, Quick Choice, Explore, MCQ", "Description": "Stored as question type" },
-    { "Field": "Master Category", "Allowed Values": "GK", "Description": "Always 'GK' for GK bank" },
-    { "Field": "Exam Tags", "Allowed Values": "SSC, Railway, PSC, UPSC...", "Description": "Comma-separated exam keywords" },
+    { "Field": "Main category", "Allowed Values": "India GK, World GK, Science GK, Sports...", "Description": "Main top-level category" },
+    { "Field": "Sub category", "Allowed Values": "Indian History, Indian Geography, Indian Polity, Indian Economy...", "Description": "Subcategory under main category" },
+    { "Field": "Topic name", "Allowed Values": "Ancient India, Rivers & Lakes, Constitution...", "Description": "Specific topic name" },
+    { "Field": "Keywords", "Allowed Values": "English keywords (e.g. Indus Valley, Lothal, Harappa)", "Description": "Keywords in English for search and topic indexing" },
+    { "Field": "Questions", "Allowed Values": "Text of the question", "Description": "Full question statement" },
+    { "Field": "Option A", "Allowed Values": "Option A text", "Description": "First choice option" },
+    { "Field": "Option B", "Allowed Values": "Option B text", "Description": "Second choice option" },
+    { "Field": "Option C", "Allowed Values": "Option C text", "Description": "Third choice option" },
+    { "Field": "Option D", "Allowed Values": "Option D text", "Description": "Fourth choice option" },
+    { "Field": "Correct Answer", "Allowed Values": "A, B, C, D (or 1, 2, 3, 4)", "Description": "Letter or number of the correct option" },
+    { "Field": "Difficulty", "Allowed Values": "Easy, Medium, Hard, Expert", "Description": "Difficulty level of the question" },
+    { "Field": "Hindi Explanation", "Allowed Values": "Hindi solution / facts", "Description": "Detailed explanation in Hindi" },
+    { "Field": "English Explanation", "Allowed Values": "English solution / facts", "Description": "Detailed explanation in English" },
+    { "Field": "Language", "Allowed Values": "hi, en, Hindi, English", "Description": "Language of the question ('hi' or 'en')" },
   ];
 
   const wsQuestions = XLSX.utils.json_to_sheet(questionsData);
   wsQuestions["!cols"] = [
-    { wch: 45 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 },
-    { wch: 16 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 20 },
-    { wch: 20 }, { wch: 14 }, { wch: 45 }, { wch: 12 }, { wch: 25 },
+    { wch: 18 }, { wch: 20 }, { wch: 20 }, { wch: 30 }, { wch: 45 },
+    { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 16 },
+    { wch: 14 }, { wch: 45 }, { wch: 45 }, { wch: 12 },
   ];
 
   const wsAllowed = XLSX.utils.json_to_sheet(allowedValues);
-  wsAllowed["!cols"] = [{ wch: 18 }, { wch: 40 }, { wch: 45 }];
+  wsAllowed["!cols"] = [{ wch: 20 }, { wch: 42 }, { wch: 45 }];
 
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, wsQuestions, "GK Questions");
-  XLSX.utils.book_append_sheet(wb, wsAllowed, "Allowed Values");
-  XLSX.writeFile(wb, "quizweb-gk-upload-template.xlsx");
+  XLSX.utils.book_append_sheet(wb, wsQuestions, "Questions");
+  XLSX.utils.book_append_sheet(wb, wsAllowed, "Template Guide");
+  XLSX.writeFile(wb, "standard-quiz-upload-template.xlsx");
+}
+
+function downloadCsvSampleTemplate() {
+  const headers = [
+    "Main category",
+    "Sub category",
+    "Topic name",
+    "Keywords",
+    "Questions",
+    "Option A",
+    "Option B",
+    "Option C",
+    "Option D",
+    "Correct Answer",
+    "Difficulty",
+    "Hindi Explanation",
+    "English Explanation",
+    "Language",
+  ];
+  const sampleRow1 = [
+    "India GK",
+    "Indian History",
+    "Ancient India",
+    '"Indus Valley, Lothal, Harappa"',
+    '"सिंधु घाटी सभ्यता का प्रमुख बंदरगाह कौन सा था?"',
+    "कालीबंगन",
+    "लोथल",
+    "रोपड़",
+    "मोहनजोदड़ो",
+    "B",
+    "Medium",
+    '"लोथल गुजरात में स्थित प्रमुख सिंधु बंदरगाह शहर था।"',
+    '"Lothal was a major ancient Indus port city located in Gujarat."',
+    "hi",
+  ];
+  const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + [headers.join(","), sampleRow1.join(",")].join("\n");
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", "standard-quiz-upload-template.csv");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 // Generate Legacy Sample Template (.xlsx with 2 sheets)
@@ -757,46 +802,58 @@ export default function AdminUploadPage() {
                 <button
                   type="button"
                   onClick={generateGkSampleXlsx}
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white shadow-xs text-xs font-black transition-colors cursor-pointer"
+                >
+                  <Download size={14} />
+                  <span>Download Standard Template (.xlsx)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={downloadCsvSampleTemplate}
                   className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-xs font-bold transition-colors cursor-pointer"
                 >
                   <Download size={14} />
-                  <span>Download New GK Template (.xlsx)</span>
+                  <span>Download Standard CSV (.csv)</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={generateLegacySampleXlsx}
-                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-colors cursor-pointer"
                 >
                   <Download size={14} />
-                  <span>Download Legacy Template (.xlsx)</span>
+                  <span>Legacy (.xlsx)</span>
                 </button>
               </div>
             </div>
 
             {/* Template Format Overview Pills */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 text-xs">
-              <div className="p-3 rounded-2xl bg-purple-50/60 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/40">
+              <div className="p-3.5 rounded-2xl bg-purple-50/70 dark:bg-purple-950/30 border border-purple-200/80 dark:border-purple-900/50">
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="font-extrabold text-purple-900 dark:text-purple-300">
-                    🏛️ New GK Template (14 Columns)
+                  <span className="font-extrabold text-purple-900 dark:text-purple-200">
+                    ⭐ Standard Template (Exact 14 Columns)
                   </span>
-                  <span className="px-2 py-0.5 rounded-full bg-purple-200/60 dark:bg-purple-800/60 text-purple-900 dark:text-purple-200 text-[10px] font-black">
-                    RECOMMENDED
+                  <span className="px-2 py-0.5 rounded-full bg-purple-600 text-white text-[10px] font-black uppercase">
+                    STANDARD
                   </span>
                 </div>
-                <p className="text-slate-600 dark:text-slate-400 text-[11px] leading-relaxed">
-                  Question · Option A · Option B · Option C · Option D · Correct Answer · Question Type · Master Category · Category · Topic · Difficulty · Explanation · Language · Exam Tags (+ Sub Topic)
+                <p className="text-slate-700 dark:text-slate-300 text-[11px] font-medium leading-relaxed">
+                  Main category · Sub category · Topic name · Keywords · Questions · Option A · Option B · Option C · Option D · Correct Answer · Difficulty · Hindi Explanation · English Explanation · Language
+                </p>
+                <p className="text-purple-700 dark:text-purple-400 text-[10.5px] font-bold mt-1">
+                  ✓ Keywords in English field automatically indexed into search & taxonomy.
                 </p>
               </div>
 
-              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700">
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700">
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="font-extrabold text-slate-800 dark:text-slate-200">
                     📑 Legacy Template (7 Columns)
                   </span>
                   <span className="px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-bold">
-                    STANDARD
+                    COMPATIBILITY
                   </span>
                 </div>
                 <p className="text-slate-600 dark:text-slate-400 text-[11px] leading-relaxed">

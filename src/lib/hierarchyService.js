@@ -96,7 +96,7 @@ export async function resolveHierarchy(db, {
       const nextOrder = highestTopic.length > 0 ? (highestTopic[0].order || 0) + 1 : 1;
 
       topicDoc = {
-        id: `topic_${topicSlug}_${Date.now().toString(36)}`,
+        id: topicSlug,
         slug: topicSlug,
         category: cleanCategory,
         name: cleanTopic,
@@ -120,24 +120,24 @@ export async function resolveHierarchy(db, {
   let subjectDoc = subjectCache.get(subjectCacheKey);
   if (!subjectDoc) {
     subjectDoc = await subjectsCol.findOne({
-      category: cleanCategory,
       $or: [
+        { topicId: topicDoc.id, name: { $regex: `^${cleanSubject.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, $options: "i" } },
+        { category: cleanCategory, name: { $regex: `^${cleanSubject.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, $options: "i" } },
         { name: { $regex: `^${cleanSubject.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, $options: "i" } },
-        { nameHi: { $regex: `^${cleanSubject.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, $options: "i" } },
       ],
     });
 
     if (!subjectDoc) {
       const subjectSlug = slugify(cleanSubject) || `subject-${Date.now().toString(36)}`;
       const highestSubject = await subjectsCol
-        .find({ category: cleanCategory })
+        .find({ topicId: topicDoc.id })
         .sort({ order: -1 })
         .limit(1)
         .toArray();
       const nextSubOrder = highestSubject.length > 0 ? (highestSubject[0].order || 0) + 1 : 1;
 
       subjectDoc = {
-        id: `subj_${subjectSlug}_${Date.now().toString(36)}`,
+        id: `${topicDoc.id}_${subjectSlug}`,
         slug: subjectSlug,
         topicId: topicDoc.id,
         topicName: topicDoc.name,
