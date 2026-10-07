@@ -72,22 +72,22 @@ export default function AdminDashboard() {
     });
 
     return {
-      mainCategoriesCount: mainList.length || 43,
-      subCategoriesCount: subList.length || 66,
-      topicsCount: 496,
-      totalTagsCount: 655,
-      totalQuestions: totalQ || 6634,
+      mainCategoriesCount: mainList.length || 44,
+      subCategoriesCount: subList.length || 65,
+      topicsCount: 554,
+      totalTagsCount: 0,
+      totalQuestions: totalQ,
       difficulty: {
-        easy: diff.easy || 4045,
-        medium: diff.medium || 1546,
-        hard: diff.hard || 947,
-        expert: 96,
-        total: totalQ || 6634
+        easy: diff.easy || 0,
+        medium: diff.medium || 0,
+        hard: diff.hard || 0,
+        expert: 0,
+        total: totalQ
       },
       emptyCounts: {
         mainCategories: mainList.filter(c => (c?.questionCount || 0) === 0).length,
         subCategories: subList.filter(c => (c?.questionCount || 0) === 0).length,
-        topics: 120
+        topics: 554
       }
     };
   }, [quizzes]);
@@ -97,7 +97,7 @@ export default function AdminDashboard() {
 
   // Difficulty Percentages
   const diffPct = useMemo(() => {
-    const diff = summary.difficulty || { easy: 4045, medium: 1546, hard: 947, expert: 96 };
+    const diff = summary.difficulty || { easy: 0, medium: 0, hard: 0, expert: 0 };
     const t = Math.max(summary.totalQuestions, 1);
     return {
       easyPct: Math.round(((diff.easy || 0) / t) * 100),

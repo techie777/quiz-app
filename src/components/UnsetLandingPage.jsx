@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -28,24 +28,50 @@ export default function UnsetLandingPage() {
   const { isHindi } = useLanguage();
   const { quizzes } = useData();
 
-  // Compute live data stats from real categories in the data model
+  // Dynamic live stats fetched from database / admin stats API
+  const [liveStats, setLiveStats] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    fetch("/api/public-stats", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (isMounted && data && typeof data.totalQuestions === "number") {
+          setLiveStats(data);
+        }
+      })
+      .catch((err) => {
+        console.warn("Could not fetch live public stats:", err);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Compute live data stats with priority to live database / public stats API
   const { totalQuestions, totalCategories } = useMemo(() => {
+    if (liveStats && typeof liveStats.totalQuestions === "number") {
+      return {
+        totalQuestions: liveStats.totalQuestions,
+        totalCategories: liveStats.totalCategories || 44,
+      };
+    }
+
     const activeCats = Array.isArray(quizzes)
       ? quizzes.filter((c) => !c.hidden)
       : [];
-    // Only aggregate top-level parent categories to prevent double counting subcategories
     const mainCats = activeCats.filter((c) => !c.parentId);
-    const catCount = activeCats.length;
+    const catCount = mainCats.length > 0 ? mainCats.length : 44;
     const qCount = mainCats.reduce(
       (acc, c) => acc + (c.questionCount ?? c.questions?.length ?? 0),
       0
     );
 
     return {
-      totalCategories: Math.max(catCount, 52),
-      totalQuestions: qCount > 0 ? qCount : 6834,
+      totalCategories: catCount,
+      totalQuestions: qCount,
     };
-  }, [quizzes]);
+  }, [liveStats, quizzes]);
 
   // Handler for tier selection
   const handleSelectTier = (tierId) => {
@@ -211,7 +237,7 @@ export default function UnsetLandingPage() {
         <div className="mt-3.5 flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs sm:text-sm text-slate-600 font-semibold">
           <span className="flex items-center gap-1 text-slate-800 font-bold">
             <BookOpen size={14} className="text-indigo-600" />
-            <span>{totalQuestions.toLocaleString()}+</span>
+            <span>{totalQuestions > 0 ? `${totalQuestions.toLocaleString()}+` : "0"}</span>
             <span className="text-slate-500 font-normal">{isHindi ? "प्रश्न" : "Questions"}</span>
           </span>
           <span className="text-slate-300">·</span>
