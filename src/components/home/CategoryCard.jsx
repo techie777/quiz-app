@@ -21,10 +21,16 @@ export default function CategoryCard({ category, isHindi = false }) {
   const hiSubtitle = category.nameHi || category.topicHi || "";
   const shortDesc = category.example || category.description || "";
   
-  // Topics count or short description
-  const topicsCount = category.topics_count || (category.questionCount ? Math.max(1, Math.min(100, Math.ceil(category.questionCount / 10) * 10)) : 0);
-  const metaText = isLive && topicsCount > 0
-    ? (isHindi ? `${topicsCount} विषय` : `${topicsCount} topics`)
+  // Questions count or short description
+  const qCount = Number(
+    category.questionCount ??
+    category.questionsCount ??
+    category.count ??
+    category._count?.questions ??
+    0
+  );
+  const metaText = qCount > 0
+    ? (isHindi ? `${qCount.toLocaleString("en-IN")} प्रश्न` : `${qCount.toLocaleString("en-IN")} Questions`)
     : (isHindi && category.descriptionHi ? category.descriptionHi : shortDesc);
 
   // Background hue for soft gradient fallback tile
