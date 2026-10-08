@@ -241,15 +241,17 @@ export default function CategoryCard({ category, isHindi = false }) {
     );
   }
 
+  const destinationUrl = category.href || `/category/${slug}`;
+
   return (
     <Link
-      href={`/category/${slug}`}
+      href={destinationUrl}
       prefetch={true}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onPointerDown={() => {
         try {
-          router.prefetch(`/category/${slug}`);
+          router.prefetch(destinationUrl);
         } catch {}
       }}
       className="c-card is-live block no-underline text-inherit"

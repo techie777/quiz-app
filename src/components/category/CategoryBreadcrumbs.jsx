@@ -22,14 +22,24 @@ export default function CategoryBreadcrumbs({
 
   const mainTitle = isHindi && mainCategory.nameHi ? mainCategory.nameHi : mainCategory.name;
 
+  const isIndiaSubCategory = ["india-history", "india-geography", "india-sports", "india-polity"].includes(mainCategory.slug);
+
   // JSON-LD Breadcrumb Schema for SEO
   const breadcrumbItems = [
     { name: isHindi ? "होम" : "Home", url: "https://quizweb.com/" },
-    {
-      name: `${categoryIcon} ${mainTitle}`.trim(),
-      url: `https://quizweb.com/category/${mainCategory.slug}`,
-    },
   ];
+
+  if (isIndiaSubCategory) {
+    breadcrumbItems.push({
+      name: isHindi ? "🇮🇳 भारत सामान्य ज्ञान" : "🇮🇳 India GK",
+      url: "https://quizweb.com/category/india-gk",
+    });
+  }
+
+  breadcrumbItems.push({
+    name: `${categoryIcon} ${mainTitle}`.trim(),
+    url: `https://quizweb.com/category/${mainCategory.slug}`,
+  });
 
   if (subCategory) {
     breadcrumbItems.push({
@@ -79,6 +89,24 @@ export default function CategoryBreadcrumbs({
         <li className="text-slate-300 dark:text-slate-600 select-none">
           <ChevronRight size={14} />
         </li>
+
+        {/* India GK Parent link if this is an India GK subcategory */}
+        {isIndiaSubCategory && (
+          <>
+            <li className="inline-flex items-center">
+              <Link
+                href="/category/india-gk"
+                className="flex items-center gap-1 hover:text-indigo-600 dark:hover:text-indigo-400 font-bold transition-colors py-1"
+              >
+                <span>🇮🇳</span>
+                <span>{isHindi ? "भारत GK" : "India GK"}</span>
+              </Link>
+            </li>
+            <li className="text-slate-300 dark:text-slate-600 select-none">
+              <ChevronRight size={14} />
+            </li>
+          </>
+        )}
 
         {/* 2. Main Category */}
         <li className="inline-flex items-center">

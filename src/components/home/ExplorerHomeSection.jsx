@@ -27,22 +27,180 @@ const FILTER_CHIPS = [
 const KNOWN_LIVE_CONFIG = {
   "india-gk": { status: "live", topics_count: 100 },
   "world-gk": { status: "live", topics_count: 25 },
+  "india-history": { status: "live", topics_count: 30 },
+  "india-geography": { status: "live", topics_count: 30 },
+  "india-sports": { status: "live", topics_count: 20 },
+  "sports": { status: "live", topics_count: 20 },
+  "technology": { status: "live", topics_count: 25 },
+  "science--discovery": { status: "live", topics_count: 50 },
+  "science": { status: "live", topics_count: 50 },
+  "entertainment": { status: "live", topics_count: 20 },
+  "economy--others": { status: "live", topics_count: 20 },
+  "economy-others": { status: "live", topics_count: 20 },
+  "biology-gk-1": { status: "live", topics_count: 20 },
+  "biology-gk": { status: "live", topics_count: 20 },
+  "nature-animals": { status: "live", topics_count: 30 },
+  "nature-wonders": { status: "live", topics_count: 30 },
+  "animals-nature": { status: "live", topics_count: 30 },
+  "india-culture": { status: "live", topics_count: 10 },
+  "indian-culture": { status: "live", topics_count: 10 },
+  "india-polity": { status: "live", topics_count: 20 },
+  "politics-government": { status: "live", topics_count: 20 },
+  "others": { status: "live", topics_count: 39 },
+  "religion-spirituality": { status: "live", topics_count: 40 },
   "general-knowledge": { status: "live", topics_count: 40 },
   "current-affairs": { status: "live", topics_count: 30 },
   "indian-cities": { status: "live", topics_count: 10 },
   "indian-states-uts": { status: "live", topics_count: 75 },
-  "religion-spirituality": { status: "live", topics_count: 40 },
-  "entertainment": { status: "live", topics_count: 20 },
-  "sports": { status: "live", topics_count: 20 },
-  "science": { status: "live", topics_count: 30 },
-  "technology": { status: "live", topics_count: 25 },
   "history": { status: "live", topics_count: 30 },
   "business-economy": { status: "live", topics_count: 20 },
-  "politics-government": { status: "live", topics_count: 20 },
   "famous-people": { status: "live", topics_count: 20 },
   "brands-companies": { status: "live", topics_count: 15 },
   "lifestyle-everyday-knowledge": { status: "live", topics_count: 15 },
 };
+
+export const OTHERS_QUIZZES_LIST = [
+  {
+    id: "others-food-spices",
+    slug: "others-food-spices",
+    href: "/category/others?topic=Food%20%26%20Spices",
+    name: "Food & Spices",
+    nameHi: "भारतीय खानपान व मसाले",
+    icon: "🍲",
+    emoji: "🍲",
+    description: "Indian Spices, Culinary Traditions & Regional Cuisines",
+    descriptionHi: "भारतीय मसाले, पारंपरिक व्यंजन, क्षेत्रीय स्वाद और खानपान का रोचक इतिहास।",
+    questionCount: 225,
+    status: "live",
+    image_url: "/cards/food.webp",
+  },
+  {
+    id: "others-indian-railway",
+    slug: "others-indian-railway",
+    href: "/category/others?topic=Indian%20Railway",
+    name: "Indian Railway",
+    nameHi: "भारतीय रेलवे",
+    icon: "🚆",
+    emoji: "🚆",
+    description: "History, Trains, Routes & Achievements of Indian Railways",
+    descriptionHi: "भारतीय रेल का इतिहास, सबसे तेज़ ट्रेनें, प्रमुख रूट, ज़ोन और तकनीकी उपलब्धियां।",
+    questionCount: 20,
+    status: "live",
+    image_url: "/cards/indian-railway.webp",
+  },
+  {
+    id: "others-currency-language",
+    slug: "others-currency-language",
+    href: "/category/others?topic=Currency%20%26%20Language",
+    name: "Currency & Language",
+    nameHi: "मुद्रा व भाषाएं",
+    icon: "🪙",
+    emoji: "🪙",
+    description: "Indian Rupee, Currency Notes, Official Languages & Scripts",
+    descriptionHi: "भारतीय रुपया, नोटों के प्रतीक, आधिकारिक भाषाएं, लिपियां और भाषाई विविधता।",
+    questionCount: 20,
+    status: "live",
+    image_url: "/cards/currency-language.webp",
+  },
+  {
+    id: "others-unique-village",
+    slug: "others-unique-village",
+    href: "/category/others?topic=Unique%20Village",
+    name: "Unique Village",
+    nameHi: "अनोखे गांव",
+    icon: "🏡",
+    emoji: "🏡",
+    description: "Extraordinary Villages of India & Unique Traditions",
+    descriptionHi: "भारत के अद्भुत और अनोखे गांव—एशिया का सबसे स्वच्छ गांव, करोड़पतियों का गांव और अनूठी परंपराएं।",
+    questionCount: 20,
+    status: "live",
+    image_url: "/cards/unique-village.webp",
+  },
+  {
+    id: "others-post-office-records",
+    slug: "others-post-office-records",
+    href: "/category/others?topic=Post%20Office%20%26%20Records",
+    name: "Post Office & Records",
+    nameHi: "डाकघर व रिकॉर्ड",
+    icon: "📮",
+    emoji: "📮",
+    description: "World's Highest Post Office, Floating Post Office & National Records",
+    descriptionHi: "फ्लोटिंग पोस्ट ऑफिस, दुनिया का सबसे ऊंचा डाकघर और भारत के अनोखे राष्ट्रीय रिकॉर्ड।",
+    questionCount: 20,
+    status: "live",
+    image_url: "/cards/general-knowledge.webp",
+  },
+  {
+    id: "others-flag-rules",
+    slug: "others-flag-rules",
+    href: "/category/others?topic=Flag%20%26%20Rules",
+    name: "Flag & Rules",
+    nameHi: "तिरंगा व नियम",
+    icon: "🇮🇳",
+    emoji: "🇮🇳",
+    description: "National Flag History, Flag Code, Rules & Protocols",
+    descriptionHi: "राष्ट्रीय ध्वज तिरंगा का इतिहास, ध्वज संहिता, नियम, प्रतीक और प्रोटोकॉल।",
+    questionCount: 20,
+    status: "live",
+    image_url: "/cards/india-gk.webp",
+  },
+  {
+    id: "others-festivals-traditions",
+    slug: "others-festivals-traditions",
+    href: "/category/others?topic=Festivals%20%26%20Traditions",
+    name: "Festivals & Traditions",
+    nameHi: "त्योहार व परंपराएं",
+    icon: "🪔",
+    emoji: "🪔",
+    description: "Major Festivals, Folk Celebrations & Timeless Traditions",
+    descriptionHi: "भारत के प्रमुख पर्व, अनूठी लोक परंपराएं, मेले और सांस्कृतिक उत्सव।",
+    questionCount: 20,
+    status: "live",
+    image_url: "/cards/religion.webp",
+  },
+  {
+    id: "others-music-instruments",
+    slug: "others-music-instruments",
+    href: "/category/others?topic=Music%20%26%20Instruments",
+    name: "Music & Instruments",
+    nameHi: "संगीत व वाद्य यंत्र",
+    icon: "🎵",
+    emoji: "🎵",
+    description: "Classical Instruments, Maestros & Musical Heritage",
+    descriptionHi: "भारतीय शास्त्रीय संगीत, पारंपरिक वाद्य यंत्र (सितार, तबला, शहनाई) और संगीतकार।",
+    questionCount: 20,
+    status: "live",
+    image_url: "/cards/music.webp",
+  },
+  {
+    id: "others-brain-fun",
+    slug: "others-brain-fun",
+    href: "/category/others?topic=Brain%20%26%20Fun",
+    name: "Brain & Fun",
+    nameHi: "दिमागी पहेलियां",
+    icon: "🧠",
+    emoji: "🧠",
+    description: "Mind Benders, Logic Riddles & Fun Trivia",
+    descriptionHi: "मजेदार पहेलियां, तार्किक सवाल और दिमाग की कसरत कराने वाले रोचक क्विज़।",
+    questionCount: 200,
+    status: "live",
+    image_url: "/cards/brain-riddles.webp",
+  },
+  {
+    id: "others-amazing-facts",
+    slug: "others-amazing-facts",
+    href: "/category/others?topic=Amazing%20%26%20Curious%20Facts",
+    name: "Amazing & Curious Facts",
+    nameHi: "अद्भुत व रोचक तथ्य",
+    icon: "✨",
+    emoji: "✨",
+    description: "Astonishing Curiosities & Mind-Blowing Facts of India",
+    descriptionHi: "भारत और दुनिया के ऐसे रहस्यमयी और अजब-गजब तथ्य जो आपको हैरान कर देंगे।",
+    questionCount: 202,
+    status: "live",
+    image_url: "/cards/amazing-facts.webp",
+  },
+];
 
 export default function ExplorerHomeSection({
   dbCategories = [],
@@ -204,7 +362,14 @@ export default function ExplorerHomeSection({
     );
   }, [filteredCategories]);
 
-  const hasResults = liveCategories.length > 0 || soonCategories.length > 0;
+  const othersQuizzes = useMemo(() => {
+    if (selectedChip !== "all" && selectedChip !== "india" && selectedChip !== "fun") {
+      return [];
+    }
+    return OTHERS_QUIZZES_LIST;
+  }, [selectedChip]);
+
+  const hasResults = liveCategories.length > 0 || soonCategories.length > 0 || othersQuizzes.length > 0;
 
   return (
     <div className="w-full max-w-[1100px] mx-auto px-1 sm:px-2 pb-16">
@@ -402,7 +567,7 @@ export default function ExplorerHomeSection({
                   : `No categories match "${searchQuery}". Try popular topics:`}
               </p>
               <div className="flex flex-wrap justify-center gap-2">
-                {["India GK", "Science", "Sports", "History", "Cities"].map((tag) => (
+                {["India GK", "India Sports", "Science", "History", "Cities"].map((tag) => (
                   <button
                     key={tag}
                     type="button"
@@ -494,6 +659,39 @@ export default function ExplorerHomeSection({
                   <CategoryCard
                     key={category.slug}
                     category={category}
+                    isHindi={isHindi}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* 5.5. Others Quizzes Section: Quizzes from India > GK > Others */}
+          {othersQuizzes.length > 0 && (
+            <section className="mb-6">
+              <h2
+                className="flex items-center justify-between text-sm sm:text-base font-bold my-2 px-1"
+                style={{ color: "var(--ink, #14162b)" }}
+              >
+                <span className="flex items-center gap-1.5">
+                  <span>📦</span>
+                  <span>{isHindi ? "अन्य (Others) क्विज़" : "Others Quizzes"}</span>
+                </span>
+                <span
+                  className="text-xs font-semibold"
+                  style={{ color: "var(--mute, #6b7190)" }}
+                >
+                  {othersQuizzes.length} {isHindi ? "क्विज़" : "quizzes"}
+                </span>
+              </h2>
+              <div
+                className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"
+                style={{ gap: "12px" }}
+              >
+                {othersQuizzes.map((quizItem) => (
+                  <CategoryCard
+                    key={quizItem.id || quizItem.slug}
+                    category={quizItem}
                     isHindi={isHindi}
                   />
                 ))}

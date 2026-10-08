@@ -95,7 +95,7 @@ export default function Footer() {
       { id: "indian-history", topic: isHindi ? "भारतीय इतिहास" : "Indian History", slug: "indian-history", count: 95 },
       { id: "indian-geography", topic: isHindi ? "भारतीय भूगोल" : "Indian Geography", slug: "indian-geography", count: 70 },
       { id: "science", topic: isHindi ? "सामान्य विज्ञान" : "Science GK", slug: "science", count: 85 },
-      { id: "sports", topic: isHindi ? "खेलकूद" : "Sports Trivia", slug: "sports", count: 60 },
+      { id: "india-sports", topic: isHindi ? "भारतीय खेल" : "India Sports", slug: "india-sports", count: 60 },
       { id: "technology", topic: isHindi ? "कंप्यूटर व तकनीक" : "Technology", slug: "technology", count: 50 },
       { id: "entertainment", topic: isHindi ? "मनोरंजन व सिनेमा" : "Entertainment", slug: "entertainment", count: 45 },
       { id: "indian-states-uts", topic: isHindi ? "भारतीय राज्य" : "Indian States", slug: "indian-states-uts", count: 65 },

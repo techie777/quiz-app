@@ -1,28 +1,23 @@
 // src/lib/mainCategoriesConfig.js
 
 /**
- * 44 Canonical Main Categories
+ * Canonical Main Categories
  * Ordered precisely to customer specifications & featured sequence:
  * 1. India GK
  * 2. World GK
  * 3. India History
  * 4. India Geography
- * 5. Science GK
- * 6. Sports
- * 7. Technology
+ * 5. India Sports
+ * 6. Technology
+ * 7. Science & Discovery
  * 8. Entertainment
- * 9. Indian States & UTs
- * 10. Indian Cities
- * 11. Human Body
- * 12. Food
- * 13. Amazing Facts
- * 14. Religion & Spirituality
- * 15. India Kingdoms
- * 16. Money & Business
- * 17. Animals & Nature
- * 18. Space & Universe
- * 19. Brain Riddles
- * Followed by all remaining categories.
+ * 9. Economy & Others
+ * 10. Biology GK
+ * 11. Nature & Wonders
+ * 12. Indian Culture
+ * 13. India Polity
+ * 14. Others
+ * Followed by all remaining unique categories (no duplicates).
  */
 
 export const MAIN_CATEGORIES = [
@@ -35,8 +30,167 @@ export const MAIN_CATEGORIES = [
     "example": "Indian History, Polity, Science",
     "chip": "india-gk",
     "description": "Explore the comprehensive trivia, heritage, politics, and achievements of India.",
-    "descriptionHi": "भारतीय इतिहास, राजनीति, संविधान, विज्ञान, संस्कृति और उपलब्धियों का विस्तृत क्विज़ संग्रह।",
-    "subcategories": []
+    "subcategories": [
+      {
+        "name": "India History",
+        "nameHi": "भारतीय इतिहास",
+        "slug": "india-history",
+        "icon": "📜",
+        "topics": [
+          "Ancient India",
+          "Medieval India",
+          "Freedom Struggle",
+          "Indian Forts & Architecture",
+          "Tribes & Heritage",
+          "Post-Independence"
+        ]
+      },
+      {
+        "name": "India Geography",
+        "nameHi": "भारतीय भूगोल",
+        "slug": "india-geography",
+        "icon": "🗺️",
+        "topics": [
+          "Himalayas & Mountains",
+          "Rivers & Water Systems",
+          "Climate & Monsoons",
+          "Forests & Wildlife",
+          "States & Capitals",
+          "Coastal & Island Regions"
+        ]
+      },
+      {
+        "name": "India Sports",
+        "nameHi": "भारतीय खेल",
+        "slug": "india-sports",
+        "icon": "🏏",
+        "topics": [
+          "Cricket & IPL",
+          "Olympic Achievements",
+          "Traditional Indian Sports",
+          "Sports Personalities & Awards",
+          "Hockey & National Games"
+        ]
+      },
+      {
+        "name": "Technology",
+        "nameHi": "प्रौद्योगिकी व आईटी",
+        "slug": "technology",
+        "icon": "💻",
+        "topics": [
+          "Computers & Software",
+          "Digital India & IT",
+          "AI, Robotics & Innovations",
+          "Cybersecurity & Internet"
+        ]
+      },
+      {
+        "name": "Science & Discovery",
+        "nameHi": "विज्ञान और खोज",
+        "slug": "science--discovery",
+        "icon": "🔬",
+        "topics": [
+          "Physics & Natural Laws",
+          "Chemistry in Daily Life",
+          "Daily Science",
+          "Space & ISRO Missions",
+          "Inventions & Discoveries"
+        ]
+      },
+      {
+        "name": "Entertainment",
+        "nameHi": "मनोरंजन, कला व संस्कृति",
+        "slug": "entertainment",
+        "icon": "🎭",
+        "topics": [
+          "Indian Cinema & Bollywood",
+          "Music & Dance Traditions",
+          "Festivals & Fairs",
+          "Folk Art & Theatre",
+          "Literature & Awards"
+        ]
+      },
+      {
+        "name": "Economy & Others",
+        "nameHi": "भारतीय अर्थव्यवस्था व अन्य",
+        "slug": "economy--others",
+        "icon": "📊",
+        "topics": [
+          "Banking & RBI",
+          "Indian Rupee & Currency",
+          "Markets & Commerce",
+          "Budget & Five Year Plans",
+          "Economic Milestones"
+        ]
+      },
+      {
+        "name": "Biology GK",
+        "nameHi": "जीव विज्ञान सामान्य ज्ञान",
+        "slug": "biology-gk-1",
+        "icon": "🧬",
+        "topics": [
+          "Human Body & Health",
+          "Cell Biology & Genetics",
+          "Vitamins & Nutrition",
+          "Diseases & Immunity",
+          "Plant & Animal Biology"
+        ]
+      },
+      {
+        "name": "Nature & Wonders",
+        "nameHi": "प्रकृति और अजूबे",
+        "slug": "nature-animals",
+        "icon": "🌿",
+        "topics": [
+          "Natural Wonders",
+          "National Parks & Sanctuaries",
+          "Wildlife & Big Cats",
+          "Forests & Flora",
+          "Rivers & Valleys"
+        ]
+      },
+      {
+        "name": "Indian Culture",
+        "nameHi": "भारतीय संस्कृति व धरोहर",
+        "slug": "india-culture",
+        "icon": "🪔",
+        "topics": [
+          "Tribes & Heritage",
+          "Classical Dances & Music",
+          "Festivals & Traditions",
+          "Folk Crafts & Paintings",
+          "Sacred Heritage Sites"
+        ]
+      },
+      {
+        "name": "India Polity",
+        "nameHi": "भारतीय राजव्यवस्था व संविधान",
+        "slug": "india-polity",
+        "icon": "⚖️",
+        "topics": [
+          "Indian Constitution",
+          "Fundamental Rights & Duties",
+          "Parliament & Judiciary",
+          "Elections & Governance",
+          "National Symbols & Laws"
+        ]
+      },
+      {
+        "name": "Others",
+        "nameHi": "अन्य सामान्य ज्ञान",
+        "slug": "others",
+        "icon": "📦",
+        "topics": [
+          "Food & Spices",
+          "Indian Railway",
+          "Currency & Language",
+          "Flag & Rules",
+          "Unique Village",
+          "Amazing & Curious Facts",
+          "Brain & Fun"
+        ]
+      }
+    ]
   },
   {
     "id": 2,
@@ -206,70 +360,14 @@ export const MAIN_CATEGORIES = [
   },
   {
     "id": 5,
-    "slug": "science",
-    "name": "Science",
-    "nameHi": "विज्ञान सामान्य ज्ञान",
-    "icon": "🔬",
-    "example": "Physics, Chemistry, Biology",
-    "chip": "science",
-    "description": "Fundamental laws of nature, chemical elements, human biology, genetics, and modern discovery.",
-    "descriptionHi": "भौतिक विज्ञान, रसायन विज्ञान, जीव विज्ञान, मानव शरीर और वैज्ञानिक नियम।",
-    "subcategories": [
-      {
-        "name": "Physics",
-        "slug": "physics",
-        "topics": [
-          "Mechanics & Motion",
-          "Optics & Light",
-          "Electricity & Magnetism",
-          "Thermodynamics",
-          "Modern Physics"
-        ]
-      },
-      {
-        "name": "Chemistry",
-        "slug": "chemistry",
-        "topics": [
-          "Periodic Table",
-          "Chemical Reactions",
-          "Acids & Bases",
-          "Organic Compounds",
-          "Everyday Chemistry"
-        ]
-      },
-      {
-        "name": "Biology & Life Sciences",
-        "slug": "biology",
-        "topics": [
-          "Human Anatomy",
-          "Cell Biology",
-          "Genetics & DNA",
-          "Plant Physiology",
-          "Ecology"
-        ]
-      },
-      {
-        "name": "Earth & Atmospheric Science",
-        "slug": "earth-science",
-        "topics": [
-          "Geology",
-          "Atmosphere & Weather",
-          "Oceanography",
-          "Fossils"
-        ]
-      }
-    ]
-  },
-  {
-    "id": 6,
-    "slug": "sports",
-    "name": "Sports",
-    "nameHi": "खेलकूद",
-    "icon": "⚽",
-    "example": "Cricket, Football, Olympics",
+    "slug": "india-sports",
+    "name": "India Sports",
+    "nameHi": "भारतीय खेल",
+    "icon": "🏏",
+    "example": "Cricket, IPL, Olympic Medals, Traditional Sports",
     "chip": "sports",
-    "description": "Cricket, IPL, football world cups, Olympics, badminton, hockey, chess, and athletic legends.",
-    "descriptionHi": "क्रिकेट, आईपीएल, फुटबॉल, ओलंपिक, बैडमिंटन, शतरंज और खेल इतिहास।",
+    "description": "Cricket, IPL records, Indian Olympic achievements, traditional games, and athletic legends.",
+    "descriptionHi": "क्रिकेट, आईपीएल रिकॉर्ड, भारतीय ओलंपिक पदक विजेता, पारंपरिक खेल और खेल रत्न पुरस्कार।",
     "subcategories": [
       {
         "name": "Cricket & IPL",
@@ -315,10 +413,10 @@ export const MAIN_CATEGORIES = [
     ]
   },
   {
-    "id": 7,
+    "id": 6,
     "slug": "technology",
     "name": "Technology",
-    "nameHi": "कंप्यूटर व तकनीक",
+    "nameHi": "प्रौद्योगिकी व आईटी",
     "icon": "💻",
     "example": "Computers, AI, Internet",
     "chip": "science",
@@ -353,6 +451,61 @@ export const MAIN_CATEGORIES = [
           "Networking Protocols",
           "Social Media",
           "Digital Payments"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 7,
+    "slug": "science--discovery",
+    "name": "Science & Discovery",
+    "nameHi": "विज्ञान और खोज",
+    "icon": "🔬",
+    "example": "Physics, Chemistry, Daily Science, Inventions",
+    "chip": "science",
+    "description": "Fundamental laws of nature, chemical elements, daily life scientific phenomena, and monumental discoveries.",
+    "descriptionHi": "भौतिक विज्ञान, रसायन विज्ञान, दैनिक विज्ञान, अंतरिक्ष अनुसंधान और ऐतिहासिक वैज्ञानिक खोजें।",
+    "subcategories": [
+      {
+        "name": "Physics & Laws",
+        "slug": "physics",
+        "topics": [
+          "Mechanics & Motion",
+          "Optics & Light",
+          "Electricity & Magnetism",
+          "Thermodynamics",
+          "Modern Physics"
+        ]
+      },
+      {
+        "name": "Chemistry in Daily Life",
+        "slug": "chemistry",
+        "topics": [
+          "Periodic Table",
+          "Chemical Reactions",
+          "Acids & Bases",
+          "Organic Compounds",
+          "Everyday Chemistry"
+        ]
+      },
+      {
+        "name": "Space & ISRO Missions",
+        "slug": "space-isro",
+        "topics": [
+          "Chandrayaan & Mangalyaan",
+          "Aditya-L1",
+          "Gaganyaan",
+          "Satellites & Rockets"
+        ]
+      },
+      {
+        "name": "Scientific Discoveries",
+        "slug": "scientific-discoveries",
+        "topics": [
+          "Famous Inventions",
+          "Nobel Laureates in Science",
+          "Great Discoveries",
+          "Indian Scientists"
         ]
       }
     ]
@@ -411,6 +564,318 @@ export const MAIN_CATEGORIES = [
   },
   {
     "id": 9,
+    "slug": "economy--others",
+    "name": "Economy & Others",
+    "nameHi": "भारतीय अर्थव्यवस्था व अन्य",
+    "icon": "📊",
+    "example": "Banking, RBI, Markets, Schemes",
+    "chip": "india-gk",
+    "description": "Comprehensive trivia on Indian banking, currency, markets, fiscal reforms, and economic achievements.",
+    "descriptionHi": "भारतीय बैंकिंग व्यवस्था, रिजर्व बैंक (RBI), बजट, शेयर बाजार, मुद्रा और सरकारी आर्थिक योजनाएं।",
+    "subcategories": [
+      {
+        "name": "Banking & RBI",
+        "slug": "banking-rbi",
+        "topics": [
+          "Reserve Bank of India",
+          "Public & Private Banks",
+          "Monetary Policy",
+          "Digital Banking & UPI"
+        ]
+      },
+      {
+        "name": "Currency & Fiscal Policies",
+        "slug": "currency-fiscal",
+        "topics": [
+          "Indian Rupee & Symbols",
+          "Union Budget",
+          "GST & Taxation",
+          "Five Year Plans"
+        ]
+      },
+      {
+        "name": "Markets & Commerce",
+        "slug": "markets-commerce",
+        "topics": [
+          "Stock Exchange (BSE & NSE)",
+          "Trade & Exports",
+          "Agriculture & Industry",
+          "Economic Milestones"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 10,
+    "slug": "biology-gk-1",
+    "name": "Biology GK",
+    "nameHi": "जीव विज्ञान सामान्य ज्ञान",
+    "icon": "🧬",
+    "example": "Human Body, Health, Genetics & Diseases",
+    "chip": "science",
+    "description": "Explore human anatomy, organ systems, genetics, vitamins, and medical milestones.",
+    "descriptionHi": "मानव शरीर के अंग, रक्त परिसंचरण, आनुवंशिकी, पोषक तत्व, विटामिन और रोग विज्ञान।",
+    "subcategories": [
+      {
+        "name": "Human Body & Health",
+        "slug": "human-body-health",
+        "topics": [
+          "Brain & Nervous System",
+          "Heart & Blood Circulation",
+          "Bones & Muscles",
+          "Digestive & Respiratory System"
+        ]
+      },
+      {
+        "name": "Nutrients & Vitamins",
+        "slug": "nutrients-vitamins",
+        "topics": [
+          "Vitamins & Deficiencies",
+          "Minerals & Nutrition",
+          "Immunity & Balanced Diet"
+        ]
+      },
+      {
+        "name": "Diseases & Medical Science",
+        "slug": "diseases-medical",
+        "topics": [
+          "Viral & Bacterial Diseases",
+          "Vaccines & Discoveries",
+          "Medical Instruments"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 11,
+    "slug": "nature-animals",
+    "name": "Nature & Wonders",
+    "nameHi": "प्रकृति और अजूबे",
+    "icon": "🌿",
+    "example": "National Parks, Natural Wonders & Wildlife",
+    "chip": "india-gk",
+    "description": "India's breathtaking biodiversity, wildlife sanctuaries, tiger reserves, and natural wonders.",
+    "descriptionHi": "भारत के राष्ट्रीय उद्यान, टाइगर रिजर्व, प्राकृतिक अजूबे, पशु-पक्षी और समृद्ध जैव विविधता।",
+    "subcategories": [
+      {
+        "name": "Natural Wonders",
+        "slug": "natural-wonders",
+        "topics": [
+          "Waterfalls & Caves",
+          "Living Root Bridges",
+          "Valley of Flowers",
+          "Geological Wonders"
+        ]
+      },
+      {
+        "name": "National Parks & Wildlife",
+        "slug": "national-parks",
+        "topics": [
+          "Tiger Reserves & Project Tiger",
+          "Big Cats of India",
+          "Bird Sanctuaries",
+          "Endangered Species"
+        ]
+      },
+      {
+        "name": "Forests & Ecology",
+        "slug": "forests-ecology",
+        "topics": [
+          "Mangroves & Sundarbans",
+          "Western Ghats Biodiversity",
+          "Himalayan Flora & Fauna"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 12,
+    "slug": "india-culture",
+    "name": "Indian Culture",
+    "nameHi": "भारतीय संस्कृति व धरोहर",
+    "icon": "🪔",
+    "example": "Tribes, Classical Dances, Arts & Festivals",
+    "chip": "india-gk",
+    "description": "Timeless traditions, tribal heritage, classical dances, music, and sacred cultural festivals of India.",
+    "descriptionHi": "भारत की समृद्ध सांस्कृतिक धरोहर, जनजातियां, शास्त्रीय नृत्य, लोक कलाएं और पारंपरिक उत्सव।",
+    "subcategories": [
+      {
+        "name": "Tribes & Heritage",
+        "slug": "tribes-heritage",
+        "topics": [
+          "Major Indian Tribes",
+          "Tribal Traditions & Art",
+          "Folk Lifestyle & Customs"
+        ]
+      },
+      {
+        "name": "Classical Dance & Music",
+        "slug": "classical-dance-music",
+        "topics": [
+          "8 Classical Dances",
+          "Hindustani & Carnatic Music",
+          "Folk Dances (Garba, Bhangra, Bihu)"
+        ]
+      },
+      {
+        "name": "Festivals & Folk Crafts",
+        "slug": "festivals-crafts",
+        "topics": [
+          "Cultural Festivals & Fairs",
+          "Handicrafts & Textiles",
+          "Folk Paintings (Madhubani, Warli)"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 13,
+    "slug": "india-polity",
+    "name": "India Polity",
+    "nameHi": "भारतीय राजव्यवस्था व संविधान",
+    "icon": "⚖️",
+    "example": "Constitution, Parliament, Rights, Judiciary",
+    "chip": "india-gk",
+    "description": "Constitution of India, parliamentary democracy, fundamental rights, judiciary, and governance.",
+    "descriptionHi": "भारतीय संविधान, संसद, राष्ट्रपति, चुनाव आयोग, मौलिक अधिकार और प्रशासनिक व्यवस्था।",
+    "subcategories": [
+      {
+        "name": "Constitution & Law",
+        "slug": "constitution",
+        "topics": [
+          "Preamble & Articles",
+          "Fundamental Rights",
+          "Constitutional Amendments",
+          "Judiciary"
+        ]
+      },
+      {
+        "name": "Parliament & Executive",
+        "slug": "parliament-executive",
+        "topics": [
+          "Lok Sabha & Rajya Sabha",
+          "President & Prime Minister",
+          "Cabinet Ministries"
+        ]
+      },
+      {
+        "name": "Elections & Governance",
+        "slug": "elections-governance",
+        "topics": [
+          "Election Commission",
+          "EVM & Voting",
+          "State Legislatures",
+          "Panchayati Raj"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 14,
+    "slug": "others",
+    "name": "Others",
+    "nameHi": "अन्य सामान्य ज्ञान",
+    "icon": "📦",
+    "example": "Railway, Spices, Flags, Unique Facts & More",
+    "chip": "india-gk",
+    "description": "Special curated trivia from Indian railways, food & spices, flags, records, and amazing curiosities.",
+    "descriptionHi": "भारतीय रेलवे, खानपान व मसाले, तिरंगा नियम, अनोखे गांव और रोचक तथ्य।",
+    "subcategories": [
+      {
+        "name": "Food & Spices",
+        "slug": "food-spices",
+        "topics": [
+          "Indian Spices & Origins",
+          "Traditional Dishes & Regional Tastes",
+          "Culinary Trivia"
+        ]
+      },
+      {
+        "name": "Indian Railway",
+        "slug": "indian-railway",
+        "topics": [
+          "History of Indian Railways",
+          "Famous Trains & Vande Bharat",
+          "Railway Zones & Records"
+        ]
+      },
+      {
+        "name": "Currency, Language & Flag",
+        "slug": "currency-language-flag",
+        "topics": [
+          "National Flag & Rules",
+          "Currency Notes & Symbols",
+          "Official Languages & Scripts"
+        ]
+      },
+      {
+        "name": "Curiosities & Facts",
+        "slug": "curiosities-facts",
+        "topics": [
+          "Unique Villages of India",
+          "Post Office Records",
+          "Amazing & Curious Facts",
+          "Brain & Fun Riddles"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 15,
+    "slug": "religion-spirituality",
+    "name": "Religion & Spirituality",
+    "nameHi": "धर्म और आध्यात्म",
+    "icon": "🙏",
+    "example": "Hinduism, Buddhism, Jainism",
+    "chip": "all",
+    "description": "Sacred scriptures, epics, deities, philosophical schools, festivals, and world religions.",
+    "descriptionHi": "रामायण, महाभारत, वेद, उपनिषद, बौद्ध, जैन, सिख व विश्व धर्मों का पावन ज्ञान।",
+    "subcategories": [
+      {
+        "name": "Hinduism & Epics",
+        "slug": "hinduism",
+        "topics": [
+          "Ramayana",
+          "Mahabharata",
+          "Vedas & Upanishads",
+          "Bhagavad Gita",
+          "Puranas"
+        ]
+      },
+      {
+        "name": "Buddhism & Jainism",
+        "slug": "buddhism-jainism",
+        "topics": [
+          "Lord Buddha & Teachings",
+          "Tirthankaras",
+          "Mahavira",
+          "Sacred Sites"
+        ]
+      },
+      {
+        "name": "Sikhism & Gurus",
+        "slug": "sikhism",
+        "topics": [
+          "Ten Sikh Gurus",
+          "Guru Granth Sahib",
+          "Golden Temple",
+          "Festivals"
+        ]
+      },
+      {
+        "name": "World Religions",
+        "slug": "world-religions",
+        "topics": [
+          "Islam",
+          "Christianity",
+          "Judaism",
+          "Zoroastrianism"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 12,
     "slug": "indian-states-uts",
     "name": "Indian States & UTs",
     "nameHi": "भारतीय राज्य व केंद्र शासित प्रदेश",
@@ -481,7 +946,7 @@ export const MAIN_CATEGORIES = [
     ]
   },
   {
-    "id": 10,
+    "id": 13,
     "slug": "indian-cities",
     "name": "Indian Cities",
     "nameHi": "भारत के प्रमुख शहर",
@@ -528,7 +993,7 @@ export const MAIN_CATEGORIES = [
     ]
   },
   {
-    "id": 11,
+    "id": 14,
     "slug": "human-body",
     "name": "Human Body",
     "nameHi": "मानव शरीर",
@@ -571,7 +1036,7 @@ export const MAIN_CATEGORIES = [
     ]
   },
   {
-    "id": 12,
+    "id": 15,
     "slug": "food",
     "name": "Food",
     "nameHi": "खानपान व व्यंजन",
@@ -624,7 +1089,7 @@ export const MAIN_CATEGORIES = [
     ]
   },
   {
-    "id": 13,
+    "id": 16,
     "slug": "amazing-facts",
     "name": "Amazing Facts",
     "nameHi": "रोचक व आश्चर्यजनक तथ्य",
@@ -664,61 +1129,7 @@ export const MAIN_CATEGORIES = [
     ]
   },
   {
-    "id": 14,
-    "slug": "religion-spirituality",
-    "name": "Religion & Spirituality",
-    "nameHi": "धर्म और आध्यात्म",
-    "icon": "🙏",
-    "example": "Hinduism, Buddhism, Jainism",
-    "chip": "all",
-    "description": "Sacred scriptures, epics, deities, philosophical schools, festivals, and world religions.",
-    "descriptionHi": "रामायण, महाभारत, वेद, उपनिषद, बौद्ध, जैन, सिख व विश्व धर्मों का पावन ज्ञान।",
-    "subcategories": [
-      {
-        "name": "Hinduism & Epics",
-        "slug": "hinduism",
-        "topics": [
-          "Ramayana",
-          "Mahabharata",
-          "Vedas & Upanishads",
-          "Bhagavad Gita",
-          "Puranas"
-        ]
-      },
-      {
-        "name": "Buddhism & Jainism",
-        "slug": "buddhism-jainism",
-        "topics": [
-          "Lord Buddha & Teachings",
-          "Tirthankaras",
-          "Mahavira",
-          "Sacred Sites"
-        ]
-      },
-      {
-        "name": "Sikhism & Gurus",
-        "slug": "sikhism",
-        "topics": [
-          "Ten Sikh Gurus",
-          "Guru Granth Sahib",
-          "Golden Temple",
-          "Festivals"
-        ]
-      },
-      {
-        "name": "World Religions",
-        "slug": "world-religions",
-        "topics": [
-          "Islam",
-          "Christianity",
-          "Judaism",
-          "Zoroastrianism"
-        ]
-      }
-    ]
-  },
-  {
-    "id": 15,
+    "id": 17,
     "slug": "indian-kingdoms",
     "name": "India Kingdom",
     "nameHi": "भारतीय राजवंश व साम्राज्य",
@@ -761,7 +1172,7 @@ export const MAIN_CATEGORIES = [
     ]
   },
   {
-    "id": 16,
+    "id": 18,
     "slug": "money-business",
     "name": "Money & Business",
     "nameHi": "व्यापार व अर्थव्यवस्था (Money & Business)",
@@ -804,60 +1215,7 @@ export const MAIN_CATEGORIES = [
     ]
   },
   {
-    "id": 17,
-    "slug": "animals-nature",
-    "name": "Animals & Nature",
-    "nameHi": "पशु व प्रकृति",
-    "icon": "🐾",
-    "example": "Wildlife, Animals, Forests & Birds",
-    "chip": "all",
-    "description": "Mammals, birds, marine life, animal behaviors, biodiversity hotspots, and national parks.",
-    "descriptionHi": "वन्यजीव, पशु-पक्षी, जलीय जीवन, राष्ट्रीय उद्यान, दुर्लभ प्रजातियां और प्रकृति संरक्षण।",
-    "subcategories": [
-      {
-        "name": "Mammals & Big Cats",
-        "slug": "mammals-cats",
-        "topics": [
-          "Tigers & Lions",
-          "Elephants",
-          "Marine Mammals",
-          "Primates & Apes"
-        ]
-      },
-      {
-        "name": "Birds & Flying Creatures",
-        "slug": "birds-avian",
-        "topics": [
-          "Birds of Prey",
-          "Migratory Birds",
-          "Flightless Birds",
-          "Exotic Species"
-        ]
-      },
-      {
-        "name": "Reptiles, Insects & Marine",
-        "slug": "marine-insects",
-        "topics": [
-          "Reptiles & Amphibians",
-          "Ocean Creatures & Sharks",
-          "Insects & Bees",
-          "Corals & Deep Sea"
-        ]
-      },
-      {
-        "name": "Ecology & Conservation",
-        "slug": "ecology-conservation",
-        "topics": [
-          "Endangered Species",
-          "Rainforests",
-          "Food Chains",
-          "Global Conservation"
-        ]
-      }
-    ]
-  },
-  {
-    "id": 18,
+    "id": 19,
     "slug": "space-universe",
     "name": "Space & Universe",
     "nameHi": "अंतरिक्ष व खगोल विज्ञान",
@@ -900,7 +1258,7 @@ export const MAIN_CATEGORIES = [
     ]
   },
   {
-    "id": 19,
+    "id": 20,
     "slug": "brain-riddles",
     "name": "Brain Riddles",
     "nameHi": "तर्कशक्ति व पहेलियां (Brain Riddles)",
@@ -943,7 +1301,7 @@ export const MAIN_CATEGORIES = [
     ]
   },
   {
-    "id": 20,
+    "id": 21,
     "slug": "general-knowledge",
     "name": "General Knowledge",
     "nameHi": "सामान्य ज्ञान (Mixed GK)",
@@ -975,7 +1333,7 @@ export const MAIN_CATEGORIES = [
     ]
   },
   {
-    "id": 21,
+    "id": 22,
     "slug": "current-affairs",
     "name": "Current Affairs",
     "nameHi": "करेंट अफेयर्स",
@@ -1017,7 +1375,7 @@ export const MAIN_CATEGORIES = [
     ]
   },
   {
-    "id": 22,
+    "id": 23,
     "slug": "history",
     "name": "History",
     "nameHi": "विश्व इतिहास",
@@ -1060,7 +1418,7 @@ export const MAIN_CATEGORIES = [
     ]
   },
   {
-    "id": 23,
+    "id": 24,
     "slug": "geography",
     "name": "World Geography",
     "nameHi": "विश्व भूगोल",
@@ -1098,48 +1456,6 @@ export const MAIN_CATEGORIES = [
           "Time Zones",
           "Prime Meridian",
           "Map Projections"
-        ]
-      }
-    ]
-  },
-  {
-    "id": 24,
-    "slug": "politics-government",
-    "name": "Politics & Government",
-    "nameHi": "राजनीति व शासन",
-    "icon": "⚖️",
-    "example": "Constitution, Parliament, Elections",
-    "chip": "india-gk",
-    "description": "Constitutional articles, parliament sessions, democratic institutions, and prime ministers.",
-    "descriptionHi": "भारतीय संविधान, संसद, राष्ट्रपति, चुनाव आयोग, मौलिक अधिकार और प्रशासनिक व्यवस्था।",
-    "subcategories": [
-      {
-        "name": "Constitution & Law",
-        "slug": "constitution",
-        "topics": [
-          "Preamble & Articles",
-          "Fundamental Rights",
-          "Constitutional Amendments",
-          "Judiciary"
-        ]
-      },
-      {
-        "name": "Parliament & Executive",
-        "slug": "parliament-executive",
-        "topics": [
-          "Lok Sabha & Rajya Sabha",
-          "President & Prime Minister",
-          "Cabinet Ministries"
-        ]
-      },
-      {
-        "name": "Elections & Governance",
-        "slug": "elections-governance",
-        "topics": [
-          "Election Commission",
-          "EVM & Voting",
-          "State Legislatures",
-          "Panchayati Raj"
         ]
       }
     ]
@@ -1917,7 +2233,7 @@ export const QUICK_FILTER_CHIPS = [
   { id: "all", label: "All Quizzes", labelHi: "सभी क्विज़", icon: "🌐" },
   { id: "india-gk", label: "India GK", labelHi: "भारत GK", icon: "🇮🇳" },
   { id: "science", label: "Science & Tech", labelHi: "विज्ञान", icon: "🔬" },
-  { id: "sports", label: "Sports", labelHi: "खेल", icon: "⚽" },
+  { id: "sports", label: "Sports", labelHi: "खेल", icon: "🏏" },
   { id: "cities", label: "Cities", labelHi: "शहर", icon: "🏙️" },
   { id: "states", label: "States", labelHi: "राज्य", icon: "🏛️" },
   { id: "cinema", label: "Cinema & Fun", labelHi: "सिनेमा", icon: "🎬" },
@@ -1929,20 +2245,41 @@ export const QUICK_FILTER_CHIPS = [
  * Canonical Alias Mapping for legacy and alternate slugs
  */
 export const ALIAS_MAP = {
+  "sports": "india-sports",
+  "sports-gk": "india-sports",
+  "indian-sports": "india-sports",
+  "india-sports": "india-sports",
+  "politics": "india-polity",
+  "politics-government": "india-polity",
+  "polity": "india-polity",
+  "indian-polity": "india-polity",
+  "india-polity": "india-polity",
+  "nature-animals": "nature-animals",
+  "nature-wonders": "nature-animals",
+  "animals-wildlife": "nature-animals",
+  "animals-nature": "nature-animals",
+  "science": "science--discovery",
+  "general-science": "science--discovery",
+  "science--discovery": "science--discovery",
   "ancient-medieval-indian-history": "india-history",
   "history": "india-history",
   "indian-history": "india-history",
   "india-history": "india-history",
   "indian-geography": "india-geography",
   "india-geography": "india-geography",
+  "economy-others": "economy--others",
+  "economy--others": "economy--others",
+  "biology-gk": "biology-gk-1",
+  "biology-gk-1": "biology-gk-1",
+  "indian-culture": "india-culture",
+  "india-culture": "india-culture",
+  "others": "others",
   "space-astronomy": "space-universe",
   "space-universe": "space-universe",
   "business-economy": "money-business",
   "money-business": "money-business",
   "environment": "environment-nature",
   "environment-nature": "environment-nature",
-  "animals-wildlife": "animals-nature",
-  "animals-nature": "animals-nature",
   "reasoning-brain-games": "brain-riddles",
   "reasoning": "brain-riddles",
   "brain-riddles": "brain-riddles",
@@ -1981,19 +2318,36 @@ export const CHIP_CATEGORY_SLUGS = {
     "indian-history",
     "india-geography",
     "indian-geography",
+    "india-sports",
+    "sports",
+    "technology",
+    "science--discovery",
+    "science",
+    "entertainment",
+    "economy--others",
+    "economy-others",
+    "biology-gk-1",
+    "biology-gk",
+    "nature-animals",
+    "nature-wonders",
+    "india-culture",
+    "india-polity",
+    "politics-government",
+    "others",
     "indian-cities",
     "indian-states-uts",
     "indian-kingdoms",
-    "politics-government",
     "art-culture",
     "heritage-monuments",
     "defence-military",
     "transport",
   ],
   science: [
+    "science--discovery",
     "science",
-    "human-body",
     "technology",
+    "biology-gk-1",
+    "human-body",
     "space-universe",
     "space-astronomy",
     "mathematics",
@@ -2001,12 +2355,12 @@ export const CHIP_CATEGORY_SLUGS = {
     "plants-agriculture",
     "environment-nature",
   ],
-  sports: ["sports", "gaming"],
+  sports: ["india-sports", "sports", "gaming"],
   cities: ["indian-cities", "travel-tourism"],
   states: ["indian-states-uts", "india-geography", "indian-geography"],
   cinema: ["entertainment", "music", "theatre-performing-arts"],
-  space: ["space-universe", "space-astronomy", "science"],
-  fun: ["brain-riddles", "reasoning-brain-games", "amazing-facts", "food", "food-cuisine", "fun-viral-quiz", "kids-family-quiz", "gaming"],
+  space: ["space-universe", "space-astronomy", "science--discovery"],
+  fun: ["brain-riddles", "reasoning-brain-games", "amazing-facts", "food", "food-cuisine", "fun-viral-quiz", "kids-family-quiz", "gaming", "others"],
 };
 
 export function filterCategoriesByChip(categories, chipId) {

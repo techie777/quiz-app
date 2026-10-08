@@ -48,41 +48,75 @@ export async function GET(request, { params }) {
     
     // Resolve any potential database aliases for canonical categories
     const candidateSlugs = [id];
-    if (id === "indian-history") candidateSlugs.push("india-history", "history-gk", "history");
-    if (id === "indian-geography") candidateSlugs.push("india-geography");
+    if (id === "indian-history" || id === "india-history") candidateSlugs.push("india-history", "indian-history", "history-gk");
+    if (id === "indian-geography" || id === "india-geography") candidateSlugs.push("india-geography", "indian-geography");
+    if (id === "sports" || id === "india-sports" || id === "indian-sports") candidateSlugs.push("sports", "india-sports", "indian-sports", "sports-gk");
+    if (id === "india-polity" || id === "indian-polity" || id === "politics-government") candidateSlugs.push("india-polity", "indian-polity", "politics-government", "polity");
+    if (id === "animals-nature" || id === "nature-animals" || id === "nature-wonders") candidateSlugs.push("nature-animals", "nature-wonders", "animals-nature", "animals-wildlife", "animals-birds");
+    if (id === "science" || id === "science--discovery") candidateSlugs.push("science--discovery", "science", "general-science", "physics-gk", "chemistry-gk");
+    if (id === "economy--others" || id === "economy-others") candidateSlugs.push("economy--others", "economy-others");
+    if (id === "biology-gk-1" || id === "biology-gk") candidateSlugs.push("biology-gk-1", "biology-gk");
+    if (id === "india-culture" || id === "indian-culture") candidateSlugs.push("india-culture", "indian-culture");
+    if (id === "others") candidateSlugs.push("others");
     if (id === "indian-kingdoms") candidateSlugs.push("indian-kingdom-gk", "gulam-vansh");
-    if (id === "human-body") candidateSlugs.push("biology-gk", "life-sciences-biology");
+    if (id === "human-body") candidateSlugs.push("life-sciences-biology", "human-body");
     if (id === "amazing-facts") candidateSlugs.push("fun-viral-quiz", "static-gk-trivia");
-    if (id === "animals-nature") candidateSlugs.push("animals-wildlife", "animals-birds");
-    if (id === "business-economy") candidateSlugs.push("money-business", "economy-gk");
-    if (id === "reasoning-brain-games") candidateSlugs.push("brain-riddles", "logical-analytical-reasoning");
-    if (id === "space-astronomy") candidateSlugs.push("space-universe");
-    if (id === "food-cuisine") candidateSlugs.push("food");
+    if (id === "business-economy" || id === "money-business") candidateSlugs.push("money-business", "business-economy", "economy-gk");
+    if (id === "reasoning-brain-games" || id === "brain-riddles") candidateSlugs.push("brain-riddles", "reasoning-brain-games", "logical-analytical-reasoning");
+    if (id === "space-astronomy" || id === "space-universe") candidateSlugs.push("space-universe", "space-astronomy");
+    if (id === "food-cuisine" || id === "food") candidateSlugs.push("food", "food-cuisine");
     if (id === "indian-states-uts") candidateSlugs.push("indian-states-gk");
     if (id === "religion-spirituality") candidateSlugs.push("religious-gk");
-    if (id === "science") candidateSlugs.push("general-science", "physics-gk", "chemistry-gk");
 
+    // First try exact match on requested id / slug
     let category = await prisma.category.findFirst({
-      where: isObjectId 
-        ? { OR: [{ id }, { slug: { in: candidateSlugs } }] } 
-        : { slug: { in: candidateSlugs } },
+      where: isObjectId ? { id } : { slug: id },
       include: { 
         questions: metaOnly ? { select: { id: true } } : true 
       },
     });
 
-    // Native MongoDB fallback if Prisma did not find category
-    if (!category && db) {
+    if (!category || ((category.questions?.length || 0) === 0 && !category.questionCount)) {
+      const candidates = await prisma.category.findMany({
+        where: isObjectId 
+          ? { OR: [{ id }, { slug: { in: candidateSlugs } }] } 
+          : { slug: { in: candidateSlugs } },
+        include: { 
+          questions: metaOnly ? { select: { id: true } } : true 
+        },
+      });
+      if (candidates.length > 0) {
+        const best = candidates.sort((a, b) => {
+          const aCount = a.questions?.length || a.questionCount || 0;
+          const bCount = b.questions?.length || b.questionCount || 0;
+          return bCount - aCount;
+        })[0];
+        if (best && ((best.questions?.length || best.questionCount || 0) > (category?.questions?.length || 0))) {
+          category = best;
+        }
+      }
+    }
+
+    // Native MongoDB fallback if Prisma did not find category or found empty
+    if ((!category || ((category.questions?.length || 0) === 0 && !category.questionCount)) && db) {
       const normalizedTopic = id.replace(/-/g, ' ');
-      const rawCat = await db.collection("Category").findOne({
+      let rawCat = await db.collection("Category").findOne({
         $or: [
           ...(catObjId ? [{ _id: catObjId }] : []),
           { slug: id },
-          { slug: id.toLowerCase() },
-          { topic: { $regex: new RegExp(`^${normalizedTopic}$`, 'i') } },
         ]
       });
-      if (rawCat) {
+      if (!rawCat) {
+        const rawCats = await db.collection("Category").find({
+          $or: [
+            ...(catObjId ? [{ _id: catObjId }] : []),
+            { slug: { $in: candidateSlugs } },
+            { topic: { $regex: new RegExp(`^${normalizedTopic}$`, 'i') } },
+          ]
+        }).sort({ questionCount: -1 }).toArray();
+        rawCat = rawCats[0] || null;
+      }
+      if (rawCat && (!category || (rawCat.questionCount || 0) > (category.questions?.length || 0))) {
         category = {
           ...rawCat,
           id: rawCat._id.toString(),
@@ -90,6 +124,31 @@ export async function GET(request, { params }) {
       }
     }
     
+    // Canonical fallback from MAIN_CATEGORIES if not in database
+    if (!category) {
+      const canonical = getMainCategoryBySlug(id);
+      if (canonical) {
+        category = {
+          id: canonical.slug,
+          _id: canonical.slug,
+          slug: canonical.slug,
+          topic: canonical.name,
+          topicHi: canonical.nameHi || canonical.name,
+          name: canonical.name,
+          nameHi: canonical.nameHi || canonical.name,
+          emoji: canonical.icon || "📚",
+          icon: canonical.icon || "📚",
+          description: canonical.description || "",
+          descriptionHi: canonical.descriptionHi || "",
+          example: canonical.example || "",
+          status: "live",
+          sortOrder: canonical.id || 10,
+          subcategories: canonical.subcategories || [],
+          questions: [],
+        };
+      }
+    }
+
     if (!category) return NextResponse.json({ error: "Not found" }, { status: 404 });
     
     let subCategories = await prisma.category.findMany({
@@ -132,6 +191,8 @@ export async function GET(request, { params }) {
       $or: [
         { categoryId: { $in: allTargetIds } },
         { category_id: { $in: allTargetIds } },
+        ...(category.topic ? [{ category: category.topic }] : []),
+        ...(category.name && category.name !== category.topic ? [{ category: category.name }] : []),
       ]
     };
 
@@ -289,6 +350,10 @@ export async function GET(request, { params }) {
               { topicId: { $in: allTargetIdsStr } },
               { topic_id: { $in: allTargetIds } },
               { topic_id: { $in: allTargetIdsStr } },
+              { subCategoryId: { $in: allTargetIds } },
+              { subCategoryId: { $in: allTargetIdsStr } },
+              { subCategory_id: { $in: allTargetIds } },
+              { subCategory_id: { $in: allTargetIdsStr } },
             ]
           },
           {

@@ -100,10 +100,6 @@ export default function CategorySetsPage() {
         questionCount: sc.questionCount || 0,
       }));
     }
-    // For india-gk, never show predefined static subcategories; only real DB subcategories
-    if (params?.slug === "india-gk") {
-      return [];
-    }
     // 2. Fallback to mainCategoryConfig taxonomy so official subcategories are always visible & organized
     if (mainCategoryConfig && Array.isArray(mainCategoryConfig.subcategories) && mainCategoryConfig.subcategories.length > 0) {
       return mainCategoryConfig.subcategories.map((sc) => ({
@@ -863,6 +859,49 @@ export default function CategorySetsPage() {
           </p>
         </div>
 
+        {/* India GK Sub-Categories Direct Hub Link Cards */}
+        {params?.slug === "india-gk" && availableSubCategories.length > 0 && (
+          <div className="mb-6 p-4 rounded-3xl bg-white/90 dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                <span>🇮🇳</span>
+                <span>{isHindi ? "India GK की उप-श्रेणियां (Linked Sub-Categories)" : "India GK Sub-Categories"}</span>
+              </span>
+              <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400">
+                {availableSubCategories.length} {isHindi ? "श्रेणियां" : "Categories"}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-2.5">
+              {availableSubCategories.map((sub) => {
+                const subMeta = getMainCategoryBySlug(sub.slug);
+                return (
+                  <Link
+                    key={sub.slug}
+                    href={`/category/${sub.slug}`}
+                    className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 hover:bg-indigo-50/70 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 border border-slate-200/80 dark:border-slate-700 hover:border-indigo-400 transition-all group"
+                  >
+                    <div className="flex items-center gap-2.5 overflow-hidden">
+                      <span className="text-xl shrink-0">{subMeta?.icon || "📖"}</span>
+                      <div className="truncate">
+                        <div className="text-xs font-bold text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 truncate">
+                          {isHindi && sub.nameHi ? sub.nameHi : sub.name}
+                        </div>
+                        <div className="text-[10px] text-slate-400 truncate">
+                          {isHindi ? sub.name : (sub.nameHi || "")}
+                        </div>
+                      </div>
+                    </div>
+                    <span className="text-xs text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:translate-x-0.5 transition-transform ml-1">
+                      →
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Subcategories & Topics Drill-down Bar */}
         {availableSubCategories.length > 0 && activeLayer === "standard" && (
           <div className="mb-6 p-4 rounded-3xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-3">
@@ -872,16 +911,27 @@ export default function CategorySetsPage() {
                 <span>{isHindi ? "उप-विषय (Sub-Categories)" : "Drill-Down Subcategories"}</span>
               </span>
               {(selectedSubCategory || selectedTopic) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedSubCategory(null);
-                    setSelectedTopic(null);
-                  }}
-                  className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
-                >
-                  {isHindi ? "सभी प्रश्न दिखाएं" : "Show All Questions"}
-                </button>
+                <div className="flex items-center gap-3">
+                  {selectedSubCategory && (
+                    <Link
+                      href={`/category/${selectedSubCategory}`}
+                      className="text-xs font-extrabold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
+                    >
+                      <span>{isHindi ? "श्रेणी पेज खोलें" : "Open Category"}</span>
+                      <span>→</span>
+                    </Link>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedSubCategory(null);
+                      setSelectedTopic(null);
+                    }}
+                    className="text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer"
+                  >
+                    {isHindi ? "सभी प्रश्न" : "Show All"}
+                  </button>
+                </div>
               )}
             </div>
 

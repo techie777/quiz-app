@@ -120,8 +120,14 @@ export default function ArenaClient({ initialSelectedCategoryIds = null, embedde
     }
 
     const list = MAIN_CATEGORIES.map((cat) => {
-      const slugKey = cat.slug.toLowerCase();
-      const dbMatch = dbMap.get(slugKey) || (meta?.categories || []).find((c) => (c.slug || c.id)?.toLowerCase() === slugKey);
+      const aliasKey = (cat.slug === "india-sports" ? "sports" : (cat.slug === "india-polity" ? "politics-government" : null));
+      const dbMatch =
+        dbMap.get(slugKey) ||
+        (aliasKey ? dbMap.get(aliasKey) : null) ||
+        (meta?.categories || []).find((c) => {
+          const cSlug = (c.slug || c.id)?.toLowerCase();
+          return cSlug === slugKey || (aliasKey && cSlug === aliasKey);
+        });
 
       let count = 0;
       if (dbMatch) {

@@ -151,14 +151,19 @@ function downloadCsvSampleTemplate() {
     '"Lothal was a major ancient Indus port city located in Gujarat."',
     "hi",
   ];
-  const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + [headers.join(","), sampleRow1.join(",")].join("\n");
-  const encodedUri = encodeURI(csvContent);
+  const csvContent = [headers.join(","), sampleRow1.join(",")].join("\r\n");
+  const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+  const encoder = new TextEncoder();
+  const csvBytes = encoder.encode(csvContent);
+  const blob = new Blob([bom, csvBytes], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
+  link.setAttribute("href", url);
   link.setAttribute("download", "standard-quiz-upload-template.csv");
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 // Generate Legacy Sample Template (.xlsx with 2 sheets)
