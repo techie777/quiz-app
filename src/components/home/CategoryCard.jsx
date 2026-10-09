@@ -56,41 +56,18 @@ export default function CategoryCard({ category, isHindi = false }) {
     });
   };
 
-  const cardStyle = {
-    background: "var(--card, #ffffff)",
-    border: isHovered ? "1px solid rgba(99, 102, 241, 0.4)" : "1px solid var(--line, #e8eaf5)",
-    borderRadius: "18px",
-    overflow: "hidden",
-    cursor: "pointer",
-    display: "flex",
-    flexDirection: "column",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    textDecoration: "none",
-    color: "inherit",
-    transform: isHovered ? "translateY(-4px)" : "none",
-    boxShadow: isHovered
-      ? "0 14px 28px -6px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(99, 102, 241, 0.25)"
-      : "0 2px 6px rgba(0, 0, 0, 0.04)",
-    transition: "transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease",
-  };
+  const cardBaseClasses = "c-card relative rounded-2xl overflow-hidden flex flex-col no-underline select-none transition-all duration-200 bg-white dark:bg-[#0f1424] border border-slate-200/90 dark:border-slate-800/80 hover:border-indigo-500/60 dark:hover:border-indigo-400/50 hover:shadow-lg hover:shadow-indigo-500/10 dark:hover:shadow-indigo-500/5 hover:-translate-y-1 active:scale-[0.98]";
 
   const CardInner = (
     <>
-      {/* 1. Square 1:1 thumbnail */}
+      {/* 1. Square thumbnail */}
       <div
-        className="c-thumbnail"
+        className="c-thumbnail w-full aspect-square relative grid place-items-center text-5xl overflow-hidden"
         style={{
-          aspectRatio: "1/1",
-          position: "relative",
-          display: "grid",
-          placeItems: "center",
-          fontSize: "54px",
-          overflow: "hidden",
           background: fallbackBg,
         }}
       >
-        <span className="c-emoji" aria-hidden="true">{emoji}</span>
+        <span className="c-emoji select-none" aria-hidden="true">{emoji}</span>
         
         {!imgError && imageSrc && (
           <>
@@ -101,120 +78,51 @@ export default function CategoryCard({ category, isHindi = false }) {
               height={300}
               loading="lazy"
               onError={() => setImgError(true)}
-              style={{
-                position: "absolute",
-                inset: 0,
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                filter: !isLive ? "saturate(0.55)" : "none",
-                opacity: !isLive ? 0.85 : 1,
-                transform: isHovered ? "scale(1.06)" : "scale(1)",
-                transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
-              }}
+              className={`absolute inset-0 w-full h-full object-cover transition-transform duration-300 ${
+                !isLive ? "saturate-[0.55] opacity-85" : "group-hover:scale-105"
+              } ${isHovered ? "scale-105" : "scale-100"}`}
             />
             {/* Subtle bottom vignette for depth */}
             <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                background: "linear-gradient(to top, rgba(15, 23, 42, 0.35) 0%, rgba(15, 23, 42, 0) 45%)",
-                pointerEvents: "none",
-              }}
+              className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent pointer-events-none"
             />
           </>
         )}
 
         {/* 2. Status pill overlaid at top-left */}
         <span
-          className={`c-status-pill ${isLive ? "live" : "soon"}`}
-          style={{
-            position: "absolute",
-            top: "8px",
-            left: "8px",
-            background: isLive ? "#16a34a" : "rgba(20, 22, 43, 0.72)",
-            color: "#ffffff",
-            fontSize: "10.5px",
-            fontWeight: 700,
-            padding: "3px 8px",
-            borderRadius: "99px",
-            backdropFilter: "blur(6px)",
-            WebkitBackdropFilter: "blur(6px)",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
-            lineHeight: 1.2,
-            zIndex: 2,
-            maxWidth: "calc(100% - 16px)",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
+          className={`c-status-pill absolute top-2 left-2 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide backdrop-blur-md shadow-md z-10 ${
+            isLive
+              ? "bg-emerald-600/95 text-white shadow-emerald-950/20"
+              : "bg-slate-900/85 text-slate-200 border border-white/10"
+          }`}
         >
           {isLive ? (isHindi ? "● लाइव" : "● Live") : (isHindi ? "जल्द आ रहा है" : "Coming soon")}
         </span>
       </div>
 
       {/* Card Body */}
-      <div
-        className="c-body"
-        style={{
-          padding: "10px 12px 12px",
-          display: "flex",
-          flexDirection: "column",
-          flex: 1,
-          justifyContent: "space-between",
-        }}
-      >
+      <div className="c-body p-2.5 sm:p-3 flex flex-col flex-1 justify-between gap-1">
         <div>
-          {/* 3. Title (14px, semibold, max 2 lines) */}
-          <h3
-            style={{
-              fontSize: "14px",
-              fontWeight: 600,
-              lineHeight: 1.25,
-              color: "var(--ink, #14162b)",
-              margin: 0,
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
-            }}
-          >
+          {/* 3. Title */}
+          <h3 className="text-[13.5px] sm:text-sm font-bold text-slate-900 dark:text-slate-100 line-clamp-2 leading-tight m-0">
             {enTitle}
           </h3>
 
           {/* 4. Hindi subtitle on ONE line with ellipsis */}
           {hiSubtitle && (
             <div
-              className="hi"
-              style={{
-                fontFamily: "'Noto Sans Devanagari', Poppins, sans-serif",
-                fontSize: "12px",
-                color: "var(--mute, #6b7190)",
-                marginTop: "2px",
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                lineHeight: 1.3,
-              }}
+              className="text-[11.5px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate leading-tight font-medium"
+              style={{ fontFamily: "'Noto Sans Devanagari', Poppins, sans-serif" }}
             >
               {hiSubtitle}
             </div>
           )}
         </div>
 
-        {/* 5. Meta line (11px, muted) */}
+        {/* 5. Meta line */}
         {metaText && (
-          <div
-            className="c-meta"
-            style={{
-              fontSize: "11px",
-              color: "var(--mute, #6b7190)",
-              marginTop: "7px",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
+          <div className="text-[10.5px] sm:text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 mt-1 truncate">
             {metaText}
           </div>
         )}
@@ -233,8 +141,7 @@ export default function CategoryCard({ category, isHindi = false }) {
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") handleComingSoonClick(e);
         }}
-        className="c-card is-soon"
-        style={cardStyle}
+        className={`${cardBaseClasses} is-soon cursor-pointer opacity-90`}
       >
         {CardInner}
       </div>
@@ -254,8 +161,7 @@ export default function CategoryCard({ category, isHindi = false }) {
           router.prefetch(destinationUrl);
         } catch {}
       }}
-      className="c-card is-live block no-underline text-inherit"
-      style={cardStyle}
+      className={`${cardBaseClasses} is-live group`}
     >
       {CardInner}
     </Link>

@@ -11,6 +11,7 @@ export interface ExplanationCardProps {
   userAnswerIndex: number | null | undefined;
   onNextQuestion: () => void;
   onClose?: () => void;
+  onToggleFastMode?: () => void;
   categoryOrSlug?: any;
   tier?: string;
   isHindi?: boolean;
@@ -21,6 +22,7 @@ export default function ExplanationCard({
   userAnswerIndex,
   onNextQuestion,
   onClose,
+  onToggleFastMode,
   categoryOrSlug,
   tier,
   isHindi = true,
@@ -160,26 +162,18 @@ export default function ExplanationCard({
         {/* Top Drag Handle */}
         <div className="w-12 h-1 rounded-full bg-slate-300 dark:bg-slate-700 mx-auto mt-2.5 mb-1" />
 
-        {/* Top Header Row: Status tag, Next button & Close button */}
+        {/* Top Header Row: Status tag & Close button */}
         <div className="flex items-center justify-between px-3.5 sm:px-5 pt-1.5 pb-2">
           {/* Status pill tag */}
           <div className="flex items-center gap-2">
             <span className="px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-black uppercase tracking-wider bg-emerald-100/90 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 shadow-2xs">
-              {isCorrect ? "✅ शाबाश! सही उत्तर" : "💡 समझें और सीखें"}
+              {isCorrect
+                ? (isActuallyHindi ? "✅ शाबाश! सही उत्तर" : "✅ Well Done! Correct")
+                : (isActuallyHindi ? "💡 समझें और सीखें" : "💡 Learn & Understand")}
             </span>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Next Question Pill Button */}
-            <button
-              type="button"
-              onClick={handleNext}
-              className="px-3 sm:px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-[11px] sm:text-xs font-black flex items-center gap-1 shadow-md shadow-indigo-500/20 transition-all cursor-pointer"
-            >
-              <span>{isHindi ? "अगला प्रश्न" : "Next"}</span>
-              <ArrowRight size={13} />
-            </button>
-
             {/* Circular Close Button */}
             <button
               type="button"
@@ -198,7 +192,7 @@ export default function ExplanationCard({
           - Mascot on the LEFT
           - Explanation card on the RIGHT
         */}
-        <div className="px-3 sm:px-4 pb-4 sm:pb-5">
+        <div className="px-3 sm:px-4 pb-3 sm:pb-4">
           <div className="relative rounded-2xl bg-[#E8F6F0] dark:bg-emerald-950/30 border border-[#CEEBDD] dark:border-emerald-900/40 p-2.5 sm:p-4 overflow-visible min-h-[175px] sm:min-h-[200px] flex items-center justify-between gap-2 sm:gap-3">
             
             {/* Decorative Stars / Sparkles in background */}
@@ -252,7 +246,7 @@ export default function ExplanationCard({
                 <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
                   <span className="text-lg sm:text-xl">💡</span>
                   <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-800 dark:text-slate-100">
-                    {isHindi ? "स्पष्टीकरण:" : "Explanation:"}
+                    {isActuallyHindi ? "स्पष्टीकरण:" : "Explanation:"}
                   </span>
                 </div>
 
@@ -264,6 +258,30 @@ export default function ExplanationCard({
             </div>
 
           </div>
+        </div>
+
+        {/* Footer actions: Fast Mode Toggle button and Next Button */}
+        <div className="flex items-center justify-between px-3.5 sm:px-5 pb-4 pt-1.5 border-t border-slate-100 dark:border-slate-800/80 gap-2">
+          {onToggleFastMode ? (
+            <button
+              type="button"
+              onClick={onToggleFastMode}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] sm:text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 transition-all cursor-pointer active:scale-95 shadow-2xs"
+              title={isActuallyHindi ? "आगे से यह पॉपअप न दिखाएं (फास्ट मोड)" : "Don't show popup again (Fast Mode)"}
+            >
+              <span>⚡</span>
+              <span>{isActuallyHindi ? "फास्ट मोड (पॉपअप बंद)" : "Fast Mode (No Popup)"}</span>
+            </button>
+          ) : <div />}
+
+          <button
+            type="button"
+            onClick={handleNext}
+            className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-md shadow-indigo-500/25 transition-all cursor-pointer ml-auto"
+          >
+            <span>{isActuallyHindi ? "अगला प्रश्न" : "Next Question"}</span>
+            <ArrowRight size={15} />
+          </button>
         </div>
       </motion.div>
     </div>

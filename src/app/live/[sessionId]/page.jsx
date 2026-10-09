@@ -1,14 +1,16 @@
 "use client";
 
 import React, { Suspense } from 'react';
+import { useParams } from 'next/navigation';
 import { SessionProvider } from '@/engine/SessionProvider';
 import SessionManager from '@/engine/SessionManager';
 import { AdminProvider } from '@/context/AdminContext';
 
 import { useUI } from '@/context/UIContext';
 
-export default function LiveSessionPage({ params }) {
-  const { sessionId } = params;
+export default function LiveSessionPage({ params: propsParams }) {
+  const routerParams = useParams();
+  const sessionId = routerParams?.sessionId || propsParams?.sessionId;
   const { engineTheme } = useUI();
 
   const themeClasses = {

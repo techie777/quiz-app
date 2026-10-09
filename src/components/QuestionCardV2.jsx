@@ -22,6 +22,8 @@ export default function QuestionCardV2({
   userAnswer,
   showExplanation,
   onCloseExplanation,
+  onOpenExplanation,
+  onToggleFastMode,
   explanation,
   language = "en",
   disabled,
@@ -542,8 +544,19 @@ export default function QuestionCardV2({
 
       {revealed && !showExplanation && (
         <div className="mt-6 p-5 rounded-2xl bg-indigo-50/80 dark:bg-slate-800/90 border border-indigo-200/60 dark:border-indigo-900/40 shadow-sm animate-in fade-in duration-300">
-          <div className="flex items-center gap-2 mb-2 font-black text-xs uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-            <span>💡 {isHindi ? "स्पष्टीकरण एवं समीक्षा" : "Explanation & Review"}</span>
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-2 font-black text-xs uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+              <span>💡 {isHindi ? "स्पष्टीकरण एवं समीक्षा" : "Explanation & Review"}</span>
+            </div>
+            {onOpenExplanation && (
+              <button
+                type="button"
+                onClick={onOpenExplanation}
+                className="text-[11px] font-bold text-indigo-600 dark:text-indigo-300 hover:text-indigo-700 dark:hover:text-white transition-colors flex items-center gap-1 cursor-pointer bg-indigo-100/60 dark:bg-indigo-900/40 px-2.5 py-1 rounded-lg"
+              >
+                <span>🎙️ {isHindi ? "विस्तृत मैस्कॉट व्याख्या" : "Detailed Dialogue"}</span>
+              </button>
+            )}
           </div>
           <p className="m-0 text-sm leading-relaxed text-slate-700 dark:text-slate-200 font-medium">
             {getDynamicExplanation(question, isHindi)}
@@ -557,6 +570,7 @@ export default function QuestionCardV2({
           userAnswerIndex={selected}
           onNextQuestion={onCloseExplanation}
           onClose={onCloseExplanation}
+          onToggleFastMode={onToggleFastMode}
           categoryOrSlug={quizId}
           tier={tier}
           isHindi={isHindi}

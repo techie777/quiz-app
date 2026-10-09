@@ -209,6 +209,7 @@ export default function ExplorerHomeSection({
 }) {
   const [selectedChip, setSelectedChip] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [showComingSoon, setShowComingSoon] = useState(false);
   const [localCategories, setLocalCategories] = useState(
     Array.isArray(dbCategories) && dbCategories.length > 0 ? dbCategories : []
   );
@@ -372,18 +373,16 @@ export default function ExplorerHomeSection({
   const hasResults = liveCategories.length > 0 || soonCategories.length > 0 || othersQuizzes.length > 0;
 
   return (
-    <div className="w-full max-w-[1100px] mx-auto px-1 sm:px-2 pb-16">
+    <div className="w-full max-w-[1100px] mx-auto px-1 sm:px-2 pb-24 sm:pb-28">
       {/* 1. Greeting + Title */}
       <header className="pt-2 sm:pt-4 pb-2 text-left">
         <small
-          className="block text-xs sm:text-sm font-medium"
-          style={{ color: "var(--mute, #6b7190)" }}
+          className="block text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400"
         >
           {isHindi ? "नमस्ते 👋" : "Namaste 👋"}
         </small>
         <h1
-          className="text-xl sm:text-2xl font-bold leading-tight mt-0.5"
-          style={{ color: "var(--ink, #14162b)" }}
+          className="text-xl sm:text-2xl font-extrabold leading-tight mt-0.5 text-slate-900 dark:text-white"
         >
           {isHindi ? (
             "आज आप क्या खेलना चाहेंगे?"
@@ -397,29 +396,16 @@ export default function ExplorerHomeSection({
         </h1>
       </header>
 
-      {/* 2. Instant Search Bar (Fixed/Sticky under top header on scroll) */}
+      {/* 2. Instant Search Bar (Sticky with Glassmorphism) */}
       <div
-        className="sticky top-[52px] sm:top-[56px] z-40 py-2 backdrop-blur-md transition-all"
-        style={{
-          background: "var(--bg, #f6f7fc)",
-          borderBottom: "1px solid var(--line, #e8eaf5)",
-          marginLeft: "-6px",
-          marginRight: "-6px",
-          paddingLeft: "6px",
-          paddingRight: "6px",
-        }}
+        className="sticky top-[52px] sm:top-[56px] z-30 py-2.5 backdrop-blur-md transition-all -mx-2 px-2 border-b border-slate-200/70 dark:border-slate-800/70 bg-[#f6f7fc]/90 dark:bg-[#090e20]/90"
       >
         <div
-          className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl"
-          style={{
-            background: "var(--card, #ffffff)",
-            border: "1px solid var(--line, #e8eaf5)",
-            boxShadow: "0 2px 6px rgba(0,0,0,0.03)",
-          }}
+          className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl bg-white dark:bg-[#0f1424] border border-slate-200/90 dark:border-slate-800/80 shadow-xs focus-within:ring-2 focus-within:ring-indigo-500/25 focus-within:border-indigo-500 transition-all"
         >
           <Search
             size={18}
-            style={{ color: "var(--mute, #6b7190)", flexShrink: 0 }}
+            className="text-slate-400 dark:text-slate-500 shrink-0"
           />
           <input
             id="q"
@@ -431,27 +417,14 @@ export default function ExplorerHomeSection({
                 ? "40+ क्विज़ श्रेणियां खोजें..."
                 : "Search 40+ quiz categories"
             }
-            style={{
-              border: 0,
-              outline: 0,
-              background: "transparent",
-              color: "var(--ink, #14162b)",
-              fontSize: "14px",
-              fontWeight: 500,
-              width: "100%",
-              fontFamily: "inherit",
-            }}
+            className="w-full bg-transparent border-0 outline-none text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
           />
           {searchQuery && (
             <button
               type="button"
               onClick={() => setSearchQuery("")}
               aria-label="Clear search"
-              className="text-xs px-2 py-0.5 rounded-full"
-              style={{
-                color: "var(--mute, #6b7190)",
-                background: "var(--soft, #eef0ff)",
-              }}
+              className="text-xs px-2 py-0.5 rounded-full text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
             >
               ✕
             </button>
@@ -459,46 +432,38 @@ export default function ExplorerHomeSection({
         </div>
       </div>
 
-      {/* 3. Filter Chips */}
-      <div
-        className="chips-wrapper flex gap-2 overflow-x-auto py-2 mb-3.5 no-scrollbar"
-        style={{
-          position: "relative",
-          marginRight: "-4px",
-          marginLeft: "-4px",
-          paddingRight: "4px",
-          paddingLeft: "4px",
-        }}
-      >
-        {FILTER_CHIPS.map((chip) => {
-          const isActive = selectedChip === chip.id;
-          return (
-            <button
-              key={chip.id}
-              type="button"
-              onClick={() => setSelectedChip(chip.id)}
-              className="shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-all"
-              style={{
-                borderRadius: "99px",
-                padding: "7px 14px",
-                fontSize: "12.5px",
-                fontWeight: 600,
-                background: isActive
-                  ? "linear-gradient(135deg, var(--pri, #4f46e5), var(--pri2, #7c5cff))"
-                  : "var(--card, #ffffff)",
-                color: isActive ? "#ffffff" : "var(--mute, #6b7190)",
-                border: isActive
-                  ? "1px solid var(--pri, #4f46e5)"
-                  : "1px solid var(--line, #e8eaf5)",
-                boxShadow: isActive
-                  ? "0 4px 12px rgba(79, 70, 229, 0.25)"
-                  : "none",
-              }}
-            >
-              {isHindi ? chip.labelHi : chip.label}
-            </button>
-          );
-        })}
+      {/* 3. Filter Chips with Mobile Scroll Fade Indicator */}
+      <div className="relative mb-3.5">
+        <div
+          className="chips-wrapper flex gap-2 overflow-x-auto py-2 no-scrollbar -mx-1 px-1"
+          style={{
+            scrollSnapType: "x mandatory",
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
+          {FILTER_CHIPS.map((chip) => {
+            const isActive = selectedChip === chip.id;
+            return (
+              <button
+                key={chip.id}
+                type="button"
+                onClick={() => setSelectedChip(chip.id)}
+                className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-all active:scale-95 ${
+                  isActive
+                    ? "bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md shadow-indigo-600/25 border border-indigo-600"
+                    : "bg-white dark:bg-[#0f1424] text-slate-600 dark:text-slate-300 border border-slate-200/90 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-700 shadow-2xs"
+                }`}
+              >
+                {isHindi ? chip.labelHi : chip.label}
+              </button>
+            );
+          })}
+        </div>
+        {/* Subtle right fade hint for horizontal scroll */}
+        <div
+          className="absolute right-0 top-0 bottom-0 w-8 pointer-events-none bg-gradient-to-l from-[#f6f7fc] dark:from-[#090e20] to-transparent sm:hidden"
+          aria-hidden="true"
+        />
       </div>
 
       {/* ── CONDITIONAL RENDER: DEDICATED FILTER SCREEN vs MAIN HOME CONTENT ── */}
@@ -506,30 +471,20 @@ export default function ExplorerHomeSection({
         <section className="py-2 animate-fadeIn">
           {/* Header Bar: Back to Home + Result Counter */}
           <div 
-            className="flex items-center justify-between gap-3 mb-4 p-3 rounded-2xl"
-            style={{
-              background: "var(--card, #ffffff)",
-              border: "1px solid var(--line, #e8eaf5)",
-              boxShadow: "0 2px 6px rgba(0,0,0,0.03)"
-            }}
+            className="flex items-center justify-between gap-3 mb-4 p-3 rounded-2xl bg-white dark:bg-[#0f1424] border border-slate-200/90 dark:border-slate-800 shadow-xs"
           >
             <button
               type="button"
               onClick={() => setSearchQuery("")}
-              className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all active:scale-95"
-              style={{
-                background: "var(--soft, #eef0ff)",
-                color: "var(--pri, #4f46e5)",
-                border: "1px solid rgba(79, 70, 229, 0.2)"
-              }}
+              className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/60 hover:bg-indigo-100 transition-all active:scale-95"
             >
               ← {isHindi ? "होम पर लौटें" : "Back to Home"}
             </button>
             <div className="text-right">
-              <span className="text-xs font-bold block" style={{ color: "var(--mute, #6b7190)" }}>
+              <span className="text-xs font-bold block text-slate-400 dark:text-slate-500">
                 {isHindi ? "फ़िल्टर परिणाम" : "Filter Screen"}
               </span>
-              <span className="text-xs font-semibold" style={{ color: "var(--ink, #14162b)" }}>
+              <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
                 {filteredCategories.length} {isHindi ? "श्रेणियां मिलीं" : "categories found"}
               </span>
             </div>
@@ -538,8 +493,7 @@ export default function ExplorerHomeSection({
           {/* Filtered Results Grid */}
           {filteredCategories.length > 0 ? (
             <div
-              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"
-              style={{ gap: "12px" }}
+              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-3.5"
             >
               {filteredCategories.map((category) => (
                 <CategoryCard
@@ -551,17 +505,13 @@ export default function ExplorerHomeSection({
             </div>
           ) : (
             <div
-              className="py-16 text-center rounded-3xl p-6"
-              style={{
-                background: "var(--card, #ffffff)",
-                border: "1px solid var(--line, #e8eaf5)"
-              }}
+              className="py-16 text-center rounded-3xl p-6 bg-white dark:bg-[#0f1424] border border-slate-200/90 dark:border-slate-800"
             >
               <div className="text-4xl mb-3">🔍</div>
-              <h3 className="text-base font-bold mb-1" style={{ color: "var(--ink, #14162b)" }}>
+              <h3 className="text-base font-bold mb-1 text-slate-900 dark:text-white">
                 {isHindi ? "कोई परिणाम नहीं मिला" : "No matching categories found"}
               </h3>
-              <p className="text-xs mb-4" style={{ color: "var(--mute, #6b7190)" }}>
+              <p className="text-xs mb-4 text-slate-500 dark:text-slate-400">
                 {isHindi
                   ? `"${searchQuery}" के लिए कोई श्रेणी नहीं मिली। लोकप्रिय विषय चुनें:`
                   : `No categories match "${searchQuery}". Try popular topics:`}
@@ -572,12 +522,7 @@ export default function ExplorerHomeSection({
                     key={tag}
                     type="button"
                     onClick={() => setSearchQuery(tag)}
-                    className="px-3 py-1.5 text-xs font-semibold rounded-full transition-all"
-                    style={{
-                      background: "var(--soft, #eef0ff)",
-                      color: "var(--pri, #4f46e5)",
-                      border: "1px solid rgba(79, 70, 229, 0.15)"
-                    }}
+                    className="px-3 py-1.5 text-xs font-semibold rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/60 hover:bg-indigo-100 transition-all"
                   >
                     {tag}
                   </button>
@@ -588,72 +533,58 @@ export default function ExplorerHomeSection({
         </section>
       ) : (
         <>
-          {/* 4. Daily Quiz Banner */}
-          <div
-            className="hero-daily-banner flex justify-between items-center p-4 rounded-2xl mb-4 text-white"
-            style={{
-              background:
-                "linear-gradient(135deg, var(--pri, #4f46e5), var(--pri2, #7c5cff))",
-              borderRadius: "20px",
-              padding: "16px",
-              boxShadow: "0 8px 24px rgba(79, 70, 229, 0.22)",
-            }}
-          >
-            <div>
-              <b className="text-base sm:text-lg font-bold block">
-                ⚡ {isHindi ? "दैनिक क्विज़" : "Daily Quiz"}
-              </b>
-              <p className="text-xs opacity-90 mt-0.5">
-                {isHindi ? "10 प्रश्न · 3 मिनट" : "10 questions · 3 mins"}
-              </p>
-            </div>
-            <Link
-              href="/daily-quiz"
-              className="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white text-indigo-600 active:scale-95 transition-transform"
+          {/* 4. Action Strip: Daily Quiz + Arena Prompt Card Consolidated in 2-Col Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+            {/* Daily Quiz Hero Banner */}
+            <div
+              className="hero-daily-banner flex justify-between items-center p-4 rounded-2xl text-white relative overflow-hidden shadow-md shadow-indigo-600/15"
               style={{
-                border: 0,
-                background: "#ffffff",
-                color: "var(--pri, #4f46e5)",
-                font: "700 13px Poppins, sans-serif",
-                borderRadius: "12px",
-                padding: "10px 16px",
-                textDecoration: "none",
-                display: "inline-block",
+                background: "linear-gradient(135deg, #4f46e5 0%, #7c5cff 100%)",
               }}
             >
-              {isHindi ? "अभी खेलें" : "Play now"}
-            </Link>
+              <div>
+                <b className="text-base sm:text-lg font-bold block leading-tight">
+                  ⚡ {isHindi ? "दैनिक क्विज़" : "Daily Quiz"}
+                </b>
+                <p className="text-xs opacity-90 mt-0.5">
+                  {isHindi ? "10 प्रश्न · 3 मिनट · स्ट्रीक बढ़ाएं" : "10 questions · 3 mins"}
+                </p>
+              </div>
+              <Link
+                href="/daily-quiz"
+                className="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white text-indigo-600 hover:bg-indigo-50 active:scale-95 transition-all shadow-sm shrink-0 whitespace-nowrap"
+              >
+                {isHindi ? "अभी खेलें" : "Play now"}
+              </Link>
+            </div>
+
+            {/* Quiz Arena compact card for Explorer */}
+            <ArenaPromptCard audience="explorer" className="mb-0 h-full flex items-center" />
           </div>
 
-          {/* 📚 My Books Section: India GK + Upcoming MP GK / UP GK */}
-          <MyBooksHomeSection isHindi={isHindi} />
-
-          {/* Quiz Arena compact card for Explorer (kept in position) */}
-          <ArenaPromptCard audience="explorer" className="mb-3" />
-
-          {/* Hot Quizzes Row (kept in position) */}
+          {/* Hot Quizzes Row */}
           <div className="mb-4">
             <HotQuizzesRow />
           </div>
 
-          {/* 5. Play now Section: Live categories first */}
+          {/* 5. Play now Section: Live categories first (Immediate Access!) */}
           {liveCategories.length > 0 && (
             <section className="mb-6">
               <h2
-                className="flex items-center justify-between text-sm sm:text-base font-bold my-2 px-1"
-                style={{ color: "var(--ink, #14162b)" }}
+                className="flex items-center justify-between text-sm sm:text-base font-bold my-2 px-1 text-slate-900 dark:text-white"
               >
-                <span>{isHindi ? "अभी खेलें" : "Play now"}</span>
+                <span className="flex items-center gap-1.5">
+                  <span>🎯</span>
+                  <span>{isHindi ? "अभी खेलें (लाइव श्रेणियां)" : "Play now"}</span>
+                </span>
                 <span
-                  className="text-xs font-semibold"
-                  style={{ color: "var(--mute, #6b7190)" }}
+                  className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
                 >
                   {liveCategories.length} {isHindi ? "लाइव" : "live"}
                 </span>
               </h2>
               <div
-                className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"
-                style={{ gap: "12px" }}
+                className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-3.5"
               >
                 {liveCategories.map((category) => (
                   <CategoryCard
@@ -666,27 +597,29 @@ export default function ExplorerHomeSection({
             </section>
           )}
 
+          {/* 📚 My Books Section: India GK + Upcoming MP GK / UP GK */}
+          <div className="my-6">
+            <MyBooksHomeSection isHindi={isHindi} />
+          </div>
+
           {/* 5.5. Others Quizzes Section: Quizzes from India > GK > Others */}
           {othersQuizzes.length > 0 && (
             <section className="mb-6">
               <h2
-                className="flex items-center justify-between text-sm sm:text-base font-bold my-2 px-1"
-                style={{ color: "var(--ink, #14162b)" }}
+                className="flex items-center justify-between text-sm sm:text-base font-bold my-2 px-1 text-slate-900 dark:text-white"
               >
                 <span className="flex items-center gap-1.5">
                   <span>📦</span>
                   <span>{isHindi ? "अन्य (Others) क्विज़" : "Others Quizzes"}</span>
                 </span>
                 <span
-                  className="text-xs font-semibold"
-                  style={{ color: "var(--mute, #6b7190)" }}
+                  className="text-xs font-semibold text-slate-500 dark:text-slate-400"
                 >
                   {othersQuizzes.length} {isHindi ? "क्विज़" : "quizzes"}
                 </span>
               </h2>
               <div
-                className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"
-                style={{ gap: "12px" }}
+                className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-3.5"
               >
                 {othersQuizzes.map((quizItem) => (
                   <CategoryCard
@@ -699,32 +632,52 @@ export default function ExplorerHomeSection({
             </section>
           )}
 
-          {/* 6. Coming soon Section: The rest */}
+          {/* 6. Coming soon Section: Clean collapsible accordion */}
           {soonCategories.length > 0 && (
-            <section className="mb-6">
-              <h2
-                className="flex items-center justify-between text-sm sm:text-base font-bold my-2 px-1"
-                style={{ color: "var(--ink, #14162b)" }}
+            <section className="mb-8 pt-2">
+              <div 
+                className="p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800/80 bg-slate-50/70 dark:bg-[#0f1424]/60 backdrop-blur-xs"
               >
-                <span>{isHindi ? "जल्द आ रहा है" : "Coming soon"}</span>
-                <span
-                  className="text-xs font-semibold"
-                  style={{ color: "var(--mute, #6b7190)" }}
+                <button
+                  type="button"
+                  onClick={() => setShowComingSoon((prev) => !prev)}
+                  className="w-full flex items-center justify-between text-left cursor-pointer group"
                 >
-                  {soonCategories.length} {isHindi ? "श्रेणियां" : "categories"}
-                </span>
-              </h2>
-              <div
-                className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"
-                style={{ gap: "12px" }}
-              >
-                {soonCategories.map((category) => (
-                  <CategoryCard
-                    key={category.slug}
-                    category={category}
-                    isHindi={isHindi}
-                  />
-                ))}
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-8 h-8 rounded-xl bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-sm">
+                      ⏳
+                    </span>
+                    <div>
+                      <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <span>{isHindi ? "आगामी श्रेणियां (जल्द आ रही हैं)" : "Upcoming Categories (Coming Soon)"}</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                          {soonCategories.length}
+                        </span>
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        {isHindi
+                          ? "इन विषयों के प्रश्न तैयार किए जा रहे हैं। टैप करके देखें।"
+                          : "Curated questions being prepared for these topics."}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/40 transition-colors shrink-0">
+                    <span>{showComingSoon ? (isHindi ? "छुपाएं ▲" : "Hide ▲") : (isHindi ? "देखें ▼" : "View ▼")}</span>
+                  </div>
+                </button>
+
+                {showComingSoon && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-3.5 mt-4 pt-4 border-t border-slate-200/80 dark:border-slate-800">
+                    {soonCategories.map((category) => (
+                      <CategoryCard
+                        key={category.slug}
+                        category={category}
+                        isHindi={isHindi}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             </section>
           )}

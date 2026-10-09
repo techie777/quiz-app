@@ -170,6 +170,35 @@ export default function GkBookReader({
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // Touch Swipe Page Flip Gestures
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+
+  const handleTouchStartArticle = (e) => {
+    if (e.touches && e.touches[0]) {
+      touchStartX.current = e.touches[0].clientX;
+      touchStartY.current = e.touches[0].clientY;
+    }
+  };
+
+  const handleTouchEndArticle = (e) => {
+    handleMouseUpContent(e);
+    if (!touchStartX.current || !e.changedTouches || !e.changedTouches[0]) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+
+    // Detect horizontal swipe if deltaX > 60px and vertical drift < 80px
+    if (Math.abs(deltaX) > 60 && Math.abs(deltaY) < 80) {
+      if (deltaX < 0 && pageIndex < totalPagesCount - 1) {
+        goToPage(pageIndex + 1); // Swiped Left -> Next page
+      } else if (deltaX > 0 && pageIndex > 0) {
+        goToPage(pageIndex - 1); // Swiped Right -> Prev page
+      }
+    }
+    touchStartX.current = 0;
+    touchStartY.current = 0;
+  };
+
   // Toggle Short / Full
   const handleToggleShortFull = (fullMode) => {
     setIsFull(fullMode);
@@ -504,7 +533,7 @@ export default function GkBookReader({
       {/* Reader Sticky Header */}
       {!isZenMode && (
         <GkBookHeader
-          title={`अध्याय ${pageIndex + 1} / ${totalPagesCount} · ${currentPage.t || currentPage.title || chapterDisplayTitle}`}
+          title={`अध्याय ${pageIndex + 1}/${totalPagesCount} · ${currentPage.t || currentPage.title || chapterDisplayTitle}`}
           theme={theme}
           onThemeChange={handleThemeChange}
           fontSize={fontSize}
@@ -516,6 +545,9 @@ export default function GkBookReader({
           notesCount={currentChapterHighlights.length}
           isBilingual={isBilingual}
           onToggleBilingual={() => setIsBilingual(!isBilingual)}
+          isFull={isFull}
+          onToggleShortFull={handleToggleShortFull}
+          onBackToIndex={onBackToIndex}
         />
       )}
 
@@ -668,31 +700,35 @@ export default function GkBookReader({
           />
         </div>
 
-        {/* Page Dots Navigation */}
-        <div className={styles.dots} style={{ marginTop: "14px" }}>
-          {Array.from({ length: totalPagesCount }).map((_, idx) => {
-            const isRead = Boolean(readPages[idx]);
-            const isCurrent = idx === pageIndex;
-            return (
-              <button
-                key={idx}
-                type="button"
-                className={`${styles.dot} ${isRead ? styles.dotRead : ""} ${isCurrent ? styles.dotCurrent : ""}`}
-                onClick={() => goToPage(idx)}
-                aria-label={`पृष्ठ ${idx + 1}`}
-                title={`पृष्ठ ${idx + 1}${isRead ? " (पढ़ा हुआ)" : ""}`}
-              >
-                {idx + 1}
-              </button>
-            );
-          })}
+        {/* Horizontally Scrollable Touch-Friendly Page Track */}
+        <div className={styles.pageTrackContainer}>
+          <div className={styles.pageTrackInner}>
+            {Array.from({ length: totalPagesCount }).map((_, idx) => {
+              const isRead = Boolean(readPages[idx]);
+              const isCurrent = idx === pageIndex;
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  className={`${styles.dotPill} ${isRead ? styles.dotRead : ""} ${isCurrent ? styles.dotCurrent : ""}`}
+                  onClick={() => goToPage(idx)}
+                  aria-label={`पृष्ठ ${idx + 1}`}
+                  title={`पृष्ठ ${idx + 1}${isRead ? " (पढ़ा हुआ)" : ""}`}
+                >
+                  <span>पृष्ठ {idx + 1}</span>
+                  {isRead && <span className={styles.dotCheck}>✓</span>}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Reading Article Area (With Text Selection Tooltip support) */}
+        {/* Reading Article Area (With Swipe and Text Selection support) */}
         <article
           ref={articleAreaRef}
           onMouseUp={handleMouseUpContent}
-          onTouchEnd={handleMouseUpContent}
+          onTouchStart={handleTouchStartArticle}
+          onTouchEnd={handleTouchEndArticle}
           className={styles.art}
           style={{ fontSize: `${fontSize}px` }}
         >

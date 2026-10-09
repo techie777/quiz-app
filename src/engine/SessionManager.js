@@ -394,21 +394,32 @@ export default function SessionManager({ sessionId }) {
 
   if (!session && !isHost && !authSession?.user && !joining) {
     return (
-        <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl p-10 text-center space-y-8 animate-in zoom-in duration-500 border border-slate-100 mx-auto mt-8">
-            <div className="text-6xl">👋</div>
-            <div className="space-y-4">
-                <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">Join Live Quiz</h2>
-                <p className="text-base font-bold text-slate-400 uppercase tracking-widest">Enter your name to join the game</p>
+        <div className="w-full max-w-md bg-white rounded-3xl shadow-xl p-6 sm:p-10 text-center space-y-6 animate-in zoom-in duration-300 border border-slate-100 mx-auto my-6 sm:my-10">
+            <div className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-3xl mx-auto shadow-xs">
+                👋
             </div>
-            <form onSubmit={handleGuestJoin} className="space-y-6">
+            <div className="space-y-1.5">
+                <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                    लाइव क्विज़ में शामिल हों
+                </h2>
+                <p className="text-xs sm:text-sm font-semibold text-slate-400">
+                    Enter your name to join live battle
+                </p>
+            </div>
+            <form onSubmit={handleGuestJoin} className="space-y-4">
                 <input 
-                    placeholder="Enter your name (e.g. Alex)"
+                    placeholder="अपना नाम लिखें (e.g. Rahul)"
                     value={guestName}
                     onChange={(e) => setGuestName(e.target.value)}
-                    className="w-full bg-slate-50 border-4 border-slate-100 rounded-2xl px-8 py-4 text-base font-black uppercase tracking-widest focus:border-indigo-600 outline-none transition-all"
+                    autoFocus
+                    required
+                    className="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-5 py-3.5 text-sm sm:text-base font-bold text-slate-800 placeholder:text-slate-400 focus:border-indigo-600 focus:bg-white outline-none transition-all"
                 />
-                <button type="submit" className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-base uppercase tracking-[0.3em] hover:scale-105 active:scale-95 transition-all shadow-2xl">
-                    Join Quiz ✨
+                <button 
+                    type="submit" 
+                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3.5 rounded-2xl font-bold text-sm sm:text-base uppercase tracking-wider hover:opacity-95 active:scale-98 transition-all shadow-lg shadow-indigo-500/20 cursor-pointer"
+                >
+                    क्विज़ में शामिल हों (Join) ✨
                 </button>
             </form>
         </div>

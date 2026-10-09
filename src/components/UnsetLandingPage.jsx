@@ -165,10 +165,10 @@ export default function UnsetLandingPage() {
       tagline: isHindi ? "आयु 5–12 वर्ष" : "Ages 5–12",
       badge: "AGE 5–12",
       icon: Sparkles,
-      iconBg: "bg-amber-100 text-amber-600",
-      badgeBg: "bg-amber-100 text-amber-800 border-amber-200/80",
-      cardBorder: "border-amber-200/90",
-      cardBg: "bg-gradient-to-b from-[#FFFDF7] to-white",
+      iconBg: "bg-amber-100 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400",
+      badgeBg: "bg-amber-100 text-amber-800 border-amber-200/80 dark:bg-amber-950/80 dark:text-amber-300 dark:border-amber-800/80",
+      cardBorder: "border-amber-200/90 dark:border-amber-800/60",
+      cardBg: "bg-gradient-to-b from-[#FFFDF7] to-white dark:from-slate-900 dark:to-[#0a0e1c]",
     },
     {
       id: TIERS.STUDENTS,
@@ -176,10 +176,10 @@ export default function UnsetLandingPage() {
       tagline: isHindi ? "कक्षा 6–12" : "Class 6–12",
       badge: "CLASS 6–12",
       icon: GraduationCap,
-      iconBg: "bg-teal-100 text-teal-700",
-      badgeBg: "bg-teal-100 text-teal-800 border-teal-200/80",
-      cardBorder: "border-teal-200/90",
-      cardBg: "bg-gradient-to-b from-[#F7FFFD] to-white",
+      iconBg: "bg-teal-100 text-teal-700 dark:bg-teal-950/60 dark:text-teal-400",
+      badgeBg: "bg-teal-100 text-teal-800 border-teal-200/80 dark:bg-teal-950/80 dark:text-teal-300 dark:border-teal-800/80",
+      cardBorder: "border-teal-200/90 dark:border-teal-800/60",
+      cardBg: "bg-gradient-to-b from-[#F7FFFD] to-white dark:from-slate-900 dark:to-[#0a0e1c]",
     },
     {
       id: TIERS.ADULTS,
@@ -187,10 +187,10 @@ export default function UnsetLandingPage() {
       tagline: isHindi ? "40+ और भी अन्य क्विज़" : "40+ More Quizzes",
       badge: "POPULAR",
       icon: Compass,
-      iconBg: "bg-indigo-100 text-indigo-600",
-      badgeBg: "bg-indigo-100 text-indigo-800 border-indigo-200/80",
-      cardBorder: "border-indigo-200/90",
-      cardBg: "bg-gradient-to-b from-[#F8FAFF] to-white",
+      iconBg: "bg-indigo-100 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400",
+      badgeBg: "bg-indigo-100 text-indigo-800 border-indigo-200/80 dark:bg-indigo-950/80 dark:text-indigo-300 dark:border-indigo-800/80",
+      cardBorder: "border-indigo-200/90 dark:border-indigo-800/60",
+      cardBg: "bg-gradient-to-b from-[#F8FAFF] to-white dark:from-slate-900 dark:to-[#0a0e1c]",
     },
     {
       id: TIERS.ARENA,
@@ -198,10 +198,10 @@ export default function UnsetLandingPage() {
       tagline: isHindi ? "कस्टम टेस्ट अभ्यास" : "Custom Test Engine",
       badge: "NEW",
       icon: Zap,
-      iconBg: "bg-violet-100 text-violet-600",
-      badgeBg: "bg-violet-100 text-violet-800 border-violet-200/80",
-      cardBorder: "border-violet-200/90",
-      cardBg: "bg-gradient-to-b from-[#FAF8FF] to-white",
+      iconBg: "bg-violet-100 text-violet-600 dark:bg-violet-950/60 dark:text-violet-400",
+      badgeBg: "bg-violet-100 text-violet-800 border-violet-200/80 dark:bg-violet-950/80 dark:text-violet-300 dark:border-violet-800/80",
+      cardBorder: "border-violet-200/90 dark:border-violet-800/60",
+      cardBg: "bg-gradient-to-b from-[#FAF8FF] to-white dark:from-slate-900 dark:to-[#0a0e1c]",
     },
   ];
 
@@ -210,7 +210,7 @@ export default function UnsetLandingPage() {
       {/* Peaceful Ambient Sky-Blue Aura */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[450px] bg-gradient-to-b from-sky-200/40 via-blue-100/20 to-transparent blur-3xl pointer-events-none -z-0 dark:from-sky-900/15" />
 
-      <div className="w-full min-h-[calc(100vh-70px)] px-4 py-4 sm:py-8 max-w-7xl mx-auto flex flex-col items-center select-none pb-20 relative z-10">
+      <div className="w-full min-h-[calc(100vh-70px)] px-4 py-4 sm:py-8 max-w-7xl mx-auto flex flex-col items-center select-none pb-28 sm:pb-32 relative z-10">
       {/* ── HERO SECTION ── */}
       <section className="w-full text-center max-w-3xl mx-auto mb-6 sm:mb-8">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800 text-amber-700 dark:text-amber-400 text-xs font-bold uppercase tracking-wider mb-2.5 shadow-2xs">
@@ -234,26 +234,26 @@ export default function UnsetLandingPage() {
         </div>
 
         {/* Stats Strip */}
-        <div className="mt-3.5 flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs sm:text-sm text-slate-600 font-semibold">
-          <span className="flex items-center gap-1 text-slate-800 font-bold">
-            <BookOpen size={14} className="text-indigo-600" />
+        <div className="mt-3.5 flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-semibold">
+          <span className="flex items-center gap-1 text-slate-800 dark:text-slate-200 font-bold">
+            <BookOpen size={14} className="text-indigo-600 dark:text-indigo-400" />
             <span>{totalQuestions > 0 ? `${totalQuestions.toLocaleString()}+` : "0"}</span>
-            <span className="text-slate-500 font-normal">{isHindi ? "प्रश्न" : "Questions"}</span>
+            <span className="text-slate-500 dark:text-slate-400 font-normal">{isHindi ? "प्रश्न" : "Questions"}</span>
           </span>
-          <span className="text-slate-300">·</span>
-          <span className="flex items-center gap-1 text-slate-800 font-bold">
+          <span className="text-slate-300 dark:text-slate-600">·</span>
+          <span className="flex items-center gap-1 text-slate-800 dark:text-slate-200 font-bold">
             <Sparkles size={14} className="text-amber-500" />
             <span>{totalCategories}+</span>
-            <span className="text-slate-500 font-normal">{isHindi ? "विषय" : "Categories"}</span>
+            <span className="text-slate-500 dark:text-slate-400 font-normal">{isHindi ? "विषय" : "Categories"}</span>
           </span>
-          <span className="text-slate-300">·</span>
-          <span className="text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/80 font-bold text-xs">
+          <span className="text-slate-300 dark:text-slate-600">·</span>
+          <span className="text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-0.5 rounded-full border border-emerald-200/80 dark:border-emerald-800 font-bold text-xs">
             {isHindi ? "हर दिन 100% मुफ्त" : "Free to play every day"}
           </span>
-          <span className="text-slate-300">·</span>
+          <span className="text-slate-300 dark:text-slate-600">·</span>
           <Link
             href="/donate"
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-600 bg-rose-50 px-3 py-1 rounded-full border border-rose-200/80 hover:bg-rose-100 transition-colors shadow-2xs"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 px-3 py-1 rounded-full border border-rose-200/80 dark:border-rose-800 hover:bg-rose-100 transition-colors shadow-2xs"
           >
             <Heart size={13} className="fill-rose-500 text-rose-500" />
             <span>{isHindi ? "हमारा समर्थन करें" : "Support us"}</span>
@@ -273,7 +273,7 @@ export default function UnsetLandingPage() {
                 onClick={() => handleSelectTier(tile.id)}
                 role="button"
                 tabIndex={0}
-                className={`relative h-[142px] p-3.5 rounded-2xl border ${tile.cardBorder} ${tile.cardBg} shadow-sm flex flex-col justify-between items-start text-left cursor-pointer transition-all`}
+                className={`relative min-h-[142px] h-auto p-3.5 rounded-2xl border ${tile.cardBorder} ${tile.cardBg} shadow-sm flex flex-col justify-between items-start text-left cursor-pointer transition-all`}
               >
                 <div className="w-full flex items-center justify-between">
                   <div
@@ -288,11 +288,11 @@ export default function UnsetLandingPage() {
                   </span>
                 </div>
 
-                <div>
-                  <h2 className="text-base font-black text-slate-900 leading-tight">
+                <div className="mt-3">
+                  <h2 className="text-base font-black text-slate-900 dark:text-white leading-tight">
                     {tile.name}
                   </h2>
-                  <p className="text-xs text-slate-500 font-medium mt-0.5 line-clamp-1">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5 line-clamp-1">
                     {tile.tagline}
                   </p>
                 </div>
@@ -307,34 +307,34 @@ export default function UnsetLandingPage() {
         {/* CARD 1: KIDS TIER */}
         <div
           onClick={() => handleSelectTier(TIERS.KIDS)}
-          className="group relative rounded-3xl p-6 bg-white border-2 border-amber-400/50 hover:border-amber-500 hover:shadow-xl hover:shadow-amber-500/10 transition-all duration-200 flex flex-col justify-between cursor-pointer"
+          className="group relative rounded-3xl p-6 bg-white dark:bg-slate-900 border-2 border-amber-400/50 dark:border-amber-500/40 hover:border-amber-500 dark:hover:border-amber-400 hover:shadow-xl hover:shadow-amber-500/10 transition-all duration-200 flex flex-col justify-between cursor-pointer"
         >
           <div>
             <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-xs">
+              <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shadow-xs">
                 <Sparkles size={24} className="text-amber-500" />
               </div>
-              <span className="text-xs font-bold px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-200/80">
+              <span className="text-xs font-bold px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/80">
                 {isHindi ? "आयु 5-12 वर्ष" : "Age 5–12"}
               </span>
             </div>
 
-            <h2 className="text-xl font-black text-slate-900 mb-1.5">
+            <h2 className="text-xl font-black text-slate-900 dark:text-white mb-1.5">
               {isHindi ? "बच्चे (Kids)" : "Kids"}
             </h2>
-            <p className="text-xs text-slate-500 leading-relaxed mb-4">
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-4">
               {isHindi
                 ? "नन्हे कदमों की पहली उड़ान — रंगीन चित्र-टाइल्स, बिना टाइमर का तनाव और चमचमाते स्टार इनाम!"
                 : "Playful picture-tiles, 10-question sets, zero timer pressure & star stickers."}
             </p>
 
             {/* Visual Snippet Box */}
-            <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/60 mb-5">
+            <div className="p-3.5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/50 mb-5">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10.5px] font-bold uppercase tracking-wider text-amber-700">
+                <span className="text-[10.5px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
                   {isHindi ? "पिक्चर-टाइल प्रिव्यू" : "Picture-Tile Style"}
                 </span>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 flex items-center gap-1">
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 flex items-center gap-1">
                   <Star size={10} className="fill-amber-500 text-amber-500" /> 3 Stars
                 </span>
               </div>
@@ -352,7 +352,7 @@ export default function UnsetLandingPage() {
                   </div>
                 ))}
               </div>
-              <div className="text-center text-[10px] font-bold text-amber-800">
+              <div className="text-center text-[10px] font-bold text-amber-800 dark:text-amber-300">
                 {isHindi ? "दबाव-मुक्त खेल · 10 प्रश्न प्रति सेट" : "Fun 10 Qs · No Timer Anxiety"}
               </div>
             </div>
@@ -370,49 +370,49 @@ export default function UnsetLandingPage() {
         {/* CARD 2: STUDENTS TIER */}
         <div
           onClick={() => handleSelectTier(TIERS.STUDENTS)}
-          className="group relative rounded-3xl p-6 bg-white border-2 border-teal-400/50 hover:border-teal-500 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-200 flex flex-col justify-between cursor-pointer"
+          className="group relative rounded-3xl p-6 bg-white dark:bg-slate-900 border-2 border-teal-400/50 dark:border-teal-500/40 hover:border-teal-500 dark:hover:border-teal-400 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-200 flex flex-col justify-between cursor-pointer"
         >
           <div>
             <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 rounded-2xl bg-teal-100 text-teal-700 flex items-center justify-center shadow-xs">
-                <GraduationCap size={24} className="text-teal-600" />
+              <div className="w-12 h-12 rounded-2xl bg-teal-100 dark:bg-teal-950/60 text-teal-700 dark:text-teal-400 flex items-center justify-center shadow-xs">
+                <GraduationCap size={24} className="text-teal-600 dark:text-teal-400" />
               </div>
-              <span className="text-xs font-bold px-3 py-1 rounded-full bg-teal-100 text-teal-900 border border-teal-200/80">
+              <span className="text-xs font-bold px-3 py-1 rounded-full bg-teal-100 dark:bg-teal-950/80 text-teal-900 dark:text-teal-300 border border-teal-200/80 dark:border-teal-800/80">
                 {isHindi ? "कक्षा 6-12 · छात्र" : "Class 6–12"}
               </span>
             </div>
 
-            <h2 className="text-xl font-black text-slate-900 mb-1.5">
+            <h2 className="text-xl font-black text-slate-900 dark:text-white mb-1.5">
               {isHindi ? "विद्यार्थी (Students)" : "Students"}
             </h2>
-            <p className="text-xs text-slate-500 leading-relaxed mb-4">
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-4">
               {isHindi
                 ? "मेहनत से संवरेगा आपका कल — स्कूल पाठ्यक्रम, बोर्ड परीक्षा रिवीज़न, दैनिक स्ट्रीक और आत्मविश्वास!"
                 : "Curriculum revision, KBC trivia, daily study streaks & XP progression."}
             </p>
 
             {/* Visual Snippet Box */}
-            <div className="p-3.5 rounded-2xl bg-teal-50/70 border border-teal-200/60 mb-5">
+            <div className="p-3.5 rounded-2xl bg-teal-50/70 dark:bg-teal-950/30 border border-teal-200/60 dark:border-teal-800/50 mb-5">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10.5px] font-bold uppercase tracking-wider text-teal-800">
+                <span className="text-[10.5px] font-bold uppercase tracking-wider text-teal-800 dark:text-teal-400">
                   {isHindi ? "क्लास व बोर्ड चयन" : "Class & Board Tracker"}
                 </span>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-teal-100 text-teal-900">
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-teal-100 dark:bg-teal-900/60 text-teal-900 dark:text-teal-300">
                   Class 9 ▾
                 </span>
               </div>
-              <div className="flex items-center justify-between gap-1 p-2 rounded-xl bg-white border border-teal-100 text-xs mb-2">
-                <span className="font-bold flex items-center gap-1 text-slate-800">
+              <div className="flex items-center justify-between gap-1 p-2 rounded-xl bg-white dark:bg-slate-800 border border-teal-100 dark:border-teal-900/50 text-xs mb-2">
+                <span className="font-bold flex items-center gap-1 text-slate-800 dark:text-slate-200">
                   <Flame size={14} className="text-orange-500" />
                   <span>5 Day Streak</span>
                 </span>
-                <span className="font-bold text-teal-700">⚡ 1,250 XP</span>
+                <span className="font-bold text-teal-700 dark:text-teal-400">⚡ 1,250 XP</span>
               </div>
               <div className="grid grid-cols-2 gap-1.5 text-[11px] font-bold">
-                <div className="p-1.5 rounded-lg bg-teal-100/70 text-teal-800 text-center">
+                <div className="p-1.5 rounded-lg bg-teal-100/70 dark:bg-teal-900/40 text-teal-800 dark:text-teal-300 text-center">
                   Study Quizzes
                 </div>
-                <div className="p-1.5 rounded-lg bg-indigo-100/70 text-indigo-800 text-center">
+                <div className="p-1.5 rounded-lg bg-indigo-100/70 dark:bg-indigo-900/40 text-indigo-800 dark:text-indigo-300 text-center">
                   Fun Zone
                 </div>
               </div>
@@ -431,45 +431,45 @@ export default function UnsetLandingPage() {
         {/* CARD 3: EXPLORER TIER */}
         <div
           onClick={() => handleSelectTier(TIERS.ADULTS)}
-          className="group relative rounded-3xl p-6 bg-white border-2 border-indigo-400/50 hover:border-indigo-500 hover:shadow-xl hover:shadow-indigo-500/10 transition-all duration-200 flex flex-col justify-between cursor-pointer"
+          className="group relative rounded-3xl p-6 bg-white dark:bg-slate-900 border-2 border-indigo-400/50 dark:border-indigo-500/40 hover:border-indigo-500 dark:hover:border-indigo-400 hover:shadow-xl hover:shadow-indigo-500/10 transition-all duration-200 flex flex-col justify-between cursor-pointer"
         >
           <div>
             <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center shadow-xs">
-                <Compass size={24} className="text-indigo-600" />
+              <div className="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400 flex items-center justify-center shadow-xs">
+                <Compass size={24} className="text-indigo-600 dark:text-indigo-400" />
               </div>
-              <span className="text-xs font-bold px-3 py-1 rounded-full bg-indigo-100 text-indigo-900 border border-indigo-200/80">
+              <span className="text-xs font-bold px-3 py-1 rounded-full bg-indigo-100 dark:bg-indigo-950/80 text-indigo-900 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/80">
                 {isHindi ? "सभी के लिए" : "For everyone"}
               </span>
             </div>
 
-            <h2 className="text-xl font-black text-slate-900 mb-1.5">
+            <h2 className="text-xl font-black text-slate-900 dark:text-white mb-1.5">
               {isHindi ? "सामान्य ज्ञान (GK Hub)" : "Explorer (GK)"}
             </h2>
-            <p className="text-xs text-slate-500 leading-relaxed mb-4">
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-4">
               {isHindi
                 ? "सपनों की सरकारी नौकरी और संपूर्ण ज्ञान — SSC, रेलवे, राज्य परीक्षाओं और ज्ञान संवर्धन का सच्चा साथी!"
                 : "Trivia, GK, Current Affairs & Exam Series"}
             </p>
 
             {/* Visual Snippet Box */}
-            <div className="p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-200/60 mb-5">
+            <div className="p-3.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200/60 dark:border-indigo-800/50 mb-5">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10.5px] font-bold uppercase tracking-wider text-indigo-800">
+                <span className="text-[10.5px] font-bold uppercase tracking-wider text-indigo-800 dark:text-indigo-400">
                   {isHindi ? "ट्रिविया + परीक्षा" : "Play & Learn + Exams"}
                 </span>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300">
                   Live
                 </span>
               </div>
               <div className="space-y-1.5">
-                <div className="p-2 rounded-xl bg-white border border-indigo-100 text-xs font-bold text-slate-800 flex items-center justify-between">
+                <div className="p-2 rounded-xl bg-white dark:bg-slate-800 border border-indigo-100 dark:border-indigo-900/50 text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
                   <span>Play & Learn (GK)</span>
-                  <span className="text-[10px] text-emerald-600 font-extrabold">Free Sets</span>
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-extrabold">Free Sets</span>
                 </div>
-                <div className="p-2 rounded-xl bg-white border border-indigo-100 text-xs font-bold text-slate-800 flex items-center justify-between">
+                <div className="p-2 rounded-xl bg-white dark:bg-slate-800 border border-indigo-100 dark:border-indigo-900/50 text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
                   <span>Exam Prep (SSC, RRB)</span>
-                  <span className="text-[10px] text-indigo-600 font-extrabold">Mocks</span>
+                  <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-extrabold">Mocks</span>
                 </div>
               </div>
             </div>
@@ -490,45 +490,45 @@ export default function UnsetLandingPage() {
             setTier(TIERS.ARENA);
             router.push("/arena");
           }}
-          className="group relative rounded-3xl p-6 bg-white border-2 border-violet-400/50 hover:border-violet-500 hover:shadow-xl hover:shadow-violet-500/10 transition-all duration-200 flex flex-col justify-between cursor-pointer"
+          className="group relative rounded-3xl p-6 bg-white dark:bg-slate-900 border-2 border-violet-400/50 dark:border-violet-500/40 hover:border-violet-500 dark:hover:border-violet-400 hover:shadow-xl hover:shadow-violet-500/10 transition-all duration-200 flex flex-col justify-between cursor-pointer"
         >
           <div>
             <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 rounded-2xl bg-violet-100 text-violet-700 flex items-center justify-center shadow-xs">
-                <Zap size={24} className="fill-violet-600 text-violet-600" />
+              <div className="w-12 h-12 rounded-2xl bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-400 flex items-center justify-center shadow-xs">
+                <Zap size={24} className="fill-violet-600 text-violet-600 dark:text-violet-400" />
               </div>
               <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-gradient-to-r from-violet-600 to-pink-500 text-white shadow-xs">
                 NEW
               </span>
             </div>
 
-            <h2 className="text-xl font-black text-slate-900 mb-1.5">
+            <h2 className="text-xl font-black text-slate-900 dark:text-white mb-1.5">
               {isHindi ? "GK टेस्ट इंजन" : "GK Test Engine"}
             </h2>
-            <p className="text-xs text-slate-500 leading-relaxed mb-4">
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-4">
               {isHindi
                 ? "कस्टम क्विज़ इंजन — विषय, कठिनाई व टाइमर चुनकर लगातार प्रश्नों का असीमित अभ्यास करें!"
                 : "Build custom quiz challenges, filter categories, train weak spots & challenge friends."}
             </p>
 
             {/* Visual Snippet Box */}
-            <div className="p-3.5 rounded-2xl bg-violet-50/70 border border-violet-200/60 mb-5">
+            <div className="p-3.5 rounded-2xl bg-violet-50/70 dark:bg-violet-950/30 border border-violet-200/60 dark:border-violet-800/50 mb-5">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10.5px] font-bold uppercase tracking-wider text-violet-800">
+                <span className="text-[10.5px] font-bold uppercase tracking-wider text-violet-800 dark:text-violet-400">
                   {isHindi ? "कस्टम क्विज़ इंजन" : "Custom Engine"}
                 </span>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-violet-100 text-violet-900">
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-violet-100 dark:bg-violet-900/60 text-violet-900 dark:text-violet-300">
                   Builder
                 </span>
               </div>
               <div className="space-y-1.5">
-                <div className="p-2 rounded-xl bg-white border border-violet-100 text-xs font-bold text-slate-800 flex items-center justify-between">
+                <div className="p-2 rounded-xl bg-white dark:bg-slate-800 border border-violet-100 dark:border-violet-900/50 text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
                   <span>Multi-Category Filter</span>
-                  <span className="text-[10px] text-violet-600 font-extrabold">10-50 Qs</span>
+                  <span className="text-[10px] text-violet-600 dark:text-violet-400 font-extrabold">10-50 Qs</span>
                 </div>
-                <div className="p-2 rounded-xl bg-white border border-violet-100 text-xs font-bold text-slate-800 flex items-center justify-between">
+                <div className="p-2 rounded-xl bg-white dark:bg-slate-800 border border-violet-100 dark:border-violet-900/50 text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
                   <span>Challenge a Friend</span>
-                  <span className="text-[10px] text-pink-600 font-extrabold">VS Mode</span>
+                  <span className="text-[10px] text-pink-600 dark:text-pink-400 font-extrabold">VS Mode</span>
                 </div>
               </div>
             </div>

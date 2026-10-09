@@ -27,6 +27,8 @@ import {
   ArrowRight,
   Heart,
   Layers,
+  Zap,
+  X,
 } from "lucide-react";
 import styles from "@/styles/QuizEngine.module.css";
 import timerStyles from "@/styles/Timer.module.css";
@@ -224,6 +226,14 @@ function QuizEngineContent() {
   const [removedOptions, setRemovedOptions] = useState([]);
   const [audienceStats, setAudienceStats] = useState(null);
   const [showExplanation, setShowExplanation] = useState(false);
+  const [explanationMode, setExplanationMode] = useState("overlay");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("quiz_explanation_pref");
+      if (saved) setExplanationMode(saved);
+    }
+  }, []);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportData, setReportData] = useState({ questionId: null, issue: '' });
   const [celebrationAnimation, setCelebrationAnimation] = useState(false);
@@ -595,13 +605,22 @@ function QuizEngineContent() {
   }, []);
 
   const confirmExitQuiz = useCallback(() => {
+    setShowExitModal(false);
+    if (typeof document !== "undefined" && document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
     resetQuiz();
     if (referrer) {
       router.push(referrer);
     } else {
       const categoryId = category?.slug || params?.id;
-      if (categoryId) router.push(`/category/${categoryId}`);
-      else router.push('/');
+      if (categoryId && categoryId !== "arena" && categoryId !== "quick" && categoryId !== "mix" && categoryId !== "mixed") {
+        router.push(`/category/${categoryId}`);
+      } else if (categoryId === "arena") {
+        router.push('/arena');
+      } else {
+        router.push('/');
+      }
     }
   }, [resetQuiz, referrer, router, params?.id, category]);
 
@@ -812,6 +831,20 @@ function QuizEngineContent() {
     moveToNextQuestion();
   }, [moveToNextQuestion]);
 
+  const handleToggleFastMode = useCallback(() => {
+    setExplanationMode("fast");
+    if (typeof window !== "undefined") {
+      localStorage.setItem("quiz_explanation_pref", "fast");
+    }
+    toast.success(
+      language === "hi"
+        ? "⚡ फास्ट मोड चालू! व्याख्या देखने के लिए कभी भी 'पीछे' जा सकते हैं।"
+        : "⚡ Fast Mode on! Press 'Back' anytime to review explanation.",
+      { icon: "⚡", duration: 3000 }
+    );
+    handleCloseExplanation();
+  }, [handleCloseExplanation, language]);
+
   const handleSubmitAnswer = useCallback((answerIndex) => {
     if (isSubmitting) return;
     setIsSubmitting(true);
@@ -848,16 +881,19 @@ function QuizEngineContent() {
 
     submitAnswer(currentQuestion.id, answerIndex);
 
-    // Allow user to clearly see the green/red answer feedback and confetti on the card first
+    // Clear any active explanation timers
     if (explanationTimerRef.current) clearTimeout(explanationTimerRef.current);
-    explanationTimerRef.current = setTimeout(() => {
-      setShowExplanation(true);
-      // Mascot state transition to talking/idle is handled naturally by onStateComplete when video ends
-      // Auto skip dialogue after 12 seconds if not closed manually earlier via "Next Question"
+
+    if (explanationMode === "overlay") {
       explanationTimerRef.current = setTimeout(() => {
-        handleCloseExplanation();
-      }, 12000);
-    }, 1100);
+        setShowExplanation(true);
+      }, 550);
+    } else {
+      // Fast mode: auto-advance to next question after 1400ms, or user taps Next/Back
+      explanationTimerRef.current = setTimeout(() => {
+        moveToNextQuestion();
+      }, 1400);
+    }
 
     // Master prompt Step 10: "A set counts once the user answers its first question. Daily Quiz and Learn content are exempt."
     if ((answers || []).length === 0) {
@@ -885,7 +921,7 @@ function QuizEngineContent() {
         { icon: "🏁", duration: 2500 }
       );
     }
-  }, [currentIndex, questions, submitAnswer, soundEnabled, isSubmitting, language, handleCloseExplanation]);
+  }, [currentIndex, questions, submitAnswer, soundEnabled, isSubmitting, language, explanationMode, moveToNextQuestion]);
 
   const handleToggleStory = () => {
     if (!showStory) {
@@ -1027,6 +1063,16 @@ function QuizEngineContent() {
             {/* Top Bar */}
             <div className={styles.topBar}>
               <div className={styles.topLeft}>
+                {/* Back / Exit Quiz Button */}
+                <button
+                  type="button"
+                  onClick={handleExitQuiz}
+                  className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 hover:bg-rose-50 dark:bg-slate-800 dark:hover:bg-rose-950/40 text-slate-600 hover:text-rose-600 dark:text-slate-300 dark:hover:text-rose-400 border border-slate-200/90 hover:border-rose-300 dark:border-slate-700 dark:hover:border-rose-800 transition-all shrink-0 active:scale-95 shadow-2xs cursor-pointer mr-0.5"
+                  title={language === "hi" ? "क्विज़ छोड़ें / वापस जाएं" : "Exit Quiz / Go Back"}
+                  aria-label="Exit Quiz"
+                >
+                  <ArrowLeft size={18} strokeWidth={2.4} />
+                </button>
                 <span className={styles.questionNumberBadge}>
                   Q{currentIndex + 1}/{questions.length}
                 </span>
@@ -1087,7 +1133,7 @@ function QuizEngineContent() {
                   <div className={styles.moreMenuContainer} ref={moreMenuRef}>
                     <button
                       type="button"
-                      className={`${styles.moreMenuBtn} ${showMoreMenu ? styles.active : ""}`}
+                      className={`${styles.moreMenuBtn} ${showMoreMenu ? styles.active : ""} shrink-0 aspect-square`}
                       onClick={() => setShowMoreMenu(prev => !prev)}
                       title={language === "hi" ? "सेटिंग्स" : "Settings"}
                       aria-label="Settings"
@@ -1157,6 +1203,44 @@ function QuizEngineContent() {
                           {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
                           <span>{isFullscreen ? (language === "hi" ? "फुलस्क्रीन से बाहर" : "Exit Fullscreen") : (language === "hi" ? "फुलस्क्रीन" : "Fullscreen")}</span>
                         </button>
+
+                        <button
+                          type="button"
+                          className={styles.menuItem}
+                          onClick={() => {
+                            const nextMode = explanationMode === "overlay" ? "fast" : "overlay";
+                            setExplanationMode(nextMode);
+                            if (typeof window !== "undefined") {
+                              localStorage.setItem("quiz_explanation_pref", nextMode);
+                            }
+                            toast.success(
+                              nextMode === "overlay"
+                                ? (language === "hi" ? "📖 व्याख्या पॉपअप चालू" : "📖 Explanation Overlay On")
+                                : (language === "hi" ? "⚡ फास्ट मोड चालू (पॉपअप बंद)" : "⚡ Fast Mode On (Popup Off)"),
+                              { icon: nextMode === "overlay" ? "📖" : "⚡" }
+                            );
+                          }}
+                        >
+                          {explanationMode === "overlay" ? <Zap size={16} /> : <BookOpen size={16} />}
+                          <span>
+                            {explanationMode === "overlay"
+                              ? (language === "hi" ? "व्याख्या पॉपअप: चालू" : "Explanation Popup: On")
+                              : (language === "hi" ? "व्याख्या पॉपअप: बंद (फास्ट)" : "Explanation Popup: Off (Fast)")}
+                          </span>
+                        </button>
+
+                        {tier !== "kids" && (
+                          <a
+                            href="/support"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`${styles.menuItem} text-rose-500 hover:text-rose-600`}
+                            onClick={() => setShowMoreMenu(false)}
+                          >
+                            <Heart size={16} fill="currentColor" />
+                            <span>{language === "hi" ? "QuizWeb को सहयोग करें" : "Support QuizWeb"}</span>
+                          </a>
+                        )}
 
                         <div className={styles.menuDivider} />
 
@@ -1270,6 +1354,8 @@ function QuizEngineContent() {
                       audienceStats={audienceStats}
                       showExplanation={showExplanation}
                       onCloseExplanation={handleCloseExplanation}
+                      onOpenExplanation={() => setShowExplanation(true)}
+                      onToggleFastMode={handleToggleFastMode}
                       explanation={currentQuestion.explanation}
                       language={language}
                     />
@@ -1367,11 +1453,11 @@ function QuizEngineContent() {
       {/* Exit Confirmation Modal */}
       <ExitConfirmModal
         isOpen={showExitModal}
-        onConfirm={() => {
-          setShowExitModal(false);
-          router.replace("/");
-        }}
-        onCancel={() => setShowExitModal(false)}
+        onClose={() => setShowExitModal(false)}
+        onConfirm={confirmExitQuiz}
+        progress={questions?.length ? Math.round(((currentIndex + 1) / questions.length) * 100) : 0}
+        score={score}
+        totalQuestions={questions?.length || 20}
       />
 
       {/* End Quiz Confirmation Modal */}

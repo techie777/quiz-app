@@ -27,7 +27,7 @@ export default function MainContentWrapper({ children }) {
 
   return (
     <main
-      className="flex-1 w-full"
+      className="flex-1 w-full max-w-full overflow-x-hidden"
       style={{
         paddingBottom: hasBottomNav
           ? "calc(4.5rem + env(safe-area-inset-bottom, 0px))"

@@ -319,6 +319,35 @@ export default function SessionLobby({ sessionId, isHost, onApproveGuest, onDeny
                     <p className="text-[10px] sm:text-xs font-black text-indigo-500 uppercase tracking-wider sm:tracking-[0.2em] leading-tight">{t('live.lobby.invite.subtitle')}</p>
                 </div>
 
+                {/* 🔑 MOBILE-FRIENDLY ROOM CODE BADGE */}
+                <div className="flex flex-wrap items-center justify-between gap-3 p-3 sm:p-4 rounded-2xl bg-indigo-50/80 border border-indigo-100">
+                    <div className="flex items-center gap-3">
+                        <span className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-sm font-black shadow-xs shrink-0">
+                            🔑
+                        </span>
+                        <div>
+                            <span className="text-[10px] font-black uppercase tracking-wider text-indigo-500 block">
+                                {isHindi ? "लाइव रूम कोड (Room Code)" : "Live Room Code"}
+                            </span>
+                            <span className="font-mono font-black text-xl sm:text-2xl text-slate-900 tracking-widest select-all">
+                                {sessionId}
+                            </span>
+                        </div>
+                    </div>
+                    <button 
+                        type="button"
+                        onClick={() => {
+                            playSessionSound('click');
+                            navigator.clipboard.writeText(sessionId);
+                            toast.success(isHindi ? "रूम कोड कॉपी हो गया!" : "Room Code copied!");
+                        }}
+                        className="px-3.5 py-2 rounded-xl bg-white text-indigo-600 border border-indigo-200 text-xs font-black uppercase tracking-wider hover:bg-indigo-600 hover:text-white transition-all shadow-xs flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                    >
+                        <span>📋</span>
+                        <span>{isHindi ? "कोड कॉपी करें" : "Copy Code"}</span>
+                    </button>
+                </div>
+
                 { (isHost || sessionReady) ? (
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8 items-center">
                     <div className="md:col-span-7 space-y-4 min-w-0">
@@ -356,7 +385,7 @@ export default function SessionLobby({ sessionId, isHost, onApproveGuest, onDeny
                     </div>
                     <div className="md:col-span-5 space-y-3 min-w-0">
                         <a 
-                            href={`https://wa.me/?text=${encodeURIComponent(t('live.lobby.invite.whatsappText') + ' ' + inviteUrl)}`}
+                            href={`https://wa.me/?text=${encodeURIComponent((isHindi ? `🎮 मेरे साथ लाइव क्विज़ खेलें! रूम कोड: ${sessionId}\nलिंक: ` : `🎮 Play live quiz with me! Room Code: ${sessionId}\nLink: `) + inviteUrl)}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="w-full py-3.5 sm:py-5 bg-green-500 text-white rounded-2xl hover:bg-green-600 transition-all flex items-center justify-center gap-2.5 sm:gap-3 shadow-[0_15px_30px_rgba(34,197,94,0.2)] border-b-4 border-green-700 active:translate-y-0.5 active:border-b-0 px-4"

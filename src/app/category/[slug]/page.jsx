@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -765,6 +765,13 @@ export default function CategorySetsPage() {
     });
   };
 
+  const scrollToSets = () => {
+    if (typeof document !== "undefined") {
+      const el = document.getElementById("category-sets-section");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   if (!isMounted) return null;
 
   if (loading) {
@@ -859,196 +866,43 @@ export default function CategorySetsPage() {
           </p>
         </div>
 
-        {/* India GK Sub-Categories Direct Hub Link Cards */}
-        {params?.slug === "india-gk" && availableSubCategories.length > 0 && (
-          <div className="mb-6 p-4 rounded-3xl bg-white/90 dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                <span>🇮🇳</span>
-                <span>{isHindi ? "India GK की उप-श्रेणियां (Linked Sub-Categories)" : "India GK Sub-Categories"}</span>
+        {/* Active Filter Banner (if filtered via subcategory, topic, or tag) */}
+        {activeLayer === "standard" && (selectedSubCategory || selectedTopic || selectedTag) && (
+          <div className="mb-5 p-3 sm:p-3.5 rounded-2xl bg-indigo-50/90 dark:bg-indigo-950/60 border border-indigo-200/90 dark:border-indigo-800 flex items-center justify-between gap-3 shadow-2xs">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 shrink-0">
+                {isHindi ? "सक्रिय फ़िल्टर:" : "Active Filter:"}
               </span>
-              <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400">
-                {availableSubCategories.length} {isHindi ? "श्रेणियां" : "Categories"}
+              <span className="px-2.5 py-1 rounded-xl text-xs font-black bg-indigo-600 text-white truncate shadow-xs">
+                {selectedSubCategory || selectedTopic || selectedTag}
               </span>
             </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-2.5">
-              {availableSubCategories.map((sub) => {
-                const subMeta = getMainCategoryBySlug(sub.slug);
-                return (
-                  <Link
-                    key={sub.slug}
-                    href={`/category/${sub.slug}`}
-                    className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 hover:bg-indigo-50/70 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 border border-slate-200/80 dark:border-slate-700 hover:border-indigo-400 transition-all group"
-                  >
-                    <div className="flex items-center gap-2.5 overflow-hidden">
-                      <span className="text-xl shrink-0">{subMeta?.icon || "📖"}</span>
-                      <div className="truncate">
-                        <div className="text-xs font-bold text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 truncate">
-                          {isHindi && sub.nameHi ? sub.nameHi : sub.name}
-                        </div>
-                        <div className="text-[10px] text-slate-400 truncate">
-                          {isHindi ? sub.name : (sub.nameHi || "")}
-                        </div>
-                      </div>
-                    </div>
-                    <span className="text-xs text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:translate-x-0.5 transition-transform ml-1">
-                      →
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Subcategories & Topics Drill-down Bar */}
-        {availableSubCategories.length > 0 && activeLayer === "standard" && (
-          <div className="mb-6 p-4 rounded-3xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                <span>📁</span>
-                <span>{isHindi ? "उप-विषय (Sub-Categories)" : "Drill-Down Subcategories"}</span>
-              </span>
-              {(selectedSubCategory || selectedTopic) && (
-                <div className="flex items-center gap-3">
-                  {selectedSubCategory && (
-                    <Link
-                      href={`/category/${selectedSubCategory}`}
-                      className="text-xs font-extrabold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
-                    >
-                      <span>{isHindi ? "श्रेणी पेज खोलें" : "Open Category"}</span>
-                      <span>→</span>
-                    </Link>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedSubCategory(null);
-                      setSelectedTopic(null);
-                    }}
-                    className="text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer"
-                  >
-                    {isHindi ? "सभी प्रश्न" : "Show All"}
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Subcategory Pills */}
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedSubCategory(null);
-                  setSelectedTopic(null);
-                }}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-                  !selectedSubCategory
-                    ? "bg-indigo-600 text-white font-black shadow-xs"
-                    : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-                }`}
-              >
-                {isHindi ? "सभी उप-विषय" : "All Subcategories"}
-              </button>
-
-              {availableSubCategories.map((sub) => {
-                const isSelected = selectedSubCategory === sub.slug || selectedSubCategory === sub.name;
-                return (
-                  <button
-                    key={sub.slug || sub.name}
-                    type="button"
-                    onClick={() => {
-                      setSelectedSubCategory(isSelected ? null : (sub.slug || sub.name));
-                      setSelectedTopic(null);
-                    }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-                      isSelected
-                        ? "bg-indigo-600 text-white font-black shadow-xs"
-                        : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-                    }`}
-                  >
-                    {sub.name}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Topics under selected Subcategory */}
-            {availableTopics.length > 0 && (
-              <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80">
-                <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 mb-1.5">
-                  <span>🔬</span>
-                  <span>{isHindi ? "टॉपिक्स (Topics):" : "Specific Topics:"}</span>
-                </div>
-                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
-                  {availableTopics.map((top) => {
-                    const isSelected = selectedTopic === top;
-                    return (
-                      <button
-                        key={top}
-                        type="button"
-                        onClick={() => setSelectedTopic(isSelected ? null : top)}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-                          isSelected
-                            ? "bg-purple-600 text-white font-black shadow-xs"
-                            : "bg-white dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-purple-300"
-                        }`}
-                      >
-                        {top}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Reference Tags / Chapters for Fast Search & Set Filtering */}
-            {topicReferenceTags.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center gap-1.5 flex-wrap">
-                <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1 mr-1">
-                  <Tag size={12} /> {isHindi ? "अध्याय / संदर्भ टैग:" : "Chapters / Reference Tags:"}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setSelectedTag(null)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
-                    !selectedTag
-                      ? "bg-amber-500 text-white shadow-xs"
-                      : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
-                  }`}
-                >
-                  {isHindi ? "सभी" : "All"}
-                </button>
-                {topicReferenceTags.map((t) => {
-                  const isSel = selectedTag === t;
-                  return (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setSelectedTag(isSel ? null : t)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
-                        isSel
-                          ? "bg-amber-500 text-white font-black shadow-xs scale-105"
-                          : "bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40 hover:border-amber-400"
-                      }`}
-                    >
-                      <span>🏷️</span>
-                      <span>{t}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedSubCategory(null);
+                setSelectedTopic(null);
+                setSelectedTag(null);
+              }}
+              className="text-xs font-bold text-rose-600 dark:text-rose-400 hover:text-rose-700 bg-rose-50 dark:bg-rose-950/40 px-2.5 py-1 rounded-xl border border-rose-200/60 dark:border-rose-900/40 transition-colors shrink-0 cursor-pointer"
+            >
+              {isHindi ? "फ़िल्टर हटाएं ✕" : "Clear Filter ✕"}
+            </button>
           </div>
         )}
 
         {activeLayer === "arena" ? (
           <div className="mb-12">
-            <ArenaClient
-              initialSelectedCategoryIds={[category?.id || category?._id || params?.slug]}
-              embedded={true}
-            />
+            <Suspense fallback={
+              <div className="min-h-[400px] flex items-center justify-center">
+                <div className="w-10 h-10 border-4 border-indigo-500/20 border-t-indigo-600 rounded-full animate-spin" />
+              </div>
+            }>
+              <ArenaClient
+                initialSelectedCategoryIds={[category?.id || category?._id || params?.slug]}
+                embedded={true}
+              />
+            </Suspense>
           </div>
         ) : (
           <>
@@ -1056,7 +910,7 @@ export default function CategorySetsPage() {
               <QuizEmptyState topic={category.topic} isHindi={isHindi} />
             ) : tier === "adults" ? (
           /* ── Explorer Set List (Step 10): Simple tiles "Set 1 · 20 Qs" with tick & best score, compact difficulty dropdown at top ── */
-          <section className="mt-4 mb-10">
+          <section id="category-sets-section" className="mt-4 mb-10 scroll-mt-20">
             {/* Header: Topic Title & Compact Difficulty Dropdown */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-200/80 dark:border-slate-800">
               <div className="flex items-center gap-3">
@@ -1228,7 +1082,7 @@ export default function CategorySetsPage() {
         ) : (
           <>
             {/* Sets Section (Seekho Pattern: Vertical Stack of Set Cards below one short intro line) */}
-            <section className="mt-8 mb-10">
+            <section id="category-sets-section" className="mt-8 mb-10 scroll-mt-20">
               <div className="mb-5 border-b border-slate-100 dark:border-slate-800 pb-3">
                 <div className="flex items-center gap-2 mb-1">
                   <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
@@ -1286,6 +1140,202 @@ export default function CategorySetsPage() {
                 </div>
               )}
             </section>
+
+            {/* India GK Sub-Categories Direct Hub Link Cards (Placed in the end) */}
+            {params?.slug === "india-gk" && availableSubCategories.length > 0 && (
+              <div className="mb-8 p-4 sm:p-5 rounded-3xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+                    <span>🇮🇳</span>
+                    <span>{isHindi ? "India GK की उप-श्रेणियां (Linked Sub-Categories)" : "India GK Sub-Categories"}</span>
+                  </span>
+                  <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400">
+                    {availableSubCategories.length} {isHindi ? "श्रेणियां" : "Categories"}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-2.5">
+                  {availableSubCategories.map((sub) => {
+                    const subMeta = getMainCategoryBySlug(sub.slug);
+                    return (
+                      <Link
+                        key={sub.slug}
+                        href={`/category/${sub.slug}`}
+                        className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 hover:bg-indigo-50/70 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 border border-slate-200/80 dark:border-slate-700 hover:border-indigo-400 transition-all group"
+                      >
+                        <div className="flex items-center gap-2.5 overflow-hidden">
+                          <span className="text-xl shrink-0">{subMeta?.icon || "📖"}</span>
+                          <div className="truncate">
+                            <div className="text-xs font-bold text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 truncate">
+                              {isHindi && sub.nameHi ? sub.nameHi : sub.name}
+                            </div>
+                            <div className="text-[10px] text-slate-400 truncate">
+                              {isHindi ? sub.name : (sub.nameHi || "")}
+                            </div>
+                          </div>
+                        </div>
+                        <span className="text-xs text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:translate-x-0.5 transition-transform ml-1">
+                          →
+                        </span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Subcategories & Topics Drill-down Bar (Placed in the end) */}
+            {availableSubCategories.length > 0 && (
+              <div className="mb-8 p-4 sm:p-5 rounded-3xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+                    <span>📁</span>
+                    <span>{isHindi ? "उप-विषय (SUB-CATEGORIES)" : "Sub-Categories & Tags"}</span>
+                  </span>
+                  {(selectedSubCategory || selectedTopic) && (
+                    <div className="flex items-center gap-3">
+                      {selectedSubCategory && (
+                        <Link
+                          href={`/category/${selectedSubCategory}`}
+                          className="text-xs font-extrabold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
+                        >
+                          <span>{isHindi ? "श्रेणी पेज खोलें" : "Open Category"}</span>
+                          <span>→</span>
+                        </Link>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedSubCategory(null);
+                          setSelectedTopic(null);
+                          scrollToSets();
+                        }}
+                        className="text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer"
+                      >
+                        {isHindi ? "सभी प्रश्न" : "Show All"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Subcategory Pills - Mobile horizontal swipe without ugly native scrollbars */}
+                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar scrollbar-none py-1.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden overscroll-x-contain">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedSubCategory(null);
+                      setSelectedTopic(null);
+                      scrollToSets();
+                    }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                      !selectedSubCategory
+                        ? "bg-indigo-600 text-white font-black shadow-xs"
+                        : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                    }`}
+                  >
+                    {isHindi ? "सभी उप-विषय" : "All Subcategories"}
+                  </button>
+
+                  {availableSubCategories.map((sub) => {
+                    const isSelected = selectedSubCategory === sub.slug || selectedSubCategory === sub.name;
+                    return (
+                      <button
+                        key={sub.slug || sub.name}
+                        type="button"
+                        onClick={() => {
+                          setSelectedSubCategory(isSelected ? null : (sub.slug || sub.name));
+                          setSelectedTopic(null);
+                          scrollToSets();
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                          isSelected
+                            ? "bg-indigo-600 text-white font-black shadow-xs"
+                            : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                        }`}
+                      >
+                        {sub.name}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Topics under selected Subcategory */}
+                {availableTopics.length > 0 && (
+                  <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800/80">
+                    <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 mb-1.5">
+                      <span>🔬</span>
+                      <span>{isHindi ? "टॉपिक्स (Topics):" : "Specific Topics:"}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scrollbar-none py-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden overscroll-x-contain">
+                      {availableTopics.map((top) => {
+                        const isSelected = selectedTopic === top;
+                        return (
+                          <button
+                            key={top}
+                            type="button"
+                            onClick={() => {
+                              setSelectedTopic(isSelected ? null : top);
+                              scrollToSets();
+                            }}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                              isSelected
+                                ? "bg-purple-600 text-white font-black shadow-xs"
+                                : "bg-white dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-purple-300"
+                            }`}
+                          >
+                            {top}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Reference Tags / Chapters for Fast Search & Set Filtering */}
+                {topicReferenceTags.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1 mr-1">
+                      <Tag size={12} /> {isHindi ? "अध्याय / संदर्भ टैग:" : "Chapters / Reference Tags:"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedTag(null);
+                        scrollToSets();
+                      }}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        !selectedTag
+                          ? "bg-amber-500 text-white shadow-xs"
+                          : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
+                      }`}
+                    >
+                      {isHindi ? "सभी" : "All"}
+                    </button>
+                    {topicReferenceTags.map((t) => {
+                      const isSel = selectedTag === t;
+                      return (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => {
+                            setSelectedTag(isSel ? null : t);
+                            scrollToSets();
+                          }}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                            isSel
+                              ? "bg-amber-500 text-white font-black shadow-xs scale-105"
+                              : "bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40 hover:border-amber-400"
+                          }`}
+                        >
+                          <span>🏷️</span>
+                          <span>{t}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* --- Senior Strategy: SEO Question Index --- */}
             <section className={styles.seoIndexSection}>
