@@ -21,6 +21,7 @@ import {
 import { useTier, TIERS } from "@/context/TierContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useData } from "@/context/DataContext";
+import MainHubsShowcase from "@/components/home/MainHubsShowcase";
 
 export default function UnsetLandingPage() {
   const router = useRouter();
@@ -543,6 +544,11 @@ export default function UnsetLandingPage() {
           </button>
         </div>
       </section>
+
+      {/* ── 🌟 MASTER HUBS & KEY FEATURES SHOWCASE ── */}
+      <div className="w-full max-w-5xl mx-auto mb-6">
+        <MainHubsShowcase isHindi={isHindi} />
+      </div>
 
       {/* ── 5TH LAYER: INDIA GK DIGITAL BOOK BANNER & ACCESSIBILITY ── */}
       <section className="w-full max-w-5xl mx-auto mt-2 mb-8">

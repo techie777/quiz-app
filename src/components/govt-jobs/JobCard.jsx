@@ -1,7 +1,10 @@
 import { motion } from "framer-motion";
+import Link from "next/link";
 import styles from "@/styles/GovtJobsAlerts.module.css";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function JobCard({ job, index, isExpanded, onToggleExpand, onViewDetails }) {
+  const { isHindi } = useLanguage();
   return (
     <motion.article
       className={`${styles.jobCard} ${isExpanded ? styles.expanded : ''}`}
@@ -128,9 +131,15 @@ export default function JobCard({ job, index, isExpanded, onToggleExpand, onView
       </div>
 
       <div className={styles.jobActions}>
-        <button className={styles.applyButton}>Apply Now</button>
-        <button className={styles.detailsButton} onClick={() => onViewDetails(job)}>View Details</button>
-        <button className={styles.downloadButton}>Download Notification</button>
+        <button className={styles.applyButton}>
+          {isHindi ? "आवेदन करें" : "Apply Now"}
+        </button>
+        <button className={styles.detailsButton} onClick={() => onViewDetails(job)}>
+          {isHindi ? "विवरण देखें" : "View Details"}
+        </button>
+        <Link href="/mock-tests" className={styles.practiceBtn}>
+          <span>🎯 {isHindi ? "मॉक टेस्ट दें" : "Practice Test"}</span>
+        </Link>
       </div>
     </motion.article>
   );

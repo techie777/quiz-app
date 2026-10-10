@@ -10,6 +10,7 @@ import 'jspdf-autotable';
 import { Download, Rocket, FileText, CheckCircle2, BookOpen, ScrollText, Zap, HelpCircle, Lock, ShoppingCart, ShieldCheck } from "lucide-react";
 import { useMonetization } from '@/context/MonetizationContext';
 import { useSession } from 'next-auth/react';
+import { useLanguage } from '@/context/LanguageContext';
 import UnifiedPaywallModal from '@/components/UnifiedPaywallModal';
 import StickyPaywallCTA from '@/components/StickyPaywallCTA';
 
@@ -17,6 +18,7 @@ export default function PaperSelection() {
   const { examId } = useParams();
   const { isPro, hasPass } = useMonetization();
   const { data: session } = useSession();
+  const { isHindi } = useLanguage();
   
   const [exam, setExam] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -97,11 +99,11 @@ export default function PaperSelection() {
   const sortedPYPYears = Object.keys(pypsByYear).sort((a, b) => b - a);
 
   const tabs = [
-    { id: 'info', label: 'Exam Info', icon: <FileText size={18}/> },
-    { id: 'mocks', label: 'Mock Tests', icon: <Rocket size={18}/> },
-    { id: 'pyp', label: 'Previous Years', icon: <ScrollText size={18}/> },
-    { id: 'quizzes', label: 'Quizzes', icon: <Zap size={18}/> },
-    { id: 'study', label: 'Study Material', icon: <BookOpen size={18}/> },
+    { id: 'info', label: isHindi ? 'परीक्षा विवरण' : 'Exam Info', icon: <FileText size={18}/> },
+    { id: 'mocks', label: isHindi ? 'मॉक टेस्ट' : 'Mock Tests', icon: <Rocket size={18}/> },
+    { id: 'pyp', label: isHindi ? 'गत वर्ष प्रश्नपत्र' : 'Previous Years', icon: <ScrollText size={18}/> },
+    { id: 'quizzes', label: isHindi ? 'क्विज़' : 'Quizzes', icon: <Zap size={18}/> },
+    { id: 'study', label: isHindi ? 'अध्ययन सामग्री' : 'Study Material', icon: <BookOpen size={18}/> },
   ];
 
   const downloadExamInfoPDF = () => {
@@ -231,7 +233,7 @@ export default function PaperSelection() {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M19 12H5M12 19l-7-7 7-7"/>
                 </svg>
-                Back to Hub
+                {isHindi ? "मॉक टेस्ट हब पर वापस" : "Back to Hub"}
             </Link>
             
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -333,23 +335,14 @@ export default function PaperSelection() {
                         <button 
                             className="w-full bg-white text-indigo-950 py-4 rounded-2xl font-black uppercase tracking-widest text-sm hover:scale-105 active:scale-95 transition shadow-xl mb-4"
                             onClick={() => {
-                                // Show dummy payment success and grant access
-                                setShowPayWall(false);
-                                // Add to purchased passes for free access
-                                if (session?.user) {
-                                    // Update monetization context for free access
-                                    window.location.reload();
-                                } else {
-                                    // For guests, show success message
-                                    alert('🎉 Payment successful! You now have access to this mock test.');
-                                    setShowPayWall(false);
-                                }
+                                setPaywallItemTitle(exam?.name || "Exam Category Pass");
+                                setPaywallModalOpen(true);
                             }}
                         >
-                            Get Category Pass (Free)
+                            {isHindi ? "कैटेगरी पास लें (Unlock Pass)" : "Get Category Pass"}
                         </button>
                         <Link href="/pro" className="text-[10px] font-black text-indigo-400 uppercase tracking-widest hover:text-white transition">
-                            Or Unlock Everything with Pro
+                            {isHindi ? "या प्रो के साथ सभी अनलॉक करें" : "Or Unlock Everything with Pro"}
                         </Link>
                     </div>
                 </div>
@@ -599,6 +592,7 @@ export default function PaperSelection() {
 
 function PaperCard({ paper, index, highlight = false, onLockedClick }) {
     const { hasPass } = useMonetization();
+    const { isHindi } = useLanguage();
     const isLocked = (paper.isPaid || paper.exam?.isPaid) && !hasPass(paper.id) && !hasPass(paper.examId);
 
     return (
@@ -657,7 +651,7 @@ function PaperCard({ paper, index, highlight = false, onLockedClick }) {
                         className="px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-sm transition-all shadow-lg hover:-translate-y-1 text-center min-w-[180px] bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white flex items-center justify-center gap-2 cursor-pointer"
                       >
                         <Lock size={16} />
-                        <span>🔒 LOCKED</span>
+                        <span>{isHindi ? "🔒 अनलॉक करें" : "🔒 LOCKED"}</span>
                       </button>
                     ) : (
                       <Link 
@@ -668,7 +662,7 @@ function PaperCard({ paper, index, highlight = false, onLockedClick }) {
                                 : 'bg-slate-900 text-white shadow-slate-200 hover:bg-black'
                         }`}
                       >
-                        START TEST
+                        {isHindi ? "टेस्ट शुरू करें" : "START TEST"}
                       </Link>
                     )}
                 </div>

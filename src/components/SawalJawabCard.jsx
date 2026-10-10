@@ -117,6 +117,9 @@ export default function SawalJawabCard({ item, lang: initialLang = 'EN' }) {
               <button onClick={handleShare} className={styles.actionBtn} title="Share with Friends">
                 <Share2 size={16} />
               </button>
+              <button className={styles.reactionBtn} title="Like">👍</button>
+              <button className={styles.reactionBtn} title="Wow">🤯</button>
+              <button className={styles.reactionBtn} title="Target">🎯</button>
             </div>
             <div className="text-[10px] text-slate-500 font-bold tracking-tighter">
               QUIZWEB.CO

@@ -5,8 +5,8 @@ export const DEFAULT_MODULES_CONFIG = {
   currentAffairs: true,
   profile: true,
   arena: true,
-  mockTests: false,
-  careerGuide: false,
+  mockTests: true,
+  careerGuide: true,
   dailyQuiz: {
     kids: true,
     students: true,
@@ -39,8 +39,8 @@ export function parseModulesConfig(raw) {
     currentAffairs: parsed.currentAffairs !== false,
     profile: parsed.profile !== false,
     arena: parsed.arena !== false,
-    mockTests: Boolean(parsed.mockTests),
-    careerGuide: Boolean(parsed.careerGuide),
+    mockTests: true,
+    careerGuide: true,
     dailyQuiz: {
       kids: isDailyObj ? dailyQuizRaw.kids !== false : true,
       students: isDailyObj ? dailyQuizRaw.students !== false : true,

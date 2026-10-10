@@ -18,6 +18,7 @@ export async function GET(request, { params }) {
         paper: {
            include: { 
              questions: true,
+             sections: { orderBy: { order: 'asc' } },
              exam: true
            }
         }
@@ -31,9 +32,9 @@ export async function GET(request, { params }) {
     // Prepare response with comprehensive fallbacks
     let questions = [];
     try {
-        if (attempt.paper?.showSolutions) {
+        if (attempt.paper?.showSolutions !== false) {
             const parsedAnswers = JSON.parse(attempt.answersJson || "{}");
-            questions = (attempt.paper.questions || []).map(q => {
+            questions = (attempt.paper?.questions || []).map(q => {
                 let options = [];
                 let optionsHi = [];
                 try {
@@ -46,6 +47,7 @@ export async function GET(request, { params }) {
 
                 return {
                     id: q.id,
+                    sectionId: q.sectionId,
                     text: q.text,
                     textHi: q.textHi,
                     options,
@@ -63,8 +65,12 @@ export async function GET(request, { params }) {
 
     const result = {
         id: attempt.id,
+        paperId: attempt.paperId,
         paperTitle: attempt.paper?.title || "Mock Paper",
         examName: attempt.paper?.exam?.name || "Mock Exam",
+        sections: attempt.paper?.sections || [],
+        positiveMarking: attempt.paper?.positiveMarking ?? 1,
+        negativeMarking: attempt.paper?.negativeMarking ?? 0.25,
         score: attempt.score || 0,
         totalMarks: attempt.paper?.totalMarks || 100,
         correctCount: attempt.correctCount || 0,
@@ -74,7 +80,7 @@ export async function GET(request, { params }) {
         timeLeft: attempt.timeLeft || 0,
         startedAt: attempt.startedAt,
         completedAt: attempt.completedAt,
-        showSolutions: attempt.paper?.showSolutions || false,
+        showSolutions: attempt.paper?.showSolutions !== false,
         questions
     };
 

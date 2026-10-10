@@ -107,6 +107,7 @@ export default function CategorySheet({
             { id: "all", label: "All", labelHi: "सभी" },
             { id: "random", label: "Random", labelHi: "रैंडम" },
             { id: "daily", label: "Daily", labelHi: "दैनिक" },
+            { id: "speed", label: "Speed", labelHi: "स्पीड" },
           ].map((mode) => {
             const isActive = selectedMode === mode.id;
             return (

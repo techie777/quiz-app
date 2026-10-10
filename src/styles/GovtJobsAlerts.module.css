@@ -1,7 +1,7 @@
 .container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: 2rem 1rem calc(84px + env(safe-area-inset-bottom, 0px));
   min-height: 100vh;
   display: flex;
   gap: 2rem;
@@ -10,27 +10,39 @@
 /* Sidebar Styles */
 .sidebarToggle {
   display: none;
-  position: fixed;
-  top: 1rem;
-  left: 1rem;
-  z-index: 1001;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: #4f46e5;
   color: white;
   border: none;
-  padding: 0.75rem 1rem;
+  padding: 0.65rem 1.1rem;
   border-radius: 12px;
   cursor: pointer;
-  font-weight: 600;
-  font-size: 0.9rem;
+  font-weight: 700;
+  font-size: 0.875rem;
   align-items: center;
   gap: 0.5rem;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+  transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .sidebarToggle:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+  background: #4338ca;
+  transform: translateY(-1px);
+}
+
+.sidebarBackdrop {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .sidebarBackdrop.open {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 999;
+  }
 }
 
 .sidebar {
@@ -1481,10 +1493,8 @@
   }
 
   .sidebarToggle {
-    position: fixed;
-    top: 1rem;
-    left: 1rem;
-    z-index: 1001;
+    display: inline-flex;
+    position: static;
   }
 
   .title {
@@ -1882,4 +1892,65 @@
   .featureCard {
     padding: 1.5rem;
   }
+}
+
+/* Practice Bridge & Mock Tests CTA */
+.practiceBridgeBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+  border: 1px solid #c7d2fe;
+  border-radius: 18px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.practiceBridgeText {
+  font-size: 14px;
+  font-weight: 700;
+  color: #312e81;
+  margin: 0;
+}
+
+.practiceBridgeBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 12px;
+  background: #4f46e5;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+  transition: background 0.15s ease;
+}
+
+.practiceBridgeBtn:hover {
+  background: #4338ca;
+}
+
+.practiceBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.practiceBtn:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: #1d4ed8;
 }

@@ -8,8 +8,11 @@ import SkeletonCard from "@/components/govt-jobs/SkeletonCard";
 import JobCard from "@/components/govt-jobs/JobCard";
 import JobDetailsModal from "@/components/govt-jobs/JobDetailsModal";
 import { debounce } from "@/lib/performance";
+import { useLanguage } from "@/context/LanguageContext";
+import { SlidersHorizontal, ArrowRight } from "lucide-react";
 
 export default function GovtJobsAlerts() {
+  const { isHindi } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -264,24 +267,22 @@ export default function GovtJobsAlerts() {
 
   return (
     <div className={styles.container}>
-      {/* Mobile Sidebar Toggle */}
-      <button 
-        className={styles.sidebarToggle}
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-      >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M3 12h18M3 6h18M3 18h18"/>
-        </svg>
-        Filters & Sort
-      </button>
+      {/* Mobile Backdrop Overlay */}
+      <div 
+        className={`${styles.sidebarBackdrop} ${sidebarOpen ? styles.open : ""}`} 
+        onClick={() => setSidebarOpen(false)} 
+      />
 
       {/* Sidebar */}
-      <aside className={`${styles.sidebar} ${sidebarOpen ? styles.open : ''}`}>
+      <aside className={`${styles.sidebar} ${sidebarOpen ? styles.open : ""}`}>
         <div className={styles.sidebarHeader}>
-          <h2 className={styles.sidebarTitle}>Filters & Sort</h2>
+          <h2 className={styles.sidebarTitle}>
+            {isHindi ? "फ़िल्टर्स व सॉर्ट" : "Filters & Sort"}
+          </h2>
           <button 
             className={styles.sidebarClose}
             onClick={() => setSidebarOpen(false)}
+            aria-label="Close filters"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M18 6L6 18M6 6l12 12"/>
@@ -292,26 +293,30 @@ export default function GovtJobsAlerts() {
         <div className={styles.sidebarContent}>
           {/* Sort Options */}
           <div className={styles.filterSection}>
-            <h3 className={styles.filterSectionTitle}>Sort By</h3>
+            <h3 className={styles.filterSectionTitle}>
+              {isHindi ? "क्रमबद्ध करें (Sort By)" : "Sort By"}
+            </h3>
             <div className={styles.sortOptions}>
               <select 
                 value={sortBy} 
                 onChange={(e) => handleSortChange(e.target.value)}
                 className={styles.sortSelect}
               >
-                <option value="latest">Latest First</option>
-                <option value="oldest">Oldest First</option>
-                <option value="vacancies-high">Most Vacancies</option>
-                <option value="vacancies-low">Least Vacancies</option>
-                <option value="name-asc">Name (A-Z)</option>
-                <option value="name-desc">Name (Z-A)</option>
+                <option value="latest">{isHindi ? "नवीनतम पहले" : "Latest First"}</option>
+                <option value="oldest">{isHindi ? "पुराने पहले" : "Oldest First"}</option>
+                <option value="vacancies-high">{isHindi ? "अधिकतम पद" : "Most Vacancies"}</option>
+                <option value="vacancies-low">{isHindi ? "न्यूनतम पद" : "Least Vacancies"}</option>
+                <option value="name-asc">A → Z</option>
+                <option value="name-desc">Z → A</option>
               </select>
             </div>
           </div>
 
           {/* Government Type Filter */}
           <div className={styles.filterSection}>
-            <h3 className={styles.filterSectionTitle}>Government Type</h3>
+            <h3 className={styles.filterSectionTitle}>
+              {isHindi ? "सरकारी स्तर" : "Government Type"}
+            </h3>
             <div className={styles.filterOptions}>
               <label className={styles.filterOption}>
                 <input 
@@ -321,7 +326,7 @@ export default function GovtJobsAlerts() {
                   checked={filters.governmentType === "all"}
                   onChange={(e) => handleFilterChange("governmentType", e.target.value)}
                 />
-                <span>All Types</span>
+                <span>{isHindi ? "सभी स्तर" : "All Types"}</span>
               </label>
               <label className={styles.filterOption}>
                 <input 
@@ -331,7 +336,7 @@ export default function GovtJobsAlerts() {
                   checked={filters.governmentType === "central"}
                   onChange={(e) => handleFilterChange("governmentType", e.target.value)}
                 />
-                <span>Central Govt</span>
+                <span>{isHindi ? "केंद्रीय सरकार" : "Central Govt"}</span>
               </label>
               <label className={styles.filterOption}>
                 <input 
@@ -341,14 +346,16 @@ export default function GovtJobsAlerts() {
                   checked={filters.governmentType === "state"}
                   onChange={(e) => handleFilterChange("governmentType", e.target.value)}
                 />
-                <span>State Govt</span>
+                <span>{isHindi ? "राज्य सरकार" : "State Govt"}</span>
               </label>
             </div>
           </div>
 
           {/* Education Filter */}
           <div className={styles.filterSection}>
-            <h3 className={styles.filterSectionTitle}>Education</h3>
+            <h3 className={styles.filterSectionTitle}>
+              {isHindi ? "शैक्षणिक योग्यता" : "Education Qualification"}
+            </h3>
             <div className={styles.filterOptions}>
               <label className={styles.filterOption}>
                 <input 
@@ -358,7 +365,7 @@ export default function GovtJobsAlerts() {
                   checked={filters.education === "all"}
                   onChange={(e) => handleFilterChange("education", e.target.value)}
                 />
-                <span>All Levels</span>
+                <span>{isHindi ? "सभी योग्यताएं" : "All Levels"}</span>
               </label>
               <label className={styles.filterOption}>
                 <input 
@@ -368,7 +375,7 @@ export default function GovtJobsAlerts() {
                   checked={filters.education === "10th"}
                   onChange={(e) => handleFilterChange("education", e.target.value)}
                 />
-                <span>10th Pass</span>
+                <span>{isHindi ? "10वीं पास" : "10th Pass"}</span>
               </label>
               <label className={styles.filterOption}>
                 <input 
@@ -378,7 +385,7 @@ export default function GovtJobsAlerts() {
                   checked={filters.education === "12th"}
                   onChange={(e) => handleFilterChange("education", e.target.value)}
                 />
-                <span>12th Pass</span>
+                <span>{isHindi ? "12वीं पास" : "12th Pass"}</span>
               </label>
               <label className={styles.filterOption}>
                 <input 
@@ -388,14 +395,16 @@ export default function GovtJobsAlerts() {
                   checked={filters.education === "graduation"}
                   onChange={(e) => handleFilterChange("education", e.target.value)}
                 />
-                <span>Graduation</span>
+                <span>{isHindi ? "स्नातक (Graduation)" : "Graduation"}</span>
               </label>
             </div>
           </div>
 
           {/* Last Date Filter */}
           <div className={styles.filterSection}>
-            <h3 className={styles.filterSectionTitle}>Last Date</h3>
+            <h3 className={styles.filterSectionTitle}>
+              {isHindi ? "अंतिम तिथि" : "Last Date"}
+            </h3>
             <div className={styles.filterOptions}>
               <label className={styles.filterOption}>
                 <input 
@@ -405,7 +414,7 @@ export default function GovtJobsAlerts() {
                   checked={filters.lastDateRange === "all"}
                   onChange={(e) => handleFilterChange("lastDateRange", e.target.value)}
                 />
-                <span>All Dates</span>
+                <span>{isHindi ? "सभी तिथियां" : "All Dates"}</span>
               </label>
               <label className={styles.filterOption}>
                 <input 
@@ -415,7 +424,7 @@ export default function GovtJobsAlerts() {
                   checked={filters.lastDateRange === "week"}
                   onChange={(e) => handleFilterChange("lastDateRange", e.target.value)}
                 />
-                <span>This Week</span>
+                <span>{isHindi ? "इस सप्ताह" : "This Week"}</span>
               </label>
               <label className={styles.filterOption}>
                 <input 
@@ -425,19 +434,19 @@ export default function GovtJobsAlerts() {
                   checked={filters.lastDateRange === "month"}
                   onChange={(e) => handleFilterChange("lastDateRange", e.target.value)}
                 />
-                <span>This Month</span>
+                <span>{isHindi ? "इस महीने" : "This Month"}</span>
               </label>
             </div>
           </div>
 
           {/* Clear Filters Button */}
           <button className={styles.clearFiltersButton} onClick={clearFilters}>
-            Clear All Filters
+            {isHindi ? "सभी फ़िल्टर हटाएं" : "Clear All Filters"}
           </button>
 
           {/* Results Count */}
           <div className={styles.resultsCount}>
-            <span>{totalJobs}</span> jobs found
+            <span>{totalJobs}</span> {isHindi ? "नौकरियां उपलब्ध" : "jobs found"}
           </div>
         </div>
       </aside>
@@ -445,14 +454,48 @@ export default function GovtJobsAlerts() {
       {/* Main Content */}
       <main className={styles.mainContent}>
         <div className={styles.header}>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <h1 className={styles.title}>Government Jobs Alerts</h1>
-            <p className={styles.subtitle}>Latest government job notifications and recruitment updates</p>
-          </motion.div>
+          <div className="flex items-center justify-between gap-4 flex-wrap w-full">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <h1 className={styles.title}>
+                {isHindi ? "सरकारी नौकरी अलर्ट्स व सूचनाएं" : "Government Jobs Alerts"}
+              </h1>
+              <p className={styles.subtitle}>
+                {isHindi
+                  ? "नवीनतम सरकारी भर्ती सूचनाएं, पात्रता व आवेदन तिथियां"
+                  : "Latest government job notifications and recruitment updates"}
+              </p>
+            </motion.div>
+
+            {/* In-flow Mobile Filter Toggle Button */}
+            <button
+              className={styles.sidebarToggle}
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open Filters"
+            >
+              <SlidersHorizontal size={16} />
+              <span>{isHindi ? "फ़िल्टर्स व सॉर्ट" : "Filters & Sort"}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Practice Bridge Banner */}
+        <div className={styles.practiceBridgeBanner}>
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🎯</span>
+            <p className={styles.practiceBridgeText}>
+              {isHindi
+                ? "क्या आप इन सरकारी परीक्षाओं की तैयारी कर रहे हैं? फ्री मॉक टेस्ट व अभ्यास क्विज़ हल करें!"
+                : "Preparing for these government exams? Practice free mock tests & topic quizzes!"}
+            </p>
+          </div>
+          <Link href="/mock-tests" className={styles.practiceBridgeBtn}>
+            <span>{isHindi ? "मॉक टेस्ट हब देखें" : "Explore Mock Tests"}</span>
+            <ArrowRight size={15} />
+          </Link>
         </div>
 
         {/* Search and Filter Section */}
@@ -460,7 +503,11 @@ export default function GovtJobsAlerts() {
           <div className={styles.searchBox}>
             <input
               type="text"
-              placeholder="Search jobs by title or organization..."
+              placeholder={
+                isHindi
+                  ? "नौकरी, पद या विभाग खोजें (जैसे: SSC, रेलवे, बैंक, UPSC...)"
+                  : "Search jobs by title or organization..."
+              }
               value={searchTerm}
               onChange={handleSearchChange}
               className={styles.searchInput}
@@ -469,14 +516,14 @@ export default function GovtJobsAlerts() {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
               </svg>
-              Search
+              {isHindi ? "खोजें" : "Search"}
             </button>
           </div>
         </div>
 
         {/* Category Filter */}
         <div className={styles.categorySection}>
-          <h3 className={styles.categoryTitle}>Categories</h3>
+          <h3 className={styles.categoryTitle}>{isHindi ? "श्रेणियां" : "Categories"}</h3>
           <div className={styles.categoryGrid}>
             <button
               className={`${styles.categoryButton} ${selectedCategory === "all" ? styles.active : ''}`}
@@ -486,7 +533,7 @@ export default function GovtJobsAlerts() {
               }}
             >
               <span className={styles.categoryIcon}>🌟</span>
-              <span className={styles.categoryName}>All Jobs</span>
+              <span className={styles.categoryName}>{isHindi ? "सभी नौकरियां" : "All Jobs"}</span>
               <span className={styles.categoryCount}>{totalJobs}</span>
             </button>
             {categories.map((category) => (
@@ -516,8 +563,12 @@ export default function GovtJobsAlerts() {
             </div>
           ) : filteredJobs.length === 0 ? (
             <div className={styles.empty}>
-              <h3>No job alerts found</h3>
-              <p>Try adjusting your search or filter criteria.</p>
+              <h3>{isHindi ? "कोई नौकरी अलर्ट नहीं मिला" : "No job alerts found"}</h3>
+              <p>
+                {isHindi
+                  ? "कृपया अन्य कीवर्ड खोजें या फ़िल्टर मानदंड बदलें।"
+                  : "Try adjusting your search or filter criteria."}
+              </p>
             </div>
           ) : (
             <>
@@ -550,10 +601,10 @@ export default function GovtJobsAlerts() {
                     {loadingMore ? (
                       <>
                         <span className={styles.loader}></span>
-                        Loading...
+                        {isHindi ? "लोड हो रहा है..." : "Loading..."}
                       </>
                     ) : (
-                      'Load More Jobs'
+                      isHindi ? "और नौकरियां देखें" : "Load More Jobs"
                     )}
                   </button>
                 </div>

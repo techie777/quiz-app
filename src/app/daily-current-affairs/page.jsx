@@ -24,7 +24,11 @@ import {
   FileText,
   Zap,
   HelpCircle,
+  Trophy,
+  RotateCcw,
+  CheckCircle2,
 } from "lucide-react";
+import { getXP, saveXP } from "@/lib/gameLayer";
 
 /* ──────────────── SVG CATEGORY LINE ICONS ──────────────── */
 function CategoryIcon({ category, size = 20, color = "currentColor" }) {
@@ -552,6 +556,43 @@ export default function DailyCurrentAffairsPage() {
     if (selectedCategory === "All") return stories;
     return stories.filter((s) => s.category.toLowerCase().includes(selectedCategory.toLowerCase()));
   }, [stories, selectedCategory]);
+
+  // Daily Current Affairs Quiz Stats
+  const quizStories = useMemo(() => {
+    return filteredStories.filter((s) => !!s.quickQuiz);
+  }, [filteredStories]);
+
+  const quizStats = useMemo(() => {
+    if (quizStories.length === 0) return { total: 0, answered: 0, correct: 0, isCompleted: false, pct: 0 };
+    let answered = 0;
+    let correct = 0;
+    quizStories.forEach((s) => {
+      const ans = quizAnswers[s.id];
+      if (ans !== undefined) {
+        answered++;
+        if (ans === s.quickQuiz.correctIndex) {
+          correct++;
+        }
+      }
+    });
+    const isCompleted = answered === quizStories.length && quizStories.length > 0;
+    const pct = isCompleted ? Math.round((correct / quizStories.length) * 100) : 0;
+    return { total: quizStories.length, answered, correct, isCompleted, pct };
+  }, [quizStories, quizAnswers]);
+
+  // Award +25 XP upon quiz completion once per date
+  useEffect(() => {
+    if (quizStats.isCompleted && quizStats.total > 0 && typeof window !== "undefined") {
+      const claimKey = `quizweb_ca_quiz_xp_${selectedDate}`;
+      if (!localStorage.getItem(claimKey)) {
+        try {
+          const curXP = getXP();
+          saveXP(curXP + 25);
+          localStorage.setItem(claimKey, "true");
+        } catch {}
+      }
+    }
+  }, [quizStats.isCompleted, quizStats.total, selectedDate]);
 
   // Categories list
   const categoryChips = useMemo(() => {
@@ -1373,6 +1414,69 @@ export default function DailyCurrentAffairsPage() {
                 </div>
               );
             })}
+
+            {quizStats.isCompleted && (
+              <div className={styles.quizCompletionCard}>
+                <div className={styles.quizCompletionHeader}>
+                  <div className={styles.quizCompletionIcon}>
+                    <Trophy size={26} />
+                  </div>
+                  <h3 className={styles.quizCompletionTitle}>
+                    {globalIsHindi ? "आज का समसामयिकी क्विज़ पूर्ण! 🎉" : "Daily Quiz Completed! 🎉"}
+                  </h3>
+                  <p className={styles.quizCompletionSubtitle}>
+                    {globalIsHindi
+                      ? "शानदार प्रयास! आपकी परीक्षा तैयारी में निरंतरता बनी रहे।"
+                      : "Great job! Keep the consistency up for top exam readiness."}
+                  </p>
+                </div>
+
+                <div className={styles.quizScoreRow}>
+                  <div className={styles.quizScoreBadgeBig}>
+                    <CheckCircle2 size={16} className="text-emerald-600" />
+                    <span>
+                      {quizStats.correct} / {quizStats.total} {globalIsHindi ? "सही" : "Correct"} ({quizStats.pct}%)
+                    </span>
+                  </div>
+                  <div className={styles.quizXpBadgeBig}>
+                    <Sparkles size={16} className="text-amber-300" />
+                    <span>+25 XP {globalIsHindi ? "अर्जित" : "Awarded"}</span>
+                  </div>
+                </div>
+
+                <div className={styles.quizCompletionActions}>
+                  <button
+                    className={styles.quizCompletionBtnPrimary}
+                    onClick={openTodayKeyPointsDeck}
+                  >
+                    <Layers size={16} />
+                    <span>{globalIsHindi ? "फ्लैशकार्ड्स से रिविज़न करें" : "Revise All With Flashcards"}</span>
+                  </button>
+
+                  <button
+                    className={styles.quizCompletionBtnSecondary}
+                    onClick={() => router.push(`/daily/daily-current-affairs?date=${selectedDate}`)}
+                  >
+                    <Zap size={16} className="text-indigo-600" />
+                    <span>{globalIsHindi ? "टाइम्ड अरीना में चुनौती दें" : "Challenge In Timed Arena"}</span>
+                  </button>
+
+                  <button
+                    className={styles.quizResetBtn}
+                    onClick={() => {
+                      setQuizAnswers((prev) => {
+                        const next = { ...prev };
+                        quizStories.forEach((s) => delete next[s.id]);
+                        return next;
+                      });
+                    }}
+                  >
+                    <RotateCcw size={13} className="inline mr-1" />
+                    {globalIsHindi ? "प्रश्नों का पुनः अभ्यास करें" : "Reset & Practice Again"}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

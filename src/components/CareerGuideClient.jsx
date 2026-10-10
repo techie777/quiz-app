@@ -4,11 +4,22 @@ import { useMemo, useState, useEffect } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import styles from "@/styles/CareerGuide.module.css";
+import { useLanguage } from "@/context/LanguageContext";
+import {
+  Search,
+  ArrowRight,
+  RotateCcw,
+  Compass,
+  Sparkles,
+  Filter,
+  Briefcase,
+} from "lucide-react";
 
 export default function CareerGuideClient({ categories = [], allCareers = [], translations = {} }) {
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
+  const { isHindi } = useLanguage();
 
   const initialQ = sp.get("q") || "";
   const initialSort = sp.get("sort") || "featured";
@@ -26,7 +37,7 @@ export default function CareerGuideClient({ categories = [], allCareers = [], tr
     if (newCat) nextSp.set("cat", newCat);
     const qs = nextSp.toString();
     const newUrl = qs ? `${pathname}?${qs}` : pathname;
-    window.history.replaceState({ ...window.history.state, as: newUrl, url: newUrl }, '', newUrl);
+    window.history.replaceState({ ...window.history.state, as: newUrl, url: newUrl }, "", newUrl);
   };
 
   useEffect(() => {
@@ -44,7 +55,35 @@ export default function CareerGuideClient({ categories = [], allCareers = [], tr
       .map((c) => ({
         value: c.pathKey,
         label: (Array.isArray(c.pathSlugs) ? c.pathSlugs.join(" > ") : c.name) || c.name || c.pathKey,
+        shortName: c.name || c.pathKey,
       }));
+  }, [categories]);
+
+  // Curated popular categories for 1-tap quick pills
+  const quickCategories = useMemo(() => {
+    const list = [{ key: "", labelEn: "All Careers", labelHi: "सभी करियर" }];
+    (categories || []).forEach((c) => {
+      if (!c.hidden && (!c.depth || c.depth <= 1)) {
+        list.push({
+          key: c.pathKey,
+          labelEn: c.name || c.pathKey,
+          labelHi: c.nameHi || c.name || c.pathKey,
+        });
+      }
+    });
+    // If categories is empty, provide sensible defaults
+    if (list.length <= 1) {
+      return [
+        { key: "", labelEn: "All Careers", labelHi: "सभी करियर" },
+        { key: "civil-services", labelEn: "Civil Services", labelHi: "सिविल सेवा" },
+        { key: "defense", labelEn: "Defense & Police", labelHi: "रक्षा व पुलिस" },
+        { key: "banking", labelEn: "Banking & Finance", labelHi: "बैंकिंग व वित्त" },
+        { key: "engineering", labelEn: "Engineering", labelHi: "इंजीनियरिंग" },
+        { key: "medical", labelEn: "Medical & Health", labelHi: "चिकित्सा" },
+        { key: "teaching", labelEn: "Teaching & Edu", labelHi: "शिक्षण" },
+      ];
+    }
+    return list.slice(0, 8);
   }, [categories]);
 
   const clearAll = () => {
@@ -60,113 +99,90 @@ export default function CareerGuideClient({ categories = [], allCareers = [], tr
     // Filter by query
     if (q.trim()) {
       const lowerQ = q.trim().toLowerCase();
-      list = list.filter((c) => 
-        (c.name && c.name.toLowerCase().includes(lowerQ)) ||
-        (c.description && c.description.toLowerCase().includes(lowerQ)) ||
-        (c.category && c.category.toLowerCase().includes(lowerQ))
+      list = list.filter(
+        (c) =>
+          (c.name && c.name.toLowerCase().includes(lowerQ)) ||
+          (c.description && c.description.toLowerCase().includes(lowerQ)) ||
+          (c.category && c.category.toLowerCase().includes(lowerQ))
       );
     }
 
     // Filter by category
     if (cat) {
-      // Find the selected category to get its pathKey
       const selectedCatNode = categories.find((c) => c.pathKey === cat);
       if (selectedCatNode) {
-        // Find all descendant category IDs (including self)
         const descendantIds = categories
-          .filter(c => c.pathKey === selectedCatNode.pathKey || (c.pathKey && c.pathKey.startsWith(`${selectedCatNode.pathKey}/`)))
-          .map(c => c.id);
-        
-        list = list.filter(c => descendantIds.includes(c.careerCategoryId));
+          .filter(
+            (c) =>
+              c.pathKey === selectedCatNode.pathKey ||
+              (c.pathKey && c.pathKey.startsWith(`${selectedCatNode.pathKey}/`))
+          )
+          .map((c) => c.id);
+
+        list = list.filter((c) => descendantIds.includes(c.careerCategoryId));
       } else {
-        list = []; // Invalid category
+        // Fallback filter by string matching in category name/id
+        list = list.filter((c) =>
+          (c.category || "").toLowerCase().includes(cat.toLowerCase())
+        );
       }
     }
 
     // Sort
     if (sort === "az") {
-      list.sort((a, b) => a.name.localeCompare(b.name));
+      list.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
     } else if (sort === "za") {
-      list.sort((a, b) => b.name.localeCompare(a.name));
+      list.sort((a, b) => (b.name || "").localeCompare(a.name || ""));
     } else if (sort === "newest") {
-      // Assuming original order is somewhat chronological or we have updatedAt (not passed initially, but let's assume default is fine or we keep it stable)
-      // Since allCareers comes sorted by whatever the server did, if sort isn't supported perfectly locally, we just reverse or keep.
-      // But let's just reverse the original list as a simple proxy for newest if we don't have dates.
-      list.reverse(); 
+      list.reverse();
     }
 
     return list;
   }, [allCareers, categories, q, cat, sort]);
 
-  const t = (key) => translations[key] || key;
-
   return (
     <>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(0, 1fr) 220px 260px",
-          gap: 12,
-          alignItems: "center",
-          maxWidth: 980,
-          margin: "0 auto 18px",
-          padding: "14px",
-          borderRadius: 16,
-          background: "var(--card-bg)",
-          border: "1px solid var(--card-border)",
-          backdropFilter: "var(--card-backdrop)",
-        }}
-      >
-        <div style={{ display: "flex", gap: 10 }}>
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search careers (IAS, DSP, SDM...)"
-            aria-label="Search career guides"
-            style={{
-              width: "100%",
-              padding: "12px 12px",
-              borderRadius: 12,
-              border: "1px solid var(--border-color, #e2e8f0)",
-              background: "var(--bg-surface, #fff)",
-              color: "var(--text-primary, #0f172a)",
-              outline: "none",
-            }}
-          />
-        </div>
+      {/* ──────────────── 1. RESPONSIVE SEARCH & FILTER BAR ──────────────── */}
+      <div className={styles.filterBar}>
+        {/* Controls Row */}
+        <div className={styles.filterControlsRow}>
+          {/* Search Box */}
+          <div className={styles.searchBox}>
+            <Search size={18} className={styles.searchIcon} />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder={
+                isHindi
+                  ? "करियर खोजें (जैसे: IAS, DSP, बैंक PO, NDA, शिक्षक...)"
+                  : "Search careers (IAS, DSP, Bank PO, NDA, Teacher...)"
+              }
+              aria-label="Search career guides"
+              className={styles.searchInput}
+            />
+          </div>
 
-        <select
-          value={sort}
-          onChange={(e) => setSort(e.target.value)}
-          aria-label="Sort career guides"
-          style={{
-            width: "100%",
-            padding: "12px 12px",
-            borderRadius: 12,
-            border: "1px solid var(--border-color, #e2e8f0)",
-            background: "var(--bg-surface, #fff)",
-          }}
-        >
-          <option value="featured">Featured</option>
-          <option value="az">A → Z</option>
-          <option value="za">Z → A</option>
-          <option value="newest">Newest</option>
-        </select>
+          {/* Sort Select */}
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+            aria-label="Sort career guides"
+            className={styles.filterSelect}
+          >
+            <option value="featured">{isHindi ? "⭐ विशेष (Featured)" : "⭐ Featured"}</option>
+            <option value="az">A → Z</option>
+            <option value="za">Z → A</option>
+            <option value="newest">{isHindi ? "नवीनतम (Newest)" : "Newest"}</option>
+          </select>
 
-        <div style={{ display: "flex", gap: 10 }}>
+          {/* Category Select */}
           <select
             value={cat}
             onChange={(e) => setCat(e.target.value)}
             aria-label="Filter by category"
-            style={{
-              width: "100%",
-              padding: "12px 12px",
-              borderRadius: 12,
-              border: "1px solid var(--border-color, #e2e8f0)",
-              background: "var(--bg-surface, #fff)",
-            }}
+            className={styles.filterSelect}
           >
-            <option value="">All categories</option>
+            <option value="">{isHindi ? "सभी श्रेणियां (All)" : "All Categories"}</option>
             {catOptions.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
@@ -174,44 +190,84 @@ export default function CareerGuideClient({ categories = [], allCareers = [], tr
             ))}
           </select>
 
-          <button
-            type="button"
-            onClick={clearAll}
-            style={{
-              padding: "12px 14px",
-              borderRadius: 12,
-              border: "1px solid var(--border-color, #e2e8f0)",
-              background: "var(--bg-surface, #fff)",
-              cursor: "pointer",
-              fontWeight: 600,
-            }}
-            title="Clear filters"
-          >
-            Reset
-          </button>
+          {/* Reset Button */}
+          {(q || sort !== "featured" || cat) && (
+            <button
+              type="button"
+              onClick={clearAll}
+              className={styles.resetBtn}
+              title={isHindi ? "फ़िल्टर साफ़ करें" : "Reset filters"}
+            >
+              <RotateCcw size={14} />
+              <span>{isHindi ? "रीसेट" : "Reset"}</span>
+            </button>
+          )}
         </div>
 
-        <div style={{ gridColumn: "1 / -1", fontSize: 12, color: "var(--text-secondary, #64748b)" }}>
-          Tip: use categories to create SEO-friendly landing pages.
+        {/* 1-Tap Category Quick Pills */}
+        <div className={styles.categoryPillsRow}>
+          {quickCategories.map((qc) => {
+            const isActive = cat === qc.key;
+            return (
+              <button
+                key={qc.key}
+                type="button"
+                className={`${styles.categoryPill} ${isActive ? styles.categoryPillActive : ""}`}
+                onClick={() => setCat(qc.key)}
+              >
+                <span>{isHindi ? qc.labelHi : qc.labelEn}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Meta Stats Row */}
+        <div className={styles.filterMetaRow}>
+          <span>
+            {isHindi
+              ? `कुल ${filteredCareers.length} करियर रोडमैप उपलब्ध`
+              : `Found ${filteredCareers.length} career roadmaps`}
+          </span>
+          <span className="text-[11px] text-slate-400">
+            {isHindi ? "पूर्ण पात्रता, वेतनमान व चयन प्रक्रिया" : "Detailed eligibility, exam path & salary"}
+          </span>
         </div>
       </div>
 
+      {/* ──────────────── 2. CAREER CARDS GRID ──────────────── */}
       <div className={styles.careersGrid}>
         {filteredCareers.map((career) => (
           <div key={career.id} className={styles.careerCard}>
-            <div className={styles.careerIcon}>{career.icon}</div>
+            <div className={styles.careerIcon}>
+              {career.icon || <Briefcase size={28} className="text-blue-600" />}
+            </div>
             <div className={styles.careerCategory}>{career.category}</div>
             <h2 className={styles.careerName}>{career.name}</h2>
             <p className={styles.careerDesc}>{career.description}</p>
-            
+
             <Link href={`/career-guide/${career.id}`} className={styles.exploreBtn}>
-              {t('career.exploreBtn')} <span aria-hidden="true">+'</span>
+              <span>{isHindi ? "करियर रोडमैप देखें" : "Explore Roadmap"}</span>
+              <ArrowRight size={16} />
             </Link>
           </div>
         ))}
+
+        {/* Rich Empty State */}
         {filteredCareers.length === 0 && (
-          <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "40px", color: "var(--text-secondary)" }}>
-            No careers found matching your search.
+          <div className={styles.emptyState}>
+            <Compass size={44} className="text-slate-400" />
+            <h3 className={styles.emptyStateTitle}>
+              {isHindi ? "कोई करियर रोडमैप नहीं मिला" : "No Career Roadmaps Found"}
+            </h3>
+            <p className={styles.emptyStateDesc}>
+              {isHindi
+                ? "आपके खोजे गए शब्द या चुने गए फ़िल्टर से कोई परिणाम मेल नहीं खाता। कृपया फ़िल्टर रीसेट करें।"
+                : "No careers match your search criteria. Try adjusting your query or reset filters."}
+            </p>
+            <button onClick={clearAll} className={styles.resetBtn}>
+              <RotateCcw size={14} />
+              <span>{isHindi ? "सभी फ़िल्टर साफ़ करें" : "Reset All Filters"}</span>
+            </button>
           </div>
         )}
       </div>

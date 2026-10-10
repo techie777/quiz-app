@@ -6,18 +6,6 @@ import { useModules } from "@/context/DataContext";
 
 const MODULE_ROUTE_RULES = [
   {
-    moduleKey: "mockTests",
-    match: (path) =>
-      path.startsWith("/mock-tests") ||
-      path.startsWith("/govt-exams") ||
-      path.startsWith("/govt-exam-preparation") ||
-      path.startsWith("/govt-study"),
-  },
-  {
-    moduleKey: "careerGuide",
-    match: (path) => path.startsWith("/career-guide"),
-  },
-  {
     moduleKey: "learn",
     match: (path) => path.startsWith("/learn"),
   },

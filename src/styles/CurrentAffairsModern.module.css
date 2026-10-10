@@ -662,6 +662,157 @@
   margin-top: 12px;
 }
 
+/* ──────────────── QUIZ COMPLETION SUMMARY CARD ──────────────── */
+.quizCompletionCard {
+  border-radius: 20px;
+  border: 1px solid #a7f3d0;
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #eff6ff 100%);
+  padding: 24px 20px;
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.12);
+  margin-top: 14px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.quizCompletionHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.quizCompletionIcon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #10b981;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+}
+
+.quizCompletionTitle {
+  font-size: 18px;
+  font-weight: 800;
+  color: #065f46;
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+.quizCompletionSubtitle {
+  font-size: 13px;
+  color: #047857;
+  margin: 0;
+}
+
+.quizScoreRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.quizScoreBadgeBig {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid #bbf7d0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #065f46;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.quizXpBadgeBig {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 14px;
+  background: #4f46e5;
+  border: 1px solid #4338ca;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+}
+
+.quizCompletionActions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quizCompletionBtnPrimary {
+  width: 100%;
+  height: 46px;
+  border-radius: 14px;
+  background: #4f46e5;
+  color: #ffffff;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.quizCompletionBtnPrimary:hover {
+  background: #4338ca;
+  transform: translateY(-1px);
+}
+
+.quizCompletionBtnSecondary {
+  width: 100%;
+  height: 44px;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.quizCompletionBtnSecondary:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.quizResetBtn {
+  margin-top: 4px;
+  background: transparent;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: color 0.15s ease;
+}
+
+.quizResetBtn:hover {
+  color: #ef4444;
+  text-decoration: underline;
+}
+
 /* ──────────────── 9. SCREEN 2: STORY READER ──────────────── */
 .readerContainer {
   width: 100%;
@@ -1125,6 +1276,19 @@
 @keyframes shimmer {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
+}
+
+@media (max-width: 640px) {
+  .storyList {
+    padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+  }
+  .readerStickyBottom {
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    padding: 10px 16px;
+  }
+  .readerContent {
+    padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 @media (max-width: 480px) {

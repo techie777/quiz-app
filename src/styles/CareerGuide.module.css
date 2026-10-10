@@ -1,7 +1,7 @@
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 2rem 1rem calc(84px + env(safe-area-inset-bottom, 0px));
   font-family: var(--font-family-base);
 }
 
@@ -628,3 +628,194 @@
 :global([data-theme="dark"]) .faqAnswer {
   color: var(--text-secondary, #94a3b8);
 }
+
+/* ──────────────── FILTER BAR & CATEGORY PILLS ──────────────── */
+.filterBar {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 980px;
+  margin: 0 auto 28px;
+  padding: 18px;
+  border-radius: 20px;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--card-border, #e2e8f0);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+
+.filterControlsRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) 180px 220px auto;
+  gap: 12px;
+  align-items: center;
+}
+
+@media (max-width: 860px) {
+  .filterControlsRow {
+    grid-template-columns: 1fr 1fr;
+  }
+  .filterControlsRow > div:first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 520px) {
+  .filterControlsRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+.searchBox {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 14px;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 12px 14px 12px 42px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #0f172a;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.searchInput:focus {
+  background: #ffffff;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.filterSelect {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #1e293b;
+  font-size: 14px;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.filterSelect:focus {
+  border-color: #3b82f6;
+}
+
+.resetBtn {
+  padding: 12px 16px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.resetBtn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+/* Category Quick Pills */
+.categoryPillsRow {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 6px;
+  scrollbar-width: none;
+}
+
+.categoryPillsRow::-webkit-scrollbar {
+  display: none;
+}
+
+.categoryPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.categoryPill:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.categoryPillActive {
+  background: #3b82f6;
+  border-color: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.filterMetaRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #64748b;
+  padding-top: 6px;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* Empty State */
+.emptyState {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 56px 20px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.emptyStateTitle {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.emptyStateDesc {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+  max-width: 440px;
+  line-height: 1.5;
+}
+

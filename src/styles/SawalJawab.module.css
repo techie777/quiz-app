@@ -177,6 +177,26 @@
   transform: scale(1.1);
 }
 
+.reactionBtn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f59e0b; /* orange for like */
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.reactionBtn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+
 :global([data-theme='light']) .actionBtn {
   background: rgba(0, 0, 0, 0.05);
   border-color: rgba(0, 0, 0, 0.05);

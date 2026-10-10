@@ -15,7 +15,7 @@ export default function TrueFalsePage() {
   // Global & Persisted Preferences
   const [language, setLanguage] = useState("EN"); // "EN" or "HI"
   const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
-  const [mode, setMode] = useState("all"); // "all", "random", "daily"
+  const [mode, setMode] = useState("all"); // "all", "random", "daily", "speed"
   const [isCategorySheetOpen, setIsCategorySheetOpen] = useState(false);
 
   // Deck & State
@@ -100,7 +100,7 @@ export default function TrueFalsePage() {
         if (selectedCategoryIds.length > 0) {
           url += `&categories=${selectedCategoryIds.join(",")}`;
         }
-        if (mode === "random") {
+        if (mode === "random" || mode === "speed") {
           url += `&seed=${Date.now()}`;
         }
 
@@ -185,6 +185,24 @@ export default function TrueFalsePage() {
         setMaxStreak((m) => Math.max(m, next));
         return next;
       });
+      // Reward coins for correct answer in speed mode
+      if (mode === "speed") {
+        // Claim 10 coins via wallet API
+        (async () => {
+          try {
+            const res = await fetch("/api/wallet/claim", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ coins: 10, reason: "True/False correct answer" }),
+            });
+            if (res.ok) {
+              toast.success("+10 Coins earned!");
+            }
+          } catch (e) {
+            console.error("Coin claim failed", e);
+          }
+        })();
+      }
     } else {
       setStreak(0);
     }
@@ -266,6 +284,33 @@ export default function TrueFalsePage() {
     deck.length || SESSION_LIMIT,
     SESSION_LIMIT
   )}`;
+  // Timer for speed mode
+  const [timeLeft, setTimeLeft] = useState(60);
+  const timerRef = React.useRef(null);
+  React.useEffect(() => {
+    if (mode !== "speed") return;
+    // Start timer on first question load
+    if (deck.length > 0 && currentIndex === 0 && !timerRef.current) {
+      setTimeLeft(60);
+      timerRef.current = setInterval(() => {
+        setTimeLeft((t) => {
+          if (t <= 1) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+            setIsSessionComplete(true);
+            return 0;
+          }
+          return t - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [mode, deck, currentIndex]);
 
   const isHindi = language === "HI";
 
@@ -517,16 +562,21 @@ export default function TrueFalsePage() {
                   </button>
                 </div>
               ) : (
-                /* Back side controls: Small sleek Next Button */
-                <button
-                  type="button"
-                  className={styles.smallNextBtn}
-                  onClick={() => next("right")}
-                  aria-label="Next question"
-                >
-                  <span>{isHindi ? "अगला प्रश्न" : "Next"}</span>
-                  <ArrowRight size={16} />
-                </button>
+                // Back side controls: Show timer if speed mode
+                <div className={styles.controlsSide}>
+                  {mode === "speed" && (
+                    <div className={styles.timerBadge}>⏱ {timeLeft}s left</div>
+                  )}
+                  <button
+                    type="button"
+                    className={styles.smallNextBtn}
+                    onClick={() => next("right")}
+                    aria-label="Next question"
+                  >
+                    <span>{isHindi ? "अगला प्रश्न" : "Next"}</span>
+                    <ArrowRight size={16} />
+                  </button>
+                </div>
               )}
             </div>
           )}

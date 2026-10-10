@@ -39,8 +39,8 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET requests and external requests
-  if (request.method !== 'GET' || url.origin !== self.location.origin) {
+  // Skip non-GET requests and external requests, or Next.js build chunks
+  if (request.method !== 'GET' || url.origin !== self.location.origin || url.pathname.startsWith('/_next/')) {
     return;
   }
 
