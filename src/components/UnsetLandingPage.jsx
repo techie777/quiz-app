@@ -262,6 +262,63 @@ export default function UnsetLandingPage() {
         </div>
       </section>
 
+      {/* ── LIVE PLAY WITH FRIENDS SHOWCASE CARD (1v1 Live Battle) ── */}
+      <section className="w-full max-w-4xl mx-auto mb-6 sm:mb-8">
+        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl p-4 sm:p-5.5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white shadow-xl shadow-indigo-950/20 border border-indigo-500/30">
+          {/* Ambient Glow */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-pink-500/15 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6">
+            {/* Left Info Column */}
+            <div className="flex items-start sm:items-center gap-3.5 sm:gap-4 text-left w-full md:w-auto">
+              <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-0.5 flex-shrink-0 shadow-lg shadow-indigo-500/30">
+                <div className="w-full h-full bg-slate-950/90 rounded-[14px] flex items-center justify-center text-xl sm:text-2xl">
+                  ⚔️
+                </div>
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] sm:text-xs font-black uppercase tracking-wider">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
+                    LIVE PLAY
+                  </span>
+                  <span className="text-[11px] font-bold text-indigo-300 hidden sm:inline">
+                    {isHindi ? "दोस्तों के साथ लाइव" : "With Friends"}
+                  </span>
+                </div>
+                <h3 className="text-base sm:text-lg font-black text-white tracking-tight">
+                  {isHindi ? "1v1 लाइव मुकाबला · दोस्तों को चुनौती दें" : "1v1 Live Quiz Battle with Friends"}
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-300 font-medium line-clamp-2 mt-0.5 max-w-xl">
+                  {isHindi
+                    ? "रूम कोड या लिंक शेयर करके रीयल-टाइम में खेलें, लाइव चैट करें और देखें कौन है असली GK चैंपियन!"
+                    : "Create a room or join with a code for real-time live GK battles and live chat."}
+                </p>
+              </div>
+            </div>
+
+            {/* Right Action Buttons */}
+            <div className="flex items-center gap-2.5 w-full md:w-auto flex-shrink-0 justify-stretch sm:justify-end">
+              <Link
+                href="/arena?battle=true"
+                className="flex-1 md:flex-initial inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 hover:from-indigo-400 hover:to-pink-400 text-white font-black text-xs sm:text-sm shadow-md shadow-indigo-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all whitespace-nowrap"
+              >
+                <span>⚔️</span>
+                <span>{isHindi ? "लाइव रूम बनाएं" : "Create Room"}</span>
+              </Link>
+              <Link
+                href="/arena?battle=true&tab=join"
+                className="flex-1 md:flex-initial inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm border border-white/20 hover:border-white/40 active:scale-[0.98] transition-all whitespace-nowrap"
+              >
+                <span>🚀</span>
+                <span>{isHindi ? "कोड से जुड़ें" : "Join Code"}</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── MOBILE VIEW: 2×2 TILE GRID (< 768px) ── */}
       <section className="w-full max-w-lg mx-auto mb-6 block md:hidden">
         <div className="grid grid-cols-2 gap-3">

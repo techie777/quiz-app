@@ -66,6 +66,7 @@ export default function Footer() {
     pathname?.startsWith("/quiz-arena") ||
     pathname?.startsWith("/play") ||
     pathname?.startsWith("/live/") ||
+    pathname?.startsWith("/t/") ||
     pathname?.startsWith("/my-favourites") ||
     pathname?.startsWith("/leaderboard") ||
     pathname?.startsWith("/mock-tests") ||
@@ -155,6 +156,10 @@ export default function Footer() {
           <span className={styles.slimDot}>·</span>
           <Link href="/donate" className={styles.slimLink}>
             {isHindi ? "समर्थन करें" : "Support"}
+          </Link>
+          <span className={styles.slimDot}>·</span>
+          <Link href="/institute/create-test" className={styles.slimLink} title="Online Test Conduction & Proctoring Platform">
+            {isHindi ? "बिज़नेस टूल (Business Tool)" : "Business Tool"}
           </Link>
         </div>
       </footer>
@@ -263,6 +268,11 @@ export default function Footer() {
               <li>
                 <Link href="/blog" className={styles.navLink}>
                   {isHindi ? "ज्ञान ब्लॉग" : "Knowledge Blog"}
+                </Link>
+              </li>
+              <li>
+                <Link href="/institute/create-test" className={styles.navLink} title="Online Test Conduction & Proctoring Platform for Coaching Institutes, Schools & Colleges">
+                  {isHindi ? "बिज़नेस टूल (Business Tool)" : "Business Tool"}
                 </Link>
               </li>
             </ul>

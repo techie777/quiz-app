@@ -21,11 +21,17 @@ export default function AdminAccountsPage() {
   const [users, setUsers] = useState([]);
   const [viewType, setViewType] = useState(initialType);
   const [userSearch, setUserSearch] = useState("");
+  const [userPage, setUserPage] = useState(1);
+  const [userPageSize, setUserPageSize] = useState(25);
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ username: "", password: "", displayName: "" });
   const [msg, setMsg] = useState("");
   const [permEditor, setPermEditor] = useState({ id: null, perms: {} });
   const [masterEditor, setMasterEditor] = useState({ id: null, username: "", currentPassword: "", password: "" });
+  const [resetPwDialog, setResetPwDialog] = useState(null); // { id, username }
+  const [newPasswordVal, setNewPasswordVal] = useState("");
+  const [editUserDialog, setEditUserDialog] = useState({ isOpen: false, user: null, name: "", pin: "" });
+  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: "", message: "", confirmText: "Confirm", isDanger: true, onConfirm: null });
 
   const PERMISSION_FIELDS = [
     { key: "categories", label: "Categories" },
@@ -90,6 +96,21 @@ export default function AdminAccountsPage() {
     });
   }, [users, userSearch]);
 
+  const totalUserPages = useMemo(() => {
+    return Math.max(1, Math.ceil(filteredUsers.length / userPageSize));
+  }, [filteredUsers.length, userPageSize]);
+
+  const paginatedUsers = useMemo(() => {
+    const start = (userPage - 1) * userPageSize;
+    return filteredUsers.slice(start, start + userPageSize);
+  }, [filteredUsers, userPage, userPageSize]);
+
+  // Reset to page 1 on search change
+  const handleUserSearchChange = (val) => {
+    setUserSearch(val);
+    setUserPage(1);
+  };
+
   const proUsersCount = useMemo(() => users.filter((u) => u.isPro).length, [users]);
 
   const handleCreate = async () => {
@@ -121,22 +142,52 @@ export default function AdminAccountsPage() {
     toast.success(`Account status updated to ${status}`);
   };
 
-  const handleResetPassword = async (id) => {
-    const newPw = prompt("Enter new password:");
-    if (!newPw) return;
-    await fetch(`/api/admin/accounts/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ newPassword: newPw }),
-    });
-    toast.success("Password reset successfully!");
+  const handleResetPassword = async (id, username) => {
+    setResetPwDialog({ id, username });
+    setNewPasswordVal("");
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm("Delete this admin account?")) return;
-    await fetch(`/api/admin/accounts/${id}`, { method: "DELETE" });
-    fetchAccounts();
-    toast.success("Account deleted!");
+  const submitResetPassword = async () => {
+    if (!resetPwDialog?.id || !newPasswordVal.trim()) {
+      toast.error("Please enter a new password");
+      return;
+    }
+    try {
+      const res = await fetch(`/api/admin/accounts/${resetPwDialog.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newPassword: newPasswordVal.trim() }),
+      });
+      if (res.ok) {
+        toast.success("Password reset successfully!");
+        setResetPwDialog(null);
+        setNewPasswordVal("");
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || "Failed to reset password");
+      }
+    } catch {
+      toast.error("Network error resetting password");
+    }
+  };
+
+  const handleDelete = (id) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: "Delete Admin Account",
+      message: "Are you sure you want to delete this admin account permanently?",
+      confirmText: "Delete Account",
+      isDanger: true,
+      onConfirm: async () => {
+        const res = await fetch(`/api/admin/accounts/${id}`, { method: "DELETE" });
+        if (res.ok) {
+          fetchAccounts();
+          toast.success("Account deleted!");
+        } else {
+          toast.error("Failed to delete account");
+        }
+      }
+    });
   };
 
   const openPermissions = (acc) => {
@@ -155,51 +206,88 @@ export default function AdminAccountsPage() {
     toast.success("Permissions updated!");
   };
 
-  const handleEditUser = async (user) => {
-    const newName = prompt("Enter new name:", user.name || "");
-    const newPin = prompt("Enter new 4-digit PIN (optional):", user.pin || "");
-
-    if (newName === null && newPin === null) return;
-
-    const updates = {};
-    if (newName !== null) updates.name = newName;
-    if (newPin !== null && newPin.length === 4) updates.pin = newPin;
-
-    const res = await fetch(`/api/admin/users/${user.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updates),
+  const handleEditUser = (user) => {
+    setEditUserDialog({
+      isOpen: true,
+      user,
+      name: user.name || "",
+      pin: user.pin || ""
     });
-
-    if (res.ok) {
-      fetchUsers();
-      toast.success("User updated!");
-    } else alert("Failed to update user");
   };
 
-  const handleDeleteUser = async (id) => {
-    if (!confirm("Delete this user account permanently?")) return;
-    const res = await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
-    if (res.ok) {
-      fetchUsers();
-      toast.success("User deleted!");
-    } else alert("Failed to delete user");
+  const saveEditUser = async () => {
+    const { user, name, pin } = editUserDialog;
+    if (!user) return;
+    if (pin && pin.length !== 4 && !/^\d{4}$/.test(pin)) {
+      toast.error("PIN must be exactly 4 digits or left blank");
+      return;
+    }
+
+    const updates = { name };
+    if (pin) updates.pin = pin;
+
+    try {
+      const res = await fetch(`/api/admin/users/${user.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+
+      if (res.ok) {
+        setEditUserDialog({ isOpen: false, user: null, name: "", pin: "" });
+        fetchUsers();
+        toast.success("User profile updated!");
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.error || "Failed to update user");
+      }
+    } catch {
+      toast.error("Network error updating user");
+    }
   };
 
-  const handleTogglePro = async (user) => {
-    const isConfirm = confirm(`Are you sure you want to ${user.isPro ? 'REVOKE' : 'GRANT'} Pro access for ${user.email}?`);
-    if (!isConfirm) return;
-
-    const res = await fetch(`/api/admin/users/${user.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isPro: !user.isPro }),
+  const handleDeleteUser = (id) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: "Delete User Permanently",
+      message: "Are you sure you want to delete this student account permanently? All quiz attempts, coins, and analytics will be removed.",
+      confirmText: "Delete Student",
+      isDanger: true,
+      onConfirm: async () => {
+        const res = await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
+        if (res.ok) {
+          fetchUsers();
+          toast.success("User deleted successfully!");
+        } else {
+          toast.error("Failed to delete user");
+        }
+      }
     });
+  };
 
-    if (res.ok) {
-      fetchUsers();
-      toast.success(user.isPro ? "Pro access revoked" : "Pro access granted!");
-    } else alert("Failed to update Pro status");
+  const handleTogglePro = (user) => {
+    const action = user.isPro ? "REVOKE" : "GRANT";
+    setConfirmDialog({
+      isOpen: true,
+      title: `${action === "GRANT" ? "Grant" : "Revoke"} Pro Membership`,
+      message: `Are you sure you want to ${action.toLowerCase()} Pro access for ${user.email || user.name}?`,
+      confirmText: `${action} Access`,
+      isDanger: user.isPro,
+      onConfirm: async () => {
+        const res = await fetch(`/api/admin/users/${user.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isPro: !user.isPro }),
+        });
+
+        if (res.ok) {
+          fetchUsers();
+          toast.success(user.isPro ? "Pro access revoked" : "Pro access granted!");
+        } else {
+          toast.error("Failed to update Pro status");
+        }
+      }
+    });
   };
 
   if (adminUser?.role !== "master") {
@@ -313,7 +401,7 @@ export default function AdminAccountsPage() {
                       {acc.status === "paused" && (
                         <button className={styles.actionBtn} onClick={() => handleStatusChange(acc.id, "active")}>▶ Activate</button>
                       )}
-                      <button className={styles.actionBtn} onClick={() => handleResetPassword(acc.id)}>🔑 Reset PW</button>
+                      <button className={styles.actionBtn} onClick={() => handleResetPassword(acc.id, acc.displayName || acc.username)}>🔑 Reset PW</button>
                       <button className={styles.deleteBtn} onClick={() => handleDelete(acc.id)}>🗑️ Delete</button>
                     </div>
                   )}
@@ -349,21 +437,47 @@ export default function AdminAccountsPage() {
           </div>
         </>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-          {/* Search Filter for User Accounts */}
-          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-            <input
-              type="text"
-              className={styles.input}
-              style={{ width: "100%", padding: "12px 16px", borderRadius: "12px" }}
-              placeholder="🔍 Search users by Unique User ID (e.g. USR-8F4A21), Name, or Email..."
-              value={userSearch}
-              onChange={(e) => setUserSearch(e.target.value)}
-            />
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          {/* Search Filter & Pagination Header */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ flex: 1, minWidth: "260px" }}>
+              <input
+                type="text"
+                className={styles.input}
+                style={{ width: "100%", padding: "12px 16px", borderRadius: "12px" }}
+                placeholder="🔍 Search users by Unique User ID (e.g. USR-8F4A21), Name, or Email..."
+                value={userSearch}
+                onChange={(e) => handleUserSearchChange(e.target.value)}
+              />
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)", fontWeight: 600 }}>
+                Rows per page:
+              </span>
+              <select
+                className={styles.input}
+                value={userPageSize}
+                onChange={(e) => {
+                  setUserPageSize(Number(e.target.value));
+                  setUserPage(1);
+                }}
+                style={{ padding: "8px 12px", borderRadius: "10px", fontWeight: 700, width: "auto" }}
+              >
+                <option value={15}>15</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+
+              <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)", fontWeight: 700 }}>
+                Showing {filteredUsers.length === 0 ? 0 : (userPage - 1) * userPageSize + 1}–{Math.min(filteredUsers.length, userPage * userPageSize)} of {filteredUsers.length}
+              </span>
+            </div>
           </div>
 
           <div className={styles.list}>
-            {filteredUsers.map((u) => {
+            {paginatedUsers.map((u) => {
               const displayId = getUserDisplayId(u);
               return (
                 <div key={u.id} className={styles.row}>
@@ -397,6 +511,219 @@ export default function AdminAccountsPage() {
               );
             })}
             {filteredUsers.length === 0 && <p className={styles.empty}>No matching users found.</p>}
+          </div>
+
+          {/* Pagination Controls */}
+          {filteredUsers.length > userPageSize && (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", padding: "14px 18px", background: "var(--card-bg)", border: "1px solid var(--card-border)", borderRadius: "16px", marginTop: "8px" }}>
+              <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)", fontWeight: 600 }}>
+                Page <strong>{userPage}</strong> of <strong>{totalUserPages}</strong> ({filteredUsers.length} total users)
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <button
+                  type="button"
+                  onClick={() => setUserPage(1)}
+                  disabled={userPage <= 1}
+                  className={styles.secondaryBtn}
+                  style={{ padding: "6px 12px", fontSize: "0.82rem", opacity: userPage <= 1 ? 0.4 : 1, cursor: userPage <= 1 ? "not-allowed" : "pointer" }}
+                >
+                  ⏮ First
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUserPage((p) => Math.max(1, p - 1))}
+                  disabled={userPage <= 1}
+                  className={styles.secondaryBtn}
+                  style={{ padding: "6px 14px", fontSize: "0.82rem", opacity: userPage <= 1 ? 0.4 : 1, cursor: userPage <= 1 ? "not-allowed" : "pointer" }}
+                >
+                  ◀ Previous
+                </button>
+                <div style={{ display: "flex", gap: "4px" }}>
+                  {Array.from({ length: Math.min(5, totalUserPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalUserPages <= 5) pageNum = i + 1;
+                    else if (userPage <= 3) pageNum = i + 1;
+                    else if (userPage >= totalUserPages - 2) pageNum = totalUserPages - 4 + i;
+                    else pageNum = userPage - 2 + i;
+
+                    return (
+                      <button
+                        key={pageNum}
+                        type="button"
+                        onClick={() => setUserPage(pageNum)}
+                        style={{
+                          width: "34px",
+                          height: "34px",
+                          borderRadius: "8px",
+                          border: userPage === pageNum ? "none" : "1px solid var(--card-border)",
+                          background: userPage === pageNum ? "var(--accent, #6366f1)" : "transparent",
+                          color: userPage === pageNum ? "#fff" : "var(--text-primary)",
+                          fontWeight: 700,
+                          fontSize: "0.82rem",
+                          cursor: "pointer",
+                        }}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setUserPage((p) => Math.min(totalUserPages, p + 1))}
+                  disabled={userPage >= totalUserPages}
+                  className={styles.secondaryBtn}
+                  style={{ padding: "6px 14px", fontSize: "0.82rem", opacity: userPage >= totalUserPages ? 0.4 : 1, cursor: userPage >= totalUserPages ? "not-allowed" : "pointer" }}
+                >
+                  Next ▶
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUserPage(totalUserPages)}
+                  disabled={userPage >= totalUserPages}
+                  className={styles.secondaryBtn}
+                  style={{ padding: "6px 12px", fontSize: "0.82rem", opacity: userPage >= totalUserPages ? 0.4 : 1, cursor: userPage >= totalUserPages ? "not-allowed" : "pointer" }}
+                >
+                  Last ⏭
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {editUserDialog.isOpen && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, padding: "20px" }}>
+          <div style={{ background: "var(--card-bg, #fff)", maxWidth: "460px", width: "100%", borderRadius: "20px", padding: "26px", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.3)", border: "1px solid var(--card-border, #e2e8f0)" }}>
+            <h3 style={{ fontSize: "1.2rem", fontWeight: 900, margin: "0 0 6px 0", color: "var(--text-primary)" }}>
+              ✏️ Edit Student Account
+            </h3>
+            <p style={{ fontSize: "13px", color: "var(--text-secondary)", margin: "0 0 18px 0" }}>
+              Update profile details for <strong>{editUserDialog.user?.email}</strong>
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginBottom: "20px" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "var(--text-secondary)", marginBottom: "6px" }}>Full Name</label>
+                <input
+                  type="text"
+                  value={editUserDialog.name}
+                  onChange={(e) => setEditUserDialog((prev) => ({ ...prev, name: e.target.value }))}
+                  className={styles.input}
+                  style={{ width: "100%", padding: "10px 14px", borderRadius: "10px" }}
+                  placeholder="Student name"
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "var(--text-secondary)", marginBottom: "6px" }}>4-Digit Login PIN (leave blank to keep current)</label>
+                <input
+                  type="text"
+                  maxLength={4}
+                  value={editUserDialog.pin}
+                  onChange={(e) => setEditUserDialog((prev) => ({ ...prev, pin: e.target.value.replace(/\D/g, "") }))}
+                  className={styles.input}
+                  style={{ width: "100%", padding: "10px 14px", borderRadius: "10px", letterSpacing: "2px", fontWeight: 800 }}
+                  placeholder="e.g. 1234"
+                />
+              </div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+              <button
+                type="button"
+                onClick={() => setEditUserDialog({ isOpen: false, user: null, name: "", pin: "" })}
+                className={styles.secondaryBtn}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={saveEditUser}
+                className={styles.primaryBtn}
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Dialog Modal */}
+      {confirmDialog.isOpen && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, padding: "20px" }}>
+          <div style={{ background: "var(--card-bg, #fff)", maxWidth: "440px", width: "100%", borderRadius: "20px", padding: "26px", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.3)", border: "1px solid var(--card-border, #e2e8f0)" }}>
+            <h3 style={{ fontSize: "1.2rem", fontWeight: 900, margin: "0 0 8px 0", color: confirmDialog.isDanger ? "#f43f5e" : "var(--text-primary)" }}>
+              {confirmDialog.title}
+            </h3>
+            <p style={{ fontSize: "14px", color: "var(--text-secondary)", margin: "0 0 20px 0", lineHeight: "1.5" }}>
+              {confirmDialog.message}
+            </p>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+              <button
+                type="button"
+                onClick={() => setConfirmDialog({ isOpen: false, title: "", message: "", confirmText: "", isDanger: false, onConfirm: null })}
+                className={styles.secondaryBtn}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirmDialog.onConfirm) confirmDialog.onConfirm();
+                  setConfirmDialog({ isOpen: false, title: "", message: "", confirmText: "", isDanger: false, onConfirm: null });
+                }}
+                style={{
+                  padding: "10px 18px",
+                  borderRadius: "10px",
+                  border: "none",
+                  background: confirmDialog.isDanger ? "#ef4444" : "var(--accent, #6366f1)",
+                  color: "#fff",
+                  fontWeight: 800,
+                  fontSize: "0.88rem",
+                  cursor: "pointer",
+                }}
+              >
+                {confirmDialog.confirmText}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* In-App Reset Password Modal */}
+      {resetPwDialog && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, padding: "20px" }}>
+          <div style={{ background: "var(--card-bg, #fff)", maxWidth: "420px", width: "100%", borderRadius: "16px", padding: "24px", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.2)", border: "1px solid var(--card-border, #e2e8f0)" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: 800, margin: "0 0 6px 0", color: "var(--text-primary, #0f172a)" }}>
+              Reset Password for {resetPwDialog.username}
+            </h3>
+            <p style={{ fontSize: "13px", color: "var(--text-secondary, #64748b)", margin: "0 0 16px 0" }}>
+              Enter a secure new password for this administrator account.
+            </p>
+            <input
+              type="password"
+              placeholder="Enter new password"
+              value={newPasswordVal}
+              onChange={(e) => setNewPasswordVal(e.target.value)}
+              className={styles.input}
+              style={{ width: "100%", padding: "10px 14px", borderRadius: "10px", marginBottom: "16px" }}
+              autoFocus
+            />
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+              <button
+                type="button"
+                onClick={() => setResetPwDialog(null)}
+                style={{ padding: "8px 16px", borderRadius: "8px", border: "1px solid var(--card-border, #e2e8f0)", background: "transparent", color: "var(--text-primary, #0f172a)", fontWeight: 600, cursor: "pointer" }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={submitResetPassword}
+                style={{ padding: "8px 18px", borderRadius: "8px", border: "none", background: "var(--accent, #6366f1)", color: "#fff", fontWeight: 700, cursor: "pointer" }}
+              >
+                Update Password
+              </button>
+            </div>
           </div>
         </div>
       )}

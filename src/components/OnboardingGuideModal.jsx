@@ -17,6 +17,9 @@ import {
 import { useLanguage } from "@/context/LanguageContext";
 
 export default function OnboardingGuideModal({ isOpen, onClose }) {
+  if (!isOpen) return null;
+  if (typeof window !== "undefined" && window.location.pathname.startsWith("/live")) return null;
+
   const { isHindi } = useLanguage();
   const [currentSlide, setCurrentSlide] = useState(0);
 

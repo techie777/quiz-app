@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import styles from '@/styles/GovtExamManagement.module.css';
+import toast from 'react-hot-toast';
 
 export default function StudyBuilder() {
   const { id } = useParams();
@@ -15,6 +16,7 @@ export default function StudyBuilder() {
   
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
   const [isChapterModalOpen, setIsChapterModalOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(null); // { type, id, name }
   
   const [subjectForm, setSubjectForm] = useState({ id: '', name: '', sortOrder: 0, materialId: id });
   const [chapterForm, setChapterForm] = useState({ id: '', title: '', slug: '', content: '', videoId: '', sortOrder: 0, subjectId: '', practiceId: '', readTime: '15 Mins', endQuiz: '' });
@@ -29,19 +31,18 @@ export default function StudyBuilder() {
     try {
       const res = await fetch(`/api/admin/study-hierarchy?materialId=${id}`);
       if (res.ok) setSubjects(await res.json());
+      else toast.error("Failed to load study hierarchy");
     } catch (e) {
       console.error(e);
+      toast.error("Network error fetching hierarchy");
     } finally {
       setLoading(false);
     }
   };
 
   const fetchMockPapers = async () => {
-    // We fetch a flat list of basic paper details to link to chapters
     try {
       const res = await fetch('/api/admin/papers/basic'); 
-      // If we don't have this, we degrade gracefully and just don't show the dropdown.
-      // But we better query all papers. Let's make an ad-hoc query here or just leave it empty if API is missing.
       if (res.ok) setMockPapers(await res.json());
     } catch (e) {
       console.log('No paper API yet, dropdown will be empty');
@@ -56,26 +57,35 @@ export default function StudyBuilder() {
         body: JSON.stringify({ action, payload })
       });
       if (res.ok) {
+        toast.success("Saved successfully!");
         setIsSubjectModalOpen(false);
         setIsChapterModalOpen(false);
+        setConfirmDelete(null);
         fetchData();
       } else {
-        alert("Action failed");
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.error || "Action failed");
       }
     } catch (e) {
       console.error(e);
+      toast.error("Network error performing action");
     }
   };
 
-  const deleteSubject = (subId) => {
-    if (confirm('Delete this Subject and ALL its chapters?')) {
-      handleAction('deleteSubject', { id: subId });
-    }
+  const deleteSubject = (subId, subName) => {
+    setConfirmDelete({ type: 'subject', id: subId, name: subName || 'this Subject' });
   };
 
-  const deleteChapter = (chId) => {
-    if (confirm('Delete this Chapter?')) {
-      handleAction('deleteChapter', { id: chId });
+  const deleteChapter = (chId, chTitle) => {
+    setConfirmDelete({ type: 'chapter', id: chId, name: chTitle || 'this Chapter' });
+  };
+
+  const executeConfirmedDelete = () => {
+    if (!confirmDelete) return;
+    if (confirmDelete.type === 'subject') {
+      handleAction('deleteSubject', { id: confirmDelete.id });
+    } else {
+      handleAction('deleteChapter', { id: confirmDelete.id });
     }
   };
 
@@ -340,6 +350,32 @@ export default function StudyBuilder() {
                    <button type="submit" className={styles.saveBtn}>Save Chapter & Quiz Content</button>
                 </div>
              </form>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {confirmDelete && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent} style={{ maxWidth: "420px", textAlign: "center" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: 800, marginBottom: "8px", color: "var(--text-primary)" }}>
+              Delete {confirmDelete.type === "subject" ? "Subject" : "Chapter"}?
+            </h3>
+            <p style={{ color: "var(--text-secondary)", fontSize: "14px", marginBottom: "20px" }}>
+              Are you sure you want to delete <strong>&ldquo;{confirmDelete.name}&rdquo;</strong>?
+              {confirmDelete.type === "subject" && " This will also delete all chapters inside it!"}
+            </p>
+            <div style={{ display: "flex", justifyContent: "center", gap: "12px" }}>
+              <button onClick={() => setConfirmDelete(null)} className={styles.cancelBtn}>
+                Cancel
+              </button>
+              <button
+                onClick={executeConfirmedDelete}
+                style={{ background: "#dc2626", color: "#fff", border: "none", padding: "8px 18px", borderRadius: "8px", fontWeight: 700, cursor: "pointer" }}
+              >
+                Confirm Delete
+              </button>
+            </div>
           </div>
         </div>
       )}

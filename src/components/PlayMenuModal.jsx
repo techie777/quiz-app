@@ -15,6 +15,8 @@ import {
   X,
   ChevronRight,
   Dices,
+  Swords,
+  Users,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { useLanguage } from "@/context/LanguageContext";
@@ -32,9 +34,26 @@ export default function PlayMenuModal({ isOpen, onClose }) {
   const playFeatures = useMemo(
     () => [
       {
-        id: "play-quiz",
+        id: "live-battle",
         category: "quizzes",
         keyNumber: "1",
+        title: isHindi ? "1v1 लाइव मुकाबला" : "1v1 Live Battle",
+        badge: isHindi ? "दोस्तों के साथ" : "Live Friends",
+        badgeStyle:
+          "bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-2xs font-bold",
+        desc: isHindi
+          ? "दोस्तों के साथ रीयल-टाइम लाइव क्विज़ मुकाबला"
+          : "Real-time live battle with friends",
+        href: "/arena?battle=true",
+        emoji: "⚔️",
+        icon: Swords,
+        image: "/images/play-menu/daily-quiz.webp",
+        actionText: isHindi ? "लाइव खेलें" : "Play Live",
+      },
+      {
+        id: "play-quiz",
+        category: "quizzes",
+        keyNumber: "2",
         title: isHindi ? "क्विज़ खेलें" : "Play Quiz",
         badge: isHindi ? "1000+ क्विज़" : "1000+ Quizzes",
         badgeStyle:
@@ -51,7 +70,7 @@ export default function PlayMenuModal({ isOpen, onClose }) {
       {
         id: "daily-quiz",
         category: "quizzes",
-        keyNumber: "2",
+        keyNumber: "3",
         title: isHindi ? "दैनिक क्विज़" : "Daily Quiz",
         badge: isHindi ? "रोज़ नया" : "Daily Streak",
         badgeStyle:
@@ -68,7 +87,7 @@ export default function PlayMenuModal({ isOpen, onClose }) {
       {
         id: "current-affairs",
         category: "learn",
-        keyNumber: "3",
+        keyNumber: "4",
         title: isHindi ? "दैनिक करेंट अफेयर्स" : "Current Affairs",
         badge: isHindi ? "आज का GK" : "Today's News",
         badgeStyle:
@@ -85,7 +104,7 @@ export default function PlayMenuModal({ isOpen, onClose }) {
       {
         id: "fun-facts",
         category: "learn",
-        keyNumber: "4",
+        keyNumber: "5",
         title: isHindi ? "रोचक तथ्य" : "Fun Facts",
         badge: isHindi ? "3D कार्ड्स" : "3D Flip",
         badgeStyle:
@@ -102,7 +121,7 @@ export default function PlayMenuModal({ isOpen, onClose }) {
       {
         id: "true-false",
         category: "quizzes",
-        keyNumber: "5",
+        keyNumber: "6",
         title: isHindi ? "सही या गलत" : "True & False",
         badge: isHindi ? "रैपिड फायर" : "Rapid Fire",
         badgeStyle:
@@ -119,7 +138,7 @@ export default function PlayMenuModal({ isOpen, onClose }) {
       {
         id: "my-books",
         category: "learn",
-        keyNumber: "6",
+        keyNumber: "7",
         title: isHindi ? "मेरी पुस्तकें" : "My Books",
         badge: isHindi ? "ई-बुक्स" : "E-Books",
         badgeStyle:

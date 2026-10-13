@@ -30,10 +30,26 @@ export async function GET(request) {
       });
       return NextResponse.json(packages);
     } else if (type === "orders") {
-      const orders = await prisma.courseOrder.findMany({
-        orderBy: { createdAt: "desc" },
+      const [orders, dispatchSettings] = await Promise.all([
+        prisma.courseOrder.findMany({
+          orderBy: { createdAt: "desc" },
+        }),
+        prisma.setting.findMany({
+          where: { key: { startsWith: "orderDispatch:" } },
+        }),
+      ]);
+      const dispatchMap = {};
+      dispatchSettings.forEach((s) => {
+        try {
+          const orderId = s.key.replace("orderDispatch:", "");
+          dispatchMap[orderId] = JSON.parse(s.value);
+        } catch {}
       });
-      return NextResponse.json(orders);
+      const mergedOrders = orders.map((o) => ({
+        ...o,
+        dispatch: dispatchMap[o.id] || null,
+      }));
+      return NextResponse.json(mergedOrders);
     } else if (type === "promos") {
       const promos = await prisma.promoCode.findMany({
         orderBy: { createdAt: "desc" },
@@ -116,6 +132,25 @@ export async function POST(request) {
         data: { status },
       });
       return NextResponse.json(order);
+    } else if (type === "order_dispatch_update") {
+      const { id, status, courierPartner, trackingNumber, dispatchDate, notes } = body.data;
+      const order = await prisma.courseOrder.update({
+        where: { id },
+        data: { status: status || "SHIPPED" },
+      });
+      const dispatchData = {
+        courierPartner: courierPartner || "Delhivery",
+        trackingNumber: trackingNumber || "",
+        dispatchDate: dispatchDate || new Date().toISOString(),
+        notes: notes || "",
+        updatedAt: new Date().toISOString(),
+      };
+      await prisma.setting.upsert({
+        where: { key: `orderDispatch:${id}` },
+        create: { key: `orderDispatch:${id}`, value: JSON.stringify(dispatchData) },
+        update: { value: JSON.stringify(dispatchData) },
+      });
+      return NextResponse.json({ ...order, dispatch: dispatchData });
     }
 
     return NextResponse.json({ error: "Invalid type" }, { status: 400 });

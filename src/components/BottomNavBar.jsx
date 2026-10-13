@@ -189,7 +189,7 @@ export default function BottomNavBar() {
   }
 
   // Hide during quiz play, timed exam, admin, or dedicated Quiz Arena 2-step wizard
-  const isQuizPlaying = pathname?.startsWith("/quiz") || pathname?.startsWith("/live");
+  const isQuizPlaying = pathname?.startsWith("/quiz") || pathname?.startsWith("/live") || pathname?.startsWith("/t/");
   const isTimedExam = pathname?.includes("/mock-tests/paper/");
   const isAdmin = pathname?.startsWith("/admin");
   const isArena = pathname?.startsWith("/arena");

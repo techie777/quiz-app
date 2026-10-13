@@ -108,10 +108,24 @@ export default function AdminDailyPage() {
   const [excelErrors, setExcelErrors] = useState([]);
 
   const typeMeta = useMemo(() => TYPES.find((t) => t.key === type) || TYPES[0], [type]);
-  const category = useMemo(
-    () => quizzes.find((q) => q.id === typeMeta.categoryId) || quizzes[0],
-    [quizzes, typeMeta.categoryId]
-  );
+  const category = useMemo(() => {
+    if (type === "daily-current-affairs") {
+      const match = (quizzes || []).find((q) => 
+        q.slug === "daily-current-affairs" || 
+        q.categoryClass?.includes("daily-current-affairs") || 
+        q.id === "65f1a2b3c4d5e6f7a8b9c0e1"
+      );
+      if (match) return match;
+    } else {
+      const match = (quizzes || []).find((q) => 
+        q.slug === "quiz-of-the-day" || 
+        q.categoryClass?.includes("quiz-of-the-day") || 
+        q.id === "65f1a2b3c4d5e6f7a8b9c0d9"
+      );
+      if (match) return match;
+    }
+    return (quizzes || []).find((q) => q.id === typeMeta.categoryId) || (quizzes || [])[0];
+  }, [quizzes, type, typeMeta.categoryId]);
 
   const questions = useMemo(() => {
     const qs = category?.questions || [];

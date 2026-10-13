@@ -3,11 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import styles from '@/styles/GovtExamManagement.module.css';
+import toast from 'react-hot-toast';
 
 export default function StudyMaterialManager() {
   const [materials, setMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   
   const [form, setForm] = useState({ id: '', name: '', slug: '', image: '', description: '', authors: 'Admin', alignedTo: '' });
 
@@ -19,9 +21,14 @@ export default function StudyMaterialManager() {
     setLoading(true);
     try {
       const res = await fetch('/api/admin/study-materials');
-      if (res.ok) setMaterials(await res.json());
+      if (res.ok) {
+        setMaterials(await res.json());
+      } else {
+        toast.error("Failed to load study materials");
+      }
     } catch (e) {
       console.error(e);
+      toast.error("Network error loading materials");
     } finally {
       setLoading(false);
     }
@@ -36,20 +43,33 @@ export default function StudyMaterialManager() {
         body: JSON.stringify(form)
       });
       if (res.ok) {
+        toast.success(form.id ? "FlexBook updated!" : "FlexBook created!");
         setIsModalOpen(false);
         fetchData();
       } else {
-        alert("Failed to save material");
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || "Failed to save material");
       }
     } catch (e) {
       console.error(e);
+      toast.error("Error saving FlexBook");
     }
   };
 
-  const deleteMaterial = async (id) => {
-    if (!confirm('Are you sure you want to delete this FlexBook? This will also delete all subjects and chapters inside it!')) return;
-    await fetch(`/api/admin/study-materials?id=${id}`, { method: 'DELETE' });
-    fetchData();
+  const confirmDeleteMaterial = async () => {
+    if (!deletingId) return;
+    try {
+      const res = await fetch(`/api/admin/study-materials?id=${deletingId}`, { method: 'DELETE' });
+      if (res.ok) {
+        toast.success("FlexBook deleted");
+        setDeletingId(null);
+        fetchData();
+      } else {
+        toast.error("Failed to delete FlexBook");
+      }
+    } catch {
+      toast.error("Network error deleting FlexBook");
+    }
   };
 
   return (
@@ -61,7 +81,7 @@ export default function StudyMaterialManager() {
         </div>
       </header>
 
-      <div className="mb-4 flex justify-end">
+      <div style={{ marginBottom: "16px", display: "flex", justifyContent: "flex-end" }}>
          <button 
             className={styles.addBtn}
             onClick={() => {
@@ -74,7 +94,9 @@ export default function StudyMaterialManager() {
       </div>
 
       {loading ? (
-        <div className="p-10 text-center text-slate-500 font-bold">Loading Library...</div>
+        <div style={{ padding: "40px", textAlign: "center", color: "var(--text-secondary, #64748b)", fontWeight: 700 }}>
+          Loading Library...
+        </div>
       ) : (
          <div className={styles.tableContainer}>
             <table className={styles.table}>
@@ -89,16 +111,16 @@ export default function StudyMaterialManager() {
                <tbody>
                   {materials.map(mat => (
                      <tr key={mat.id}>
-                        <td><strong>{mat.name}</strong><br/><small className="text-slate-400">/{mat.slug}</small></td>
+                        <td><strong>{mat.name}</strong><br/><small style={{ opacity: 0.6 }}>/{mat.slug}</small></td>
                         <td>{mat.alignedTo || 'Any'}</td>
                         <td>{mat._count?.subjects || 0}</td>
                         <td>
-                           <div className="flex gap-2">
-                             <Link href={`/admin/study-material/${mat.id}`} className="bg-[#059669] hover:bg-[#047857] text-white px-3 py-1 rounded transition">
+                           <div style={{ display: "flex", gap: "8px" }}>
+                             <Link href={`/admin/study-material/${mat.id}`} style={{ background: "#059669", color: "#fff", padding: "4px 12px", borderRadius: "6px", textDecoration: "none", fontSize: "13px", fontWeight: 700 }}>
                                Manage Content
                              </Link>
                              <button 
-                                className="text-blue-600 hover:bg-blue-50 px-3 py-1 rounded transition"
+                                style={{ color: "#2563eb", background: "rgba(37, 99, 235, 0.1)", border: "none", padding: "4px 10px", borderRadius: "6px", cursor: "pointer", fontWeight: 600, fontSize: "13px" }}
                                 onClick={() => {
                                    setForm(mat);
                                    setIsModalOpen(true);
@@ -106,7 +128,10 @@ export default function StudyMaterialManager() {
                              >
                                Settings
                              </button>
-                             <button className="text-red-600 hover:bg-red-50 px-3 py-1 rounded transition" onClick={() => deleteMaterial(mat.id)}>
+                             <button 
+                                style={{ color: "#dc2626", background: "rgba(220, 38, 38, 0.1)", border: "none", padding: "4px 10px", borderRadius: "6px", cursor: "pointer", fontWeight: 600, fontSize: "13px" }}
+                                onClick={() => setDeletingId(mat.id)}
+                             >
                                Delete
                              </button>
                            </div>
@@ -124,7 +149,7 @@ export default function StudyMaterialManager() {
           <div className={styles.modalContent} style={{ maxWidth: '600px' }}>
              <h2 className={styles.modalTitle}>{form.id ? "Edit FlexBook Info" : "Create New FlexBook"}</h2>
              <form onSubmit={saveMaterial}>
-                <div className="grid grid-cols-2 gap-4 mb-4">
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px" }}>
                   <div className={styles.formGroup}>
                      <label>Book Title</label>
                      <input type="text" value={form.name} onChange={e => setForm(prev => ({...prev, name: e.target.value}))} required className={styles.input} />
@@ -134,7 +159,7 @@ export default function StudyMaterialManager() {
                      <input type="text" value={form.slug} onChange={e => setForm(prev => ({...prev, slug: e.target.value}))} required className={styles.input} />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4 mb-4">
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px" }}>
                   <div className={styles.formGroup}>
                      <label>Authors</label>
                      <input type="text" value={form.authors} onChange={e => setForm(prev => ({...prev, authors: e.target.value}))} className={styles.input} />
@@ -162,6 +187,27 @@ export default function StudyMaterialManager() {
         </div>
       )}
 
+      {/* Delete Confirmation In-App Modal */}
+      {deletingId && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent} style={{ maxWidth: '420px', textAlign: 'center' }}>
+            <h3 style={{ fontSize: "18px", fontWeight: 800, marginBottom: "8px", color: "var(--text-primary)" }}>
+              Delete FlexBook?
+            </h3>
+            <p style={{ color: "var(--text-secondary)", fontSize: "14px", marginBottom: "20px" }}>
+              Are you sure? This will delete this FlexBook along with all subjects and chapters inside it.
+            </p>
+            <div style={{ display: "flex", justifyContent: "center", gap: "12px" }}>
+              <button onClick={() => setDeletingId(null)} className={styles.cancelBtn}>
+                Cancel
+              </button>
+              <button onClick={confirmDeleteMaterial} style={{ background: "#dc2626", color: "#fff", border: "none", padding: "8px 18px", borderRadius: "8px", fontWeight: 700, cursor: "pointer" }}>
+                Confirm Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

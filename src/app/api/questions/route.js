@@ -12,8 +12,25 @@ export async function GET(request) {
 
   const { searchParams } = new URL(request.url);
   const categoryId = searchParams.get("categoryId");
+  const isMongoId = (val) => typeof val === "string" && val.length === 24 && /^[0-9a-fA-F]{24}$/.test(val);
+  
   const where = {};
-  if (categoryId) where.categoryId = categoryId;
+  if (categoryId) {
+    // Find category to resolve slug and include any subcategories
+    const cat = await prisma.category.findFirst({
+      where: isMongoId(categoryId) ? { OR: [{ id: categoryId }, { slug: categoryId }] } : { slug: categoryId },
+      include: { subCategories: { select: { id: true } } }
+    });
+
+    if (cat) {
+      const targetIds = [cat.id, ...(cat.subCategories || []).map(s => s.id)];
+      where.categoryId = { in: targetIds };
+    } else if (isMongoId(categoryId)) {
+      where.categoryId = categoryId;
+    } else {
+      where.categoryId = "_none_";
+    }
+  }
 
   // Hard cap to reduce scraping surface
   const take = Math.min(parseInt(searchParams.get("limit") || "200", 10) || 200, 200);
@@ -26,7 +43,11 @@ export async function GET(request) {
     skip,
   });
   return NextResponse.json(
-    questions.map((q) => ({ ...q, options: safeJsonParse(q.options) }))
+    questions.map((q) => ({
+      ...q,
+      options: safeJsonParse(q.options) || [],
+      optionsHi: safeJsonParse(q.optionsHi) || []
+    }))
   );
 }
 

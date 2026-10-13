@@ -5,6 +5,7 @@ import { Languages } from "lucide-react";
 
 export default function LanguageConfirmModal({ isOpen, onConfirm }) {
   if (!isOpen) return null;
+  if (typeof window !== "undefined" && window.location.pathname.startsWith("/live")) return null;
 
   return (
     <div

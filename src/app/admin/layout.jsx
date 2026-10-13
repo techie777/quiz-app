@@ -37,6 +37,7 @@ const NAV_SECTIONS = [
       { href: "/admin/mock-tests-manager", label: "Mock Tests", icon: "📝", perm: "mockTestsManager" },
       { href: "/admin/study-material", label: "Study Materials", icon: "📚", perm: "studyMaterial" },
       { href: "/admin/career-guides", label: "Career Guides", icon: "🧭", perm: "careerGuides" },
+      { href: "/admin/career-categories", label: "Career Categories", icon: "🗂️", perm: "careerGuides" },
       { href: "/admin/book-my-course", label: "Courses", icon: "🎓", perm: "bookMyCourse" },
     ],
   },
@@ -69,6 +70,7 @@ const NAV_SECTIONS = [
     title: "System & Ops",
     icon: "⚙️",
     items: [
+      { href: "/admin/navigation", label: "Navigation Links", icon: "🧭", perm: "settings" },
       { href: "/admin/pending", label: "Approvals", icon: "📝", perm: "pending" },
       { href: "/admin/accounts", label: "Admin Staff", icon: "👥", perm: "accounts" },
       { href: "/admin/accounts?type=user", label: "User Accounts", icon: "👤", perm: "users" },

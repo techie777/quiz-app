@@ -21,6 +21,7 @@ import CategoryCard from "@/components/CategoryCard";
 import UnifiedPaywallModal from "@/components/UnifiedPaywallModal";
 import StickyPaywallCTA from "@/components/StickyPaywallCTA";
 import ProBannerStrip from "@/components/monetization/ProBannerStrip";
+import ContextualLoader from "@/components/ContextualLoader";
 import { useEntitlement } from "@/context/EntitlementContext";
 import ArenaClient from "@/app/arena/ArenaClient";
 import CategoryBreadcrumbs from "@/components/category/CategoryBreadcrumbs";
@@ -777,13 +778,12 @@ export default function CategorySetsPage() {
   if (loading) {
     return (
       <main className={styles.page}>
-        <div className={styles.skeletonPage}>
-          <div className={`${styles.skeletonHeader} ${styles.shimmer}`}></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className={`${styles.skeletonCard} ${styles.shimmer}`}></div>
-            ))}
-          </div>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] p-4">
+          <ContextualLoader 
+            type="subjects" 
+            message={isHindi ? "विषय व प्रश्न लोड हो रहे हैं..." : "Loading Subject & Questions..."}
+            subMessage={isHindi ? "सर्वश्रेष्ठ क्विज़ सेट्स तैयार किए जा रहे हैं..." : "Preparing high quality quiz sets for you..."}
+          />
         </div>
       </main>
     );
@@ -831,25 +831,25 @@ export default function CategorySetsPage() {
           className="mb-5 pt-1"
         />
 
-        {/* Step 3: Clean Two-Tab Switcher (Standard Sets | Quiz Arena) */}
+        {/* Step 3: Clean Multi-Option Switcher (Standard Sets | Quiz Arena | 1v1 Live Battle) */}
         <div className="flex flex-col items-center justify-center mb-6">
-          <div className="inline-flex p-1.5 rounded-2xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/90 dark:border-slate-700 shadow-2xs">
+          <div className="inline-flex p-1.5 rounded-2xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/90 dark:border-slate-700 shadow-2xs gap-1 flex-wrap justify-center">
             <button
               type="button"
               onClick={() => setActiveLayer("standard")}
-              className={`flex items-center gap-2 px-5 sm:px-6 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${
+              className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer ${
                 activeLayer === "standard"
                   ? "bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-300 shadow-sm"
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
               }`}
             >
               <span>📚</span>
-              <span>{isHindi ? "स्टैंडर्ड सेट्स (20 प्रश्न)" : "Standard Sets (20 Qs)"}</span>
+              <span>{isHindi ? "स्टैंडर्ड सेट्स" : "Standard Sets"}</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveLayer("arena")}
-              className={`flex items-center gap-2 px-5 sm:px-6 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${
+              className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer ${
                 activeLayer === "arena"
                   ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-sm"
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
@@ -858,10 +858,19 @@ export default function CategorySetsPage() {
               <span>⚡</span>
               <span>{isHindi ? "GK टेस्ट इंजन" : "GK Test Engine"}</span>
             </button>
+            <button
+              type="button"
+              onClick={() => handleLivePlay(null)}
+              className="flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-sm hover:from-purple-500 hover:to-pink-500 active:scale-95"
+            >
+              <span>⚔️</span>
+              <span>{isHindi ? "1v1 लाइव मुकाबला" : "1v1 Live Battle"}</span>
+              <span className="px-1.5 py-0.2 rounded-md bg-white/20 text-[9px] font-black">LIVE</span>
+            </button>
           </div>
           <p className="text-[11px] text-slate-400 mt-2 text-center">
             {activeLayer === "standard"
-              ? (isHindi ? "📚 20 प्रश्नों के मानक स्टैटिक सेट्स हल करें" : "📚 20-question static sets with instant feedback")
+              ? (isHindi ? "📚 20 प्रश्नों के मानक स्टैटिक सेट्स हल करें या ऊपर 1v1 लाइव मुकाबला चुनें" : "📚 20-question static sets or play live battle with friends")
               : (isHindi ? "⚔️ कठिनाई, टाइमर व प्रश्न प्रकार कस्टमाइज़ करके खेलें" : "⚔️ Custom build by difficulty, timer, question type & topics")}
           </p>
         </div>

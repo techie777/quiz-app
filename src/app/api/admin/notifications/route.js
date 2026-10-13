@@ -9,8 +9,25 @@ export async function GET(request) {
   if (!admin.ok) return NextResponse.json({ error: admin.error }, { status: admin.status });
 
   const { searchParams } = new URL(request.url);
-  const unread = searchParams.get("unread") === "1";
+  const type = searchParams.get("type");
 
+  if (type === "broadcasts") {
+    const row = await prisma.setting.findUnique({
+      where: { key: "studentBroadcasts" },
+      select: { value: true },
+    });
+    let list = [];
+    if (row?.value) {
+      try {
+        list = JSON.parse(row.value);
+      } catch {
+        list = [];
+      }
+    }
+    return NextResponse.json(list);
+  }
+
+  const unread = searchParams.get("unread") === "1";
   const isMaster = admin.admin.role === "master";
 
   if (isMaster) {
@@ -62,4 +79,103 @@ export async function GET(request) {
   });
 
   return NextResponse.json(unread ? mapped.filter((n) => !n.readAt) : mapped);
+}
+
+export async function POST(request) {
+  const admin = await requireAdmin();
+  if (!admin.ok) return NextResponse.json({ error: admin.error }, { status: admin.status });
+
+  try {
+    const body = await request.json();
+    const { title, message, audience, category, link } = body;
+
+    if (!title?.trim() || !message?.trim()) {
+      return NextResponse.json({ error: "Title and message are required" }, { status: 400 });
+    }
+
+    const row = await prisma.setting.findUnique({
+      where: { key: "studentBroadcasts" },
+      select: { value: true },
+    });
+
+    let current = [];
+    if (row?.value) {
+      try {
+        current = JSON.parse(row.value);
+      } catch {
+        current = [];
+      }
+    }
+
+    const newBroadcast = {
+      id: "bc_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7),
+      title: title.trim(),
+      message: message.trim(),
+      audience: audience || "all", // "all", "pro", "free", "exam"
+      category: category || "general", // "general", "exam_alert", "reward", "update"
+      link: link?.trim() || "",
+      sender: admin.admin.displayName || admin.admin.username,
+      senderId: admin.admin.id,
+      createdAt: new Date().toISOString(),
+    };
+
+    const updated = [newBroadcast, ...current].slice(0, 50);
+
+    await prisma.setting.upsert({
+      where: { key: "studentBroadcasts" },
+      create: { key: "studentBroadcasts", value: JSON.stringify(updated) },
+      update: { value: JSON.stringify(updated) },
+    });
+
+    await prisma.adminActivityLog.create({
+      data: {
+        adminId: admin.admin.id,
+        action: "BROADCAST_NOTIFICATION",
+        details: `Broadcast: "${title.trim()}" to ${audience || "all"}`,
+      },
+    });
+
+    return NextResponse.json({ success: true, broadcast: newBroadcast });
+  } catch (err) {
+    return NextResponse.json({ error: "Failed to broadcast notification: " + err.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(request) {
+  const admin = await requireAdmin();
+  if (!admin.ok) return NextResponse.json({ error: admin.error }, { status: admin.status });
+
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+
+    if (!id) return NextResponse.json({ error: "Broadcast ID required" }, { status: 400 });
+
+    const row = await prisma.setting.findUnique({
+      where: { key: "studentBroadcasts" },
+      select: { value: true },
+    });
+
+    if (!row?.value) return NextResponse.json({ success: true });
+
+    let current = JSON.parse(row.value);
+    const updated = current.filter((b) => b.id !== id);
+
+    await prisma.setting.update({
+      where: { key: "studentBroadcasts" },
+      data: { value: JSON.stringify(updated) },
+    });
+
+    await prisma.adminActivityLog.create({
+      data: {
+        adminId: admin.admin.id,
+        action: "DELETE_BROADCAST",
+        details: `Deleted broadcast ID: ${id}`,
+      },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    return NextResponse.json({ error: "Failed to delete broadcast: " + err.message }, { status: 500 });
+  }
 }

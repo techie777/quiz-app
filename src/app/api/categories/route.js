@@ -51,12 +51,30 @@ export async function GET(request) {
     // Admin view should still permit filtering by id and parentId.
     const parentIdParam = searchParams.get("parentId");
     const idParam = searchParams.get("id");
+    const slugParam = searchParams.get("slug");
     const mainOnly = searchParams.get("mainOnly") === "true";
 
+    const isMongoId = (val) => typeof val === "string" && val.length === 24 && /^[0-9a-fA-F]{24}$/.test(val);
+
     if (idParam) {
-      andConditions.push({ id: idParam });
+      if (isMongoId(idParam)) {
+        andConditions.push({
+          OR: [
+            { id: idParam },
+            { slug: idParam }
+          ]
+        });
+      } else {
+        andConditions.push({ slug: idParam });
+      }
+    } else if (slugParam) {
+      andConditions.push({ slug: slugParam });
     } else if (parentIdParam) {
-      andConditions.push({ parentId: parentIdParam });
+      if (isMongoId(parentIdParam)) {
+        andConditions.push({ parentId: parentIdParam });
+      } else {
+        andConditions.push({ slug: parentIdParam });
+      }
     }
 
     if (mainOnly) {
@@ -194,10 +212,17 @@ export async function GET(request) {
 
     let filteredCategories = categories;
 
+    // Helper to calculate total questions for a category (direct + subcategories)
+    const getCategoryTotalQuestions = (c) => {
+      const direct = c._count?.questions || 0;
+      const child = c.subCategories?.reduce((acc, sub) => acc + (sub._count?.questions || 0), 0) || 0;
+      return direct + child;
+    };
+
     // Question count filter (in-memory; Prisma Mongo relation count filters are limited)
     if (qCount !== "all") {
       filteredCategories = filteredCategories.filter((cat) => {
-        const count = cat._count?.questions || 0;
+        const count = getCategoryTotalQuestions(cat);
         if (qCount === "small") return count >= 1 && count <= 10;
         if (qCount === "medium") return count >= 11 && count <= 25;
         if (qCount === "large") return count >= 26;
@@ -208,8 +233,8 @@ export async function GET(request) {
     // "Popular" sort (proxy: more questions => more content)
     if (sortBy === "popular") {
       filteredCategories = [...filteredCategories].sort((a, b) => {
-        const ac = a._count?.questions || 0;
-        const bc = b._count?.questions || 0;
+        const ac = getCategoryTotalQuestions(a);
+        const bc = getCategoryTotalQuestions(b);
         if (bc !== ac) return bc - ac;
         return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
       });

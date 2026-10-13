@@ -21,7 +21,8 @@ export function LanguageProvider({ children }) {
       setLanguage('hi');
     }
 
-    if (!isConfirmed) {
+    const isLiveRoute = typeof window !== 'undefined' && window.location.pathname.startsWith('/live');
+    if (!isConfirmed && !isLiveRoute) {
       setShowConfirmModal(true);
     }
 

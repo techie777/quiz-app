@@ -345,23 +345,41 @@ export default function SetPreviewModal({
           )}
         </div>
 
-        {/* Sticky Bottom Bar CTA: "Start this set" */}
-        <div className="p-3 sm:p-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
-          <div className="text-xs font-bold text-slate-600 dark:text-slate-300 truncate">
+        {/* Sticky Bottom Bar CTA: "Start this set" + "1v1 Live Battle" */}
+        <div className="p-3 sm:p-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2.5">
+          <div className="text-xs font-bold text-slate-600 dark:text-slate-300 truncate hidden xs:block">
             {isHindi ? "तैयार हैं? अभी टेस्ट दें:" : "Ready to play this set?"}
           </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              onClose();
-              onStartSet?.(set);
-            }}
-            className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-indigo-600/25 flex items-center gap-2 transition-all active:scale-95 shrink-0"
-          >
-            <Play size={14} fill="currentColor" />
-            <span>{isHindi ? "यह सेट शुरू करें" : "Start This Set"}</span>
-          </button>
+          <div className="flex items-center gap-2 w-full xs:w-auto justify-end">
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                const sessionId = "BTL" + Math.random().toString(36).substring(2, 6).toUpperCase();
+                const catSlug = set?.categorySlug || categoryTopic || "india-gk";
+                window.location.href = `/live/${sessionId}?is_host=true&setIndex=${setIndex}&categoryId=${encodeURIComponent(catSlug)}`;
+              }}
+              className="flex-1 xs:flex-initial px-3.5 py-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/60 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 font-bold text-xs sm:text-sm border border-purple-200 dark:border-purple-800/80 flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-2xs"
+              title={isHindi ? "दोस्त के साथ 1v1 लाइव मुकाबला" : "1v1 Battle with friend"}
+            >
+              <span>⚔️</span>
+              <span className="hidden sm:inline">{isHindi ? "दोस्त के साथ खेलें" : "Battle Friend"}</span>
+              <span className="sm:hidden">{isHindi ? "1v1 मुकाबला" : "1v1"}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onStartSet?.(set);
+              }}
+              className="flex-1 xs:flex-initial px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-indigo-600/25 flex items-center justify-center gap-2 transition-all active:scale-95 shrink-0"
+            >
+              <Play size={14} fill="currentColor" />
+              <span>{isHindi ? "यह सेट शुरू करें" : "Start This Set"}</span>
+            </button>
+          </div>
         </div>
       </motion.div>
     </div>

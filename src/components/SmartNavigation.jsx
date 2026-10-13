@@ -21,6 +21,7 @@ import {
   Mail,
   Check,
   HelpCircle,
+  Swords,
 } from "lucide-react";
 import { useUI } from "@/context/UIContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -33,6 +34,7 @@ import styles from "@/styles/SmartNavigation.module.css";
 
 const fallbackNavigationItems = [
   { key: "home", href: "/", Icon: Home, label: "Home", labelHi: "होम" },
+  { key: "battle", href: "/arena?battle=true", Icon: Swords, label: "1v1 Battle", labelHi: "1v1 मुकाबला", badge: "LIVE" },
   { key: "gkBook", href: "/gk-book", Icon: BookOpen, label: "My Books", labelHi: "मेरी पुस्तकें" },
   { key: "funFacts", href: "/fun-facts", Icon: Sparkles, label: "Fun Facts", labelHi: "रोचक तथ्य" },
   { key: "learn", href: "/learn", Icon: Sparkles, label: "Learn", labelHi: "सीखें" },
@@ -236,6 +238,11 @@ export default function SmartNavigation() {
                         <span className={styles.menuLinkLabel}>
                           {isHindi ? item.labelHi : item.label}
                         </span>
+                        {item.badge && (
+                          <span className="ml-auto px-1.5 py-0.5 rounded-md text-[9px] font-black bg-rose-600 text-white tracking-wider shadow-2xs">
+                            {item.badge}
+                          </span>
+                        )}
                         {isActive && (
                           <span className={styles.activeCheck}>
                             <Check size={16} />

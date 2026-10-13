@@ -27,6 +27,26 @@ export default function LiveSessionPage({ params: propsParams }) {
     emerald: "doodle-pattern",
   };
 
+  const isB2B = typeof window !== 'undefined' && (
+    new URLSearchParams(window.location.search).get('b2b') === 'true' || 
+    new URLSearchParams(window.location.search).get('role') === 'student' ||
+    (typeof localStorage !== 'undefined' && !!localStorage.getItem(`b2b_student_roll_${sessionId}`))
+  );
+
+  if (isB2B) {
+    return (
+      <AdminProvider>
+        <Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 text-slate-500 font-bold">📡 परीक्षा लोड हो रही है...</div>}>
+          <SessionProvider sessionId={sessionId}>
+            <div className="min-h-screen bg-slate-50 text-slate-800">
+              <SessionManager sessionId={sessionId} />
+            </div>
+          </SessionProvider>
+        </Suspense>
+      </AdminProvider>
+    );
+  }
+
   return (
     <AdminProvider>
       <Suspense fallback={<div className="flex items-center justify-center p-40 animate-pulse text-slate-300">📡 Loading Mission...</div>}>

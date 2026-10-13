@@ -59,14 +59,14 @@ app.prepare()
       socket.on('JOIN_SESSION', async (data) => {
         const dirtySessionId = data.sessionId;
         const sessionId = typeof dirtySessionId === 'string' ? dirtySessionId.trim() : dirtySessionId;
-        const { role, userId, userName } = data;
+        const { role, userId, userName, rollNumber, isB2B } = data;
         
         if (!sessionId || !role || !userId) {
             console.error(`❌ [IO] Invalid JOIN_SESSION attempt:`, data);
             return;
         }
 
-        console.log(`📡 [HANDSHAKE] ${userName} (${role}) | Socket: ${socket.id} | Mission: ${sessionId}`);
+        console.log(`📡 [HANDSHAKE] ${userName} (${role}) | Socket: ${socket.id} | Mission: ${sessionId} | Roll: ${rollNumber || 'N/A'}`);
 
         // 1. IMMERSE socket in the tactical room immediately
         await socket.join(sessionId);
@@ -76,15 +76,22 @@ app.prepare()
 
         let room = await redisStore.getRoom(sessionId);
         if (!room) {
+            const isB2BInit = !!isB2B || role === 'STUDENT' || role === 'student' || !!rollNumber;
             room = { 
                 participants: [], 
                 pendingParticipants: [], 
                 messages: [], 
-                state: { status: 'LOBBY', currentQuestion: 0, startTime: null },
+                state: { 
+                    status: isB2BInit ? 'ACTIVE' : 'LOBBY', 
+                    currentQuestion: 0, 
+                    startTime: null, 
+                    isB2B: isB2BInit,
+                    type: isB2BInit ? 'B2B_EXAM' : 'QUIZ'
+                },
                 sessionId 
             };
             await redisStore.setRoom(sessionId, room);
-            console.log(`📡 [INIT] New mission container created for ${sessionId}`);
+            console.log(`📡 [INIT] New mission container created for ${sessionId} (B2B: ${isB2BInit})`);
         }
 
         if (role === 'HOST') {
@@ -109,32 +116,114 @@ app.prepare()
                 payload: { ...room.state, sessionId, role, userId, userName } 
             });
         } else {
-            // GUEST LOGIC
+            // GUEST / STUDENT LOGIC
             room.kickedUsers = room.kickedUsers || [];
+            room.authorizedUserIds = room.authorizedUserIds || [];
             const isKicked = room.kickedUsers.includes(userId);
-            const existingInSquad = room.participants.find(p => p.userId === userId);
+            
+            const isB2BContext = isB2B || role === 'STUDENT' || role === 'student' || room.state?.isB2B || !!rollNumber;
+            if (isB2BContext) {
+                room.state.isB2B = true;
+                if (room.state.status === 'LOBBY') {
+                    room.state.status = 'ACTIVE';
+                }
+                if (!room.state.type) {
+                    room.state.type = 'B2B_EXAM';
+                }
+            }
+            // Match existing student by userId OR by rollNumber (which uniquely identifies the student in this exam)
+            let existingInSquad = room.participants.find(p => 
+                p.userId === userId || 
+                (isB2BContext && rollNumber && p.rollNumber && p.rollNumber.toString().trim().toUpperCase() === rollNumber.toString().trim().toUpperCase())
+            );
 
-            // If user was ever kicked OR not currently in participants squad, they MUST wait for clearance!
+            // B2B DIRECT ADMISSION: If this is an exam room or B2B student, auto-admit to participant roster
+            if (isB2BContext && !existingInSquad && !isKicked) {
+                existingInSquad = {
+                    userId,
+                    userName: userName || 'Student',
+                    rollNumber: rollNumber || null,
+                    isB2B: true,
+                    role: 'GUEST',
+                    socketId: socket.id,
+                    score: 0,
+                    progress: 0,
+                    isOnline: true,
+                    status: 'ACTIVE'
+                };
+                room.participants.push(existingInSquad);
+                if (!room.authorizedUserIds.includes(userId)) {
+                    room.authorizedUserIds.push(userId);
+                }
+            }
+
+            // Auto-restore previously authorized user on reconnection
+            if (!existingInSquad && room.authorizedUserIds.includes(userId) && !isKicked) {
+                existingInSquad = {
+                    userId,
+                    userName: userName || 'Player',
+                    rollNumber: rollNumber || null,
+                    isB2B: !!isB2B,
+                    role: 'GUEST',
+                    socketId: socket.id,
+                    score: 0,
+                    progress: 0,
+                    isOnline: true,
+                    status: 'ACTIVE'
+                };
+                room.participants.push(existingInSquad);
+            }
+
+            // If user is recognized in participants squad, reconnect them smoothly!
             if (existingInSquad && !isKicked) {
                 existingInSquad.socketId = socket.id;
                 existingInSquad.isOnline = true;
                 existingInSquad.status = 'ACTIVE';
-                socket.emit('STATE_UPDATE', { action: 'APPROVED', payload: { ...room.state, status: 'APPROVED' } });
-                console.log(`📡 [GUEST] Member ${userName} reconnected at ${socket.id}`);
+                existingInSquad.userId = userId; // Update to current socket/client user ID
+                if (rollNumber) existingInSquad.rollNumber = rollNumber;
+                if (isB2BContext) existingInSquad.isB2B = true;
+                
+                const currentStatus = room.state?.status || 'ACTIVE';
+                socket.emit('STATE_UPDATE', { 
+                    action: 'REHYDRATE', 
+                    payload: { 
+                        ...room.state, 
+                        status: currentStatus,
+                        sessionId, 
+                        role: existingInSquad.role || role || 'GUEST', 
+                        userId, 
+                        userName: existingInSquad.userName || userName,
+                        rollNumber: existingInSquad.rollNumber || rollNumber,
+                        savedScore: existingInSquad.score || 0,
+                        savedProgress: existingInSquad.progress || 0
+                    } 
+                });
+                console.log(`📡 [GUEST] Member ${existingInSquad.userName} (${existingInSquad.rollNumber || userId}) reconnected at ${socket.id} with status: ${currentStatus}`);
+            } else if (isKicked) {
+                // If they were kicked, emit KICKED state so the client presents the 3 options
+                room.participants = room.participants.filter(p => p.userId !== userId);
+                socket.emit('STATE_UPDATE', { 
+                    action: 'KICKED', 
+                    payload: { 
+                        status: 'KICKED', 
+                        isKicked: true,
+                        sessionId,
+                        type: room.state?.type || 'standard',
+                        activeContentId: room.state?.activeContentId || null,
+                        message: 'You have been kicked out by the admin.' 
+                    } 
+                });
+                console.log(`📡 [GUEST] Kicked user ${userName} (${userId}) connected. Dispatched KICKED options.`);
+                return;
             } else {
-                // If they were kicked earlier or somehow in participants, remove them from participants list
-                if (isKicked) {
-                    room.participants = room.participants.filter(p => p.userId !== userId);
-                }
-
-                // Refresh pending
+                // Fresh join request waiting for clearance
                 room.pendingParticipants = room.pendingParticipants.filter(p => p.userId !== userId);
                 room.pendingParticipants.push({ 
                     userId, 
-                    userName: userName || 'Refugee', 
+                    userName: userName || 'Guest', 
                     socketId: socket.id, 
                     requestedAt: Date.now(), 
-                    isOnline: true,
+                    isOnline: true, 
                     role: 'GUEST'
                 });
                 console.log(`📡 [GUEST] Request received from ${userName} (${socket.id}). Waiting for clearance.`);
@@ -177,12 +266,23 @@ app.prepare()
             if (room && room.participants) {
                 const pIdx = room.participants.findIndex(p => p.userId === userId);
                 if (pIdx !== -1) {
-                    const userName = room.participants[pIdx].userName;
-                    room.participants.splice(pIdx, 1);
-                    await redisStore.setRoom(sessionId, room);
-                    io.in(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
-                    io.in(sessionId).emit('PARTICIPANT_LEFT', { userName, userId });
-                    console.log(`📡 [LEAVE_SESSION] Participant ${userName} left and removed from room ${sessionId}`);
+                    const participant = room.participants[pIdx];
+                    const isB2BExaminee = participant.isB2B || !!participant.rollNumber || room.state?.isB2B;
+                    if (isB2BExaminee) {
+                        // PRESERVE examinee seat! Do not permanently delete their exam registration.
+                        participant.isOnline = false;
+                        participant.status = 'AWAY';
+                        await redisStore.setRoom(sessionId, room);
+                        io.in(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
+                        console.log(`📡 [LEAVE_SESSION] Exam student ${participant.userName} (${participant.rollNumber}) marked AWAY in ${sessionId}`);
+                    } else {
+                        const userName = participant.userName;
+                        room.participants.splice(pIdx, 1);
+                        await redisStore.setRoom(sessionId, room);
+                        io.in(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
+                        io.in(sessionId).emit('PARTICIPANT_LEFT', { userName, userId });
+                        console.log(`📡 [LEAVE_SESSION] Participant ${userName} left and removed from room ${sessionId}`);
+                    }
                 } else if (room.pendingParticipants) {
                     const pendIdx = room.pendingParticipants.findIndex(p => p.userId === userId);
                     if (pendIdx !== -1) {
@@ -195,6 +295,55 @@ app.prepare()
                 }
             }
             await socket.leave(sessionId);
+        });
+
+        socket.on('REQUEST_REENTRY', async (data) => {
+            const { sessionId: rawSid, userId, userName } = data;
+            const sessionId = typeof rawSid === 'string' ? rawSid.trim() : rawSid;
+            if (!sessionId || !userId) return;
+
+            const room = await redisStore.getRoom(sessionId);
+            if (!room) return;
+
+            // Prepare pending participant list with re-entry flag
+            room.pendingParticipants = room.pendingParticipants || [];
+            room.pendingParticipants = room.pendingParticipants.filter(p => p.userId !== userId);
+            room.pendingParticipants.push({
+                userId,
+                userName: userName || 'Player',
+                socketId: socket.id,
+                requestedAt: Date.now(),
+                isOnline: true,
+                role: 'GUEST',
+                isReentry: true
+            });
+
+            await redisStore.setRoom(sessionId, room);
+
+            // Ensure socket joins room channel
+            await socket.join(sessionId);
+
+            // Direct pulse to host
+            const host = room.participants?.find(p => p.role === 'HOST');
+            if (host && host.socketId) {
+                console.log(`📡 [SIGNAL] Sending re-entry pulse to host: ${host.socketId}`);
+                io.to(host.socketId).emit('GUEST_JOIN_REQUEST', {
+                    guestId: userId,
+                    guestName: userName || 'Player',
+                    isReentry: true
+                });
+                io.to(host.socketId).emit('SYNC_PENDING', room.pendingParticipants);
+            }
+
+            socket.emit('STATE_UPDATE', {
+                action: 'REENTRY_REQUESTED',
+                payload: {
+                    status: 'PENDING_REENTRY',
+                    isReentryPending: true,
+                    message: 'Re-entry request sent to the admin. Waiting for approval...'
+                }
+            });
+            console.log(`📡 [SERVER] Re-entry requested by ${userName} (${userId}) for room ${sessionId}`);
         });
 
         socket.on('SQUAD_SYNC_REQUEST', async ({ sessionId: rawSid }) => {
@@ -233,6 +382,10 @@ app.prepare()
                 const guest = room.pendingParticipants[guestIdx];
                 // Move guest from pending to participants
                 room.pendingParticipants.splice(guestIdx, 1);
+                room.authorizedUserIds = room.authorizedUserIds || [];
+                if (!room.authorizedUserIds.includes(guest.userId)) {
+                    room.authorizedUserIds.push(guest.userId);
+                }
                 room.participants.push({
                     userId: guest.userId,
                     userName: guest.userName,
@@ -249,7 +402,13 @@ app.prepare()
                 if (guest.socketId) {
                     io.to(guest.socketId).emit('STATE_UPDATE', {
                         action: 'APPROVED',
-                        payload: { status: 'APPROVED', message: 'You have been approved to join the session!' }
+                        payload: { 
+                            ...room.state,
+                            status: room.state?.status || 'ACTIVE',
+                            isKicked: false,
+                            isReentryPending: false,
+                            message: 'You have been approved to join the session!' 
+                        }
                     });
                 }
                 
@@ -302,16 +461,27 @@ app.prepare()
             if (!room.kickedUsers.includes(payload.userId)) {
                 room.kickedUsers.push(payload.userId);
             }
+            room.authorizedUserIds = (room.authorizedUserIds || []).filter(id => id !== payload.userId);
 
             const pIdx = room.participants.findIndex(p => p.userId === payload.userId);
+            let kickedUserName = payload.userName || 'Player';
             if (pIdx !== -1) {
                 const p = room.participants[pIdx];
+                kickedUserName = p.userName || kickedUserName;
                 if (p.socketId) {
-                    io.to(p.socketId).emit('STATE_UPDATE', { action: 'DISCONTINUED', payload: { status: 'DISCONTINUED', message: 'You have been professionally dismissed from this session by the Host.' } });
-                    const pSocket = io.sockets.sockets.get(p.socketId);
-                    if (pSocket) pSocket.leave(sessionId);
+                    io.to(p.socketId).emit('STATE_UPDATE', { 
+                        action: 'KICKED', 
+                        payload: { 
+                            status: 'KICKED', 
+                            isKicked: true,
+                            sessionId,
+                            type: room.state?.type || 'standard',
+                            activeContentId: room.state?.activeContentId || null,
+                            message: 'You have been kicked out by the admin.' 
+                        } 
+                    });
                 }
-                io.in(sessionId).emit('PARTICIPANT_KICKED', { userName: p.userName, userId: p.userId });
+                io.in(sessionId).emit('PARTICIPANT_KICKED', { userName: kickedUserName, userId: payload.userId });
             }
 
             // Completely remove from both lists
@@ -332,11 +502,11 @@ app.prepare()
             
             io.in(sessionId).emit('STATE_UPDATE', { action: 'TERMINATED', payload: room.state });
             
-            // Immediate purge for reuse/safety
+            // Retain terminated room for 15 minutes so participants can review results or finish solo
             setTimeout(async () => {
                 await redisStore.deleteRoom(sessionId);
-                console.log(`📡 Room ${sessionId} purged after termination.`);
-            }, 5000); // 5s grace period for client redirect animations
+                console.log(`📡 Room ${sessionId} purged after termination retention period.`);
+            }, 15 * 60 * 1000);
             return;
         }
 
@@ -421,7 +591,7 @@ app.prepare()
         const sessionId = typeof rawSid === 'string' ? rawSid.trim() : rawSid;
         const room = await redisStore.getRoom(sessionId);
         if (room && room.participants) {
-            const p = room.participants.find(p => p.userId === userId);
+            const p = room.participants.find(p => p.userId === userId || (p.role === 'HOST' && (userId === 'host_base_operator' || p.userId === 'host_base_operator')));
             if (p) {
                 p.score = score;
                 p.progress = progress;
@@ -431,6 +601,88 @@ app.prepare()
                 await redisStore.setRoom(sessionId, room);
                 io.in(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
             }
+        }
+      });
+
+      socket.on('STUDENT_TELEMETRY', async (data) => {
+        try {
+          const { sessionId: rawSid, userId, rollNumber, currentIndex, selectedOption, tabSwitches, timeRemaining, isSubmitted, score } = data;
+          const sessionId = typeof rawSid === 'string' ? rawSid.trim() : rawSid;
+          const room = await redisStore.getRoom(sessionId);
+          if (room && room.participants) {
+            const p = room.participants.find(p => p.userId === userId);
+            if (p) {
+              if (typeof currentIndex !== 'undefined') p.currentIndex = currentIndex;
+              if (typeof selectedOption !== 'undefined') p.selectedOption = selectedOption;
+              if (typeof tabSwitches !== 'undefined') p.tabSwitches = tabSwitches;
+              if (typeof timeRemaining !== 'undefined') p.timeRemaining = timeRemaining;
+              if (typeof isSubmitted !== 'undefined') p.isSubmitted = isSubmitted;
+              if (typeof score !== 'undefined') p.score = score;
+              if (rollNumber) p.rollNumber = rollNumber;
+              await redisStore.setRoom(sessionId, room);
+            }
+            io.to(sessionId).emit('HOST_TELEMETRY_UPDATE', data);
+          }
+        } catch (tErr) {
+          console.error('Telemetry error:', tErr);
+        }
+      });
+
+      socket.on('TAB_SWITCH_ALERT', async (data) => {
+        try {
+          const { sessionId: rawSid, userId, userName, rollNumber, switchCount } = data;
+          const sessionId = typeof rawSid === 'string' ? rawSid.trim() : rawSid;
+          const room = await redisStore.getRoom(sessionId);
+          if (room && room.participants) {
+            const p = room.participants.find(p => p.userId === userId);
+            if (p) {
+              p.tabSwitches = switchCount;
+              await redisStore.setRoom(sessionId, room);
+            }
+            io.to(sessionId).emit('HOST_TAB_ALERT', data);
+            io.to(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
+          }
+        } catch (tabErr) {
+          console.error('Tab switch alert error:', tabErr);
+        }
+      });
+
+      socket.on('SUBMIT_EXAM', async (data) => {
+        try {
+          const { sessionId: rawSid, userId, userName, rollNumber, answers, totalScore, accuracy, completedAt } = data;
+          const sessionId = typeof rawSid === 'string' ? rawSid.trim() : rawSid;
+          const room = await redisStore.getRoom(sessionId);
+          if (room) {
+            room.submissions = room.submissions || [];
+            const submission = {
+              userId,
+              userName,
+              rollNumber: rollNumber || 'N/A',
+              answers: answers || [],
+              totalScore: Number(totalScore) || 0,
+              accuracy: Number(accuracy) || 0,
+              completedAt: completedAt || Date.now()
+            };
+            const existIdx = room.submissions.findIndex(s => s.userId === userId);
+            if (existIdx !== -1) {
+              room.submissions[existIdx] = submission;
+            } else {
+              room.submissions.push(submission);
+            }
+            if (room.participants) {
+              const p = room.participants.find(p => p.userId === userId);
+              if (p) {
+                p.isSubmitted = true;
+                p.status = 'COMPLETED';
+                p.score = totalScore;
+              }
+            }
+            await redisStore.setRoom(sessionId, room);
+            io.to(sessionId).emit('SYNC_PARTICIPANTS', room.participants);
+            io.to(sessionId).emit('EXAM_SUBMISSION_BROADCAST', submission);
+          }
+        } catch (subErr) {
+          console.error('Submit exam error:', subErr);
         }
       });
 

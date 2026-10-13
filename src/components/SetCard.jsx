@@ -219,18 +219,21 @@ export default function SetCard({
             </button>
           )}
 
-          {handleLivePlay && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleLivePlay?.(set);
-              }}
-              title={isHindi ? "लाइव खेलें" : "Play Live"}
-              className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all"
-            >
-              <Users size={13} />
-            </button>
-          )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (handleLivePlay) {
+                handleLivePlay(set);
+              } else {
+                const sessionId = "BTL" + Math.random().toString(36).substring(2, 6).toUpperCase();
+                window.location.href = `/live/${sessionId}?is_host=true&setIndex=${setIndex}&categoryId=${encodeURIComponent(categoryTopic || 'india-gk')}`;
+              }
+            }}
+            title={isHindi ? "दोस्तों के साथ 1v1 लाइव मुकाबला" : "Live 1v1 Battle with Friends"}
+            className="p-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/60 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/80 transition-all shrink-0 flex items-center justify-center"
+          >
+            <span className="text-xs leading-none">⚔️</span>
+          </button>
         </div>
       </motion.div>
     );
@@ -378,20 +381,24 @@ export default function SetCard({
           )}
         </button>
 
-        {/* Secondary CTA: "लाइव खेलें" */}
+        {/* Secondary CTA: "लाइव मुकाबला" */}
         <button
           onClick={(e) => {
             e.stopPropagation();
             if (isLocked && handleLockedClick) {
               handleLockedClick(set);
-            } else {
+            } else if (handleLivePlay) {
               handleLivePlay(set);
+            } else {
+              const sessionId = "BTL" + Math.random().toString(36).substring(2, 6).toUpperCase();
+              window.location.href = `/live/${sessionId}?is_host=true&setIndex=${setIndex}&categoryId=${encodeURIComponent(categoryTopic || 'india-gk')}`;
             }
           }}
-          className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-extrabold text-xs sm:text-sm border border-slate-200 dark:border-slate-700 active:scale-95 transition-all"
+          className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/60 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 font-extrabold text-xs sm:text-sm border border-purple-200/90 dark:border-purple-800/80 active:scale-95 transition-all shadow-2xs"
+          title={isHindi ? "दोस्तों के साथ 1v1 लाइव मुकाबला खेलें" : "Play 1v1 live battle with friends"}
         >
-          <Users size={16} />
-          <span>{isHindi ? "लाइव खेलें" : "Play Live"}</span>
+          <span>⚔️</span>
+          <span>{isHindi ? "लाइव मुकाबला" : "Live Battle"}</span>
         </button>
       </div>
     </motion.div>

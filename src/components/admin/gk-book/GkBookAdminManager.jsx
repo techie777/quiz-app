@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import styles from "@/styles/AdminGkBook.module.css";
 import GkBookReader from "@/components/gk-book/GkBookReader";
+import toast from "react-hot-toast";
 
 export default function GkBookAdminManager() {
   const [activeTab, setActiveTab] = useState("editor"); // "editor" | "importer"
@@ -96,13 +97,13 @@ export default function GkBookAdminManager() {
       });
       const data = await res.json();
       if (data.success) {
-        alert("अध्याय सफलतापूर्वक सहेजा गया! (Chapter saved successfully)");
+        toast.success("अध्याय सफलतापूर्वक सहेजा गया! (Chapter saved successfully)");
         fetchChapters();
       } else {
-        alert("त्रुटि: " + (data.error || "Save failed"));
+        toast.error("त्रुटि: " + (data.error || "Save failed"));
       }
     } catch (e) {
-      alert("Error: " + e.message);
+      toast.error("Error: " + e.message);
     } finally {
       setSaving(false);
     }
@@ -191,7 +192,7 @@ export default function GkBookAdminManager() {
 
   const handleDeleteActivePage = () => {
     if (chapterForm.pages.length <= 1) {
-      alert("कम से कम 1 पृष्ठ होना आवश्यक है।");
+      toast.error("कम से कम 1 पृष्ठ होना आवश्यक है।");
       return;
     }
     if (!confirm("क्या आप वाकई इस पृष्ठ को हटाना चाहते हैं?")) return;
@@ -327,7 +328,7 @@ export default function GkBookAdminManager() {
     }));
     setActiveTab("editor");
     setSelectedPageIndex(0);
-    alert("आयातित सामग्री संपादक में लोड कर दी गई है! समीक्षा करके 'सहेजें' पर क्लिक करें।");
+    toast.success("आयातित सामग्री संपादक में लोड कर दी गई है! समीक्षा करके 'सहेजें' पर क्लिक करें।");
   };
 
   // Filter chapter list in sidebar

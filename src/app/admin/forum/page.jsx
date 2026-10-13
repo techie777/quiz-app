@@ -86,11 +86,16 @@ export default function AdminForumPage() {
     }
   };
 
-  const handleModerateTopic = async (action, targetId) => {
-    let reason = null;
-    if (action === "REJECT_TOPIC") {
-      reason = prompt("Reason for rejection:");
-      if (!reason) return;
+  // Rejection modal state
+  const [rejectingTopicId, setRejectingTopicId] = useState(null);
+  const [forumRejectReason, setForumRejectReason] = useState("");
+
+  const handleModerateTopic = async (action, targetId, customReason = null) => {
+    let reason = customReason;
+    if (action === "REJECT_TOPIC" && !reason) {
+      setRejectingTopicId(targetId);
+      setForumRejectReason("");
+      return;
     }
     
     const res = await fetch("/api/admin/forum/moderation", {
@@ -100,7 +105,9 @@ export default function AdminForumPage() {
     });
     
     if (res.ok) {
-      toast.success("Action applied");
+      toast.success(action === "APPROVE_TOPIC" ? "Topic approved live!" : "Action applied");
+      setRejectingTopicId(null);
+      setForumRejectReason("");
       fetchModerationQueues();
     } else {
       toast.error("Failed to apply action");
@@ -230,6 +237,54 @@ export default function AdminForumPage() {
             ))}
           </div>
         </section>
+      )}
+
+      {/* In-App Rejection Modal */}
+      {rejectingTopicId && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, padding: "20px" }}>
+          <div style={{ background: "var(--card-bg, #fff)", maxWidth: "460px", width: "100%", borderRadius: "16px", padding: "24px", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.2)", border: "1px solid var(--card-border, #e2e8f0)" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: 800, margin: "0 0 8px 0", color: "var(--text-primary, #0f172a)" }}>
+              Reject Forum Topic
+            </h3>
+            <p style={{ fontSize: "13px", color: "var(--text-secondary, #64748b)", margin: "0 0 16px 0" }}>
+              Please provide a reason or select a template to explain why this post was declined.
+            </p>
+            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "10px" }}>
+              {["Off-topic discussion", "Contains offensive language", "Promotional / Spam content", "Duplicate question"].map((reasonPreset) => (
+                <button
+                  key={reasonPreset}
+                  type="button"
+                  onClick={() => setForumRejectReason(reasonPreset)}
+                  style={{ fontSize: "11px", fontWeight: 600, padding: "4px 8px", borderRadius: "6px", border: "1px solid var(--card-border, #cbd5e1)", background: "var(--bg-secondary, #f8fafc)", cursor: "pointer", color: "var(--text-secondary, #475569)" }}
+                >
+                  + {reasonPreset}
+                </button>
+              ))}
+            </div>
+            <textarea
+              style={{ width: "100%", padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--card-border, #cbd5e1)", background: "var(--bg-primary, #fff)", color: "var(--text-primary, #0f172a)", fontSize: "14px", resize: "vertical", minHeight: "80px" }}
+              placeholder="Enter rejection reason..."
+              value={forumRejectReason}
+              onChange={(e) => setForumRejectReason(e.target.value)}
+            />
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "16px" }}>
+              <button
+                type="button"
+                onClick={() => setRejectingTopicId(null)}
+                style={{ padding: "8px 16px", borderRadius: "8px", border: "1px solid var(--card-border, #e2e8f0)", background: "transparent", color: "var(--text-primary, #0f172a)", fontWeight: 600, cursor: "pointer" }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleModerateTopic("REJECT_TOPIC", rejectingTopicId, forumRejectReason || "Declined by moderator")}
+                style={{ padding: "8px 18px", borderRadius: "8px", border: "none", background: "#ef4444", color: "#fff", fontWeight: 700, cursor: "pointer" }}
+              >
+                Confirm Rejection
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>

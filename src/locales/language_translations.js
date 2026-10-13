@@ -14,7 +14,15 @@ export const translations = {
       mins: "mins",
       hideTopics: "Hide Topics",
       showTopics: "Show Topics",
-      quizzesAvailable: "Quizzes Available"
+      quizzesAvailable: "Quizzes Available",
+      off: "Off",
+      hide: "Hide",
+      view: "View",
+      difficulty: {
+        hard: "Hard",
+        medium: "Medium",
+        easy: "Easy"
+      }
     },
     // Navigation
     ca: {
@@ -170,12 +178,12 @@ export const translations = {
     live: {
       lobby: {
         title: "Active Players",
-        operatives: "Operatives Ready",
+        operatives: "Players Ready",
         host: "Host",
         inControl: "In Control",
-        commander: "Mission Commander",
+        commander: "Quiz Host",
         waiting: "Waiting for Host to start...",
-        startBtn: "Initiate Mission",
+        startBtn: "Start Quiz",
         copyLink: "Copy Invite Link",
         status: {
           liveRoom: "Live Room",
@@ -198,7 +206,7 @@ export const translations = {
           host: "Host",
           inControl: "In Control",
           leader: "Leader",
-          commander: "Admin",
+          commander: "Host",
           left: "Left",
           idle: "Idle",
           active: "Active",
@@ -206,15 +214,15 @@ export const translations = {
           kick: "Dismiss"
         },
         selection: {
-          title: "Mission Configuration",
-          category: "Sector Selection",
-          categoryPlaceholder: "Search Sectors...",
-          questions: "Max Intel (Qs)",
+          title: "Quiz Setup",
+          category: "Select Category",
+          categoryPlaceholder: "Search Categories...",
+          questions: "Number of Questions",
           set: "Set",
-          viewQs: "View Intel",
-          noQs: "No intel data found.",
-          back: "Return to Sectors",
-          mixed: "Mega Mix Protocol",
+          viewQs: "View Questions",
+          noQs: "No questions found.",
+          back: "Return to Categories",
+          mixed: "Mega Mix",
           searchPlaceholder: "Search Topics...",
           altInt: "Select Topic",
           selectTopic: "Select Topic",
@@ -266,28 +274,28 @@ export const translations = {
           left: "LEFT 💀"
         },
         intel: {
-          standings: "Tactical Standings",
-          ops: "OPS",
-          operator: "Operator",
+          standings: "Leaderboard",
+          ops: "Players",
+          operator: "Player",
           score: "Score",
-          scanning: "Scanning squadron signal...",
-          broadcast: "Commander Broadcast",
-          directive: "Mission directive...",
-          comms: "Squadron Comms",
-          uplink: "Secure Uplink established.",
-          transmit: "TRANSMIT SIGNAL..."
+          scanning: "Waiting for players...",
+          broadcast: "Host Message",
+          directive: "Message all players...",
+          comms: "Live Chat",
+          uplink: "Live chat connected.",
+          transmit: "Type a message..."
         }
       },
       toasts: {
         connFailed: "Connection failed",
-        joinedSquad: "joined the Squadron!",
-        terminated: "MISSION TERMINATED BY COMMANDER.",
-        launched: "MISSION LAUNCHED! 🚀",
-        waitingForHost: "Waiting for host to create this session...",
-        dismissed: "MISSION TERMINATED: YOU HAVE BEEN DISMISSED. 🫡",
+        joinedSquad: "joined the quiz!",
+        terminated: "Quiz session concluded by host.",
+        launched: "Quiz started! 🚀",
+        waitingForHost: "Waiting for host to start this session...",
+        dismissed: "You have left the quiz session.",
         waitingApproval: "Waiting for host approval...",
         approved: "You have been approved to join the session!",
-        denied: "Your request to join was denied by the host."
+        denied: "Your request to join was not approved."
       }
     },
     // Results Page
@@ -612,6 +620,101 @@ export const translations = {
           failed: "Failed to update profile",
           error: "Connection error. Please try again."
         }
+      },
+      live: {
+        quiz: {
+          intel: {
+            standings: "Live Leaderboard",
+            ops: "Players",
+            operator: "Player",
+            score: "Points",
+            scanning: "Syncing Live Standings...",
+            broadcast: "Host Announcement",
+            directive: "Type an announcement for all players...",
+            comms: "Live Chat",
+            uplink: "Chat is quiet. Say hello!",
+            transmit: "Send message..."
+          },
+          status: {
+            active: "Playing",
+            busy: "Away",
+            left: "Left",
+            done: "Finished"
+          }
+        },
+        lobby: {
+          status: {
+            liveRoom: "Live Quiz Room",
+            uptime: "Time",
+            players: "Players"
+          },
+          controls: {
+            exit: "Leave Room",
+            sync: "Sync Room",
+            terminate: "End Room",
+            terminateConfirm: "Are you sure you want to end this quiz room?",
+            initiate: "Start Quiz Battle 🚀"
+          },
+          invite: {
+            title: "Invite Friends to Play",
+            subtitle: "Share room link and compete live together",
+            shareTitle: "Live Quiz Battle",
+            desc: "Share this link with your friends to join your live quiz battle instantly.",
+            whatsappBtn: "Share via WhatsApp",
+            whatsappFooter: "Invite friends in one click",
+            syncing: "Preparing invite link..."
+          },
+          selection: {
+            searchPlaceholder: "Search quiz topics...",
+            selectTopic: "Choose Quiz Topic",
+            altInt: "Selected Topic",
+            reset: "Change",
+            scanning: "Loading quiz topics...",
+            assessments: "Questions",
+            backToTopics: "Back to Topics",
+            selectPkg: "Select Question Set",
+            set: "Set",
+            package: "Set",
+            questions: "Questions",
+            decrypting: "Loading questions...",
+            pkgIntel: "Set Questions Preview",
+            statement: "Question",
+            diff: "Difficulty",
+            timer: "Timer Per Question",
+            timerSub: "Choose seconds per question"
+          },
+          ready: {
+            title: "Waiting for Host...",
+            subtitle: "Quiz will start shortly",
+            desc: "The host is selecting the topic and sets. Get ready!"
+          },
+          players: {
+            title: "Joined Players",
+            ready: "Players Ready",
+            host: "Host",
+            leader: "Quiz Host",
+            commander: "Quiz Host",
+            inControl: "Room Controller",
+            kick: "Remove",
+            left: "Left",
+            idle: "Idle",
+            active: "Online",
+            awaiting: "Waiting for players to join..."
+          },
+          pending: {
+            title: "Waiting for Approval",
+            desc: "Waiting for the host to approve your entry..."
+          },
+          toasts: {
+            left: "A player left the room",
+            decryptFail: "Failed to load questions",
+            desync: "Sync error occurred",
+            noTopic: "Please select a quiz topic",
+            noTimer: "Please choose a question timer",
+            linkCopied: "Invite link copied to clipboard!",
+            syncComplete: "Room synced successfully"
+          }
+        }
       }
     }
   },
@@ -630,7 +733,15 @@ export const translations = {
         mins: "मिनट",
         hideTopics: "विषय छिपाएं",
         showTopics: "विषय दिखाएं",
-        quizzesAvailable: "क्विज़ उपलब्ध"
+        quizzesAvailable: "क्विज़ उपलब्ध",
+        off: "बंद",
+        hide: "छिपाएं",
+        view: "देखें",
+        difficulty: {
+          hard: "कठिन",
+          medium: "मध्यम",
+          easy: "सरल"
+        }
       },
       // Navigation
       ca: {
@@ -845,11 +956,11 @@ export const translations = {
         lobby: {
           title: "सक्रिय खिलाड़ी",
           operatives: "खिलाड़ी तैयार हैं",
-          host: "मेजबान",
+          host: "होस्ट",
           inControl: "नियंत्रण में",
-          commander: "मिशन कमांडर",
-          waiting: "मेजबान के शुरू करने की प्रतीक्षा है...",
-          startBtn: "मिशन शुरू करें",
+          commander: "क्विज़ होस्ट",
+          waiting: "होस्ट के शुरू करने की प्रतीक्षा है...",
+          startBtn: "क्विज़ शुरू करें",
           copyLink: "इनवाइट लिंक कॉपी करें",
           status: {
             liveRoom: "लाइव रूम",
@@ -869,26 +980,26 @@ export const translations = {
           players: {
             title: "सक्रिय खिलाड़ी",
             ready: "खिलाड़ी तैयार हैं",
-            host: "मेजबान",
+            host: "होस्ट",
             inControl: "नियंत्रण में",
             leader: "लीडर",
-            commander: "एडमिन",
+            commander: "होस्ट",
             left: "छोड़ दिया",
             idle: "निष्क्रिय",
             active: "सक्रिय",
             awaiting: "खिलाड़ियों की प्रतीक्षा है...",
-            kick: "निकालें"
+            kick: "हटाएं"
           },
           selection: {
-            title: "मिशन कॉन्फ़िगरेशन",
-            category: "सेक्टर चयन",
-            categoryPlaceholder: "सेक्टर खोजें...",
-            questions: "अधिकतम प्रश्न",
+            title: "क्विज़ सेटअप",
+            category: "विषय चयन",
+            categoryPlaceholder: "विषय खोजें...",
+            questions: "प्रश्नों की संख्या",
             set: "सेट",
             viewQs: "प्रश्न देखें",
             noQs: "कोई प्रश्न नहीं मिला।",
-            back: "सेक्टर्स पर लौटें",
-            mixed: "मेगा मिक्स प्रोटोकॉल",
+            back: "विषयों पर वापस जाएं",
+            mixed: "मेगा मिक्स (सभी विषय)",
             searchPlaceholder: "विषय खोजें...",
             altInt: "विषय चुनें",
             selectTopic: "विषय चुनें",
@@ -940,26 +1051,26 @@ export const translations = {
             left: "छोड़ दिया 💀"
           },
           intel: {
-            standings: "प्रतियोगिता स्थिति",
+            standings: "लाइव लीडरबोर्ड",
             ops: "खिलाड़ी",
-            operator: "ऑपरेटर",
-            score: "स्कोर",
-            scanning: "सिग्नल स्कैन किया जा रहा है...",
-            broadcast: "कमांडर ब्रॉडकास्ट",
-            directive: "मिशन निर्देश...",
-            comms: "टीम कम्युनिकेशंस",
-            uplink: "सुरक्षित अपलिंक स्थापित।",
-            transmit: "सिग्नल भेजें..."
+            operator: "खिलाड़ी",
+            score: "अंक",
+            scanning: "खिलाड़ियों को खोजा जा रहा है...",
+            broadcast: "होस्ट संदेश",
+            directive: "सभी को संदेश भेजें...",
+            comms: "लाइव चैट",
+            uplink: "लाइव चैट सक्रिय है।",
+            transmit: "संदेश लिखें..."
           }
         },
         toasts: {
           connFailed: "कनेक्शन विफल",
-          joinedSquad: "टीम में शामिल हो गया!",
-          terminated: "मिशन कमांडर द्वारा समाप्त किया गया।",
-          launched: "मिशन शुरू हुआ! 🚀",
-          waitingForHost: "मेजबान द्वारा सत्र शुरू करने की प्रतीक्षा है...",
-          dismissed: "मिशन समाप्त: आपको कार्यमुक्त कर दिया गया है। 🫡",
-          waitingApproval: "मेजबान की अनुमति की प्रतीक्षा है...",
+          joinedSquad: "क्विज़ में शामिल हो गए!",
+          terminated: "होस्ट द्वारा क्विज़ सत्र समाप्त किया गया।",
+          launched: "क्विज़ शुरू हो गई! 🚀",
+          waitingForHost: "होस्ट द्वारा सत्र शुरू करने की प्रतीक्षा है...",
+          dismissed: "क्विज़ सत्र समाप्त हो गया है।",
+          waitingApproval: "होस्ट की अनुमति की प्रतीक्षा है...",
           approved: "आपको शामिल होने की अनुमति मिल गई है!",
           denied: "शामिल होने का आपका अनुरोध अस्वीकार कर दिया गया।"
         }
@@ -1285,6 +1396,101 @@ export const translations = {
             failed: "प्रोफ़ाइल अपडेट करने में विफल",
             error: "कनेक्शन त्रुटि। कृपया पुनः प्रयास करें।"
           }
+      },
+      live: {
+        quiz: {
+          intel: {
+            standings: "लाइव लीडरबोर्ड",
+            ops: "खिलाड़ी",
+            operator: "खिलाड़ी",
+            score: "अंक",
+            scanning: "लीडरबोर्ड लोड हो रहा है...",
+            broadcast: "होस्ट घोषणा",
+            directive: "सभी खिलाड़ियों के लिए संदेश लिखें...",
+            comms: "लाइव चैट",
+            uplink: "कोई संदेश नहीं है। बातचीत शुरू करें!",
+            transmit: "संदेश लिखें..."
+          },
+          status: {
+            active: "खेल रहे हैं",
+            busy: "व्यस्त",
+            left: "छोड़ दिया",
+            done: "समाप्त"
+          }
+        },
+        lobby: {
+          status: {
+            liveRoom: "लाइव क्विज़ रूम",
+            uptime: "समय",
+            players: "खिलाड़ी"
+          },
+          controls: {
+            exit: "बाहर निकलें",
+            sync: "सिंक करें",
+            terminate: "कमरा बंद करें",
+            terminateConfirm: "क्या आप इस क्विज़ रूम को समाप्त करना चाहते हैं?",
+            initiate: "क्विज़ शुरू करें 🚀"
+          },
+          invite: {
+            title: "दोस्तों को आमंत्रित करें",
+            subtitle: "रूम लिंक शेयर करें और लाइव मुकाबला खेलें",
+            shareTitle: "लाइव क्विज़ मुकाबला",
+            desc: "यह लिंक अपने दोस्तों के साथ साझा करें ताकि वे तुरंत आपके रूम में शामिल हो सकें।",
+            whatsappBtn: "व्हाट्सएप पर शेयर करें",
+            whatsappFooter: "दोस्तों को एक क्लिक में आमंत्रित करें",
+            syncing: "लिंक तैयार हो रहा है..."
+          },
+          selection: {
+            searchPlaceholder: "क्विज़ विषय खोजें...",
+            selectTopic: "क्विज़ विषय चुनें",
+            altInt: "चुना गया विषय",
+            reset: "बदलें",
+            scanning: "क्विज़ विषय लोड हो रहे हैं...",
+            assessments: "प्रश्न",
+            backToTopics: "विषय सूची पर जाएं",
+            selectPkg: "प्रश्न सेट चुनें",
+            set: "सेट",
+            package: "सेट",
+            questions: "प्रश्न",
+            decrypting: "प्रश्न लोड हो रहे हैं...",
+            pkgIntel: "सेट के प्रश्नों का पूर्वावलोकन",
+            statement: "प्रश्न",
+            diff: "कठिनाई",
+            timer: "प्रति प्रश्न समय सीमा",
+            timerSub: "प्रत्येक प्रश्न के लिए सेकंड चुनें"
+          },
+          ready: {
+            title: "होस्ट का इंतज़ार है...",
+            subtitle: "क्विज़ मुकाबला जल्द ही शुरू होगा",
+            desc: "होस्ट विषय और सेट चुन रहे हैं। तैयार रहें!"
+          },
+          players: {
+            title: "शामिल खिलाड़ी",
+            ready: "खिलाड़ी तैयार हैं",
+            host: "होस्ट",
+            leader: "क्विज़ होस्ट",
+            commander: "क्विज़ होस्ट",
+            inControl: "रूम कंट्रोलर",
+            kick: "हटाएं",
+            left: "छोड़ दिया",
+            idle: "निष्क्रिय",
+            active: "ऑनलाइन",
+            awaiting: "अन्य खिलाड़ियों के शामिल होने का इंतज़ार..."
+          },
+          pending: {
+            title: "प्रवेश की प्रतीक्षा",
+            desc: "होस्ट से अनुमति मिलने का इंतज़ार है..."
+          },
+          toasts: {
+            left: "एक खिलाड़ी रूम से बाहर गया",
+            decryptFail: "प्रश्न लोड नहीं हो सके",
+            desync: "सिंक करने में समस्या आई",
+            noTopic: "कृपया पहले एक क्विज़ विषय चुनें",
+            noTimer: "कृपया समय सीमा चुनें",
+            linkCopied: "आमंत्रण लिंक कॉपी हो गया!",
+            syncComplete: "रूम सफलतापूर्वक सिंक हुआ"
+          }
+        }
       }
     }
   }

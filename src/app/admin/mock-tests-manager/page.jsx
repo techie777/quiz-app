@@ -19,6 +19,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import styles from '@/styles/AdminMockManager.module.css';
+import toast from 'react-hot-toast';
 
 // Components
 import CategoryTreeTable from '@/components/admin/mock-tests/CategoryTreeTable';
@@ -80,7 +81,7 @@ export default function MockTestsManager() {
       if (!res.ok) throw new Error("Failed to sync order");
     } catch (err) {
       console.error(err);
-      alert("Order sync failed. Please refresh.");
+      toast.error("Order sync failed. Please refresh.");
     }
   };
 
@@ -195,10 +196,11 @@ export default function MockTestsManager() {
         body: JSON.stringify(examForm)
       });
       if (res.ok) {
+        toast.success("Exam saved successfully!");
         setIsExamModalOpen(false);
         fetchData();
       } else {
-        alert("Failed to save exam");
+        toast.error("Failed to save exam");
       }
     } catch (e) {
       console.error(e);
@@ -254,10 +256,11 @@ export default function MockTestsManager() {
         body: JSON.stringify(categoryForm)
       });
       if (res.ok) {
+        toast.success("Category saved!");
         setIsCategoryModalOpen(false);
         fetchData();
       } else {
-        alert("Failed to save category");
+        toast.error("Failed to save category");
       }
     } catch (e) {
       console.error(e);
@@ -279,11 +282,12 @@ export default function MockTestsManager() {
         body: JSON.stringify(paperForm)
       });
       if (res.ok) {
+        toast.success("Mock Test saved!");
         setIsPaperModalOpen(false);
         fetchPapers();
       } else {
-        const err = await res.json();
-        alert(err.error || "Failed to save paper");
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.error || "Failed to save paper");
       }
     } catch (e) {
       console.error(e);
@@ -304,15 +308,15 @@ export default function MockTestsManager() {
         body: JSON.stringify({ originalPaperId: id })
       });
       if (res.ok) {
-        alert("Mock Test Cloned Successfully!");
+        toast.success("Mock Test Cloned Successfully!");
         fetchPapers();
       } else {
-        const err = await res.json();
-        alert(err.error || "Failed to clone paper");
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.error || "Failed to clone paper");
       }
     } catch (e) {
       console.error(e);
-      alert("Error cloning paper");
+      toast.error("Error cloning paper");
     }
   };
 
@@ -325,11 +329,12 @@ export default function MockTestsManager() {
         body: JSON.stringify({ ...questionForm, paperId: selectedPaperId })
       });
       if (res.ok) {
+        toast.success("Question saved!");
         setIsQuestionModalOpen(false);
         fetchQuestions();
       } else {
-        const err = await res.json();
-        alert(err.error || "Failed to save question");
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.error || "Failed to save question");
       }
     } catch (e) {
       console.error(e);
@@ -364,11 +369,11 @@ export default function MockTestsManager() {
           setQuestionForm(prev => ({ ...prev, options: nOpt }));
         }
       } else {
-        alert(data.error || "Upload failed");
+        toast.error(data.error || "Upload failed");
       }
     } catch (err) {
       console.error(err);
-      alert("Upload error");
+      toast.error("Upload error");
     }
   };
 
@@ -377,7 +382,10 @@ export default function MockTestsManager() {
 
   const handleBulkUpload = async (e) => {
     e.preventDefault();
-    if (!bulkFile || !selectedPaperId) return alert("Select file and paper first");
+    if (!bulkFile || !selectedPaperId) {
+      toast.error("Select file and paper first");
+      return;
+    }
 
     setIsUploading(true);
     try {
@@ -391,7 +399,11 @@ export default function MockTestsManager() {
         const ws = wb.Sheets[wsname];
         const bData = XLSX.utils.sheet_to_json(ws);
 
-        if (bData.length === 0) { setIsUploading(false); return alert("File is empty"); }
+        if (bData.length === 0) {
+          setIsUploading(false);
+          toast.error("File is empty");
+          return;
+        }
 
         const transformed = bData.map(row => ({
           text: row["Question (EN)"] || "",

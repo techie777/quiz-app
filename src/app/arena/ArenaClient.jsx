@@ -27,6 +27,7 @@ import { useData } from "@/context/DataContext";
 import toast from "react-hot-toast";
 import { quizEngine } from "@/lib/quizEngine";
 import { MAIN_CATEGORIES } from "@/lib/mainCategoriesConfig";
+import ContextualLoader from "@/components/ContextualLoader";
 
 const STORAGE_KEY = "quizweb_gk_engine_settings";
 
@@ -45,7 +46,8 @@ export default function ArenaClient({ initialSelectedCategoryIds = null, embedde
   const subjectParam = searchParams?.get("subject");
 
   // Mode Selection: 'solo' (Solo Test Engine) | 'battle' (1v1 Friend Challenge)
-  const [activeArenaMode, setActiveArenaMode] = useState("solo");
+  const isBattleRequested = searchParams?.get("battle") === "true" || searchParams?.get("mode") === "battle";
+  const [activeArenaMode, setActiveArenaMode] = useState(() => isBattleRequested ? "battle" : "solo");
 
   // Metadata & categories state
   const [meta, setMeta] = useState(() => cachedArenaMeta);
@@ -78,8 +80,11 @@ export default function ArenaClient({ initialSelectedCategoryIds = null, embedde
   const [showCustomCount, setShowCustomCount] = useState(false);
 
   // 1v1 Battle Mode Inputs
-  const [battleCategory, setBattleCategory] = useState("india-gk");
+  const [battleCategory, setBattleCategory] = useState(() => {
+    return searchParams?.get("cat") || searchParams?.get("category") || "india-gk";
+  });
   const [challengeCodeInput, setChallengeCodeInput] = useState("");
+  const [battleTab, setBattleTab] = useState(() => searchParams?.get("tab") === "join" ? "join" : "create"); // "create" | "join"
 
   // Load metadata on mount
   useEffect(() => {
@@ -345,6 +350,18 @@ export default function ArenaClient({ initialSelectedCategoryIds = null, embedde
   const categoriesWithData = filteredCategories.filter((c) => c.hasData);
   const upcomingCategories = filteredCategories.filter((c) => !c.hasData);
 
+  if (loadingMeta) {
+    return (
+      <div className="relative w-full min-h-screen bg-gradient-to-b from-[#EEF4FF] via-[#E2EDFF] to-[#D5E5FF] dark:from-[#080E1E] dark:via-[#0F1B38] dark:to-[#0A1226] text-slate-900 dark:text-slate-100 flex items-center justify-center p-4">
+        <ContextualLoader 
+          type="subjects" 
+          message={isHindi ? "टेस्ट इंजन व विषय लोड हो रहे हैं..." : "Loading Test Engine & Subjects..."}
+          subMessage={isHindi ? "सभी श्रेणियां व प्रश्न बैंक तैयार किए जा रहे हैं..." : "Preparing categories and question bank..."}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-full min-h-screen bg-gradient-to-b from-[#EEF4FF] via-[#E2EDFF] to-[#D5E5FF] dark:from-[#080E1E] dark:via-[#0F1B38] dark:to-[#0A1226] text-slate-900 dark:text-slate-100 overflow-hidden transition-colors">
       
@@ -358,209 +375,200 @@ export default function ArenaClient({ initialSelectedCategoryIds = null, embedde
       {/* Main Content Container */}
       <div className="relative z-10 w-full max-w-[960px] mx-auto px-3 sm:px-4 py-4 pb-28">
         
-        {/* ── 1. HEADER & DUAL MODE SWITCHER ── */}
-        <header className="mb-6">
-          <div className="flex flex-wrap items-center justify-between gap-2.5 mb-3">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white/90 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800 shadow-2xs">
-              <Sparkles size={14} className="text-amber-500 fill-amber-500" />
-              <span>{isHindi ? "जीके एरीना व टेस्ट इंजन" : "GK Arena & Test Engine"}</span>
-            </div>
-
-            <Link
-              href="/leaderboard"
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/50 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800 transition-all shadow-2xs group"
-            >
-              <Trophy size={13} className="text-amber-500 group-hover:scale-110 transition-transform" />
-              <span>{isHindi ? "🏆 लाइव लीडरबोर्ड देखें →" : "🏆 View Leaderboard →"}</span>
-            </Link>
-          </div>
-
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        {/* ── 1. HEADER & FULL-WIDTH MODE SWITCHER ── */}
+        <header className="mb-3.5">
+          {/* Top Row: Title + Subtitle on Left, Leaderboard Icon Button on Right */}
+          <div className="flex items-center justify-between gap-3">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
                 {activeArenaMode === "solo"
                   ? (isHindi ? "🎯 GK टेस्ट इंजन" : "🎯 GK Test Engine")
                   : (isHindi ? "⚔️ 1v1 लाइव जीके बैटल" : "⚔️ 1v1 Live GK Battle")}
               </h1>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-xl font-medium">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
                 {activeArenaMode === "solo"
-                  ? (isHindi
-                      ? "श्रेणी, कठिनाई और समय सीमा चुनें — और बिना रुके लगातार प्रश्नों का अभ्यास करें।"
-                      : "Configure categories, difficulty & timer — practice continuous testing.")
-                  : (isHindi
-                      ? "अपने दोस्तों को समान प्रश्नों पर चुनौती दें और देखें कि कौन सबसे तेज़ और सही है!"
-                      : "Challenge friends on identical questions in real-time and compare ranks!")}
+                  ? (isHindi ? "श्रेणी और समय चुनें, लगातार प्रश्नों का अभ्यास करें" : "Configure categories & practice continuous testing")
+                  : (isHindi ? "दोस्त के साथ लाइव GK मुकाबला" : "Real-time 1v1 battle with friends")}
               </p>
             </div>
 
-            {/* Segmented Mode Switcher */}
-            <div className="inline-flex items-center p-1 rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 backdrop-blur-md shadow-xs shrink-0 self-start sm:self-auto">
-              <button
-                type="button"
-                onClick={() => setActiveArenaMode("solo")}
-                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                  activeArenaMode === "solo"
-                    ? "bg-indigo-600 text-white shadow-sm"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                }`}
-              >
-                <span>🎯</span>
-                <span>{isHindi ? "सोलो टेस्ट इंजन" : "Solo Practice"}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveArenaMode("battle")}
-                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                  activeArenaMode === "battle"
-                    ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-sm"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                }`}
-              >
-                <span>⚔️</span>
-                <span>{isHindi ? "1v1 बैटल मोड" : "1v1 Friend Battle"}</span>
-              </button>
-            </div>
+            {/* Compact Header Leaderboard Icon Button */}
+            <Link
+              href="/leaderboard"
+              className="p-2 sm:px-3 sm:py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200/80 text-xs font-bold transition-all shadow-2xs flex items-center gap-1 shrink-0"
+              title={isHindi ? "लीडरबोर्ड देखें" : "View Leaderboard"}
+            >
+              <Trophy size={15} className="text-amber-600" />
+              <span className="hidden sm:inline">{isHindi ? "लीडरबोर्ड" : "Leaderboard"}</span>
+            </Link>
+          </div>
+
+          {/* Full-Width Segmented Mode Switcher (Heading ke theek neeche) */}
+          <div className="w-full grid grid-cols-2 p-1 rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 shadow-2xs mt-3 text-xs font-bold">
+            <button
+              type="button"
+              onClick={() => setActiveArenaMode("solo")}
+              className={`py-2 px-3 rounded-xl text-center transition-all cursor-pointer ${
+                activeArenaMode === "solo"
+                  ? "bg-indigo-600 text-white shadow-xs font-bold"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 font-medium"
+              }`}
+            >
+              🎯 {isHindi ? "सोलो टेस्ट" : "Solo Practice"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveArenaMode("battle")}
+              className={`py-2 px-3 rounded-xl text-center transition-all cursor-pointer ${
+                activeArenaMode === "battle"
+                  ? "bg-indigo-600 text-white shadow-xs font-bold"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 font-medium"
+              }`}
+            >
+              ⚔️ {isHindi ? "1v1 बैटल" : "1v1 Battle"}
+            </button>
           </div>
         </header>
 
         {/* ── CONDITIONAL SECTION: BATTLE MODE VS SOLO ENGINE ── */}
         {activeArenaMode === "battle" ? (
-          <div className="space-y-5 animate-in fade-in duration-300">
-            {/* Battle Showcase Hero Card */}
-            <div className="p-4 sm:p-7 rounded-3xl bg-gradient-to-br from-indigo-900 via-indigo-950 to-purple-950 text-white border border-indigo-700/50 shadow-xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
-              <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6">
-                <div className="space-y-1.5 text-center sm:text-left">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-amber-400 text-slate-950 shadow-xs">
-                    <Swords size={13} />
-                    <span>{isHindi ? "⚡ रियल-टाइम लाइव मल्टीप्लेयर" : "⚡ Real-Time Live Battle"}</span>
-                  </div>
-                  <h2 className="text-lg sm:text-2xl font-black tracking-tight">
-                    {isHindi ? "दोस्तों के साथ लाइव मुकाबला!" : "Compete Live with Friends!"}
-                  </h2>
-                  <p className="text-xs sm:text-sm text-indigo-200/90 max-w-lg leading-relaxed">
-                    {isHindi
-                      ? "एक साथ लाइव स्क्रीन, टाइमर और रियल-टाइम लीडरबोर्ड के साथ मुकाबला करें। रूम बनाएं या दोस्त का रूम कोड डालकर तुरंत शामिल हों!"
-                      : "Sync quizzes in real time with live timers and live scoreboards. Create a room or enter a code to join instantly!"}
-                  </p>
-                </div>
-
-                <div className="shrink-0 flex items-center justify-center">
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-3xl sm:text-4xl shadow-inner">
-                    ⚔️
-                  </div>
-                </div>
+          <div className="space-y-3 animate-in fade-in duration-200">
+            {/* Unified 1v1 Battle Card (Single Card, 2 Tabs) */}
+            <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-3">
+              {/* Card Sub-Tabs: [ नया रूम ] [ कोड से जुड़ें ] */}
+              <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl gap-1 text-xs font-bold">
+                <button
+                  type="button"
+                  onClick={() => setBattleTab("create")}
+                  className={`py-2 px-3 rounded-lg text-center transition-all cursor-pointer ${
+                    battleTab === "create"
+                      ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs font-bold"
+                      : "text-slate-500 hover:text-slate-800 dark:text-slate-400 font-medium"
+                  }`}
+                >
+                  ✨ {isHindi ? "नया रूम" : "Create Room"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBattleTab("join")}
+                  className={`py-2 px-3 rounded-lg text-center transition-all cursor-pointer ${
+                    battleTab === "join"
+                      ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs font-bold"
+                      : "text-slate-500 hover:text-slate-800 dark:text-slate-400 font-medium"
+                  }`}
+                >
+                  🔗 {isHindi ? "कोड से जुड़ें" : "Join Code"}
+                </button>
               </div>
-            </div>
 
-            {/* Two Main Live Battle Action Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-              {/* Card 1: Create Live Room */}
-              <div className="p-4 sm:p-6 rounded-3xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-800 shadow-md flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center gap-1.5 mb-2 font-black text-xs sm:text-sm text-indigo-600 dark:text-indigo-400">
-                    <Sparkles size={15} />
-                    <span>{isHindi ? "विकल्प 1: नया लाइव रूम बनाएं (Host)" : "Option 1: Host Live Room"}</span>
+              {/* Tab 1: नया रूम (Create Room) */}
+              {battleTab === "create" ? (
+                <div className="space-y-3 animate-in fade-in duration-150">
+                  <div className="flex items-center justify-between text-[13px] font-semibold text-slate-700 dark:text-slate-300">
+                    <span>{isHindi ? "विषय" : "Topic"}</span>
+                    {(() => {
+                      const selCat = categoriesWithData.find((c) => c.slug === battleCategory);
+                      return selCat ? (
+                        <span className="text-[11px] text-slate-400 font-normal">
+                          ({selCat.count} {isHindi ? "प्रश्न" : "ques"})
+                        </span>
+                      ) : null;
+                    })()}
                   </div>
-                  <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white mb-1.5">
-                    {isHindi ? "विषय चुनें व लाइव रूम शुरू करें" : "Pick Topic & Launch Live Room"}
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-3.5">
-                    {isHindi
-                      ? "रूम कोड व WhatsApp इनवाइट लिंक तैयार होगा। दोस्त आपके साथ एक ही समय पर लाइव टेस्ट देंगे!"
-                      : "Generates a 6-letter room code & WhatsApp link. Play synced questions in real time!"}
-                  </p>
 
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                    {isHindi ? "बैटल विषय:" : "Battle Subject:"}
-                  </label>
-                  <select
-                    value={battleCategory}
-                    onChange={(e) => setBattleCategory(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-4"
+                  {/* Topic Selector Chips (Tappable Chips) */}
+                  <div className="flex flex-wrap gap-1.5 max-h-44 overflow-y-auto custom-scrollbar pt-0.5">
+                    {categoriesWithData.map((cat) => {
+                      const isSelected = battleCategory === cat.slug;
+                      return (
+                        <button
+                          key={cat.slug}
+                          type="button"
+                          onClick={() => setBattleCategory(cat.slug)}
+                          className={`px-2.5 py-1.5 rounded-xl text-xs transition-all cursor-pointer flex items-center gap-1.5 border select-none ${
+                            isSelected
+                              ? "bg-indigo-50 dark:bg-indigo-950/60 border-indigo-500 text-indigo-700 dark:text-indigo-300 font-bold shadow-2xs ring-1 ring-indigo-500/20"
+                              : "bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-300 font-medium"
+                          }`}
+                        >
+                          <span>{cat.icon || "📚"}</span>
+                          <span>{isHindi ? cat.nameHi : cat.name}</span>
+                          <span className="text-[10px] text-slate-400 font-normal">
+                            ({cat.count})
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Primary Solid Indigo Button */}
+                  <button
+                    type="button"
+                    onClick={handleCreateBattle}
+                    className="w-full py-2.5 sm:py-3 px-4 rounded-xl font-bold text-xs sm:text-sm text-white bg-indigo-600 hover:bg-indigo-700 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs mt-1"
                   >
-                    {categoriesWithData.map((cat) => (
-                      <option key={cat.slug} value={cat.slug}>
-                        {cat.icon} {isHindi ? cat.nameHi : cat.name} ({cat.count} {isHindi ? "प्रश्न" : "ques"})
-                      </option>
-                    ))}
-                  </select>
+                    <span>⚔️</span>
+                    <span>{isHindi ? "लाइव रूम बनाएं" : "Create Live Room"}</span>
+                    <ArrowRight size={15} />
+                  </button>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={handleCreateBattle}
-                  className="w-full py-3 sm:py-3.5 px-4 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 active:scale-95 transition-all shadow-md shadow-indigo-500/25 flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <Swords size={16} />
-                  <span>{isHindi ? "🚀 लाइव बैटल रूम बनाएं" : "🚀 Create Live Battle Room"}</span>
-                  <ArrowRight size={15} />
-                </button>
-              </div>
-
-              {/* Card 2: Join Live Room with Code */}
-              <div className="p-4 sm:p-6 rounded-3xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-800 shadow-md flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center gap-1.5 mb-2 font-black text-xs sm:text-sm text-purple-600 dark:text-purple-400">
-                    <Share2 size={15} />
-                    <span>{isHindi ? "विकल्प 2: कोड से लाइव जुड़ें (Join)" : "Option 2: Join Live Room"}</span>
+              ) : (
+                /* Tab 2: कोड से जुड़ें (Join with Code) */
+                <div className="space-y-3 animate-in fade-in duration-150">
+                  <div>
+                    <label className="block text-[13px] font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                      {isHindi ? "रूम कोड या लिंक" : "Room Code or Link"}
+                    </label>
+                    <input
+                      type="text"
+                      value={challengeCodeInput}
+                      onChange={(e) => setChallengeCodeInput(e.target.value.toUpperCase())}
+                      placeholder={isHindi ? "उदा. BTL902 या लिंक..." : "e.g. BTL902 or paste link..."}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-mono font-bold text-slate-800 dark:text-slate-100 uppercase tracking-widest placeholder:tracking-normal placeholder:font-sans focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
                   </div>
-                  <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white mb-1.5">
-                    {isHindi ? "दोस्त के लाइव रूम में शामिल हों" : "Enter Friend's Room Code"}
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-3.5">
-                    {isHindi
-                      ? "दोस्त द्वारा शेयर किया गया 6-अक्षरों का कोड या लिंक यहाँ डालें और मुकाबला शुरू करें:"
-                      : "Enter the 6-character room code or link shared by your friend to join live:"}
-                  </p>
 
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                    {isHindi ? "रूम कोड या लिंक:" : "Room Code or Link:"}
-                  </label>
-                  <input
-                    type="text"
-                    value={challengeCodeInput}
-                    onChange={(e) => setChallengeCodeInput(e.target.value.toUpperCase())}
-                    placeholder={isHindi ? "उदा. BTL902 या लिंक..." : "e.g. BTL902 or paste link..."}
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-mono font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest placeholder:tracking-normal placeholder:font-sans focus:outline-none focus:ring-2 focus:ring-purple-500 mb-4"
-                  />
+                  {/* Primary Solid Indigo Button (No Pink Gradient!) */}
+                  <button
+                    type="button"
+                    onClick={handleJoinBattle}
+                    className="w-full py-2.5 sm:py-3 px-4 rounded-xl font-bold text-xs sm:text-sm text-white bg-indigo-600 hover:bg-indigo-700 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs mt-1"
+                  >
+                    <span>🔗</span>
+                    <span>{isHindi ? "रूम में शामिल हों" : "Join Room"}</span>
+                    <ArrowRight size={15} />
+                  </button>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={handleJoinBattle}
-                  className="w-full py-3 sm:py-3.5 px-4 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 active:scale-95 transition-all shadow-md shadow-purple-500/25 flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <Trophy size={16} />
-                  <span>{isHindi ? "⚡ लाइव रूम में शामिल हों (Join)" : "⚡ Join Live Battle Room"}</span>
-                  <ArrowRight size={15} />
-                </button>
-              </div>
+              )}
             </div>
 
-            {/* Card 3: Offline Friend Challenge (Turn-based option) */}
-            <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-100/70 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5 text-center sm:text-left">
-                <span className="text-xl">📩</span>
-                <div>
-                  <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                    {isHindi ? "दोस्त अभी ऑफलाइन है? स्कोर चैलेंज भेजें" : "Friend offline? Send a turn-based score challenge"}
-                  </div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                    {isHindi 
-                      ? "पहले आप टेस्ट दें, फिर आपका स्कोर पछाड़ने (Score to Beat) का लिंक दोस्त को भेजें।"
-                      : "Play solo now, then share your score link for friends to beat whenever they're free."}
-                  </div>
-                </div>
+            {/* Offline Challenge: Single-line Left-aligned Row */}
+            <button
+              type="button"
+              onClick={handleCreateAsyncChallenge}
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between gap-2 text-left transition-all cursor-pointer group"
+            >
+              <div className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300 min-w-0">
+                <span className="text-sm shrink-0">📩</span>
+                <span className="truncate">
+                  {isHindi ? "दोस्त offline है? Score challenge भेजें" : "Friend offline? Send a Score Challenge"}
+                </span>
               </div>
+              <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 group-hover:translate-x-0.5 transition-transform shrink-0">
+                →
+              </span>
+            </button>
 
-              <button
-                type="button"
-                onClick={handleCreateAsyncChallenge}
-                className="shrink-0 px-4 py-2 rounded-xl text-xs font-bold bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:border-indigo-500 hover:text-indigo-600 transition-all shadow-2xs"
+            {/* Sub-Link: Leaderboard */}
+            <div className="text-center pt-0.5">
+              <Link
+                href="/leaderboard"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-indigo-600 transition-colors"
               >
-                {isHindi ? "स्कोर चैलेंज खेलें →" : "Play Score Challenge →"}
-              </button>
+                <span>🏆</span>
+                <span>{isHindi ? "लाइव लीडरबोर्ड देखें" : "View Live Leaderboard"}</span>
+                <span>→</span>
+              </Link>
             </div>
           </div>
         ) : (

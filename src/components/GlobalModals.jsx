@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { useUI } from "@/context/UIContext";
 import OnboardingModal from "@/components/OnboardingModal";
 import TierSelectionModal from "@/components/TierSelectionModal";
@@ -9,6 +10,9 @@ import OnboardingGuideModal from "@/components/OnboardingGuideModal";
 import PlayMenuModal from "@/components/PlayMenuModal";
 
 export default function GlobalModals() {
+  const pathname = usePathname();
+  const isLivePage = pathname?.startsWith("/live");
+
   const {
     isOnboardingOpen,
     closeOnboarding,
@@ -21,6 +25,7 @@ export default function GlobalModals() {
 
   // On mount, if splash was already shown in this session but onboarding guide not seen yet
   useEffect(() => {
+    if (isLivePage) return;
     try {
       const splashShown = sessionStorage.getItem("quizweb_splash_shown");
       const tutorialSeen = localStorage.getItem("onboardingSeen");
@@ -28,9 +33,10 @@ export default function GlobalModals() {
         openTutorial();
       }
     } catch {}
-  }, [openTutorial]);
+  }, [openTutorial, isLivePage]);
 
   const handleSplashComplete = () => {
+    if (isLivePage) return;
     try {
       const tutorialSeen = localStorage.getItem("onboardingSeen");
       if (!tutorialSeen) {
@@ -38,6 +44,10 @@ export default function GlobalModals() {
       }
     } catch {}
   };
+
+  if (isLivePage) {
+    return null;
+  }
 
   return (
     <>

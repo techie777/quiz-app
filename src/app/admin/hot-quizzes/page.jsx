@@ -85,10 +85,10 @@ export default function AdminHotQuizzesPage() {
       {/* Top Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
         <div>
-          <h1 style={{ fontSize: "24px", fontWeight: 800, color: "#1E293B", margin: 0 }}>
+          <h1 style={{ fontSize: "24px", fontWeight: 800, color: "var(--text-primary, #1E293B)", margin: 0 }}>
             Hot Quizzes & Fun Formats Manager
           </h1>
-          <p style={{ fontSize: "14px", color: "#64748B", margin: "4px 0 0" }}>
+          <p style={{ fontSize: "14px", color: "var(--text-secondary, #64748B)", margin: "4px 0 0" }}>
             Control quizzes appearing in the Explorer "🔥 Hot Quizzes" row and the dedicated Fun Quizzes page.
           </p>
         </div>
@@ -100,8 +100,9 @@ export default function AdminHotQuizzesPage() {
             gap: "6px",
             padding: "8px 16px",
             borderRadius: "10px",
-            background: "#F1F5F9",
-            border: "1px solid #CBD5E1",
+            background: "var(--bg-secondary, #F1F5F9)",
+            border: "1px solid var(--card-border, #CBD5E1)",
+            color: "var(--text-primary, #1E293B)",
             cursor: "pointer",
             fontWeight: 600,
             fontSize: "13px",
@@ -115,8 +116,8 @@ export default function AdminHotQuizzesPage() {
       {/* Bulk Upload CSV Specs Info */}
       <div
         style={{
-          background: "#EEF2FF",
-          border: "1px solid #C7D2FE",
+          background: "var(--tier-accent-light, #EEF2FF)",
+          border: "1px solid var(--tier-accent-border, #C7D2FE)",
           borderRadius: "16px",
           padding: "16px 20px",
           marginBottom: "24px",
@@ -127,10 +128,10 @@ export default function AdminHotQuizzesPage() {
         }}
       >
         <div>
-          <h3 style={{ fontSize: "14px", fontWeight: 700, color: "#3730A3", margin: "0 0 4px" }}>
+          <h3 style={{ fontSize: "14px", fontWeight: 700, color: "var(--accent, #3730A3)", margin: "0 0 4px" }}>
             CSV Bulk Upload Media Specifications
           </h3>
-          <p style={{ fontSize: "12px", color: "#4F46E5", margin: 0, lineHeight: 1.5 }}>
+          <p style={{ fontSize: "12px", color: "var(--accent, #4F46E5)", margin: 0, lineHeight: 1.5 }}>
             CSV format accepts: <code>topic, format, hot, hotRank, coverImage, question, optionLayout, imageUrl, imageAlt, imageCredit</code>. Images must be 16:10 fixed aspect ratio or WebP, max 800px.
           </p>
         </div>
@@ -147,24 +148,26 @@ export default function AdminHotQuizzesPage() {
             width: "100%",
             padding: "10px 14px 10px 38px",
             borderRadius: "12px",
-            border: "1px solid #CBD5E1",
+            border: "1px solid var(--card-border, #CBD5E1)",
+            background: "var(--bg-primary, #FFFFFF)",
+            color: "var(--text-primary, #0F172A)",
             fontSize: "14px",
           }}
         />
-        <Search size={16} color="#94A3B8" style={{ position: "absolute", left: "12px", top: "12px" }} />
+        <Search size={16} color="var(--text-secondary, #94A3B8)" style={{ position: "absolute", left: "12px", top: "12px" }} />
       </div>
 
       {/* Quizzes Table */}
       {loading ? (
-        <div style={{ padding: "40px", textAlign: "center", color: "#64748B" }}>
+        <div style={{ padding: "40px", textAlign: "center", color: "var(--text-secondary, #64748B)" }}>
           Loading quizzes...
         </div>
       ) : (
         <div
           style={{
-            background: "#FFFFFF",
+            background: "var(--card-bg, #FFFFFF)",
             borderRadius: "18px",
-            border: "1px solid #E2E8F0",
+            border: "1px solid var(--card-border, #E2E8F0)",
             overflow: "hidden",
             boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
           }}
@@ -172,7 +175,7 @@ export default function AdminHotQuizzesPage() {
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
               <thead>
-                <tr style={{ background: "#F8FAFC", borderBottom: "1px solid #E2E8F0", textAlign: "left" }}>
+                <tr style={{ background: "var(--bg-secondary, #F8FAFC)", borderBottom: "1px solid var(--card-border, #E2E8F0)", textAlign: "left", color: "var(--text-primary, #1E293B)" }}>
                   <th style={{ padding: "12px 16px" }}>Cover</th>
                   <th style={{ padding: "12px 16px" }}>Title</th>
                   <th style={{ padding: "12px 16px" }}>Format</th>
@@ -187,16 +190,16 @@ export default function AdminHotQuizzesPage() {
                   const qId = quiz.id || quiz.slug;
                   const isSaving = savingId === qId;
                   return (
-                    <tr key={qId} style={{ borderBottom: "1px solid #F1F5F9" }}>
+                    <tr key={qId} style={{ borderBottom: "1px solid var(--card-border, #F1F5F9)" }}>
                       <td style={{ padding: "12px 16px" }}>
                         <div
                           style={{
                             width: "48px",
                             height: "32px",
                             borderRadius: "6px",
-                            background: "#F1F5F9",
+                            background: "var(--bg-secondary, #F1F5F9)",
                             overflow: "hidden",
-                            border: "1px solid #E2E8F0",
+                            border: "1px solid var(--card-border, #E2E8F0)",
                           }}
                         >
                           {quiz.coverImage ? (
@@ -206,16 +209,16 @@ export default function AdminHotQuizzesPage() {
                               style={{ width: "100%", height: "100%", objectFit: "cover" }}
                             />
                           ) : (
-                            <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#94A3B8" }}>
+                            <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-secondary, #94A3B8)" }}>
                               <Image size={14} />
                             </div>
                           )}
                         </div>
                       </td>
 
-                      <td style={{ padding: "12px 16px", fontWeight: 700, color: "#1E293B" }}>
+                      <td style={{ padding: "12px 16px", fontWeight: 700, color: "var(--text-primary, #1E293B)" }}>
                         <div>{quiz.title}</div>
-                        {quiz.titleHi && <div style={{ fontSize: "11px", color: "#64748B" }}>{quiz.titleHi}</div>}
+                        {quiz.titleHi && <div style={{ fontSize: "11px", color: "var(--text-secondary, #64748B)" }}>{quiz.titleHi}</div>}
                       </td>
 
                       <td style={{ padding: "12px 16px" }}>
@@ -225,7 +228,9 @@ export default function AdminHotQuizzesPage() {
                           style={{
                             padding: "6px 10px",
                             borderRadius: "8px",
-                            border: "1px solid #CBD5E1",
+                            border: "1px solid var(--card-border, #CBD5E1)",
+                            background: "var(--bg-primary, #FFFFFF)",
+                            color: "var(--text-primary, #0F172A)",
                             fontSize: "12px",
                             fontWeight: 600,
                             textTransform: "capitalize",
@@ -257,7 +262,9 @@ export default function AdminHotQuizzesPage() {
                             width: "55px",
                             padding: "4px 8px",
                             borderRadius: "6px",
-                            border: "1px solid #CBD5E1",
+                            border: "1px solid var(--card-border, #CBD5E1)",
+                            background: "var(--bg-primary, #FFFFFF)",
+                            color: "var(--text-primary, #0F172A)",
                             fontSize: "12px",
                             textAlign: "center",
                           }}
@@ -274,7 +281,9 @@ export default function AdminHotQuizzesPage() {
                             width: "220px",
                             padding: "4px 8px",
                             borderRadius: "6px",
-                            border: "1px solid #CBD5E1",
+                            border: "1px solid var(--card-border, #CBD5E1)",
+                            background: "var(--bg-primary, #FFFFFF)",
+                            color: "var(--text-primary, #0F172A)",
                             fontSize: "11px",
                           }}
                         />

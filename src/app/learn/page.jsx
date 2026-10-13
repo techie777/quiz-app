@@ -17,6 +17,7 @@ import { useQuiz } from "@/context/QuizContext";
 import SetCard, { FREE_SETS_QUOTA } from "@/components/SetCard";
 import LearnCard from "@/components/LearnCard";
 import ProBannerStrip from "@/components/monetization/ProBannerStrip";
+import ContextualLoader from "@/components/ContextualLoader";
 import styles from "@/styles/LearnPage.module.css";
 import toast from "react-hot-toast";
 
@@ -261,17 +262,14 @@ export default function LearnDiscoveryPage() {
         </div>
       </div>
 
-      {/* ── Loading Skeleton State ── */}
+      {/* ── Contextual Loading State ── */}
       {loading && (
-        <div className="space-y-8 animate-pulse">
-          <div>
-            <div className="h-6 w-32 bg-slate-200 dark:bg-slate-800 rounded-lg mb-4" />
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="aspect-[4/5] bg-slate-200 dark:bg-slate-800 rounded-2xl" />
-              ))}
-            </div>
-          </div>
+        <div className="py-16 flex items-center justify-center">
+          <ContextualLoader 
+            type="subjects" 
+            message={isHindi ? "सीखने के सेट्स लोड हो रहे हैं..." : "Loading Learning Sets..."} 
+            subMessage={isHindi ? "दैनिक अभ्यास सामग्री तैयार की जा रही है..." : "Preparing daily discovery sets..."}
+          />
         </div>
       )}
 

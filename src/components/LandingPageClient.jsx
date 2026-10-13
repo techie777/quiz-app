@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useData } from "@/context/DataContext";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, MapPin, Calendar, Clock, BookOpen, User, ArrowRight, Share2, Heart, Filter, SlidersHorizontal, ChevronDown, ChevronUp, Star, LayoutGrid, List, Sparkles, Trophy, Radio } from "lucide-react";
+import { Search, MapPin, Calendar, Clock, BookOpen, User, ArrowRight, Share2, Heart, Filter, SlidersHorizontal, ChevronDown, ChevronUp, Star, LayoutGrid, List, Sparkles, Trophy, Radio, Swords } from "lucide-react";
 import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { debounce } from "lodash";
@@ -1730,6 +1730,46 @@ export default function LandingPage({ initialCategories = [], defaultAudienceTab
                   <SlidersHorizontal size={18} />
                 </button>
               )}
+            </div>
+          </div>
+
+          {/* 1.5 LIVE PLAY WITH FRIENDS SHOWCASE BANNER */}
+          <div className="relative z-10 mb-5 overflow-hidden rounded-2xl p-3 sm:p-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-950 text-white shadow-lg shadow-indigo-950/20 border border-indigo-500/25">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+              <div className="flex items-center gap-3 text-left w-full sm:w-auto">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-500 flex items-center justify-center text-lg sm:text-xl shadow-md flex-shrink-0">
+                  ⚔️
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-black uppercase tracking-wider">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping inline-block" />
+                      LIVE PLAY
+                    </span>
+                    <span className="text-[11px] font-bold text-slate-300">
+                      {isHindi ? "1v1 लाइव जीके बैटल" : "1v1 Live GK Battle"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-300 font-medium line-clamp-1">
+                    {isHindi ? "दोस्तों के साथ लाइव मुकाबला खेलें — रूम बनाएं या कोड से तुरंत जुड़ें!" : "Challenge friends live — create a room or join with a code!"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto flex-shrink-0 justify-stretch sm:justify-end">
+                <Link
+                  href="/arena?battle=true"
+                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 hover:from-indigo-400 hover:to-pink-400 text-white font-black text-xs shadow-md shadow-indigo-500/20 active:scale-98 transition-all whitespace-nowrap"
+                >
+                  <span>⚔️ {isHindi ? "रूम बनाएं" : "Create Room"}</span>
+                </Link>
+                <Link
+                  href="/arena?battle=true&tab=join"
+                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 active:scale-98 transition-all whitespace-nowrap"
+                >
+                  <span>🚀 {isHindi ? "कोड से जुड़ें" : "Join Code"}</span>
+                </Link>
+              </div>
             </div>
           </div>
 

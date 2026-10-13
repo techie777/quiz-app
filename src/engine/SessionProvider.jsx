@@ -40,6 +40,11 @@ export function SessionProvider({ children, sessionId: propSessionId }) {
     const s = socketService.connect();
     setSocket(s);
 
+    if (s.connected) {
+      setConnectionStatus('connected');
+      console.log('📡 Session Provider: Socket already connected, ID:', s.id);
+    }
+
     // Enhanced connection monitoring
     s.on('connect', () => {
       setConnectionStatus('connected');
@@ -55,12 +60,14 @@ export function SessionProvider({ children, sessionId: propSessionId }) {
             return;
         }
 
-        console.log('📡 Re-emitting JOIN_SESSION for:', current.userId);
+        console.log('📡 Re-emitting JOIN_SESSION for:', current.userId, current.rollNumber ? `(Roll: ${current.rollNumber})` : '');
         s.emit('JOIN_SESSION', {
           sessionId: current.sessionId,
           role: current.role,
           userId: current.userId,
-          userName: current.userName
+          userName: current.userName,
+          rollNumber: current.rollNumber,
+          isB2B: current.isB2B
         });
       }
     });
@@ -126,24 +133,27 @@ export function SessionProvider({ children, sessionId: propSessionId }) {
       }
 
       setSession(prev => {
+         const isKicked = data.action === 'KICKED' || data.payload?.status === 'KICKED' || data.payload?.isKicked || data.action === 'DISCONTINUED' || data.payload?.status === 'DISCONTINUED';
          const newState = { 
             ...prev, 
             ...data.payload,
             userId: (data.action === 'REHYDRATE' || !prev?.userId) ? (data.payload?.userId || prev?.userId) : prev?.userId,
             userName: (data.action === 'REHYDRATE' || !prev?.userName) ? (data.payload?.userName || prev?.userName) : prev?.userName,
             role: (data.action === 'REHYDRATE' || !prev?.role) ? (data.payload?.role || prev?.role) : prev?.role,
-            status: (data.action === 'DENIED' || prev?.status === 'DENIED') ? 'DENIED' : (data.payload?.status || prev?.status),
+            status: isKicked ? 'KICKED' : ((data.action === 'DENIED' || prev?.status === 'DENIED') ? 'DENIED' : (data.payload?.status || prev?.status)),
+            isKicked: isKicked ? true : (data.payload?.isKicked ?? prev?.isKicked ?? false),
             type: data.payload?.type || prev?.type,
+            activeContentId: data.payload?.activeContentId || prev?.activeContentId,
             sessionId: data.payload?.sessionId || prev?.sessionId,
             isPaused: data.payload?.hasOwnProperty('isPaused') ? data.payload.isPaused : prev?.isPaused
          };
 
          if (typeof window !== 'undefined' && newState.sessionId) {
-            if (data.action === 'DISCONTINUED' || newState.status === 'DISCONTINUED' || newState.status === 'KICKED') {
+            if (data.action === 'TERMINATED' || newState.status === 'TERMINATED') {
                localStorage.removeItem(`quiz_callsign_${newState.sessionId}`);
                localStorage.removeItem(`quiz_uid_${newState.sessionId}`);
                sessionStorage.removeItem('active_quiz_session');
-            } else {
+            } else if (!isKicked) {
                sessionStorage.setItem('active_quiz_session', JSON.stringify(newState));
             }
          }
@@ -159,19 +169,15 @@ export function SessionProvider({ children, sessionId: propSessionId }) {
       setSessionReady(true);
       setParticipants(list);
 
-      // FAIL-SAFE: If I am a Guest and I am no longer in the authorized list, I have been dismissed.
+      // FAIL-SAFE: Only handle non-B2B guests where host explicitly purged them
       const current = sessionRef.current;
-      if (current?.role === 'GUEST' && current?.status !== 'PENDING' && current?.status !== 'DISCONTINUED') {
+      const isB2BStudent = current?.isB2B || !!current?.rollNumber;
+      if (!isB2BStudent && current?.role === 'GUEST' && current?.status !== 'PENDING' && current?.status !== 'KICKED' && !current?.isSoloMode) {
           const amIAuthorized = list.find(p => p.userId === current.userId);
-          if (!amIAuthorized) {
-              console.warn('📡 [SECURITY] Identity missing from mission authorization. Evicting...');
-              setSession(prev => ({ ...prev, status: 'DISCONTINUED' }));
-              setLastEvent('STATE:DISCONTINUED');
-              if (typeof window !== 'undefined' && current.sessionId) {
-                  localStorage.removeItem(`quiz_callsign_${current.sessionId}`);
-                  localStorage.removeItem(`quiz_uid_${current.sessionId}`);
-                  sessionStorage.removeItem('active_quiz_session');
-              }
+          if (!amIAuthorized && list.length > 0) {
+              console.warn('📡 [SECURITY] Non-B2B guest missing from mission authorization. Setting KICKED state...');
+              setSession(prev => ({ ...prev, status: 'KICKED', isKicked: true }));
+              setLastEvent('STATE:KICKED');
           }
       }
     });
@@ -255,8 +261,10 @@ export function SessionProvider({ children, sessionId: propSessionId }) {
        toast.success(t('live.toasts.launched'));
     } else if (lastEvent === 'STATE:CLEARANCE_DENIED' || lastEvent === 'STATE:WAITING_FOR_HOST') {
        toast(t('live.toasts.waitingForHost'));
-    } else if (lastEvent === 'STATE:DISCONTINUED' || lastEvent === 'STATE:KICKED') {
-       toast.error("You have been kicked out from the quiz room by admin. 🚫", { duration: 5000 });
+    } else if (lastEvent === 'STATE:KICKED') {
+       toast.error("आपको एडमिन द्वारा निकाला गया है (Kicked by admin) 🚫", { duration: 5000 });
+    } else if (lastEvent === 'STATE:DISCONTINUED') {
+       toast.error("सत्र समाप्त हो गया है। भाग लेने के लिए धन्यवाद! 👋", { duration: 4000 });
     } else if (lastEvent === 'STATE:PENDING_APPROVAL') {
        toast(t('live.toasts.waitingApproval'));
     } else if (lastEvent === 'STATE:APPROVED') {
@@ -292,14 +300,19 @@ export function SessionProvider({ children, sessionId: propSessionId }) {
         setSessionReady(false);
       }
 
+      const finalRollNumber = user.rollNumber || null;
+      const finalIsB2B = Boolean(user.isB2B);
+
       socket.emit('JOIN_SESSION', {
         sessionId,
         role,
         userId: finalUserId,
         userName: finalUserName,
-        userImage: finalUserImage
+        userImage: finalUserImage,
+        rollNumber: finalRollNumber,
+        isB2B: finalIsB2B
       });
-      console.log('📡 [BRIDGE] JOIN_SESSION Emitted:', sessionId, role);
+      console.log('📡 [BRIDGE] JOIN_SESSION Emitted:', sessionId, role, finalRollNumber ? `Roll: ${finalRollNumber}` : '');
       
       setSession({ 
         sessionId, 
@@ -307,7 +320,9 @@ export function SessionProvider({ children, sessionId: propSessionId }) {
         status: 'LOBBY', 
         userId: finalUserId, 
         userName: finalUserName,
-        userImage: finalUserImage
+        userImage: finalUserImage,
+        rollNumber: finalRollNumber,
+        isB2B: finalIsB2B
       });
     }
   }, [socket]);
@@ -380,12 +395,30 @@ export function SessionProvider({ children, sessionId: propSessionId }) {
     }
   }, [socket]);
 
+  const audioCtxRef = useRef(null);
+
+  const getAudioContext = useCallback(() => {
+    try {
+      if (typeof window === 'undefined') return null;
+      const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtxClass) return null;
+      if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
+        audioCtxRef.current = new AudioCtxClass();
+      }
+      if (audioCtxRef.current.state === 'suspended') {
+        audioCtxRef.current.resume().catch(() => {});
+      }
+      return audioCtxRef.current;
+    } catch (e) {
+      return null;
+    }
+  }, []);
+
   // 🔊 AUDIO ENGINE V2.0
   const playSessionSound = (type) => {
     try {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContext) return;
-        const ctx = new AudioContext();
+        const ctx = getAudioContext();
+        if (!ctx) return;
         
         const osc = ctx.createOscillator();
         const gainNode = ctx.createGain();
@@ -507,14 +540,42 @@ export function SessionProvider({ children, sessionId: propSessionId }) {
     };
   }, [socket]);
 
+  const requestReentry = useCallback(() => {
+    if (socket && session?.sessionId && session?.userId) {
+      socket.emit('REQUEST_REENTRY', {
+        sessionId: session.sessionId,
+        userId: session.userId,
+        userName: session.userName
+      });
+      setSession(prev => ({
+        ...prev,
+        status: 'PENDING_REENTRY',
+        isReentryPending: true
+      }));
+      toast.success("पुनः प्रवेश का अनुरोध एडमिन को भेजा गया (Re-entry requested) ⏳");
+    }
+  }, [socket, session?.sessionId, session?.userId, session?.userName]);
+
+  const continueAlone = useCallback(() => {
+    setSession(prev => ({
+      ...prev,
+      isKicked: false,
+      isSoloMode: true,
+      status: 'ACTIVE'
+    }));
+    toast.success("सोलो मोड सक्रिय: आप अकेले क्विज़ पूरा कर सकते हैं! 🎯");
+  }, []);
+
   return (
     <SessionContext.Provider value={{ 
       session, 
+      setSession,
       participants, 
       pendingParticipants, 
       chatMessages, 
       reactions,
       broadcast,
+      setBroadcast,
       lastEvent,
       pulse,
       connectionStatus,
@@ -527,7 +588,9 @@ export function SessionProvider({ children, sessionId: propSessionId }) {
       sendReaction,
       sendBroadcast,
       syncSquad,
-      playSessionSound
+      playSessionSound,
+      requestReentry,
+      continueAlone
     }}>
       {children}
     </SessionContext.Provider>

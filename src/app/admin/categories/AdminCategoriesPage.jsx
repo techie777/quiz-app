@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useData } from "@/context/DataContext";
 import { useAdmin } from "@/context/AdminContext";
@@ -424,6 +424,14 @@ export default function AdminCategoriesPage() {
   const [subCatModalCategory, setSubCatModalCategory] = useState(null); // category to manage subcategories for
   const [coverageModalOpen, setCoverageModalOpen] = useState(false);
   const [coverageInitialCategory, setCoverageInitialCategory] = useState(null);
+  const [openMenuId, setOpenMenuId] = useState(null);
+
+  useEffect(() => {
+    if (!openMenuId) return;
+    const handleClose = () => setOpenMenuId(null);
+    window.addEventListener("click", handleClose);
+    return () => window.removeEventListener("click", handleClose);
+  }, [openMenuId]);
 
   const openSetModal = (category, tab = "review") => {
     setSetModalConfig({ category, tab });
@@ -843,25 +851,6 @@ export default function AdminCategoriesPage() {
                   <div className={styles.actionGroup}>
                     <button
                       type="button"
-                      className={styles.manageSubsBtn}
-                      onClick={() => setSubCatModalCategory(cat)}
-                      title={`Manage Sub-Categories for ${cat.topic} (${childSubs.length} linked)`}
-                    >
-                      📁 Sub-Cats ({childSubs.length})
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.chaptersActionBtn}
-                      onClick={() => {
-                        setCoverageInitialCategory(cat);
-                        setCoverageModalOpen(true);
-                      }}
-                      title={`View & manage syllabus chapters covered for ${cat.topic}`}
-                    >
-                      📖 Chapters
-                    </button>
-                    <button
-                      type="button"
                       className={styles.setsActionBtn}
                       onClick={() => openSetModal(cat, "review")}
                       title="Manage Sets (Review, Edit, Hide, Delete)"
@@ -874,34 +863,78 @@ export default function AdminCategoriesPage() {
                     <button
                       type="button"
                       className={styles.iconActionBtn}
-                      onClick={() =>
-                        isJr
-                          ? submitPending("update_category", {
-                              categoryId: cat.id,
-                              hidden: !cat.hidden,
-                            })
-                          : updateCategory(cat.id, { hidden: !cat.hidden })
-                      }
-                      title={cat.hidden ? "Show category" : "Hide category"}
-                    >
-                      {cat.hidden ? "🙈" : "👁️"}
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.iconActionBtn}
                       onClick={() => openEdit(cat)}
                       title="Edit category"
                     >
                       ✏️
                     </button>
-                    <button
-                      type="button"
-                      className={`${styles.iconActionBtn} ${styles.deleteActionBtn}`}
-                      onClick={() => setConfirm(cat.id)}
-                      title="Delete category"
-                    >
-                      🗑️
-                    </button>
+
+                    <div className={styles.moreMenuWrapper}>
+                      <button
+                        type="button"
+                        className={styles.moreMenuBtn}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenMenuId(openMenuId === cat.id ? null : cat.id);
+                        }}
+                        title="More actions"
+                        aria-label="More actions"
+                      >
+                        •••
+                      </button>
+                      {openMenuId === cat.id && (
+                        <div className={styles.moreMenuDropdown} onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            className={styles.moreMenuItem}
+                            onClick={() => {
+                              setSubCatModalCategory(cat);
+                              setOpenMenuId(null);
+                            }}
+                          >
+                            📁 Sub-Cats ({childSubs.length})
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.moreMenuItem}
+                            onClick={() => {
+                              setCoverageInitialCategory(cat);
+                              setCoverageModalOpen(true);
+                              setOpenMenuId(null);
+                            }}
+                          >
+                            📖 Chapters Coverage
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.moreMenuItem}
+                            onClick={() => {
+                              setOpenMenuId(null);
+                              if (isJr) {
+                                submitPending("update_category", {
+                                  categoryId: cat.id,
+                                  hidden: !cat.hidden,
+                                });
+                              } else {
+                                updateCategory(cat.id, { hidden: !cat.hidden });
+                              }
+                            }}
+                          >
+                            {cat.hidden ? "👁️ Show Category" : "🙈 Hide Category"}
+                          </button>
+                          <button
+                            type="button"
+                            className={`${styles.moreMenuItem} ${styles.moreMenuItemDanger}`}
+                            onClick={() => {
+                              setConfirm(cat.id);
+                              setOpenMenuId(null);
+                            }}
+                          >
+                            🗑️ Delete Category
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -976,17 +1009,6 @@ export default function AdminCategoriesPage() {
                         <div className={styles.actionGroup}>
                           <button
                             type="button"
-                            className={styles.chaptersActionBtnSmall}
-                            onClick={() => {
-                              setCoverageInitialCategory(sub);
-                              setCoverageModalOpen(true);
-                            }}
-                            title={`View & manage chapters covered for ${sub.topic}`}
-                          >
-                            📖 Chapters
-                          </button>
-                          <button
-                            type="button"
                             className={styles.setsActionBtnSmall}
                             onClick={() => openSetModal(sub, "review")}
                             title="Manage Sets"
@@ -999,34 +1021,68 @@ export default function AdminCategoriesPage() {
                           <button
                             type="button"
                             className={styles.iconActionBtnSmall}
-                            onClick={() =>
-                              isJr
-                                ? submitPending("update_category", {
-                                    categoryId: sub.id,
-                                    hidden: !sub.hidden,
-                                  })
-                                : updateCategory(sub.id, { hidden: !sub.hidden })
-                            }
-                            title={sub.hidden ? "Show" : "Hide"}
-                          >
-                            {sub.hidden ? "🙈" : "👁️"}
-                          </button>
-                          <button
-                            type="button"
-                            className={styles.iconActionBtnSmall}
                             onClick={() => openEdit(sub)}
                             title="Edit"
                           >
                             ✏️
                           </button>
-                          <button
-                            type="button"
-                            className={`${styles.iconActionBtnSmall} ${styles.deleteActionBtn}`}
-                            onClick={() => setConfirm(sub.id)}
-                            title="Delete"
-                          >
-                            🗑️
-                          </button>
+
+                          <div className={styles.moreMenuWrapper}>
+                            <button
+                              type="button"
+                              className={styles.moreMenuBtnSmall}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setOpenMenuId(openMenuId === sub.id ? null : sub.id);
+                              }}
+                              title="More actions"
+                              aria-label="More actions"
+                            >
+                              •••
+                            </button>
+                            {openMenuId === sub.id && (
+                              <div className={styles.moreMenuDropdown} onClick={(e) => e.stopPropagation()}>
+                                <button
+                                  type="button"
+                                  className={styles.moreMenuItem}
+                                  onClick={() => {
+                                    setCoverageInitialCategory(sub);
+                                    setCoverageModalOpen(true);
+                                    setOpenMenuId(null);
+                                  }}
+                                >
+                                  📖 Chapters Coverage
+                                </button>
+                                <button
+                                  type="button"
+                                  className={styles.moreMenuItem}
+                                  onClick={() => {
+                                    setOpenMenuId(null);
+                                    if (isJr) {
+                                      submitPending("update_category", {
+                                        categoryId: sub.id,
+                                        hidden: !sub.hidden,
+                                      });
+                                    } else {
+                                      updateCategory(sub.id, { hidden: !sub.hidden });
+                                    }
+                                  }}
+                                >
+                                  {sub.hidden ? "👁️ Show" : "🙈 Hide"}
+                                </button>
+                                <button
+                                  type="button"
+                                  className={`${styles.moreMenuItem} ${styles.moreMenuItemDanger}`}
+                                  onClick={() => {
+                                    setConfirm(sub.id);
+                                    setOpenMenuId(null);
+                                  }}
+                                >
+                                  🗑️ Delete
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
 

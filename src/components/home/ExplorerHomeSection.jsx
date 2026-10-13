@@ -533,6 +533,49 @@ export default function ExplorerHomeSection({
         </section>
       ) : (
         <>
+          {/* 1v1 Live Play with Friends Highlight Strip */}
+          <div className="relative overflow-hidden rounded-2xl p-3.5 sm:p-4.5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white shadow-xl shadow-indigo-950/20 border border-indigo-500/30 mb-3.5">
+            <div className="absolute top-0 right-0 w-60 h-60 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
+            <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+              <div className="flex items-center gap-3 text-left w-full sm:w-auto">
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-500 flex items-center justify-center text-xl shadow-md flex-shrink-0">
+                  ⚔️
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-black uppercase tracking-wider">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping inline-block" />
+                      LIVE PLAY
+                    </span>
+                    <span className="text-xs font-black text-white">
+                      {isHindi ? "1v1 लाइव मुकाबला" : "1v1 Live Battle"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-300 font-medium line-clamp-1">
+                    {isHindi
+                      ? "दोस्तों के साथ आमने-सामने लाइव क्विज़ मुकाबला खेलें और रीयल-टाइम स्कोर देखें!"
+                      : "Real-time 1v1 battle with friends — create room or join by code!"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto flex-shrink-0 justify-stretch sm:justify-end">
+                <Link
+                  href="/arena?battle=true"
+                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 hover:from-indigo-400 hover:to-pink-400 text-white font-black text-xs shadow-md shadow-indigo-500/20 active:scale-98 transition-all whitespace-nowrap"
+                >
+                  <span>⚔️ {isHindi ? "लाइव खेलें" : "Play Live"}</span>
+                </Link>
+                <Link
+                  href="/arena?battle=true&tab=join"
+                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 active:scale-98 transition-all whitespace-nowrap"
+                >
+                  <span>🚀 {isHindi ? "कोड डालें" : "Join Code"}</span>
+                </Link>
+              </div>
+            </div>
+          </div>
+
           {/* 4. Action Strip: Daily Quiz + Arena Prompt Card Consolidated in 2-Col Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
             {/* Daily Quiz Hero Banner */}
