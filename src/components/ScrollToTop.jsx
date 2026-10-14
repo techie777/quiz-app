@@ -27,12 +27,14 @@ export default function ScrollToTop() {
     return () => window.removeEventListener('scroll', toggleVisibility);
   }, []);
 
-  // Do not display floating scroll button during live sessions, arena wizard, or active quiz play
+  // Do not display floating scroll button during live sessions, arena wizard, active quiz play, or business test tools
   if (
     pathname?.startsWith('/live') ||
     pathname?.startsWith('/quiz/') ||
     pathname?.startsWith('/arena') ||
-    pathname?.startsWith('/admin')
+    pathname?.startsWith('/admin') ||
+    pathname?.startsWith('/t/') ||
+    pathname?.startsWith('/institute')
   ) {
     return null;
   }

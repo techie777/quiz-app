@@ -108,10 +108,8 @@ export default function StudentTestGatewayPage() {
       return;
     }
 
-    if (testData?.requireRollNumber && !rollNumber.trim()) {
-      toast.error("रोल नंबर / स्टूडेंट आईडी आवश्यक है (Roll number is required)");
-      return;
-    }
+    // Student Name is strictly required; Roll number is optional as per requirements
+    // (Roll number optional hoga)
 
     if (!agreeRules) {
       toast.error("कृपया परीक्षा नियमों से सहमति की पुष्टि करें (Please check the agreement box)");
@@ -388,22 +386,23 @@ export default function StudentTestGatewayPage() {
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                     <Hash className="w-3.5 h-3.5 text-purple-600" />
-                    <span>रोल नंबर / स्टूडेंट आईडी (Roll No / ID) {testData.requireRollNumber ? "*" : "(ऐच्छिक)"}</span>
+                    <span>रोल नंबर / स्टूडेंट आईडी (Roll No / ID)</span>
                   </label>
-                  {testData.requireRollNumber && (
-                    <span className="text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">
-                      अनिवार्य
-                    </span>
-                  )}
+                  <span className="text-[10px] font-medium text-slate-500 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full">
+                    वैकल्पिक (Optional)
+                  </span>
                 </div>
                 <input
                   type="text"
-                  placeholder="उदा. 2024-JEE-042 या कक्षा रोल नंबर"
+                  placeholder="उदा. 2024-JEE-042 या कक्षा रोल नंबर (वैकल्पिक)"
                   value={rollNumber}
                   onChange={(e) => setRollNumber(e.target.value.toUpperCase())}
-                  required={testData.requireRollNumber}
+                  required={false}
                   className="w-full bg-slate-50 border border-slate-200 focus:border-purple-500 focus:bg-white rounded-2xl px-4 py-3 text-sm font-mono font-bold text-slate-900 placeholder:text-slate-400 outline-none transition-all uppercase"
                 />
+                <p className="text-[11px] text-slate-500 font-medium">
+                  * रोल नंबर (Roll number) वैकल्पिक है। नाम अनिवार्य है।
+                </p>
               </div>
 
               {/* Rule Confirmation Checkbox */}

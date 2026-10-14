@@ -188,8 +188,8 @@ export default function BottomNavBar() {
     return null;
   }
 
-  // Hide during quiz play, timed exam, admin, or dedicated Quiz Arena 2-step wizard
-  const isQuizPlaying = pathname?.startsWith("/quiz") || pathname?.startsWith("/live") || pathname?.startsWith("/t/");
+  // Hide during quiz play, timed exam, admin, institute tools, or dedicated Quiz Arena 2-step wizard
+  const isQuizPlaying = pathname?.startsWith("/quiz") || pathname?.startsWith("/live") || pathname?.startsWith("/t/") || pathname?.startsWith("/institute");
   const isTimedExam = pathname?.includes("/mock-tests/paper/");
   const isAdmin = pathname?.startsWith("/admin");
   const isArena = pathname?.startsWith("/arena");

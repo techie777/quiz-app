@@ -21,8 +21,9 @@ export function LanguageProvider({ children }) {
       setLanguage('hi');
     }
 
-    const isLiveRoute = typeof window !== 'undefined' && window.location.pathname.startsWith('/live');
-    if (!isConfirmed && !isLiveRoute) {
+    const path = typeof window !== 'undefined' ? window.location.pathname : '';
+    const isExcludedRoute = path.startsWith('/live') || path.startsWith('/t/') || path.startsWith('/institute');
+    if (!isConfirmed && !isExcludedRoute) {
       setShowConfirmModal(true);
     }
 

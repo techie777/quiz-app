@@ -67,6 +67,7 @@ export default function Footer() {
     pathname?.startsWith("/play") ||
     pathname?.startsWith("/live/") ||
     pathname?.startsWith("/t/") ||
+    pathname?.startsWith("/institute") ||
     pathname?.startsWith("/my-favourites") ||
     pathname?.startsWith("/leaderboard") ||
     pathname?.startsWith("/mock-tests") ||

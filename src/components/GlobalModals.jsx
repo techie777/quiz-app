@@ -11,7 +11,10 @@ import PlayMenuModal from "@/components/PlayMenuModal";
 
 export default function GlobalModals() {
   const pathname = usePathname();
-  const isLivePage = pathname?.startsWith("/live");
+  const isBusinessOrLivePage =
+    pathname?.startsWith("/live") ||
+    pathname?.startsWith("/t/") ||
+    pathname?.startsWith("/institute");
 
   const {
     isOnboardingOpen,
@@ -25,7 +28,7 @@ export default function GlobalModals() {
 
   // On mount, if splash was already shown in this session but onboarding guide not seen yet
   useEffect(() => {
-    if (isLivePage) return;
+    if (isBusinessOrLivePage) return;
     try {
       const splashShown = sessionStorage.getItem("quizweb_splash_shown");
       const tutorialSeen = localStorage.getItem("onboardingSeen");
@@ -33,10 +36,10 @@ export default function GlobalModals() {
         openTutorial();
       }
     } catch {}
-  }, [openTutorial, isLivePage]);
+  }, [openTutorial, isBusinessOrLivePage]);
 
   const handleSplashComplete = () => {
-    if (isLivePage) return;
+    if (isBusinessOrLivePage) return;
     try {
       const tutorialSeen = localStorage.getItem("onboardingSeen");
       if (!tutorialSeen) {
@@ -45,7 +48,7 @@ export default function GlobalModals() {
     } catch {}
   };
 
-  if (isLivePage) {
+  if (isBusinessOrLivePage) {
     return null;
   }
 

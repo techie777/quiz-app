@@ -179,7 +179,9 @@ export default function PwaInstallPrompt() {
     typeof window !== "undefined" &&
     (window.location.pathname?.startsWith("/quiz/") ||
       window.location.pathname?.includes("/mock-tests/paper/") ||
-      window.location.pathname?.startsWith("/live/"));
+      window.location.pathname?.startsWith("/live/") ||
+      window.location.pathname?.startsWith("/t/") ||
+      window.location.pathname?.startsWith("/institute"));
 
   if (installed || isStandalone || isQuizOrExamRoute) {
     return null;

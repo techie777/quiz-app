@@ -67,18 +67,30 @@ export default function SessionManager({ sessionId }) {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [b2bTestData, setB2bTestData] = useState(null);
+  const [b2bLoading, setB2bLoading] = useState(true);
+  const [b2bNameInput, setB2bNameInput] = useState('');
+  const [b2bRollInput, setB2bRollInput] = useState('');
+  const [b2bRegistered, setB2bRegistered] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
     const fetchB2B = async () => {
       try {
+        setB2bLoading(true);
         const code = session?.testCode || sessionId;
         const res = await axios.get(`/api/b2b/tests/${code}?role=${isHost ? 'host' : 'student'}`);
-        if (res.data && !res.data.error) {
+        if (isMounted && res.data && !res.data.error) {
           setB2bTestData(res.data);
         }
-      } catch (e) {}
+      } catch (e) {
+        // Not a B2B test or error
+      } finally {
+        if (isMounted) setB2bLoading(false);
+      }
     };
     if (sessionId) fetchB2B();
+    else setB2bLoading(false);
+    return () => { isMounted = false; };
   }, [sessionId, session?.testCode, isHost]);
 
   // Fullscreen Listener
@@ -128,8 +140,16 @@ export default function SessionManager({ sessionId }) {
       if (savedCollapsed === 'true') {
         setIsTopCollapsed(true);
       }
+      const initialName = localStorage.getItem(`b2b_student_name_${sessionId}`) || urlParams.get('name') || '';
+      const initialRoll = localStorage.getItem(`b2b_student_roll_${sessionId}`) || urlParams.get('roll') || '';
+      if (initialName && initialName !== 'Student' && initialName !== 'Anonymous' && initialName !== 'Guest') {
+        setB2bNameInput(initialName);
+      }
+      if (initialRoll && initialRoll !== 'N/A') {
+        setB2bRollInput(initialRoll);
+      }
     }
-  }, []);
+  }, [sessionId]);
 
   const lastJoinedRef = useRef(null);
   const { socket } = useSessionEngine();
@@ -203,8 +223,8 @@ export default function SessionManager({ sessionId }) {
             image: authSession?.user?.image
         });
     }
-    // 2. Otherwise it is a Guest flow. Check for NextAuth.
-    else if (authSession?.user) {
+    // 2. Otherwise it is a Guest flow. Check for NextAuth (non-B2B only).
+    else if (authSession?.user && !isB2B) {
         lastJoinedRef.current = socket.id;
         joinSession(sessionId, 'GUEST', authSession.user);
     } 
@@ -212,33 +232,54 @@ export default function SessionManager({ sessionId }) {
     else {
         const nameParam = urlParams.get('name');
         const rollParam = urlParams.get('roll');
-        const isB2BParam = urlParams.get('b2b') === 'true';
+        const isB2BParam = urlParams.get('b2b') === 'true' || urlParams.get('role') === 'student';
 
-        if (nameParam) {
+        if (nameParam && nameParam !== 'Student' && nameParam !== 'Anonymous' && nameParam !== 'Guest') {
             const formattedName = rollParam ? `${nameParam} (${rollParam})` : nameParam;
             localStorage.setItem(`quiz_callsign_${sessionId}`, formattedName);
             if (rollParam) localStorage.setItem(`b2b_student_roll_${sessionId}`, rollParam);
             localStorage.setItem(`b2b_student_name_${sessionId}`, nameParam);
         }
 
-        const savedName = localStorage.getItem(`quiz_callsign_${sessionId}`) || nameParam;
+        const savedB2BName = localStorage.getItem(`b2b_student_name_${sessionId}`) || (nameParam && nameParam !== 'Student' && nameParam !== 'Anonymous' && nameParam !== 'Guest' ? nameParam : null);
         const savedRoll = localStorage.getItem(`b2b_student_roll_${sessionId}`) || rollParam;
-        const isB2B = isB2BParam || !!savedRoll;
+        const isB2BContext = isB2BParam || !!savedRoll || !!savedB2BName || isB2B;
 
-        if (savedName) {
-            lastJoinedRef.current = socket.id;
-            console.log(`📡 [MANAGER] Student re-joining with callsign: ${savedName} (Roll: ${savedRoll || 'N/A'}) into mission ${sessionId}`);
-            const savedId = localStorage.getItem(`quiz_uid_${sessionId}`) || `student_${Math.random().toString(36).substring(7)}`;
-            localStorage.setItem(`quiz_uid_${sessionId}`, savedId);
-            setJoining(true); // Signal joining state
-            joinSession(sessionId, 'GUEST', { 
-                id: savedId,
-                name: savedName,
-                rollNumber: savedRoll,
-                isB2B: isB2B
-            });
+        if (isB2BContext) {
+            // ONLY auto-join if student has already registered their real name!
+            // Never auto-join anonymously or as generic "Student" without name!
+            if (savedB2BName && savedB2BName !== 'Student' && savedB2BName !== 'Anonymous' && savedB2BName !== 'Guest' && savedB2BName.trim().length >= 2) {
+                const formattedName = savedRoll ? `${savedB2BName} (${savedRoll})` : savedB2BName;
+                lastJoinedRef.current = socket.id;
+                console.log(`📡 [MANAGER] Student re-joining: ${formattedName} (Roll: ${savedRoll || 'N/A'}) into mission ${sessionId}`);
+                const savedId = localStorage.getItem(`quiz_uid_${sessionId}`) || `student_${Math.random().toString(36).substring(7)}`;
+                localStorage.setItem(`quiz_uid_${sessionId}`, savedId);
+                setJoining(true);
+                setB2bRegistered(true);
+                joinSession(sessionId, 'GUEST', { 
+                    id: savedId,
+                    name: formattedName,
+                    rollNumber: savedRoll || null,
+                    isB2B: true
+                });
+            } else {
+                console.log(`📡 [MANAGER] B2B Student without name landing on mission ${sessionId}. Requiring Name Entry.`);
+            }
         } else {
-             console.log(`📡 [MANAGER] Guest landing on mission ${sessionId}. Showing Entry Form.`);
+            const savedName = localStorage.getItem(`quiz_callsign_${sessionId}`) || nameParam;
+            if (savedName) {
+                lastJoinedRef.current = socket.id;
+                console.log(`📡 [MANAGER] Guest re-joining with callsign: ${savedName} into mission ${sessionId}`);
+                const savedId = localStorage.getItem(`quiz_uid_${sessionId}`) || `guest_${Math.random().toString(36).substring(7)}`;
+                localStorage.setItem(`quiz_uid_${sessionId}`, savedId);
+                setJoining(true);
+                joinSession(sessionId, 'GUEST', { 
+                    id: savedId,
+                    name: savedName 
+                });
+            } else {
+                console.log(`📡 [MANAGER] Guest landing on mission ${sessionId}. Showing Entry Form.`);
+            }
         }
     }
   }, [mounted, authSession, authStatus, adminUser, session, sessionId, joinSession, connectionStatus, socket?.id]);
@@ -355,6 +396,7 @@ export default function SessionManager({ sessionId }) {
   // 🎓 B2B CONTEXT DETECTION (Host Cockpit vs Student CBT Exam Portal)
   const isB2B = useMemo(() => {
     if (session?.isB2B || !!session?.b2bRules || !!b2bTestData) return true;
+    if (typeof sessionId === 'string' && sessionId.includes('-')) return true;
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get('b2b') === 'true' || urlParams.get('role') === 'student') return true;
@@ -365,6 +407,50 @@ export default function SessionManager({ sessionId }) {
 
   const isB2BHost = (session?.role === 'HOST' || isHost) && isB2B;
   const isB2BStudent = !isHost && session?.role !== 'HOST' && isB2B;
+
+  // Check if B2B student has registered their name
+  const hasB2BStudentRegistered = useMemo(() => {
+    if (b2bRegistered) return true;
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(`b2b_student_name_${sessionId}`);
+      if (saved && saved !== 'Student' && saved !== 'Anonymous' && saved !== 'Guest' && saved.trim().length >= 2) return true;
+      const urlName = new URLSearchParams(window.location.search).get('name');
+      if (urlName && urlName !== 'Student' && urlName !== 'Anonymous' && urlName !== 'Guest' && urlName.trim().length >= 2) return true;
+    }
+    return false;
+  }, [b2bRegistered, sessionId]);
+
+  const handleB2BStudentSubmit = (e) => {
+    if (e) e.preventDefault();
+    const cleanName = b2bNameInput.trim();
+    if (!cleanName || cleanName.length < 2) {
+      toast.error('कृपया अपना पूरा नाम दर्ज करें (कम से कम 2 अक्षर)');
+      return;
+    }
+    const cleanRoll = b2bRollInput.trim();
+    const formattedCallsign = cleanRoll ? `${cleanName} (${cleanRoll})` : cleanName;
+
+    localStorage.setItem(`b2b_student_name_${sessionId}`, cleanName);
+    if (cleanRoll) {
+      localStorage.setItem(`b2b_student_roll_${sessionId}`, cleanRoll);
+    } else {
+      localStorage.removeItem(`b2b_student_roll_${sessionId}`);
+    }
+    localStorage.setItem(`quiz_callsign_${sessionId}`, formattedCallsign);
+
+    const savedId = localStorage.getItem(`quiz_uid_${sessionId}`) || `student_${Math.random().toString(36).substring(7)}`;
+    localStorage.setItem(`quiz_uid_${sessionId}`, savedId);
+
+    setB2bRegistered(true);
+    setJoining(true);
+    joinSession(sessionId, 'GUEST', {
+      id: savedId,
+      name: cleanName,
+      rollNumber: cleanRoll || null,
+      isB2B: true
+    });
+    toast.success(`नमस्ते ${cleanName}! परीक्षा में स्वागत है 🎯`);
+  };
 
   // 2. Navigation & Redirect Logic (Only for arcade lobbies that expired/terminated before a quiz started)
   useEffect(() => {
@@ -399,7 +485,7 @@ export default function SessionManager({ sessionId }) {
     });
   };
 
-  if (!mounted || (!authReady && authStatus === 'loading')) {
+  if (!mounted || (!authReady && authStatus === 'loading') || b2bLoading) {
       return (
           <div className="flex flex-col items-center justify-center p-12 sm:p-20 text-center max-w-md mx-auto my-12 bg-white rounded-3xl border border-slate-200/80 shadow-lg space-y-5 animate-in fade-in duration-300">
               <div className="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-200/70 flex items-center justify-center text-3xl shadow-xs animate-bounce">
@@ -433,10 +519,174 @@ export default function SessionManager({ sessionId }) {
       <B2BLiveWarRoom
         session={session}
         participants={participants}
+        pendingParticipants={pendingParticipants}
         testData={session?.b2bRules || b2bTestData}
         sendAction={sendAction}
         onEndExam={() => sendAction('TERMINATE', { status: 'TERMINATED' })}
       />
+    );
+  }
+
+  // 📝 B2B STUDENT ADMISSION GATE: Require Student Name before entering exam
+  if (isB2BStudent && !hasB2BStudentRegistered) {
+    const testTitle = b2bTestData?.testTitle || b2bTestData?.title || session?.b2bRules?.testTitle || "Live Examination";
+    const instituteName = b2bTestData?.instituteName || session?.b2bRules?.instituteName || "Premier Coaching Academy";
+    const durationMinutes = b2bTestData?.durationMinutes || session?.b2bRules?.durationMinutes || 20;
+    const questionsCount = b2bTestData?.questionsCount || b2bTestData?.questions?.length || 10;
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 flex items-center justify-center p-4 sm:p-6 text-white select-none relative overflow-hidden">
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 bg-slate-900/95 border border-indigo-500/30 rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-5 shadow-2xl backdrop-blur-xl animate-in zoom-in-95 duration-300">
+          <div className="text-center space-y-2">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-3xl mx-auto shadow-lg shadow-indigo-500/30 border border-indigo-400/40">
+              🎓
+            </div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-[11px] font-black uppercase tracking-wider">
+              <span>{instituteName}</span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+              {testTitle}
+            </h2>
+            <p className="text-xs text-slate-300 font-medium leading-relaxed">
+              परीक्षा में प्रवेश के लिए कृपया अपना विवरण भरें। शिक्षक आपकी उपस्थिति और परिणाम दर्ज करेंगे।
+            </p>
+
+            <div className="flex items-center justify-center gap-3 text-[11px] text-slate-400 font-mono pt-1">
+              <span>⏱️ {durationMinutes} मिनट</span>
+              <span>•</span>
+              <span>📝 {questionsCount} प्रश्न</span>
+              <span>•</span>
+              <span className="text-indigo-300">CODE: {sessionId}</span>
+            </div>
+          </div>
+
+          <form onSubmit={handleB2BStudentSubmit} className="space-y-4 pt-1">
+            <div className="space-y-1.5 text-left">
+              <label className="text-xs font-bold text-slate-200 flex items-center justify-between">
+                <span>परीक्षार्थी का पूरा नाम (Full Name) <span className="text-rose-400">*</span></span>
+                <span className="text-[10px] text-rose-400 font-bold bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">अनिवार्य</span>
+              </label>
+              <input
+                type="text"
+                autoFocus
+                required
+                value={b2bNameInput}
+                onChange={(e) => setB2bNameInput(e.target.value)}
+                placeholder="उदा. राहुल शर्मा (Rahul Sharma)"
+                className="w-full bg-slate-800/90 border-2 border-slate-700 focus:border-indigo-500 focus:bg-slate-800 rounded-xl px-4 py-3 text-sm font-semibold text-white placeholder:text-slate-500 outline-none transition-all shadow-inner"
+              />
+            </div>
+
+            <div className="space-y-1.5 text-left">
+              <label className="text-xs font-bold text-slate-200 flex items-center justify-between">
+                <span>रोल नंबर (Roll Number)</span>
+                <span className="text-[10px] text-slate-400 font-medium bg-slate-800 px-2 py-0.5 rounded border border-slate-700">वैकल्पिक (Optional)</span>
+              </label>
+              <input
+                type="text"
+                value={b2bRollInput}
+                onChange={(e) => setB2bRollInput(e.target.value)}
+                placeholder="उदा. 104 या BATCH-A (वैकल्पिक)"
+                className="w-full bg-slate-800/90 border-2 border-slate-700 focus:border-indigo-500 focus:bg-slate-800 rounded-xl px-4 py-3 text-sm font-semibold text-white placeholder:text-slate-500 outline-none transition-all shadow-inner"
+              />
+              <p className="text-[11px] text-slate-400 font-medium pl-0.5">
+                * रोल नंबर (Roll number) वैकल्पिक है। नाम अनिवार्य है।
+              </p>
+            </div>
+
+            <button
+              type="submit"
+              disabled={!b2bNameInput.trim()}
+              className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-sm uppercase tracking-wider transition-all shadow-lg shadow-emerald-600/30 active:scale-98 cursor-pointer flex items-center justify-center gap-2 mt-2"
+            >
+              <span>परीक्षा में प्रवेश करें (Enter Examination)</span>
+              <span className="text-base">→</span>
+            </button>
+          </form>
+
+          <p className="text-[10px] text-slate-400 text-center font-medium">
+            🔒 आपकी परीक्षा गतिविधि व परिणाम संस्थान के शिक्षक द्वारा रिकॉर्ड किए जाएंगे।
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ⏳ B2B STUDENT PENDING APPROVAL SCREEN (Before teacher approves admission)
+  const isB2BPending = isB2BStudent && (session?.status === 'PENDING' || session?.status === 'PENDING_APPROVAL' || session?.isPendingApproval);
+  if (isB2BPending) {
+    const studentDisplayName = session?.userName || (typeof window !== 'undefined' ? localStorage.getItem(`b2b_student_name_${sessionId}`) : '') || 'परीक्षार्थी (Student)';
+    const studentRoll = session?.rollNumber || (typeof window !== 'undefined' ? localStorage.getItem(`b2b_student_roll_${sessionId}`) : '') || '';
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 flex items-center justify-center p-4 sm:p-6 text-white select-none relative overflow-hidden">
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 bg-slate-900/90 border border-indigo-500/30 rounded-3xl p-6 sm:p-8 max-w-md w-full text-center space-y-6 shadow-2xl backdrop-blur-xl animate-in zoom-in-95 duration-300">
+          <div className="relative mx-auto w-20 h-20 flex items-center justify-center">
+            <span className="absolute inset-0 rounded-2xl bg-indigo-500/20 animate-ping" />
+            <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-3xl shadow-lg shadow-indigo-500/30 border border-indigo-400/40">
+              ⏳
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-black uppercase tracking-wider">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+              <span>प्रतीक्षारत (Pending Approval)</span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+              शिक्षक की अनुमति का इंतज़ार है
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300 font-medium leading-relaxed">
+              आपका अनुरोध परीक्षा नियंत्रक / शिक्षक के पास पहुंच चुका है। जैसे ही वे आपको अनुमति देंगे, परीक्षा स्क्रीन स्वतः शुरू हो जाएगी।
+            </p>
+          </div>
+
+          <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-3.5 text-left space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-slate-400 font-medium">छात्र का नाम:</span>
+              <span className="text-white font-bold">{studentDisplayName}</span>
+            </div>
+            {studentRoll && (
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-400 font-medium">रोल नंबर:</span>
+                <span className="text-indigo-300 font-mono font-bold">{studentRoll}</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-slate-400 font-medium">परीक्षा कोड:</span>
+              <span className="text-slate-300 font-mono">{sessionId}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-center gap-2 text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 py-2 px-3 rounded-xl">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            <span>लाइव परीक्षा सर्वर से जुड़ा हुआ (Connected)</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (socket && session?.userId) {
+                socket.emit('LEAVE_SESSION', { sessionId, userId: session.userId });
+              }
+              localStorage.removeItem(`quiz_callsign_${sessionId}`);
+              localStorage.removeItem(`b2b_student_name_${sessionId}`);
+              localStorage.removeItem(`b2b_student_roll_${sessionId}`);
+              sessionStorage.removeItem('active_quiz_session');
+              window.location.href = `/t/${sessionId}`;
+            }}
+            className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white text-xs font-bold transition-all cursor-pointer border border-slate-700"
+          >
+            रद्द करें व बाहर आएं (Cancel & Exit)
+          </button>
+        </div>
+      </div>
     );
   }
 
@@ -708,7 +958,7 @@ export default function SessionManager({ sessionId }) {
     );
   }
 
-  if (!session && !isHost && !authSession?.user && !joining) {
+  if (!session && !isHost && !authSession?.user && !joining && !isB2B) {
     return (
         <div className="w-full max-w-md bg-white rounded-3xl shadow-xl p-6 sm:p-10 text-center space-y-6 animate-in zoom-in duration-300 border border-slate-100 mx-auto my-6 sm:my-10">
             <div className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-3xl mx-auto shadow-xs">

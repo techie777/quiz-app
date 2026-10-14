@@ -27,10 +27,27 @@ export default function LiveSessionPage({ params: propsParams }) {
     emerald: "doodle-pattern",
   };
 
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 text-slate-500 font-bold space-y-3">
+        <div className="w-9 h-9 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+        <p className="text-xs font-semibold text-slate-600">📡 परीक्षा कक्ष तैयार हो रहा है...</p>
+      </div>
+    );
+  }
+
   const isB2B = typeof window !== 'undefined' && (
     new URLSearchParams(window.location.search).get('b2b') === 'true' || 
     new URLSearchParams(window.location.search).get('role') === 'student' ||
-    (typeof localStorage !== 'undefined' && !!localStorage.getItem(`b2b_student_roll_${sessionId}`))
+    (typeof sessionId === 'string' && sessionId.includes('-')) ||
+    (typeof localStorage !== 'undefined' && !!localStorage.getItem(`b2b_student_roll_${sessionId}`)) ||
+    (typeof localStorage !== 'undefined' && !!localStorage.getItem(`b2b_student_name_${sessionId}`))
   );
 
   if (isB2B) {
@@ -38,7 +55,7 @@ export default function LiveSessionPage({ params: propsParams }) {
       <AdminProvider>
         <Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 text-slate-500 font-bold">📡 परीक्षा लोड हो रही है...</div>}>
           <SessionProvider sessionId={sessionId}>
-            <div className="min-h-screen bg-slate-50 text-slate-800">
+            <div className="min-h-screen bg-slate-50 text-slate-800 pt-3 sm:pt-6 pb-16 px-2 sm:px-6">
               <SessionManager sessionId={sessionId} />
             </div>
           </SessionProvider>

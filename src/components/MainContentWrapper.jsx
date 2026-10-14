@@ -16,7 +16,7 @@ export default function MainContentWrapper({ children }) {
 
   // BottomNavBar is hidden on these routes:
   const isUnsetLanding = pathname === "/" && (!mounted || !hasSavedTier);
-  const isQuizPlaying = pathname?.startsWith("/quiz") || pathname?.startsWith("/live") || pathname?.startsWith("/t");
+  const isQuizPlaying = pathname?.startsWith("/quiz") || pathname?.startsWith("/live") || pathname?.startsWith("/t") || pathname?.startsWith("/institute");
   const isTimedExam = pathname?.includes("/mock-tests/paper/");
   const isAdmin = pathname?.startsWith("/admin");
   const isArena = pathname?.startsWith("/arena");
