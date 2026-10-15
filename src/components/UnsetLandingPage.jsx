@@ -3,33 +3,42 @@
 import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import {
-  Sparkles,
+import { 
+  Sparkles, 
+  Flame, 
+  Swords, 
+  Rocket, 
+  Compass, 
+  GraduationCap, 
+  Zap, 
+  Baby, 
+  Share2, 
+  Heart, 
+  CheckCircle2, 
+  XCircle, 
+  ChevronRight, 
+  BookOpen, 
+  Clock, 
+  Copy, 
+  Check, 
+  Sparkle,
+  X,
   ArrowRight,
-  BookOpen,
-  Compass,
-  GraduationCap,
-  Zap,
-  Heart,
-  Star,
-  Flame,
-  Swords,
-  CheckCircle2,
-  XCircle,
+  Newspaper
 } from "lucide-react";
 import { useTier, TIERS } from "@/context/TierContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useData } from "@/context/DataContext";
 import MainHubsShowcase from "@/components/home/MainHubsShowcase";
+import MasterFeaturesSection from "@/components/home/MasterFeaturesSection";
 
 export default function UnsetLandingPage() {
   const router = useRouter();
   const { setTier } = useTier();
-  const { isHindi } = useLanguage();
+  const { isHindi, toggleLanguage } = useLanguage();
   const { quizzes } = useData();
 
-  // Dynamic live stats fetched from database / admin stats API
+  // Dynamic live stats fetched from database / public stats API
   const [liveStats, setLiveStats] = useState(null);
 
   useEffect(() => {
@@ -49,12 +58,12 @@ export default function UnsetLandingPage() {
     };
   }, []);
 
-  // Compute live data stats with priority to live database / public stats API
+  // Compute live data stats with graceful fallback
   const { totalQuestions, totalCategories } = useMemo(() => {
     if (liveStats && typeof liveStats.totalQuestions === "number") {
       return {
         totalQuestions: liveStats.totalQuestions,
-        totalCategories: liveStats.totalCategories || 44,
+        totalCategories: liveStats.totalCategories || 38,
       };
     }
 
@@ -62,657 +71,801 @@ export default function UnsetLandingPage() {
       ? quizzes.filter((c) => !c.hidden)
       : [];
     const mainCats = activeCats.filter((c) => !c.parentId);
-    const catCount = mainCats.length > 0 ? mainCats.length : 44;
+    const catCount = mainCats.length > 0 ? mainCats.length : 38;
     const qCount = mainCats.reduce(
       (acc, c) => acc + (c.questionCount ?? c.questions?.length ?? 0),
       0
     );
 
     return {
-      totalCategories: catCount,
-      totalQuestions: qCount,
+      totalCategories: catCount > 0 ? catCount : 38,
+      totalQuestions: qCount > 0 ? qCount : 3885,
     };
   }, [liveStats, quizzes]);
 
-  // Handler for tier selection
-  const handleSelectTier = (tierId) => {
-    if (tierId === TIERS.ARENA) {
-      setTier(TIERS.ARENA);
-      router.push("/arena");
-      return;
-    }
-    setTier(tierId);
-  };
+  // Interactive Modals State
+  const [createRoomOpen, setCreateRoomOpen] = useState(false);
+  const [joinRoomOpen, setJoinRoomOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
+  const [categoryModal, setCategoryModal] = useState(null);
 
-  // Find a real category with question for the compact "Live Taste" section
-  const sampleCategory = useMemo(() => {
-    if (!quizzes || !Array.isArray(quizzes) || quizzes.length === 0) {
-      return null;
-    }
-    return (
-      quizzes.find(
-        (c) =>
-          !c.hidden &&
-          (c.topic?.toLowerCase().includes("general knowledge") ||
-            c.topic?.toLowerCase().includes("gk") ||
-            c.slug?.includes("gk")) &&
-          (c.questions?.length > 0 || c.questionCount > 0)
-      ) ||
-      quizzes.find((c) => !c.hidden && (c.questions?.length > 0 || c.questionCount > 0)) ||
-      quizzes[0]
-    );
-  }, [quizzes]);
+  // Room generation state
+  const [roomCode, setRoomCode] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [joinCodeInput, setJoinCodeInput] = useState("");
 
-  const liveQuestion = useMemo(() => {
-    if (sampleCategory?.questions && sampleCategory.questions.length > 0) {
-      const q = sampleCategory.questions[0];
-      const text = isHindi && q.textHi ? q.textHi : q.text;
-      const options =
-        isHindi && q.optionsHi && q.optionsHi.length > 0
-          ? q.optionsHi
-          : q.options || [];
-      const answer = isHindi && q.correctAnswerHi ? q.correctAnswerHi : q.correctAnswer;
-      return {
-        text: text || "Which is the highest civilian award of the Republic of India?",
-        options:
-          options.length >= 2
-            ? options
-            : ["Padma Vibhushan", "Bharat Ratna", "Param Vir Chakra", "Padma Bhushan"],
-        correctAnswer: answer || "Bharat Ratna",
-      };
-    }
-    return isHindi
-      ? {
-          text: "भारत का सर्वोच्च नागरिक सम्मान (Civilian Award) कौन सा है?",
-          options: ["पद्म विभूषण", "भारत रत्न", "परमवीर चक्र", "पद्म भूषण"],
-          correctAnswer: "भारत रत्न",
-        }
-      : {
-          text: "Which is the highest civilian award of the Republic of India?",
-          options: ["Padma Vibhushan", "Bharat Ratna", "Param Vir Chakra", "Padma Bhushan"],
-          correctAnswer: "Bharat Ratna",
-        };
-  }, [sampleCategory, isHindi]);
+  // Daily Question interactive state
+  const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [answered, setAnswered] = useState(false);
+  const correctAnswer = 2; // Option 3: "नील आर्मस्ट्रांग (Neil Armstrong)"
 
-  const [selectedOption, setSelectedOption] = useState(null);
-  const [hasAnswered, setHasAnswered] = useState(false);
+  // Daily streak state (stored in localStorage)
+  const [streakCount, setStreakCount] = useState(5);
 
-  const handleLiveTasteOption = (option) => {
-    setSelectedOption(option);
-    setHasAnswered(true);
-
-    setTimeout(() => {
-      setTier(TIERS.ADULTS);
-      if (sampleCategory?.slug || sampleCategory?.id) {
-        router.push(`/category/${sampleCategory.slug || sampleCategory.id}`);
+  useEffect(() => {
+    try {
+      const savedStreak = localStorage.getItem("daily_quiz_streak");
+      if (savedStreak) {
+        setStreakCount(parseInt(savedStreak, 10));
       }
-    }, 1100);
+      const savedDate = localStorage.getItem("daily_landing_q_date");
+      const todayStr = new Date().toISOString().slice(0, 10);
+      if (savedDate === todayStr) {
+        setAnswered(true);
+        const savedAns = localStorage.getItem("daily_landing_q_ans");
+        if (savedAns !== null) {
+          setSelectedAnswer(parseInt(savedAns, 10));
+        }
+      }
+    } catch {}
+  }, []);
+
+  const generateRoom = () => {
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    setRoomCode(code);
+    setCopied(false);
+    setCreateRoomOpen(true);
   };
 
-  const handlePlayTasteSet = () => {
-    setTier(TIERS.ADULTS);
-    if (sampleCategory?.slug || sampleCategory?.id) {
-      router.push(`/category/${sampleCategory.slug || sampleCategory.id}`);
+  const copyCode = () => {
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(roomCode);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const shareRoomWhatsApp = () => {
+    const text = isHindi
+      ? `आओ मेरे साथ QuizWeb पर 1v1 लाइव क्विज़ मुकाबला खेलो! रूम कोड: ${roomCode}\n👉 ${typeof window !== "undefined" ? window.location.origin : ""}/live/${roomCode}`
+      : `Challenge me to a 1v1 live quiz battle on QuizWeb! Room Code: ${roomCode}\n👉 ${typeof window !== "undefined" ? window.location.origin : ""}/live/${roomCode}`;
+    
+    if (navigator?.share) {
+      navigator.share({
+        title: isHindi ? "QuizWeb 1v1 मुकाबला" : "QuizWeb 1v1 Quiz Battle",
+        text,
+        url: typeof window !== "undefined" ? `${window.location.origin}/live/${roomCode}` : "",
+      }).catch(() => {});
     } else {
-      router.push("/quizzes");
+      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, "_blank");
     }
   };
 
-  // 4 experiences configurations for Mobile 2x2 Tiles
-  const MOBILE_TILES = [
+  const handleStartHostGame = () => {
+    setCreateRoomOpen(false);
+    router.push(`/live/${roomCode}?is_host=true`);
+  };
+
+  const handleJoinGame = () => {
+    const cleanCode = joinCodeInput.trim();
+    if (!cleanCode) return;
+    setJoinRoomOpen(false);
+    router.push(`/live/${cleanCode}`);
+  };
+
+  const handleAnswerClick = (index) => {
+    if (answered) return;
+    setSelectedAnswer(index);
+    setAnswered(true);
+    try {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      localStorage.setItem("daily_landing_q_date", todayStr);
+      localStorage.setItem("daily_landing_q_ans", index.toString());
+      if (index === correctAnswer) {
+        setStreakCount((prev) => {
+          const updated = prev + 1;
+          localStorage.setItem("daily_quiz_streak", updated.toString());
+          return updated;
+        });
+      }
+    } catch {}
+  };
+
+  // 4 primary categories matching user specification
+  const categories = [
     {
-      id: TIERS.KIDS,
-      name: isHindi ? "बच्चे" : "Kids",
-      tagline: isHindi ? "आयु 5–12 वर्ष" : "Ages 5–12",
+      id: "kids",
+      tierId: TIERS.KIDS,
+      title: isHindi ? "बच्चे" : "Kids",
+      subtitle: isHindi ? "आयु 5–12 वर्ष" : "Age 5–12 yrs",
       badge: "AGE 5–12",
-      icon: Sparkles,
-      iconBg: "bg-amber-100 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400",
-      badgeBg: "bg-amber-100 text-amber-800 border-amber-200/80 dark:bg-amber-950/80 dark:text-amber-300 dark:border-amber-800/80",
-      cardBorder: "border-amber-200/90 dark:border-amber-800/60",
-      cardBg: "bg-gradient-to-b from-[#FFFDF7] to-white dark:from-slate-900 dark:to-[#0a0e1c]",
+      badgeColor: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950/80 dark:text-amber-300 dark:border-amber-800",
+      iconBg: "bg-amber-500/10 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400",
+      icon: Baby,
+      accentBorder: "hover:border-amber-300",
+      topics: isHindi
+        ? ["गिनती और बुनियादी गणित", "पशु-पक्षी व प्रकृति", "कहानियां और नैतिक शिक्षा", "मज़ेदार पहेलियाँ"]
+        : ["Counting & Basic Math", "Animals & Nature", "Stories & Moral Science", "Fun Riddles & Puzzles"],
+      defaultRoute: "/kids",
     },
     {
-      id: TIERS.STUDENTS,
-      name: isHindi ? "विद्यार्थी" : "Students",
-      tagline: isHindi ? "कक्षा 6–12" : "Class 6–12",
+      id: "students",
+      tierId: TIERS.STUDENTS,
+      title: isHindi ? "विद्यार्थी" : "Students",
+      subtitle: isHindi ? "कक्षा 6–12" : "Class 6–12",
       badge: "CLASS 6–12",
+      badgeColor: "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border-emerald-800",
+      iconBg: "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400",
       icon: GraduationCap,
-      iconBg: "bg-teal-100 text-teal-700 dark:bg-teal-950/60 dark:text-teal-400",
-      badgeBg: "bg-teal-100 text-teal-800 border-teal-200/80 dark:bg-teal-950/80 dark:text-teal-300 dark:border-teal-800/80",
-      cardBorder: "border-teal-200/90 dark:border-teal-800/60",
-      cardBg: "bg-gradient-to-b from-[#F7FFFD] to-white dark:from-slate-900 dark:to-[#0a0e1c]",
+      accentBorder: "hover:border-emerald-300",
+      topics: isHindi
+        ? ["विज्ञान (Science)", "सामाजिक विज्ञान (Social)", "NCERT सिलेबस क्विज़", "बोर्ड परीक्षा तैयारी"]
+        : ["Science (Physics, Chem, Bio)", "Social Science & History", "NCERT Syllabus Quizzes", "Board Exam Preparation"],
+      defaultRoute: "/school-study",
+      directRoute: "/school-study",
     },
     {
-      id: TIERS.ADULTS,
-      name: isHindi ? "सामान्य ज्ञान" : "GK Hub",
-      tagline: isHindi ? "40+ और भी अन्य क्विज़" : "40+ More Quizzes",
+      id: "gk",
+      tierId: TIERS.ADULTS,
+      title: isHindi ? "सामान्य ज्ञान" : "General Knowledge",
+      subtitle: isHindi ? "40+ विषय और क्विज़" : "40+ Topics & Quizzes",
       badge: "POPULAR",
+      badgeColor: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950/80 dark:text-blue-300 dark:border-blue-800",
+      iconBg: "bg-blue-500/10 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400",
       icon: Compass,
-      iconBg: "bg-indigo-100 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400",
-      badgeBg: "bg-indigo-100 text-indigo-800 border-indigo-200/80 dark:bg-indigo-950/80 dark:text-indigo-300 dark:border-indigo-800/80",
-      cardBorder: "border-indigo-200/90 dark:border-indigo-800/60",
-      cardBg: "bg-gradient-to-b from-[#F8FAFF] to-white dark:from-slate-900 dark:to-[#0a0e1c]",
+      accentBorder: "hover:border-blue-300",
+      topics: isHindi
+        ? ["भारत का इतिहास व भूगोल", "समसामयिकी (Current Affairs)", "राजनीति और संविधान", "विश्व का भूगोल व पुरस्कार"]
+        : ["Indian History & Geography", "Current Affairs & News", "Polity & Constitution", "World Geography & Awards"],
+      defaultRoute: "/category/india-gk",
     },
     {
-      id: TIERS.ARENA,
-      name: isHindi ? "GK टेस्ट इंजन" : "GK Test Engine",
-      tagline: isHindi ? "कस्टम टेस्ट अभ्यास" : "Custom Test Engine",
+      id: "gk_engine",
+      tierId: TIERS.ARENA,
+      title: isHindi ? "GK टेस्ट इंजन" : "GK Mock Engine",
+      subtitle: isHindi ? "कस्टम टेस्ट अभ्यास" : "Custom Timed Mocks",
       badge: "NEW",
+      badgeColor: "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-950/80 dark:text-purple-300 dark:border-purple-800",
+      iconBg: "bg-purple-500/10 text-purple-600 dark:bg-purple-950/50 dark:text-purple-400",
       icon: Zap,
-      iconBg: "bg-violet-100 text-violet-600 dark:bg-violet-950/60 dark:text-violet-400",
-      badgeBg: "bg-violet-100 text-violet-800 border-violet-200/80 dark:bg-violet-950/80 dark:text-violet-300 dark:border-violet-800/80",
-      cardBorder: "border-violet-200/90 dark:border-violet-800/60",
-      cardBg: "bg-gradient-to-b from-[#FAF8FF] to-white dark:from-slate-900 dark:to-[#0a0e1c]",
+      accentBorder: "hover:border-purple-300",
+      topics: isHindi
+        ? ["SSC / UPSC / रेलवे पैटर्न", "नेगेटिव मार्किंग मोड", "टाइमर आधारित टेस्ट", "विस्तृत प्रदर्शन रिपोर्ट"]
+        : ["SSC / UPSC / Railway Pattern", "Negative Marking Mode", "Timer-Based Mock Tests", "Detailed Performance Reports"],
+      defaultRoute: "/arena",
+    },
+    {
+      id: "govt_exams",
+      tierId: TIERS.ARENA,
+      title: isHindi ? "सरकारी परीक्षाएं" : "Govt Exams",
+      subtitle: isHindi ? "40+ परीक्षाएं व PYQs" : "40+ Exams & PYQs",
+      badge: "40+ EXAMS",
+      badgeColor: "bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-950/80 dark:text-indigo-300 dark:border-indigo-800",
+      iconBg: "bg-indigo-500/10 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400",
+      icon: GraduationCap,
+      accentBorder: "hover:border-indigo-300",
+      directRoute: "/govt-exams",
+    },
+    {
+      id: "current_affairs",
+      tierId: TIERS.ADULTS,
+      title: isHindi ? "दैनिक करेंट अफेयर्स" : "Current Affairs",
+      subtitle: isHindi ? "आज के 10 समाचार व टेस्ट" : "Daily Top 10 & Quiz",
+      badge: "DAILY",
+      badgeColor: "bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-950/80 dark:text-sky-300 dark:border-sky-800",
+      iconBg: "bg-sky-500/10 text-sky-600 dark:bg-sky-950/50 dark:text-sky-400",
+      icon: Newspaper,
+      accentBorder: "hover:border-sky-300",
+      directRoute: "/daily-current-affairs",
+    },
+    {
+      id: "fun_facts",
+      tierId: TIERS.ADULTS,
+      title: isHindi ? "रोचक तथ्य" : "Fun Facts",
+      subtitle: isHindi ? "1,000+ अद्भुत ज्ञान" : "1,000+ Mind Facts",
+      badge: "TRIVIA",
+      badgeColor: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950/80 dark:text-amber-300 dark:border-amber-800",
+      iconBg: "bg-amber-500/10 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400",
+      icon: Sparkles,
+      accentBorder: "hover:border-amber-300",
+      directRoute: "/fun-facts",
+    },
+    {
+      id: "true_false",
+      tierId: TIERS.ADULTS,
+      title: isHindi ? "सही या गलत" : "True & False",
+      subtitle: isHindi ? "60s रैपिड फायर गेम" : "60s Rapid Blitz",
+      badge: "RAPID",
+      badgeColor: "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border-emerald-800",
+      iconBg: "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400",
+      icon: Zap,
+      accentBorder: "hover:border-emerald-300",
+      directRoute: "/true-false",
     },
   ];
 
+  const handleLaunchTopic = (cat, topic) => {
+    setCategoryModal(null);
+    setTier(cat.tierId);
+    if (cat.id === "gk_engine") {
+      router.push("/arena");
+    } else if (cat.id === "kids") {
+      router.push("/kids");
+    } else if (cat.id === "students") {
+      router.push("/school-study");
+    } else {
+      router.push(cat.defaultRoute || "/category/india-gk");
+    }
+  };
+
+  const handleStartRandomTest = (cat) => {
+    setCategoryModal(null);
+    setTier(cat.tierId);
+    if (cat.id === "gk_engine") {
+      router.push("/arena");
+    } else if (cat.id === "kids") {
+      router.push("/kids");
+    } else if (cat.id === "students") {
+      router.push("/school-study");
+    } else {
+      router.push(cat.defaultRoute || "/quizzes");
+    }
+  };
+
   return (
-    <div className="w-full min-h-screen bg-gradient-to-b from-[#e8f3fc] via-[#edf6fd] to-[#e4f1fc] dark:from-[#090e20] dark:via-[#0b132b] dark:to-[#030712] relative overflow-hidden">
-      {/* Peaceful Ambient Sky-Blue Aura */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[450px] bg-gradient-to-b from-sky-200/40 via-blue-100/20 to-transparent blur-3xl pointer-events-none -z-0 dark:from-sky-900/15" />
+    <div className="w-full min-h-screen bg-slate-100/70 dark:bg-slate-950 text-slate-900 dark:text-white font-sans antialiased flex flex-col items-center selection:bg-indigo-500 selection:text-white px-3 sm:px-4 py-3 sm:py-6">
+      
+      {/* Central Content Column: max-w-[440px] on mobile to match exact target mockup, expanding gracefully on larger screens */}
+      <div className="w-full max-w-[430px] md:max-w-4xl lg:max-w-5xl space-y-5 sm:space-y-6 pb-20">
+        
+        {/* ================= 1. REFINED HERO SECTION ================= */}
+        <section className="text-center space-y-3 pt-1 sm:pt-3">
+          {/* National Trust Pill */}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200/90 dark:border-amber-800 text-amber-900 dark:text-amber-300 text-[11px] font-semibold tracking-wide shadow-xs">
+            <span className="text-sm">🇮🇳</span>
+            <span>
+              {isHindi
+                ? "भारत का अपना मुफ़्त ज्ञान व क्विज़ मंच"
+                : "India’s Free Knowledge & Quiz Platform"}
+            </span>
+          </div>
 
-      <div className="w-full min-h-[calc(100vh-70px)] px-4 py-4 sm:py-8 max-w-7xl mx-auto flex flex-col items-center select-none pb-28 sm:pb-32 relative z-10">
-      {/* ── HERO SECTION ── */}
-      <section className="w-full text-center max-w-3xl mx-auto mb-6 sm:mb-8">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800 text-amber-700 dark:text-amber-400 text-xs font-bold uppercase tracking-wider mb-2.5 shadow-2xs">
-          <Sparkles size={13} className="fill-amber-500" />
-          <span>{isHindi ? "🇮🇳 भारत का अपना निःशुल्क ज्ञान व क्विज़ मंच · 100% मुफ्त" : "India's Free Knowledge & Quiz Platform"}</span>
-        </div>
+          {/* Main Headline */}
+          <h1 className="text-[25px] sm:text-[30px] md:text-[36px] font-black tracking-tight text-slate-900 dark:text-white leading-[1.25] px-1">
+            {isHindi ? (
+              <>
+                सपनों को दें ज्ञान की उड़ान, <br />
+                <span className="bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 bg-clip-text text-transparent">
+                  हर दिन कुछ नया सीखें
+                </span>
+              </>
+            ) : (
+              <>
+                Empower Your Dreams, <br />
+                <span className="bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 bg-clip-text text-transparent">
+                  Learn Something New Daily
+                </span>
+              </>
+            )}
+          </h1>
 
-        <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-2">
-          {isHindi ? "सपनों को दें ज्ञान की उड़ान, हर दिन कुछ नया सीखें" : "Empowering Every Learner, Every Dream"}
-        </h1>
+          {/* Clean Subtext */}
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-[360px] sm:max-w-md mx-auto">
+            {isHindi
+              ? "गाँव हो या शहर, स्कूल हो या सरकारी परीक्षा — रोज़ सिर्फ 10 मिनट अभ्यास आपको सफलता के करीब ले जाएगा।"
+              : "From schools to competitive exams—just 10 minutes of daily quiz practice builds lasting confidence."}
+          </p>
 
-        <p className="text-xs sm:text-base text-slate-600 dark:text-slate-300 font-medium max-w-2xl mx-auto leading-relaxed">
-          {isHindi
-            ? "गाँव हो या शहर, स्कूल की पढ़ाई हो या प्रतियोगी परीक्षा का सपना — यहाँ हर दिन 10 मिनट का अभ्यास आपके भविष्य को नई दिशा दे सकता है।"
-            : "From school curriculum to competitive exams and lifelong curiosity — choose your personalized experience and learn for free every day."}
-        </p>
+          {/* Consolidated Single Stats Strip */}
+          <div className="inline-flex items-center justify-center gap-3 px-3.5 py-1.5 rounded-full bg-slate-50 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 text-[11px] font-semibold text-slate-700 dark:text-slate-300 shadow-2xs">
+            <span className="flex items-center gap-1">
+              <BookOpen className="w-3.5 h-3.5 text-indigo-500" />{" "}
+              {totalQuestions > 0 ? `${totalQuestions.toLocaleString()}+` : "3,885+"}{" "}
+              {isHindi ? "प्रश्न" : "Questions"}
+            </span>
+            <span className="text-slate-300 dark:text-slate-600">•</span>
+            <span className="flex items-center gap-1">
+              <Sparkle className="w-3.5 h-3.5 text-amber-500" />{" "}
+              {totalCategories}+ {isHindi ? "विषय" : "Categories"}
+            </span>
+            <span className="text-slate-300 dark:text-slate-600">•</span>
+            <span className="text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-100/80 dark:bg-emerald-950/80 px-2 py-0.5 rounded-full">
+              {isHindi ? "100% मुफ़्त" : "100% Free"}
+            </span>
+          </div>
+        </section>
 
-        {/* Emotional Motivation Strip */}
-        <div className="mt-2 text-xs font-semibold text-indigo-600 dark:text-indigo-400 italic">
-          {isHindi ? "✨ \"यहाँ हर सवाल सिर्फ एक प्रश्न नहीं, आपके सपनों को सच करने की एक मजबूत सीढ़ी है।\"" : "✨ Knowledge is the key to unlocking your true potential."}
-        </div>
+        {/* ================= 2. FEATURED 1v1 LIVE BATTLE CARD ================= */}
+        <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-4 sm:p-5 text-white shadow-xl shadow-slate-950/20 border border-indigo-500/20 w-full">
+          {/* Subtle background ambient glows */}
+          <div className="absolute -top-12 -right-12 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl pointer-events-none" />
+          <div className="absolute -bottom-10 -left-10 w-28 h-28 bg-violet-600/20 rounded-full blur-2xl pointer-events-none" />
 
-        {/* Stats Strip */}
-        <div className="mt-3.5 flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-semibold">
-          <span className="flex items-center gap-1 text-slate-800 dark:text-slate-200 font-bold">
-            <BookOpen size={14} className="text-indigo-600 dark:text-indigo-400" />
-            <span>{totalQuestions > 0 ? `${totalQuestions.toLocaleString()}+` : "0"}</span>
-            <span className="text-slate-500 dark:text-slate-400 font-normal">{isHindi ? "प्रश्न" : "Questions"}</span>
-          </span>
-          <span className="text-slate-300 dark:text-slate-600">·</span>
-          <span className="flex items-center gap-1 text-slate-800 dark:text-slate-200 font-bold">
-            <Sparkles size={14} className="text-amber-500" />
-            <span>{totalCategories}+</span>
-            <span className="text-slate-500 dark:text-slate-400 font-normal">{isHindi ? "विषय" : "Categories"}</span>
-          </span>
-          <span className="text-slate-300 dark:text-slate-600">·</span>
-          <span className="text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-0.5 rounded-full border border-emerald-200/80 dark:border-emerald-800 font-bold text-xs">
-            {isHindi ? "हर दिन 100% मुफ्त" : "Free to play every day"}
-          </span>
-          <span className="text-slate-300 dark:text-slate-600">·</span>
-          <Link
-            href="/donate"
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 px-3 py-1 rounded-full border border-rose-200/80 dark:border-rose-800 hover:bg-rose-100 transition-colors shadow-2xs"
-          >
-            <Heart size={13} className="fill-rose-500 text-rose-500" />
-            <span>{isHindi ? "हमारा समर्थन करें" : "Support us"}</span>
-          </Link>
-        </div>
-      </section>
-
-      {/* ── LIVE PLAY WITH FRIENDS SHOWCASE CARD (1v1 Live Battle) ── */}
-      <section className="w-full max-w-4xl mx-auto mb-6 sm:mb-8">
-        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl p-4 sm:p-5.5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white shadow-xl shadow-indigo-950/20 border border-indigo-500/30">
-          {/* Ambient Glow */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-pink-500/15 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6">
-            {/* Left Info Column */}
-            <div className="flex items-start sm:items-center gap-3.5 sm:gap-4 text-left w-full md:w-auto">
-              <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-0.5 flex-shrink-0 shadow-lg shadow-indigo-500/30">
-                <div className="w-full h-full bg-slate-950/90 rounded-[14px] flex items-center justify-center text-xl sm:text-2xl">
-                  ⚔️
-                </div>
+          {/* Card Header Row */}
+          <div className="flex items-center justify-between mb-3 relative z-10">
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center border border-indigo-400/30 shadow-inner">
+                <Swords className="w-5 h-5 text-yellow-300 animate-bounce" style={{ animationDuration: "3s" }} />
               </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] sm:text-xs font-black uppercase tracking-wider">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
-                    LIVE PLAY
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                   </span>
-                  <span className="text-[11px] font-bold text-indigo-300 hidden sm:inline">
-                    {isHindi ? "दोस्तों के साथ लाइव" : "With Friends"}
+                  <span className="text-[10px] font-bold tracking-wider text-emerald-400 uppercase">
+                    LIVE DUEL
                   </span>
                 </div>
-                <h3 className="text-base sm:text-lg font-black text-white tracking-tight">
-                  {isHindi ? "1v1 लाइव मुकाबला · दोस्तों को चुनौती दें" : "1v1 Live Quiz Battle with Friends"}
+                <h3 className="text-base font-bold tracking-tight text-white">
+                  {isHindi ? "1v1 लाइव मुकाबला" : "1v1 Live Quiz Battle"}
                 </h3>
-                <p className="text-xs sm:text-sm text-slate-300 font-medium line-clamp-2 mt-0.5 max-w-xl">
-                  {isHindi
-                    ? "रूम कोड या लिंक शेयर करके रीयल-टाइम में खेलें, लाइव चैट करें और देखें कौन है असली GK चैंपियन!"
-                    : "Create a room or join with a code for real-time live GK battles and live chat."}
-                </p>
               </div>
             </div>
-
-            {/* Right Action Buttons */}
-            <div className="flex items-center gap-2.5 w-full md:w-auto flex-shrink-0 justify-stretch sm:justify-end">
-              <Link
-                href="/arena?battle=true"
-                className="flex-1 md:flex-initial inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 hover:from-indigo-400 hover:to-pink-400 text-white font-black text-xs sm:text-sm shadow-md shadow-indigo-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all whitespace-nowrap"
-              >
-                <span>⚔️</span>
-                <span>{isHindi ? "लाइव रूम बनाएं" : "Create Room"}</span>
-              </Link>
-              <Link
-                href="/arena?battle=true&tab=join"
-                className="flex-1 md:flex-initial inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm border border-white/20 hover:border-white/40 active:scale-[0.98] transition-all whitespace-nowrap"
-              >
-                <span>🚀</span>
-                <span>{isHindi ? "कोड से जुड़ें" : "Join Code"}</span>
-              </Link>
-            </div>
+            <span className="text-[10px] font-medium text-slate-300 bg-white/10 px-2.5 py-1 rounded-full border border-white/10 backdrop-blur-xs">
+              ⚡ 1.2k {isHindi ? "ऑनलाइन" : "Online"}
+            </span>
           </div>
-        </div>
-      </section>
 
-      {/* ── MOBILE VIEW: 2×2 TILE GRID (< 768px) ── */}
-      <section className="w-full max-w-lg mx-auto mb-6 block md:hidden">
-        <div className="grid grid-cols-2 gap-3">
-          {MOBILE_TILES.map((tile) => {
-            const Icon = tile.icon;
-            return (
-              <motion.div
-                key={tile.id}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => handleSelectTier(tile.id)}
-                role="button"
-                tabIndex={0}
-                className={`relative min-h-[142px] h-auto p-3.5 rounded-2xl border ${tile.cardBorder} ${tile.cardBg} shadow-sm flex flex-col justify-between items-start text-left cursor-pointer transition-all`}
-              >
-                <div className="w-full flex items-center justify-between">
-                  <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-xs ${tile.iconBg}`}
-                  >
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <span
-                    className={`text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${tile.badgeBg}`}
-                  >
-                    {tile.badge}
-                  </span>
-                </div>
+          {/* Card Description */}
+          <p className="text-xs text-slate-300 mb-4 leading-relaxed relative z-10">
+            {isHindi
+              ? "दोस्तों को रूम कोड भेजें, रीयल-टाइम में क्विज़ भिड़ंत करें और जानें कौन है असली GK चैंपियन!"
+              : "Invite your friends via room code, battle in real-time GK quizzes, and claim the championship!"}
+          </p>
 
-                <div className="mt-3">
-                  <h2 className="text-base font-black text-slate-900 dark:text-white leading-tight">
-                    {tile.name}
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5 line-clamp-1">
-                    {tile.tagline}
-                  </p>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-      </section>
+          {/* Action Buttons */}
+          <div className="grid grid-cols-2 gap-2.5 relative z-10">
+            <button
+              onClick={generateRoom}
+              className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs font-bold shadow-md shadow-indigo-600/30 active:scale-95 transition-all"
+            >
+              <Swords className="w-3.5 h-3.5" />
+              <span>{isHindi ? "लाइव रूम बनाएं" : "Create Room"}</span>
+            </button>
 
-      {/* ── DESKTOP VIEW: 4 RICH VISUAL TIER CARDS (>= 768px) ── */}
-      <section className="w-full hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
-        {/* CARD 1: KIDS TIER */}
-        <div
-          onClick={() => handleSelectTier(TIERS.KIDS)}
-          className="group relative rounded-3xl p-6 bg-white dark:bg-slate-900 border-2 border-amber-400/50 dark:border-amber-500/40 hover:border-amber-500 dark:hover:border-amber-400 hover:shadow-xl hover:shadow-amber-500/10 transition-all duration-200 flex flex-col justify-between cursor-pointer"
-        >
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shadow-xs">
-                <Sparkles size={24} className="text-amber-500" />
-              </div>
-              <span className="text-xs font-bold px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/80">
-                {isHindi ? "आयु 5-12 वर्ष" : "Age 5–12"}
+            <button
+              onClick={() => setJoinRoomOpen(true)}
+              className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-semibold backdrop-blur-md active:scale-95 transition-all"
+            >
+              <Rocket className="w-3.5 h-3.5 text-amber-300" />
+              <span>{isHindi ? "कोड से जुड़ें" : "Join Code"}</span>
+            </button>
+          </div>
+        </section>
+
+        {/* ================= 3. AGE, CATEGORY & MASTER FEATURES EXPLORATION GRID ================= */}
+        <section className="space-y-2.5">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
+              <span>{isHindi ? "श्रेणियाँ व प्रमुख फीचर्स" : "Categories & Master Hubs"}</span>
+              <span className="text-[11px] font-normal text-slate-500 dark:text-slate-400">
+                ({isHindi ? "Choose Learning Hub" : "श्रेणियाँ चुनें"})
               </span>
-            </div>
-
-            <h2 className="text-xl font-black text-slate-900 dark:text-white mb-1.5">
-              {isHindi ? "बच्चे (Kids)" : "Kids"}
             </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-4">
-              {isHindi
-                ? "नन्हे कदमों की पहली उड़ान — रंगीन चित्र-टाइल्स, बिना टाइमर का तनाव और चमचमाते स्टार इनाम!"
-                : "Playful picture-tiles, 10-question sets, zero timer pressure & star stickers."}
-            </p>
-
-            {/* Visual Snippet Box */}
-            <div className="p-3.5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/50 mb-5">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10.5px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
-                  {isHindi ? "पिक्चर-टाइल प्रिव्यू" : "Picture-Tile Style"}
-                </span>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 flex items-center gap-1">
-                  <Star size={10} className="fill-amber-500 text-amber-500" /> 3 Stars
-                </span>
-              </div>
-              <div className="grid grid-cols-3 gap-1.5 mb-2">
-                {[
-                  { label: isHindi ? "जानवर" : "Animals", color: "from-amber-400 to-orange-400" },
-                  { label: isHindi ? "अंतरिक्ष" : "Space", color: "from-indigo-400 to-purple-500" },
-                  { label: isHindi ? "रंग व कला" : "Colors", color: "from-rose-400 to-pink-500" },
-                ].map((item, idx) => (
-                  <div
-                    key={idx}
-                    className={`py-1.5 px-1 rounded-lg bg-gradient-to-br ${item.color} text-white text-center text-[10.5px] font-bold shadow-xs`}
-                  >
-                    {item.label}
-                  </div>
-                ))}
-              </div>
-              <div className="text-center text-[10px] font-bold text-amber-800 dark:text-amber-300">
-                {isHindi ? "दबाव-मुक्त खेल · 10 प्रश्न प्रति सेट" : "Fun 10 Qs · No Timer Anxiety"}
-              </div>
-            </div>
+            <Link
+              href="/quizzes"
+              className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold cursor-pointer hover:underline"
+            >
+              {isHindi ? "सभी देखें →" : "View All →"}
+            </Link>
           </div>
 
-          <button
-            type="button"
-            className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-sm shadow-md shadow-orange-500/20 flex items-center justify-center gap-2 group-hover:gap-3 transition-all"
-          >
-            <span>{isHindi ? "किड्स मोड शुरू करें" : "Start Kids Zone"}</span>
-            <ArrowRight size={16} />
-          </button>
-        </div>
-
-        {/* CARD 2: STUDENTS TIER */}
-        <div
-          onClick={() => handleSelectTier(TIERS.STUDENTS)}
-          className="group relative rounded-3xl p-6 bg-white dark:bg-slate-900 border-2 border-teal-400/50 dark:border-teal-500/40 hover:border-teal-500 dark:hover:border-teal-400 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-200 flex flex-col justify-between cursor-pointer"
-        >
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 rounded-2xl bg-teal-100 dark:bg-teal-950/60 text-teal-700 dark:text-teal-400 flex items-center justify-center shadow-xs">
-                <GraduationCap size={24} className="text-teal-600 dark:text-teal-400" />
-              </div>
-              <span className="text-xs font-bold px-3 py-1 rounded-full bg-teal-100 dark:bg-teal-950/80 text-teal-900 dark:text-teal-300 border border-teal-200/80 dark:border-teal-800/80">
-                {isHindi ? "कक्षा 6-12 · छात्र" : "Class 6–12"}
-              </span>
-            </div>
-
-            <h2 className="text-xl font-black text-slate-900 dark:text-white mb-1.5">
-              {isHindi ? "विद्यार्थी (Students)" : "Students"}
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-4">
-              {isHindi
-                ? "मेहनत से संवरेगा आपका कल — स्कूल पाठ्यक्रम, बोर्ड परीक्षा रिवीज़न, दैनिक स्ट्रीक और आत्मविश्वास!"
-                : "Curriculum revision, KBC trivia, daily study streaks & XP progression."}
-            </p>
-
-            {/* Visual Snippet Box */}
-            <div className="p-3.5 rounded-2xl bg-teal-50/70 dark:bg-teal-950/30 border border-teal-200/60 dark:border-teal-800/50 mb-5">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10.5px] font-bold uppercase tracking-wider text-teal-800 dark:text-teal-400">
-                  {isHindi ? "क्लास व बोर्ड चयन" : "Class & Board Tracker"}
-                </span>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-teal-100 dark:bg-teal-900/60 text-teal-900 dark:text-teal-300">
-                  Class 9 ▾
-                </span>
-              </div>
-              <div className="flex items-center justify-between gap-1 p-2 rounded-xl bg-white dark:bg-slate-800 border border-teal-100 dark:border-teal-900/50 text-xs mb-2">
-                <span className="font-bold flex items-center gap-1 text-slate-800 dark:text-slate-200">
-                  <Flame size={14} className="text-orange-500" />
-                  <span>5 Day Streak</span>
-                </span>
-                <span className="font-bold text-teal-700 dark:text-teal-400">⚡ 1,250 XP</span>
-              </div>
-              <div className="grid grid-cols-2 gap-1.5 text-[11px] font-bold">
-                <div className="p-1.5 rounded-lg bg-teal-100/70 dark:bg-teal-900/40 text-teal-800 dark:text-teal-300 text-center">
-                  Study Quizzes
-                </div>
-                <div className="p-1.5 rounded-lg bg-indigo-100/70 dark:bg-indigo-900/40 text-indigo-800 dark:text-indigo-300 text-center">
-                  Fun Zone
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-teal-600 to-sky-600 hover:from-teal-700 hover:to-sky-700 text-white font-bold text-sm shadow-md shadow-teal-500/20 flex items-center justify-center gap-2 group-hover:gap-3 transition-all"
-          >
-            <span>{isHindi ? "स्टूडेंट्स हब में जाएं" : "Enter Students Hub"}</span>
-            <ArrowRight size={16} />
-          </button>
-        </div>
-
-        {/* CARD 3: EXPLORER TIER */}
-        <div
-          onClick={() => handleSelectTier(TIERS.ADULTS)}
-          className="group relative rounded-3xl p-6 bg-white dark:bg-slate-900 border-2 border-indigo-400/50 dark:border-indigo-500/40 hover:border-indigo-500 dark:hover:border-indigo-400 hover:shadow-xl hover:shadow-indigo-500/10 transition-all duration-200 flex flex-col justify-between cursor-pointer"
-        >
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400 flex items-center justify-center shadow-xs">
-                <Compass size={24} className="text-indigo-600 dark:text-indigo-400" />
-              </div>
-              <span className="text-xs font-bold px-3 py-1 rounded-full bg-indigo-100 dark:bg-indigo-950/80 text-indigo-900 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/80">
-                {isHindi ? "सभी के लिए" : "For everyone"}
-              </span>
-            </div>
-
-            <h2 className="text-xl font-black text-slate-900 dark:text-white mb-1.5">
-              {isHindi ? "सामान्य ज्ञान (GK Hub)" : "Explorer (GK)"}
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-4">
-              {isHindi
-                ? "सपनों की सरकारी नौकरी और संपूर्ण ज्ञान — SSC, रेलवे, राज्य परीक्षाओं और ज्ञान संवर्धन का सच्चा साथी!"
-                : "Trivia, GK, Current Affairs & Exam Series"}
-            </p>
-
-            {/* Visual Snippet Box */}
-            <div className="p-3.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200/60 dark:border-indigo-800/50 mb-5">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10.5px] font-bold uppercase tracking-wider text-indigo-800 dark:text-indigo-400">
-                  {isHindi ? "ट्रिविया + परीक्षा" : "Play & Learn + Exams"}
-                </span>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300">
-                  Live
-                </span>
-              </div>
-              <div className="space-y-1.5">
-                <div className="p-2 rounded-xl bg-white dark:bg-slate-800 border border-indigo-100 dark:border-indigo-900/50 text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
-                  <span>Play & Learn (GK)</span>
-                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-extrabold">Free Sets</span>
-                </div>
-                <div className="p-2 rounded-xl bg-white dark:bg-slate-800 border border-indigo-100 dark:border-indigo-900/50 text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
-                  <span>Exam Prep (SSC, RRB)</span>
-                  <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-extrabold">Mocks</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold text-sm shadow-md shadow-indigo-500/20 flex items-center justify-center gap-2 group-hover:gap-3 transition-all"
-          >
-            <span>{isHindi ? "एक्सप्लोरर शुरू करें" : "Start Explorer"}</span>
-            <ArrowRight size={16} />
-          </button>
-        </div>
-
-        {/* CARD 4: QUIZ ARENA */}
-        <div
-          onClick={() => {
-            setTier(TIERS.ARENA);
-            router.push("/arena");
-          }}
-          className="group relative rounded-3xl p-6 bg-white dark:bg-slate-900 border-2 border-violet-400/50 dark:border-violet-500/40 hover:border-violet-500 dark:hover:border-violet-400 hover:shadow-xl hover:shadow-violet-500/10 transition-all duration-200 flex flex-col justify-between cursor-pointer"
-        >
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 rounded-2xl bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-400 flex items-center justify-center shadow-xs">
-                <Zap size={24} className="fill-violet-600 text-violet-600 dark:text-violet-400" />
-              </div>
-              <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-gradient-to-r from-violet-600 to-pink-500 text-white shadow-xs">
-                NEW
-              </span>
-            </div>
-
-            <h2 className="text-xl font-black text-slate-900 dark:text-white mb-1.5">
-              {isHindi ? "GK टेस्ट इंजन" : "GK Test Engine"}
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-4">
-              {isHindi
-                ? "कस्टम क्विज़ इंजन — विषय, कठिनाई व टाइमर चुनकर लगातार प्रश्नों का असीमित अभ्यास करें!"
-                : "Build custom quiz challenges, filter categories, train weak spots & challenge friends."}
-            </p>
-
-            {/* Visual Snippet Box */}
-            <div className="p-3.5 rounded-2xl bg-violet-50/70 dark:bg-violet-950/30 border border-violet-200/60 dark:border-violet-800/50 mb-5">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10.5px] font-bold uppercase tracking-wider text-violet-800 dark:text-violet-400">
-                  {isHindi ? "कस्टम क्विज़ इंजन" : "Custom Engine"}
-                </span>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-violet-100 dark:bg-violet-900/60 text-violet-900 dark:text-violet-300">
-                  Builder
-                </span>
-              </div>
-              <div className="space-y-1.5">
-                <div className="p-2 rounded-xl bg-white dark:bg-slate-800 border border-violet-100 dark:border-violet-900/50 text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
-                  <span>Multi-Category Filter</span>
-                  <span className="text-[10px] text-violet-600 dark:text-violet-400 font-extrabold">10-50 Qs</span>
-                </div>
-                <div className="p-2 rounded-xl bg-white dark:bg-slate-800 border border-violet-100 dark:border-violet-900/50 text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
-                  <span>Challenge a Friend</span>
-                  <span className="text-[10px] text-pink-600 dark:text-pink-400 font-extrabold">VS Mode</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-700 hover:to-pink-700 text-white font-bold text-sm shadow-md shadow-violet-500/20 flex items-center justify-center gap-2 group-hover:gap-3 transition-all"
-          >
-            <span>{isHindi ? "GK टेस्ट इंजन शुरू करें" : "Start GK Test Engine"}</span>
-            <ArrowRight size={16} />
-          </button>
-        </div>
-      </section>
-
-      {/* ── 🌟 MASTER HUBS & KEY FEATURES SHOWCASE ── */}
-      <div className="w-full max-w-5xl mx-auto mb-6">
-        <MainHubsShowcase isHindi={isHindi} />
-      </div>
-
-      {/* ── 5TH LAYER: INDIA GK DIGITAL BOOK BANNER & ACCESSIBILITY ── */}
-      <section className="w-full max-w-5xl mx-auto mt-2 mb-8">
-        <div className="relative overflow-hidden rounded-3xl p-5 sm:p-7 bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-900 text-white border-2 border-indigo-500/40 shadow-xl shadow-indigo-950/40">
-          {/* Decorative ambient background glows */}
-          <div className="absolute -top-24 -right-24 w-72 h-72 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-            {/* Left Content */}
-            <div className="flex-1 text-center md:text-left">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-amber-300 text-xs font-black uppercase tracking-wider mb-3">
-                <span>📖 {isHindi ? "डिजिटल बुक प्लेटफ़ॉर्म" : "Digital Book Hub"}</span>
-                <span>·</span>
-                <span className="text-emerald-400 font-extrabold">{isHindi ? "नया फ़ीचर (NEW)" : "NEW FEATURE"}</span>
-              </div>
-
-              <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-white tracking-tight mb-2">
-                {isHindi
-                  ? "India GK: आपकी हर जरूरत के लिए डिजिटल बुक"
-                  : "India GK: A Digital Book For All Your Needs"}
-              </h2>
-
-              <p className="text-xs sm:text-sm text-indigo-200/90 leading-relaxed mb-4 max-w-xl">
-                {isHindi
-                  ? "अध्याय दर अध्याय संरचित अध्ययन, संक्षिप्त (Quick Revision) व विस्तृत (Deep Study) पठन, और हर पृष्ठ के अंत में स्व-निहित अभ्यास क्विज़।"
-                  : "Chapter-by-chapter structured learning with Short & Full reading modes and interactive self-contained quiz cards on every page."}
-              </p>
-
-              {/* Feature pills */}
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-5 text-[11px] font-bold text-indigo-100">
-                <span className="px-2.5 py-1 rounded-lg bg-white/10 border border-white/10 backdrop-blur-xs">
-                  ⚡ {isHindi ? "संक्षिप्त व विस्तृत मोड" : "Short & Full Modes"}
-                </span>
-                <span className="px-2.5 py-1 rounded-lg bg-white/10 border border-white/10 backdrop-blur-xs">
-                  🎯 {isHindi ? "हर पृष्ठ पर क्विज़ कार्ड" : "Page Quiz Cards"}
-                </span>
-                <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-400/30 text-emerald-300">
-                  ✓ {isHindi ? "100% मुफ्त पठन" : "100% Free Access"}
-                </span>
-              </div>
-
-              {/* CTA & Chapter Dropdown */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                <Link
-                  href="/gk-book/sindhu-ghati"
-                  className="px-5 py-3 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-slate-950 font-black text-sm shadow-lg shadow-amber-500/25 flex items-center justify-center gap-2 active:scale-98 transition-all"
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {categories.map((cat) => {
+              const IconComponent = cat.icon;
+              return (
+                <div
+                  key={cat.id}
+                  onClick={() => {
+                    if (cat.directRoute) {
+                      router.push(cat.directRoute);
+                    } else {
+                      setCategoryModal(cat);
+                    }
+                  }}
+                  className={`bg-white dark:bg-slate-900 rounded-2xl p-3.5 border border-slate-200/90 dark:border-slate-800 shadow-2xs hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col justify-between group active:scale-[0.98] ${cat.accentBorder}`}
                 >
-                  <span>{isHindi ? "किताब पढ़ना शुरू करें" : "Read Digital Book"}</span>
-                  <ArrowRight size={16} />
-                </Link>
-
-                {/* Chapter Dropdown Quick Jump */}
-                <div className="relative">
-                  <select
-                    className="w-full sm:w-auto px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 text-white border border-white/20 text-xs font-semibold outline-none cursor-pointer backdrop-blur-xs transition-colors"
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        router.push(e.target.value);
-                      }
-                    }}
-                    defaultValue=""
-                  >
-                    <option value="" disabled className="bg-slate-900 text-slate-400">
-                      {isHindi ? "▼ सीधे पुस्तक या अध्याय पर जाएं..." : "▼ Jump to Book or Chapter..."}
-                    </option>
-                    <option value="/gk-book" className="bg-slate-900 text-amber-300 font-bold">
-                      📚 {isHindi ? "मेरी डिजिटल पुस्तकें (सभी पुस्तकें)" : "My Bookshelf (All Books)"}
-                    </option>
-                    <option value="/gk-book/sindhu-ghati" className="bg-slate-900 text-white">
-                      🇮🇳 1. India GK: सिंधु घाटी सभ्यता (Live)
-                    </option>
-                    <option value="/gk-book?book=world-gk&chapter=solar-system&page=1" className="bg-slate-900 text-white">
-                      🌍 2. World GK: सौरमंडल एवं ब्रह्मांड (Live)
-                    </option>
-                    <option value="/gk-book?book=mp-gk" className="bg-slate-900 text-slate-300">
-                      🏛️ 3. MP GK: मध्य प्रदेश सामान्य ज्ञान (Upcoming)
-                    </option>
-                    <option value="/gk-book?book=up-gk" className="bg-slate-900 text-slate-300">
-                      🏛️ 4. UP GK: उत्तर प्रदेश सामान्य ज्ञान (Upcoming)
-                    </option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Book Cover Thumbnail Preview */}
-            <div className="w-36 sm:w-44 flex-shrink-0 group perspective">
-              <Link href="/gk-book/sindhu-ghati" className="block relative">
-                <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-black/60 border-2 border-indigo-400/40 transform group-hover:scale-105 group-hover:-rotate-1 transition-all duration-300 aspect-[3/4] bg-slate-800">
-                  <img
-                    src="/images/gk-book/india-gk-cover.jpg"
-                    alt="India GK Digital Book Cover"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-2.5">
-                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-amber-400 text-slate-950 shadow-xs">
-                      {isHindi ? "लाइव पढ़ें" : "Read Live"}
+                  {/* Top Row: Icon and Badge */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className={`w-10 h-10 rounded-xl ${cat.iconBg} flex items-center justify-center group-hover:scale-105 transition-transform`}>
+                      <IconComponent className="w-5 h-5" />
+                    </div>
+                    <span className={`text-[9px] font-extrabold tracking-wider px-2 py-0.5 rounded-full border ${cat.badgeColor}`}>
+                      {cat.badge}
                     </span>
                   </div>
+
+                  {/* Content Details */}
+                  <div>
+                    <h3 className="font-bold text-slate-900 dark:text-white text-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                      {cat.title}
+                    </h3>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                      {cat.subtitle}
+                    </p>
+                  </div>
+
+                  {/* Card Footer micro-action */}
+                  <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] font-medium text-slate-400 dark:text-slate-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                    <span>{isHindi ? "अभ्यास शुरू करें" : "Start Quiz"}</span>
+                    <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
+                  </div>
                 </div>
-              </Link>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* ================= 4. INTERACTIVE "QUESTION OF THE DAY" WIDGET ================= */}
+        <section className="bg-gradient-to-b from-indigo-50/70 to-white dark:from-slate-900 dark:to-slate-900/60 rounded-2xl p-4 border border-indigo-100 dark:border-slate-800 shadow-xs space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-100/70 dark:bg-indigo-950/70 px-2.5 py-0.5 rounded-full">
+              <Clock className="w-3 h-3" /> {isHindi ? "आज का सवाल (Daily Quiz)" : "Question of the Day"}
+            </span>
+            <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/60 px-2 py-0.5 rounded-full">
+              +10 XP
+            </span>
+          </div>
+
+          <p className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100 leading-snug">
+            {isHindi
+              ? "चंद्रमा पर कदम रखने वाले प्रथम व्यक्ति कौन थे?"
+              : "Who was the first person to walk on the lunar surface of the Moon?"}
+          </p>
+
+          {/* Answer Options */}
+          <div className="grid grid-cols-1 gap-2 pt-1">
+            {[
+              { id: 0, text: isHindi ? "यूरी गागरिन (Yuri Gagarin)" : "Yuri Gagarin" },
+              { id: 1, text: isHindi ? "राकेश शर्मा (Rakesh Sharma)" : "Rakesh Sharma" },
+              { id: 2, text: isHindi ? "नील आर्मस्ट्रांग (Neil Armstrong)" : "Neil Armstrong" },
+              { id: 3, text: isHindi ? "बज़ एल्ड्रिन (Buzz Aldrin)" : "Buzz Aldrin" },
+            ].map((opt) => {
+              const isSelected = selectedAnswer === opt.id;
+              const isCorrect = opt.id === correctAnswer;
+
+              let btnStyle = "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-indigo-300";
+              if (answered) {
+                if (isCorrect) {
+                  btnStyle = "bg-emerald-50 dark:bg-emerald-950/60 border-emerald-400 dark:border-emerald-600 text-emerald-900 dark:text-emerald-200 font-bold";
+                } else if (isSelected && !isCorrect) {
+                  btnStyle = "bg-rose-50 dark:bg-rose-950/60 border-rose-300 dark:border-rose-700 text-rose-900 dark:text-rose-200";
+                } else {
+                  btnStyle = "bg-white dark:bg-slate-850 border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 opacity-60";
+                }
+              }
+
+              return (
+                <button
+                  key={opt.id}
+                  disabled={answered}
+                  onClick={() => handleAnswerClick(opt.id)}
+                  className={`w-full text-left px-3 py-2.5 rounded-xl border text-xs font-medium flex items-center justify-between transition-all ${btnStyle}`}
+                >
+                  <span>{opt.text}</span>
+                  {answered && isCorrect && <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />}
+                  {answered && isSelected && !isCorrect && <XCircle className="w-4 h-4 text-rose-500 dark:text-rose-400 flex-shrink-0" />}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Feedback & Explanation */}
+          {answered && (
+            <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[11px] text-slate-600 dark:text-slate-300 animate-in fade-in duration-200">
+              {selectedAnswer === correctAnswer ? (
+                <p className="text-emerald-700 dark:text-emerald-300 font-bold">
+                  {isHindi
+                    ? "🎉 सही उत्तर! नील आर्मस्ट्रांग ने 20 जुलाई 1969 को अपोलो 11 मिशन के तहत चाँद पर पहला कदम रखा था। (+10 XP प्राप्त)"
+                    : "🎉 Correct! Neil Armstrong stepped onto the lunar surface on July 20, 1969 during Apollo 11. (+10 XP awarded)"}
+                </p>
+              ) : (
+                <p className="text-rose-600 dark:text-rose-400 font-medium">
+                  {isHindi
+                    ? "गलत उत्तर! सही विकल्प नील आर्मस्ट्रांग है। यूरी गागरिन अंतरिक्ष जाने वाले पहले मानव थे।"
+                    : "Incorrect! The correct answer is Neil Armstrong. Yuri Gagarin was the first human in space."}
+                </p>
+              )}
+            </div>
+          )}
+        </section>
+
+        {/* ================= 5. COMMUNITY & SUPPORT BANNER ================= */}
+        <section className="bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-900/60 rounded-2xl p-3.5 flex items-center justify-between">
+          <div className="flex items-center space-x-2.5">
+            <div className="w-8 h-8 rounded-full bg-rose-100 dark:bg-rose-900/50 flex items-center justify-center text-rose-600 dark:text-rose-400 shrink-0">
+              <Heart className="w-4 h-4 fill-rose-500 text-rose-500" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-800 dark:text-white">
+                {isHindi ? "दिल से भारतीय, सबके लिए मुफ़्त" : "Proudly Indian, 100% Free"}
+              </p>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                {isHindi
+                  ? "शिक्षा को देश के हर कोने तक पहुँचाने में मदद करें"
+                  : "Help bring quality free education to every student in India"}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setSupportOpen(true)}
+            className="px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-xs font-semibold shadow-xs active:scale-95 transition whitespace-nowrap ml-2"
+          >
+            {isHindi ? "सहयोग करें" : "Support Us"}
+          </button>
+        </section>
+
+        {/* ================= 6. DAILY MOTIVATIONAL QUOTE STRIP ================= */}
+        <div className="text-center py-1 px-3">
+          <p className="text-[11px] italic text-slate-500 dark:text-slate-400">
+            {isHindi
+              ? '✨ "यहाँ हर सवाल सिर्फ एक प्रश्न नहीं, आपके सपनों को सच करने की एक मज़बूत सीढ़ी है!"'
+              : '✨ "Every question here is not just a query, but a solid stepping stone to fulfilling your dreams!"'}
+          </p>
+        </div>
+
+        {/* ================= 7. ECOSYSTEM SHOWCASE (Main Hubs & Digital Books) ================= */}
+        <div className="w-full pt-4 space-y-6">
+          <MainHubsShowcase isHindi={isHindi} />
+
+          {/* India GK Digital Book Banner */}
+          <section className="w-full mt-2 mb-4">
+            <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl p-5 bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-900 text-white border-2 border-indigo-500/40 shadow-xl shadow-indigo-950/40">
+              <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="flex-1 text-center md:text-left">
+                  <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-amber-300 text-[11px] font-black uppercase tracking-wider mb-2">
+                    <span>📖 {isHindi ? "डिजिटल बुक प्लेटफ़ॉर्म" : "Digital Book Hub"}</span>
+                    <span>·</span>
+                    <span className="text-emerald-400 font-extrabold">{isHindi ? "नया फ़ीचर" : "NEW"}</span>
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-black text-white tracking-tight mb-1.5">
+                    {isHindi ? "India GK: आपकी हर जरूरत के लिए डिजिटल बुक" : "India GK: Digital Book Platform"}
+                  </h3>
+                  <p className="text-xs text-indigo-200/90 leading-relaxed mb-3 max-w-lg">
+                    {isHindi
+                      ? "अध्याय दर अध्याय संरचित अध्ययन, संक्षिप्त व विस्तृत पठन, और पृष्ठ के अंत में अभ्यास क्विज़।"
+                      : "Structured chapter-by-chapter reading with interactive quiz cards on every page."}
+                  </p>
+                  <Link
+                    href="/gk-book/sindhu-ghati"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-slate-950 font-black text-xs shadow-md shadow-amber-500/25 active:scale-95 transition-all"
+                  >
+                    <span>{isHindi ? "किताब पढ़ना शुरू करें" : "Read Digital Book"}</span>
+                    <ArrowRight size={14} />
+                  </Link>
+                </div>
+
+                <div className="w-28 sm:w-36 shrink-0 rounded-xl overflow-hidden shadow-xl border border-indigo-400/30">
+                  <img
+                    src="/images/gk-book/india-gk-cover.jpg"
+                    alt="India GK Book"
+                    className="w-full h-auto object-cover"
+                    onError={(e) => {
+                      e.target.style.display = "none";
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+      </div>
+
+      {/* ================= MODAL 1: 1v1 CREATE ROOM ================= */}
+      {createRoomOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl animate-in zoom-in-95 duration-150 border border-slate-200 dark:border-slate-800">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                  <Swords className="w-4 h-4" />
+                </div>
+                <h3 className="font-bold text-base text-slate-800 dark:text-white">
+                  {isHindi ? "लाइव बैटल रूम तैयार है" : "Live Battle Room Ready"}
+                </h3>
+              </div>
+              <button
+                onClick={() => setCreateRoomOpen(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="text-center py-4 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700">
+              <span className="text-xs text-slate-400 dark:text-slate-400 font-semibold uppercase tracking-wider">
+                {isHindi ? "आपका रूम कोड" : "Your Room Code"}
+              </span>
+              <p className="text-3xl font-black text-indigo-700 dark:text-indigo-400 tracking-widest my-1">
+                {roomCode}
+              </p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                {isHindi ? "यह कोड अपने दोस्त को भेजें" : "Share this code with your friend"}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={copyCode}
+                className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+              >
+                {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                <span>{copied ? (isHindi ? "कॉपी हो गया" : "Copied!") : (isHindi ? "कोड कॉपी करें" : "Copy Code")}</span>
+              </button>
+              <button
+                onClick={shareRoomWhatsApp}
+                className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition"
+              >
+                <Share2 className="w-4 h-4" />
+                <span>{isHindi ? "व्हाट्सऐप शेयर" : "Share Code"}</span>
+              </button>
+            </div>
+
+            <button
+              onClick={handleStartHostGame}
+              className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 active:scale-95 transition-all"
+            >
+              {isHindi ? "मैच शुरू करें (Start Game)" : "Start Match Now"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL 2: 1v1 JOIN ROOM ================= */}
+      {joinRoomOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl animate-in zoom-in-95 duration-150 border border-slate-200 dark:border-slate-800">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                  <Rocket className="w-4 h-4" />
+                </div>
+                <h3 className="font-bold text-base text-slate-800 dark:text-white">
+                  {isHindi ? "कोड से रूम जॉइन करें" : "Join Duel with Code"}
+                </h3>
+              </div>
+              <button
+                onClick={() => setJoinRoomOpen(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                {isHindi ? "6 अंकों का रूम कोड दर्ज करें" : "Enter 6-digit room code"}
+              </label>
+              <input
+                type="text"
+                placeholder={isHindi ? "उदा. 482910" : "e.g. 482910"}
+                value={joinCodeInput}
+                onChange={(e) => setJoinCodeInput(e.target.value.slice(0, 6))}
+                className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-center text-xl font-bold tracking-widest text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            <button
+              disabled={joinCodeInput.trim().length < 4}
+              onClick={handleJoinGame}
+              className="w-full py-3 rounded-xl bg-indigo-600 disabled:opacity-50 hover:bg-indigo-700 text-white text-xs font-bold shadow-md active:scale-95 transition-all"
+            >
+              {isHindi ? "रूम से जुड़ें (Join Duel)" : "Join Duel"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL 3: CATEGORY TOPICS QUICK LAUNCH ================= */}
+      {categoryModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl animate-in zoom-in-95 duration-150 border border-slate-200 dark:border-slate-800">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${categoryModal.badgeColor}`}>
+                  {categoryModal.badge}
+                </span>
+                <h3 className="font-bold text-lg text-slate-900 dark:text-white mt-1">
+                  {categoryModal.title}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{categoryModal.subtitle}</p>
+              </div>
+              <button
+                onClick={() => setCategoryModal(null)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                {isHindi ? "प्रमुख विषय चुनें:" : "Choose a Topic:"}
+              </p>
+              {categoryModal.topics.map((t, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleLaunchTopic(categoryModal, t)}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 hover:border-indigo-300 dark:hover:border-indigo-700 text-left text-xs font-medium text-slate-800 dark:text-slate-200 flex items-center justify-between transition group"
+                >
+                  <span>{t}</span>
+                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition" />
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => handleStartRandomTest(categoryModal)}
+              className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold active:scale-95 transition-all"
+            >
+              {isHindi ? "रैंडम टेस्ट शुरू करें" : "Start Random Practice Test"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL 4: SUPPORT / DONATION ================= */}
+      {supportOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl text-center border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-150">
+            <div className="w-12 h-12 mx-auto rounded-full bg-rose-100 dark:bg-rose-950/70 flex items-center justify-center text-rose-600 dark:text-rose-400">
+              <Heart className="w-6 h-6 fill-rose-500 text-rose-500" />
+            </div>
+            <h3 className="font-bold text-lg text-slate-900 dark:text-white">
+              {isHindi ? "QuizWeb का समर्थन करें" : "Support QuizWeb"}
+            </h3>
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              {isHindi
+                ? "QuizWeb भारत के हर छात्र के लिए हमेशा 100% नि:शुल्क रहेगा। यदि आपको हमारी यह पहल पसंद आई, तो इसे अपने सहपाठियों व परिवार के साथ ज़रूर शेयर करें!"
+                : "QuizWeb will always remain 100% free for students across India. If you appreciate our initiative, please share it with your friends and family!"}
+            </p>
+
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-300 font-medium">
+              {isHindi
+                ? "🤝 हर महीने 50,000+ छात्र बिना किसी विज्ञापन व फीस के सीख रहे हैं।"
+                : "🤝 Over 50,000+ students learn each month with zero ads and zero fees."}
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setSupportOpen(false)}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300"
+              >
+                {isHindi ? "बंद करें" : "Close"}
+              </button>
+              <button
+                onClick={() => {
+                  setSupportOpen(false);
+                  const shareText = isHindi
+                    ? "भारत का अपना निःशुल्क ज्ञान व क्विज़ मंच - QuizWeb पर अभ्यास करें: https://quizweb.in"
+                    : "Practice on India's free knowledge and quiz platform QuizWeb: https://quizweb.in";
+                  if (navigator?.share) {
+                    navigator.share({ title: "QuizWeb", text: shareText, url: "https://quizweb.in" }).catch(() => {});
+                  } else {
+                    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, "_blank");
+                  }
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold"
+              >
+                {isHindi ? "शेयर करें" : "Share"}
+              </button>
             </div>
           </div>
         </div>
-      </section>
-      </div>
+      )}
+
     </div>
   );
 }

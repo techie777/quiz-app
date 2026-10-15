@@ -76,6 +76,7 @@ export default function Footer() {
     pathname?.startsWith("/admin") ||
     pathname?.startsWith("/fun-facts") ||
     pathname?.startsWith("/true-false") ||
+    pathname?.startsWith("/school-study") ||
     isCurrentlyFullscreen ||
     settings?.footerEnabled === false;
 

@@ -21,9 +21,20 @@ export default function ErrorBoundary({ error, reset }) {
         <p className="text-sm text-slate-600 mb-6">
           {error?.message || 'एप्लिकेशन लोड करने में समस्या आई है। कृपया पुनः प्रयास करें।'}
         </p>
+        {error?.stack && (
+          <pre className="text-[11px] text-left text-rose-700 bg-rose-50 border border-rose-200 rounded-lg p-3 max-h-40 overflow-auto whitespace-pre-wrap mb-4">
+            {error.stack}
+          </pre>
+        )}
         <div className="flex items-center justify-center gap-3">
           <button
-            onClick={() => reset()}
+            onClick={() => {
+              if (typeof window !== "undefined") {
+                window.location.reload();
+              } else {
+                reset();
+              }
+            }}
             className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl shadow-md transition-all duration-150 cursor-pointer"
           >
             पुनः प्रयास करें (Retry)

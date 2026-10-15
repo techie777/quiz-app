@@ -66,13 +66,13 @@ export default function TierSwitcher() {
     },
   ];
 
-  const isHomeSelected = !hasSavedTier;
+  const isHomeSelected = pathname === "/" && !hasSavedTier;
 
   const getCurrentTriggerIcon = () => {
+    if (pathname === "/kids" || tier === TIERS.KIDS) return <Sparkles size={14} className="shrink-0 text-amber-500" />;
+    if (pathname === "/students" || pathname?.startsWith("/school-study") || tier === TIERS.STUDENTS) return <GraduationCap size={14} className="shrink-0 text-teal-600" />;
+    if (pathname?.startsWith("/arena") || tier === TIERS.ARENA) return <Swords size={14} className="shrink-0 text-purple-600" />;
     if (isHomeSelected) return <Home size={14} className="shrink-0 text-indigo-600 dark:text-indigo-400" />;
-    if (tier === TIERS.KIDS) return <Sparkles size={14} className="shrink-0 text-amber-500" />;
-    if (tier === TIERS.STUDENTS) return <GraduationCap size={14} className="shrink-0 text-teal-600" />;
-    if (tier === TIERS.ARENA) return <Swords size={14} className="shrink-0 text-purple-600" />;
     return <Compass size={14} className="shrink-0 text-indigo-600" />;
   };
 
@@ -164,8 +164,14 @@ export default function TierSwitcher() {
                     onClick={() => {
                       setTier(key);
                       setIsOpen(false);
-                      if (key === TIERS.ARENA && !pathname.startsWith("/arena")) {
-                        router.push("/arena");
+                      if (key === TIERS.KIDS) {
+                        router.push("/kids");
+                      } else if (key === TIERS.STUDENTS) {
+                        router.push("/school-study");
+                      } else if (key === TIERS.ARENA) {
+                        if (!pathname.startsWith("/arena")) router.push("/arena");
+                      } else {
+                        router.push("/");
                       }
                     }}
                     className={`w-full flex items-center justify-between p-2 rounded-xl text-left transition-colors min-h-[44px] ${

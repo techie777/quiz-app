@@ -1,12 +1,14 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTier, TIERS } from "@/context/TierContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { Sparkles, Check, X } from "lucide-react";
 
 export default function TierSelectionModal() {
+  const router = useRouter();
   const { isTierModalOpen, closeTierModal, setTier, tier: activeTier, tierConfig } = useTier();
   const { isHindi } = useLanguage();
 
@@ -15,6 +17,15 @@ export default function TierSelectionModal() {
   const handleSelect = (tierKey) => {
     setTier(tierKey);
     closeTierModal();
+    if (tierKey === TIERS.KIDS) {
+      router.push("/kids");
+    } else if (tierKey === TIERS.STUDENTS) {
+      router.push("/school-study");
+    } else if (tierKey === TIERS.ARENA) {
+      router.push("/arena");
+    } else {
+      router.push("/");
+    }
   };
 
   const options = [

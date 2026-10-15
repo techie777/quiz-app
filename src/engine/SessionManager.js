@@ -1647,7 +1647,7 @@ export default function SessionManager({ sessionId }) {
 
       <SessionLobby 
         sessionId={sessionId}
-        isHost={isHost}
+        isHost={Boolean(isHost || session?.role === 'HOST' || (participants.length <= 1 && (!session?.role || session?.role === 'HOST')))}
         participants={participants}
         pendingParticipants={pendingParticipants}
         reactions={reactions}

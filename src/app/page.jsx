@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowRight, Sparkles, SlidersHorizontal, BookOpen, Flame, Lock, Rocket, Play, Award, CheckCircle2, ShieldCheck, Zap, Globe, Search, Calendar, Heart } from "lucide-react";
 import styles from "@/styles/HubPage.module.css";
 import { useState, useEffect, useMemo } from "react";
@@ -20,6 +21,8 @@ import HotQuizzesRow from "@/components/explorer/HotQuizzesRow";
 import CategorySearchBar from "@/components/home/CategorySearchBar";
 import MainCategoryCard from "@/components/home/MainCategoryCard";
 import ExplorerHomeSection from "@/components/home/ExplorerHomeSection";
+import MasterFeaturesSection from "@/components/home/MasterFeaturesSection";
+import KidsZoneView from "@/components/kids/KidsZoneView";
 import { MAIN_CATEGORIES, QUICK_FILTER_CHIPS, filterCategoriesByChip } from "@/lib/mainCategoriesConfig";
 
 const KIDS_PICTURE_TILES = [
@@ -123,6 +126,7 @@ export default function MasterHubPage() {
   const [interests, setInterests] = useState([]);
   const [isLoadingInterests, setIsLoadingInterests] = useState(false);
   const [trialPaper, setTrialPaper] = useState(null);
+  const router = useRouter();
 
   // Compute school study vs fun trivia categories for Students tier
   const { studyCategories, funCategories } = useMemo(() => {
@@ -310,8 +314,8 @@ export default function MasterHubPage() {
     <div className={styles.container}>
       <main className={styles.heroContent}>
         
-        {/* Hero Header with Tier-driven Greeting & Accent Palette (Kids & Students only) */}
-        {tier !== "adults" && (
+        {/* Hero Header with Tier-driven Greeting & Accent Palette (Students tier only) */}
+        {tier === "students" && (
           <div 
             className={styles.heroHeader}
             style={{
@@ -374,169 +378,9 @@ export default function MasterHubPage() {
           </div>
         )}
 
-        {/* ── KIDS TIER SKIN: Large Picture-Tiles & Streak Counter ── */}
+        {/* ── KIDS TIER SKIN: Cheerful Gamified Kids Wonderland ── */}
         {tier === "kids" && (
-          <div className="w-full mt-6">
-            {/* Daily Quiz Pill for Kids */}
-            <DailyQuizPill tier="kids" />
-
-            {/* Quiz Arena compact card for Kids */}
-            <ArenaPromptCard audience="kids" className="mb-6" />
-
-            {/* 1. Daily Streak Counter Widget (Requirement 5) */}
-            <div className="w-full mb-8 p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 text-white shadow-xl shadow-orange-500/20 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-3.5 text-center sm:text-left">
-                <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-3xl shadow-inner shrink-0">
-                  🔥
-                </div>
-                <div>
-                  <div className="flex items-center justify-center sm:justify-start gap-2 mb-0.5">
-                    <h3 className="text-base sm:text-lg font-black tracking-tight">
-                      {isHindi ? "3 दिन की स्ट्रीक! 🌟" : "3 Day Streak! 🌟"}
-                    </h3>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/25 text-white">
-                      {isHindi ? "सक्रिय" : "Active"}
-                    </span>
-                  </div>
-                  <p className="text-xs text-white/90 font-medium">
-                    {isHindi
-                      ? "रोज़ खेलें और चमचमाते स्टार्स व नए स्टिकर्स अनलॉक करें!"
-                      : "Keep playing every day to unlock shiny stars and stickers!"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1.5 bg-black/20 backdrop-blur-sm px-3 py-1.5 rounded-2xl">
-                  <span className="text-xs font-bold text-amber-200">Day:</span>
-                  {["✓", "✓", "🔥", "⚪", "⚪"].map((dot, i) => (
-                    <span
-                      key={i}
-                      className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${
-                        i < 2
-                          ? "bg-emerald-400 text-white"
-                          : i === 2
-                          ? "bg-amber-300 text-slate-900 shadow-md"
-                          : "bg-white/20 text-white/40"
-                      }`}
-                    >
-                      {dot}
-                    </span>
-                  ))}
-                </div>
-                <Link
-                  href="/rewards"
-                  className="px-4 py-2 rounded-2xl bg-white text-orange-600 font-black text-xs shadow-md hover:bg-amber-50 active:scale-95 transition-all whitespace-nowrap"
-                >
-                  {isHindi ? "इनाम 🎁" : "Rewards 🎁"}
-                </Link>
-              </div>
-            </div>
-
-            {/* 2. Subjects as Large Picture-Tiles (Requirement 2) */}
-            <div className="w-full mb-10">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-                    <span>🎨</span>
-                    <span>{isHindi ? "पसंदीदा विषय चुनें" : "Pick Your Fun Subject"}</span>
-                  </h2>
-                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-                    {isHindi
-                      ? "बड़ी रंगीन टाइल पर टैप करें और 10-प्रश्नों का मजेदार क्विज़ शुरू करें!"
-                      : "Tap any picture-tile below for a quick, pressure-free 10-question game!"}
-                  </p>
-                </div>
-                <Link
-                  href="/quizzes"
-                  className="hidden sm:inline-flex items-center gap-1 text-xs font-black text-indigo-600 dark:text-indigo-400 hover:underline"
-                >
-                  <span>{isHindi ? "सभी देखें" : "View All"}</span>
-                  <ArrowRight size={14} />
-                </Link>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-5">
-                {KIDS_PICTURE_TILES.map((tile) => {
-                  const matched = (quizzes || []).find((q) =>
-                    tile.matchKeywords.some(
-                      (kw) =>
-                        (q?.topic || "").toLowerCase().includes(kw) ||
-                        (q?.slug || "").toLowerCase().includes(kw)
-                    )
-                  ) || quizzes?.[0];
-
-                  const href = matched?.slug ? `/category/${matched.slug}` : "/quizzes";
-
-                  return (
-                    <Link
-                      key={tile.id}
-                      href={href}
-                      className="group relative focus:outline-none"
-                    >
-                      <div
-                        className={`relative aspect-[4/4.5] sm:aspect-[4/4.3] rounded-3xl bg-gradient-to-br ${tile.bgGradient} p-4 sm:p-5 flex flex-col justify-between text-white shadow-lg ${tile.shadowColor} hover:shadow-2xl transition-all duration-300 transform group-hover:-translate-y-1.5 group-hover:scale-[1.02] group-active:scale-95 select-none overflow-hidden`}
-                      >
-                        {/* Background Glow Ring */}
-                        <div className="absolute -top-10 -right-10 w-28 h-28 rounded-full bg-white/20 blur-xl group-hover:scale-150 transition-transform duration-500 pointer-events-none" />
-
-                        {/* Top Chip */}
-                        <div className="flex items-center justify-between z-10">
-                          <span className="px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-black bg-black/25 backdrop-blur-md text-white border border-white/20 shadow-sm">
-                            {isHindi ? tile.badgeHi : tile.badge}
-                          </span>
-                          <span className="text-sm opacity-80 group-hover:rotate-12 transition-transform">✨</span>
-                        </div>
-
-                        {/* Giant Central Picture / Icon */}
-                        <div className="my-auto flex items-center justify-center text-5xl sm:text-6xl drop-shadow-md group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 pointer-events-none">
-                          <span>{tile.emoji}</span>
-                        </div>
-
-                        {/* Minimal Title at Bottom */}
-                        <div className="z-10 mt-auto">
-                          <h3 className="text-sm sm:text-base font-black leading-tight drop-shadow-md text-white line-clamp-1">
-                            {isHindi ? tile.titleHi : tile.title}
-                          </h3>
-                          <span className="text-[11px] font-bold text-white/90 flex items-center gap-1 mt-0.5 group-hover:translate-x-0.5 transition-transform">
-                            <span>{isHindi ? "खेलें" : "Play"}</span>
-                            <span>→</span>
-                          </span>
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Kids Rewards Banner */}
-            <Link
-              href="/rewards"
-              className="block mb-8 p-1 rounded-3xl bg-gradient-to-r from-amber-400 via-pink-400 to-purple-400 hover:scale-[1.01] transition-transform shadow-xl shadow-pink-500/10 group"
-            >
-              <div className="bg-white dark:bg-slate-900 rounded-2xl px-6 sm:px-8 py-5 flex flex-col md:flex-row items-center justify-between gap-4 overflow-hidden relative">
-                <div className="flex items-center gap-4 relative z-10">
-                  <div className="w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
-                    ⭐
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">
-                      {isHindi ? "आपका स्टिकर एल्बम और स्टार्स" : "Your Sticker Album & Stars"}
-                    </h3>
-                    <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm max-w-md">
-                      {isHindi
-                        ? "क्विज़ खेलें, नए स्टिकर्स अनलॉक करें और अपने दोस्तों को दिखाएं!"
-                        : "Collect stars, unlock fun badges, and show off your achievements!"}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 font-black text-purple-600 dark:text-purple-400 uppercase tracking-widest text-xs sm:text-sm relative z-10">
-                  {isHindi ? "इनाम देखें" : "Open Rewards"} <ArrowRight size={16} />
-                </div>
-              </div>
-            </Link>
-          </div>
+          <KidsZoneView />
         )}
 
         {/* ── STUDENTS TIER SKIN: Class Selector, Streak/XP Widget, Study Lane & Fun Zone Lane ── */}
@@ -657,6 +501,11 @@ export default function MasterHubPage() {
               </div>
             </div>
 
+            {/* Master Features: Govt Exams, Daily Current Affairs, Fun Facts, True & False */}
+            <div className="w-full mb-8">
+              <MasterFeaturesSection isHindi={isHindi} />
+            </div>
+
             {/* 3. Lane 1: Study Quizzes (School-subject categories - Requirement 3) */}
             <div className="w-full mb-10">
               <div className="flex items-center justify-between mb-4">
@@ -770,11 +619,14 @@ export default function MasterHubPage() {
 
         {/* ── EXPLORER TIER: Clean Mobile-First Quiz Hub (Step 8) ── */}
         {(tier === "adults" || (tier !== "kids" && tier !== "students")) && (
-          <ExplorerHomeSection
-            dbCategories={quizzes}
-            dataLoaded={dataLoaded}
-            isHindi={isHindi}
-          />
+          <div className="w-full space-y-8">
+            <MasterFeaturesSection isHindi={isHindi} />
+            <ExplorerHomeSection
+              dbCategories={quizzes}
+              dataLoaded={dataLoaded}
+              isHindi={isHindi}
+            />
+          </div>
         )}
 
         {/* Optional Personalization Prompt & Support Banner (Kids & Students only) */}

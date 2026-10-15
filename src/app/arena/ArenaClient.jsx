@@ -5,948 +5,1146 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
-  Sparkles,
-  ArrowRight,
-  Check,
-  Search,
-  Clock,
-  Layers,
-  Zap,
-  Loader2,
   Swords,
+  Target,
   Trophy,
+  ArrowLeft,
+  Sparkles,
+  Link2,
+  Clock,
+  HelpCircle,
+  Check,
+  Copy,
   Share2,
+  Users,
+  X,
+  Flame,
+  ChevronRight,
+  Send,
+  Crown,
+  Play,
+  RotateCcw,
+  Search,
+  Layers,
   ChevronDown,
   ChevronUp,
-  Sliders,
+  Loader2,
+  ArrowRight,
 } from "lucide-react";
 import { useQuiz } from "@/context/QuizContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTier } from "@/context/TierContext";
 import { useData } from "@/context/DataContext";
 import toast from "react-hot-toast";
-import { quizEngine } from "@/lib/quizEngine";
-import { MAIN_CATEGORIES } from "@/lib/mainCategoriesConfig";
 import ContextualLoader from "@/components/ContextualLoader";
 
 const STORAGE_KEY = "quizweb_gk_engine_settings";
 
 let cachedArenaMeta = null;
 
-export default function ArenaClient({ initialSelectedCategoryIds = null, embedded = false }) {
+export default function ArenaClient({ initialSelectedCategoryIds = null }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { startMixedQuiz } = useQuiz();
   const { isHindi } = useLanguage();
-  const { tier } = useTier();
   const { quizzes } = useData();
-
-  const topicParam = searchParams?.get("topic");
-  const catParam = searchParams?.get("category");
-  const subjectParam = searchParams?.get("subject");
-
-  // Mode Selection: 'solo' (Solo Test Engine) | 'battle' (1v1 Friend Challenge)
-  const isBattleRequested = searchParams?.get("battle") === "true" || searchParams?.get("mode") === "battle";
-  const [activeArenaMode, setActiveArenaMode] = useState(() => isBattleRequested ? "battle" : "solo");
-
-  // Metadata & categories state
-  const [meta, setMeta] = useState(() => cachedArenaMeta);
-  const [loadingMeta, setLoadingMeta] = useState(() => !cachedArenaMeta);
-  const [isStarting, setIsStarting] = useState(false);
-
-  // 1. Categories Selection State (Pre-select India GK if nothing chosen)
-  const [catSearch, setCatSearch] = useState("");
-  const [showUpcoming, setShowUpcoming] = useState(false);
-  const [selectedCats, setSelectedCats] = useState(() => {
-    if (initialSelectedCategoryIds && initialSelectedCategoryIds.length > 0) {
-      return initialSelectedCategoryIds;
-    }
-    const preIds = [topicParam, catParam, subjectParam].filter(Boolean);
-    if (preIds.length > 0) return preIds;
-    return ["india-gk"];
-  });
-
   const { data: authSession } = useSession();
 
-  // 2. Question Difficulty: 'all' | 'easy' | 'medium' | 'hard'
+  // Mode Selection: 'battle' (1v1 Friend Challenge) | 'solo' (Solo Test Practice)
+  const isBattleRequested =
+    searchParams?.get("battle") === "true" ||
+    searchParams?.get("mode") === "battle" ||
+    searchParams?.get("tab") === "join";
+  const [mode, setMode] = useState(() => (isBattleRequested ? "battle" : "battle"));
+  const [subTab, setSubTab] = useState(() =>
+    searchParams?.get("tab") === "join" ? "join" : "create"
+  );
+
+  // Battle Configuration Parameters
+  const [questionCount, setQuestionCount] = useState(10);
+  const [timePerQ, setTimePerQ] = useState(15);
+  const [selectedTopicId, setSelectedTopicId] = useState("bharat_gk");
+
+  // Join Room PIN state (6 individual digits)
+  const [pinDigits, setPinDigits] = useState(["", "", "", "", "", ""]);
+
+  // Modals & Overlays
+  const [isLobbyOpen, setIsLobbyOpen] = useState(false);
+  const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
+  const [isAsyncChallengeOpen, setIsAsyncChallengeOpen] = useState(false);
+
+  // Lobby simulation state
+  const [generatedRoomCode, setGeneratedRoomCode] = useState("583921");
+  const [copied, setCopied] = useState(false);
+  const [opponentJoined, setOpponentJoined] = useState(false);
+
+  // Solo Practice Metadata & Settings
+  const [meta, setMeta] = useState(() => cachedArenaMeta);
+  const [loadingMeta, setLoadingMeta] = useState(() => !cachedArenaMeta);
+  const [isStartingSolo, setIsStartingSolo] = useState(false);
+  const [catSearch, setCatSearch] = useState("");
+  const [showUpcoming, setShowUpcoming] = useState(false);
   const [difficulty, setDifficulty] = useState("all");
+  const [soloTimerSeconds, setSoloTimerSeconds] = useState(20);
+  const [soloQuestionCount, setSoloQuestionCount] = useState(20);
+  const [selectedSoloCats, setSelectedSoloCats] = useState(["india-gk"]);
 
-  // 3. Optional Timer: 0 (No timer) | 15 | 20 | 30 seconds
-  const [timerSeconds, setTimerSeconds] = useState(20);
-  const [showCustomTimer, setShowCustomTimer] = useState(false);
-
-  // 4. Optional Question Count: 10 | 20 | 30 | 50
-  const [questionCount, setQuestionCount] = useState(20);
-  const [showCustomCount, setShowCustomCount] = useState(false);
-
-  // 1v1 Battle Mode Inputs
-  const [battleCategory, setBattleCategory] = useState(() => {
-    return searchParams?.get("cat") || searchParams?.get("category") || "india-gk";
-  });
-  const [challengeCodeInput, setChallengeCodeInput] = useState("");
-  const [battleTab, setBattleTab] = useState(() => searchParams?.get("tab") === "join" ? "join" : "create"); // "create" | "join"
-
-  // Load metadata on mount
+  // Load arena metadata for solo practice
   useEffect(() => {
+    let mounted = true;
     async function loadMeta() {
       try {
         const res = await fetch("/api/arena/meta");
         if (!res.ok) throw new Error("Failed to load metadata");
         const data = await res.json();
-        cachedArenaMeta = data;
-        setMeta(data);
-
-        // Load saved preferences if available
-        let saved = null;
-        try {
-          const raw = localStorage.getItem(STORAGE_KEY);
-          if (raw) saved = JSON.parse(raw);
-        } catch {}
-
-        if (saved && !topicParam && !catParam && !subjectParam && !initialSelectedCategoryIds) {
-          if (Array.isArray(saved.selectedCats) && saved.selectedCats.length > 0) {
-            setSelectedCats(saved.selectedCats);
-          }
-          if (saved.difficulty) setDifficulty(saved.difficulty);
-          if (saved.questionCount) {
-            setQuestionCount(saved.questionCount);
-            if (![10, 20, 30, 50].includes(saved.questionCount)) setShowCustomCount(true);
-          }
-          if (saved.timerSeconds !== undefined) {
-            setTimerSeconds(saved.timerSeconds);
-            if (![0, 15, 20, 30].includes(saved.timerSeconds)) setShowCustomTimer(true);
-          }
+        if (mounted) {
+          cachedArenaMeta = data;
+          setMeta(data);
+          setLoadingMeta(false);
         }
       } catch (err) {
-        console.warn("Arena meta fetch fallback:", err);
-      } finally {
-        setLoadingMeta(false);
+        if (mounted) setLoadingMeta(false);
       }
     }
-    loadMeta();
-  }, [topicParam, catParam, subjectParam, initialSelectedCategoryIds]);
-
-  // Save preferences
-  useEffect(() => {
-    try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ selectedCats, difficulty, questionCount, timerSeconds })
-      );
-    } catch {}
-  }, [selectedCats, difficulty, questionCount, timerSeconds]);
-
-  // Combine canonical taxonomy with DB & meta counts
-  const availableCategories = useMemo(() => {
-    const dbMap = new Map();
-    if (Array.isArray(quizzes)) {
-      quizzes.forEach((q) => {
-        const key = (q.slug || q.id || "").toLowerCase();
-        dbMap.set(key, q);
-      });
+    if (!cachedArenaMeta) {
+      loadMeta();
     }
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
-    const list = MAIN_CATEGORIES.map((cat) => {
-      const slugKey = (cat.slug || "").toLowerCase();
-      const aliasKey = (cat.slug === "india-sports" ? "sports" : (cat.slug === "india-polity" ? "politics-government" : null));
-      const dbMatch =
-        dbMap.get(slugKey) ||
-        (aliasKey ? dbMap.get(aliasKey) : null) ||
-        (meta?.categories || []).find((c) => {
-          const cSlug = (c.slug || c.id)?.toLowerCase();
-          return cSlug === slugKey || (aliasKey && cSlug === aliasKey);
-        });
-
-      let count = 0;
-      if (dbMatch) {
-        if (typeof dbMatch.questionCount === "number") count = dbMatch.questionCount;
-        else if (Array.isArray(dbMatch.questions)) count = dbMatch.questions.length;
-        else if (typeof dbMatch.count === "number") count = dbMatch.count;
+  // Available Battle Topics (Synced with database counts)
+  const topics = useMemo(() => {
+    const getCount = (slug, fallback) => {
+      if (Array.isArray(quizzes)) {
+        const q = quizzes.find((c) => c.slug === slug || c.id === slug);
+        if (q) {
+          const count =
+            q.questionCount ??
+            q._count?.questions ??
+            (Array.isArray(q.questions) ? q.questions.length : 0);
+          if (count > 0) return `${count.toLocaleString()} प्रश्न`;
+        }
       }
+      return fallback;
+    };
 
-      const hasData = count > 0;
+    return [
+      {
+        id: "bharat_gk",
+        slug: "india-gk",
+        title: isHindi ? "भारत सामान्य ज्ञान" : "Bharat GK",
+        subtitle: isHindi
+          ? "इतिहास, भूगोल, राजनीति और राष्ट्रीय प्रतीक"
+          : "History, Geography, Polity & National Symbols",
+        emoji: "🇮🇳",
+        questionCount: getCount("india-gk", "3,468 प्रश्न"),
+        popular: true,
+        tag: isHindi ? "सर्वाधिक लोकप्रिय" : "Most Popular",
+      },
+      {
+        id: "science",
+        slug: "science--discovery",
+        title: isHindi ? "विज्ञान और खोज" : "Science & Discovery",
+        subtitle: isHindi
+          ? "भौतिकी, रसायन, जीव विज्ञान एवं आविष्कार"
+          : "Physics, Chemistry, Biology & Inventions",
+        emoji: "🔬",
+        questionCount: getCount("science--discovery", "508 प्रश्न"),
+        popular: false,
+        tag: isHindi ? "ज्ञानवर्धक" : "Informative",
+      },
+      {
+        id: "nature",
+        slug: "nature-animals",
+        title: isHindi ? "प्रकृति और पर्यावरण" : "Nature & Environment",
+        subtitle: isHindi
+          ? "वन्यजीव, पारिस्थितिकी, राष्ट्रीय उद्यान व जलवायु"
+          : "Wildlife, Ecology, National Parks & Climate",
+        emoji: "🌿",
+        questionCount: getCount("nature-animals", "319 प्रश्न"),
+        popular: false,
+        tag: isHindi ? "रोचक" : "Fascinating",
+      },
+      {
+        id: "history_culture",
+        slug: "india-history",
+        title: isHindi ? "इतिहास और संस्कृति" : "History & Culture",
+        subtitle: isHindi
+          ? "प्राचीन से आधुनिक भारत, कला व विरासत"
+          : "Ancient to Modern India, Art & Heritage",
+        emoji: "📜",
+        questionCount: getCount("india-history", "892 प्रश्न"),
+        popular: false,
+        tag: isHindi ? "महत्वपूर्ण" : "Important",
+      },
+      {
+        id: "world_current",
+        slug: "world-gk",
+        title: isHindi ? "विश्व भूगोल और समसामयिकी" : "World GK & Current Affairs",
+        subtitle: isHindi
+          ? "करंट अफेयर्स, वैश्विक संगठन व देश-राजधानियां"
+          : "Current Affairs, Global Orgs & Capitals",
+        emoji: "🌍",
+        questionCount: getCount("world-gk", "1,120 प्रश्न"),
+        popular: true,
+        tag: isHindi ? "ट्रेंडिंग" : "Trending",
+      },
+      {
+        id: "misc_gk",
+        slug: "others",
+        title: isHindi ? "अन्य विविध सामान्य ज्ञान" : "Miscellaneous GK",
+        subtitle: isHindi
+          ? "खेलकूद, पुरस्कार, सिनेमा, प्रसिद्ध पुस्तकें"
+          : "Sports, Awards, Cinema, Books",
+        emoji: "📦",
+        questionCount: getCount("others", "767 प्रश्न"),
+        popular: false,
+        tag: isHindi ? "मिश्रित" : "Mixed",
+      },
+    ];
+  }, [quizzes, isHindi]);
 
-      return {
-        id: dbMatch?.id || cat.slug,
-        slug: cat.slug,
-        name: cat.name,
-        nameHi: cat.nameHi,
-        icon: cat.icon,
-        example: cat.example,
-        count: count,
-        hasData: hasData,
-      };
-    });
+  const selectedTopic = topics.find((t) => t.id === selectedTopicId) || topics[0];
 
-    return list.sort((a, b) => {
-      if (a.hasData && !b.hasData) return -1;
-      if (!a.hasData && b.hasData) return 1;
-      return (b.count || 0) - (a.count || 0);
-    });
-  }, [quizzes, meta]);
+  // PIN Input Handlers
+  const handlePinInput = (index, val) => {
+    if (!/^\d*$/.test(val)) return;
+    const newDigits = [...pinDigits];
+    newDigits[index] = val.slice(-1);
+    setPinDigits(newDigits);
 
-  // Filtered categories by search
-  const filteredCategories = useMemo(() => {
-    if (!catSearch.trim()) return availableCategories;
-    const q = catSearch.toLowerCase().trim();
-    return availableCategories.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) ||
-        c.nameHi.toLowerCase().includes(q) ||
-        c.slug.toLowerCase().includes(q)
+    // Auto-focus next input
+    if (val && index < 5) {
+      const nextInput = document.getElementById(`pin-${index + 1}`);
+      nextInput?.focus();
+    }
+  };
+
+  const handlePinKeyDown = (index, e) => {
+    if (e.key === "Backspace" && !pinDigits[index] && index > 0) {
+      const prevInput = document.getElementById(`pin-${index - 1}`);
+      prevInput?.focus();
+    }
+  };
+
+  const handlePastePin = (e) => {
+    const paste = e.clipboardData.getData("text").trim();
+    if (/^\d{6}$/.test(paste)) {
+      setPinDigits(paste.split(""));
+    }
+  };
+
+  // Create Room Action
+  const handleCreateRoom = () => {
+    const randomCode = Math.floor(100000 + Math.random() * 900000).toString();
+    setGeneratedRoomCode(randomCode);
+    setCopied(false);
+    setOpponentJoined(false);
+    setIsLobbyOpen(true);
+
+    // Simulate opponent joining after 4.5 seconds
+    setTimeout(() => {
+      setOpponentJoined(true);
+    }, 4500);
+  };
+
+  const copyCode = () => {
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(generatedRoomCode);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleStartHostBattle = () => {
+    setIsLobbyOpen(false);
+    router.push(
+      `/live/${generatedRoomCode}?is_host=true&categoryId=${encodeURIComponent(
+        selectedTopic.slug
+      )}&qCount=${questionCount}&timer=${timePerQ}`
     );
-  }, [availableCategories, catSearch]);
-
-  const toggleCategory = (id) => {
-    setSelectedCats((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
   };
 
-  const handleSelectAll = () => {
-    setSelectedCats(availableCategories.filter((c) => c.hasData).map((c) => c.id));
+  const handleJoinBattleSubmit = () => {
+    const code = pinDigits.join("").trim();
+    if (code.length === 6) {
+      router.push(`/live/${code}`);
+    } else {
+      toast.error(isHindi ? "कृपया 6-अंकों का कोड दर्ज करें" : "Please enter 6-digit code");
+    }
   };
 
-  const handleClearAll = () => {
-    setSelectedCats([]);
-  };
+  // Weekly Champions Podium Data
+  const leaderBoardUsers = [
+    {
+      rank: 1,
+      name: isHindi ? "अमित कुमार (Amit)" : "Amit Kumar",
+      score: "2,940 XP",
+      wins: isHindi ? "148 जीत" : "148 wins",
+      avatar: "🦁",
+      color: "border-amber-400 bg-amber-50 dark:bg-amber-950/40",
+    },
+    {
+      rank: 2,
+      name: isHindi ? "प्रिया शर्मा (Priya)" : "Priya Sharma",
+      score: "2,810 XP",
+      wins: isHindi ? "136 जीत" : "136 wins",
+      avatar: "🌸",
+      color: "border-slate-300 bg-slate-50 dark:bg-slate-800",
+    },
+    {
+      rank: 3,
+      name: isHindi ? "राहुल वर्मा (Rahul)" : "Rahul Verma",
+      score: "2,650 XP",
+      wins: isHindi ? "124 जीत" : "124 wins",
+      avatar: "⚡",
+      color: "border-amber-600 bg-amber-50/50 dark:bg-amber-950/20",
+    },
+    {
+      rank: 4,
+      name: isHindi ? "विकास यादव" : "Vikas Yadav",
+      score: "2,420 XP",
+      wins: isHindi ? "109 जीत" : "109 wins",
+      avatar: "🎯",
+      color: "border-transparent bg-white dark:bg-slate-800/80",
+    },
+    {
+      rank: 5,
+      name: isHindi ? "नेहा पटेल" : "Neha Patel",
+      score: "2,290 XP",
+      wins: isHindi ? "98 जीत" : "98 wins",
+      avatar: "✨",
+      color: "border-transparent bg-white dark:bg-slate-800/80",
+    },
+  ];
 
-  // Launch GK Engine Quiz
-  const handleStartQuiz = async () => {
-    if (isStarting) return;
-    if (selectedCats.length === 0) {
-      toast.error(isHindi ? "कृपया कम से कम एक श्रेणी चुनें" : "Select at least one category");
+  // Solo Practice Starter
+  const handleStartSoloQuiz = async () => {
+    if (selectedSoloCats.length === 0) {
+      toast.error(isHindi ? "कम से कम 1 श्रेणी चुनें" : "Please select at least 1 category");
       return;
     }
-
-    setIsStarting(true);
+    setIsStartingSolo(true);
     try {
-      let quizQuestions = [];
-
-      try {
-        const result = await quizEngine.buildQuiz({
-          categories: selectedCats,
+      const res = await fetch("/api/arena/pool", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          categoryIds: selectedSoloCats,
           difficulty,
-          count: questionCount,
-          timer: timerSeconds,
-          audience: "all",
+          limit: soloQuestionCount,
           language: isHindi ? "hi" : "en",
-          onlyWrong: false,
-          skipCorrect: false,
-          style: "practice",
-          userId: authSession?.user?.id || authSession?.user?.email || "guest",
-        });
-        if (result && Array.isArray(result.questions)) {
-          quizQuestions = result.questions;
-        }
-      } catch (apiErr) {
-        console.warn("Quiz build API failed, attempting in-memory fallback:", apiErr);
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.questions || data.questions.length === 0) {
+        throw new Error(data.error || "No questions found");
       }
-
-      // In-memory fallback if API returned 0 questions
-      if (quizQuestions.length === 0 && Array.isArray(quizzes)) {
-        const fallbackPool = [];
-        quizzes
-          .filter((q) => selectedCats.includes(q.id || q._id || q.slug))
-          .forEach((q) => {
-            if (Array.isArray(q.questions) && q.questions.length > 0) {
-              fallbackPool.push(
-                ...q.questions.map((quest) => ({
-                  ...quest,
-                  category: quest.category || q.slug || q.id,
-                  categoryName: quest.categoryName || q.name || q.topic || q.title,
-                  categoryNameHi: quest.categoryNameHi || q.nameHi || q.topicHi || q.titleHi,
-                }))
-              );
-            }
-          });
-        if (fallbackPool.length > 0) {
-          quizQuestions = fallbackPool.slice(0, questionCount);
-        }
-      }
-
-      if (quizQuestions.length === 0) {
-        toast.error(
-          isHindi
-            ? "चयनित श्रेणी में प्रश्न लोड नहीं हो सके। कृपया अन्य श्रेणी चुनें।"
-            : "No questions found for the selected category. Please choose another."
-        );
-        setIsStarting(false);
-        return;
-      }
-
-      // Configure QuizContext for continuous test
-      const title = isHindi ? "GK टेस्ट इंजन" : "GK Test Engine";
       startMixedQuiz(
-        quizQuestions,
-        title,
-        timerSeconds,
+        data.questions,
+        isHindi ? "GK सोलो अभ्यास" : "GK Solo Practice",
+        soloTimerSeconds,
         difficulty.toUpperCase(),
         isHindi ? "hi" : "en",
         "practice"
       );
-
       router.push("/quiz/arena");
     } catch (err) {
-      console.error("Quiz launch error:", err);
-      toast.error(
-        isHindi ? "क्विज़ शुरू करने में त्रुटि आई" : err.message || "Failed to start quiz"
-      );
-      setIsStarting(false);
+      toast.error(isHindi ? "क्विज़ लोड करने में त्रुटि आई" : err.message || "Failed to start quiz");
+      setIsStartingSolo(false);
     }
   };
-
-  // Real-Time Live Battle Handlers (Connected to Live Socket Engine)
-  const handleCreateBattle = () => {
-    const chosen = battleCategory || selectedCats[0] || "india-gk";
-    // Generate clean 6-character room code (e.g. BTL902)
-    const sessionId = "BTL" + Math.random().toString(36).substring(2, 6).toUpperCase();
-    toast.success(isHindi ? "लाइव बैटल रूम तैयार हो रहा है..." : "Creating Live Battle Room...");
-    router.push(`/live/${sessionId}?is_host=true&categoryId=${encodeURIComponent(chosen)}`);
-  };
-
-  const handleJoinBattle = (e) => {
-    e?.preventDefault();
-    if (!challengeCodeInput.trim()) {
-      toast.error(isHindi ? "कृपया 6-अक्षरों का रूम कोड या लिंक दर्ज करें" : "Please enter room code or link");
-      return;
-    }
-    let cleanInput = challengeCodeInput.trim();
-    if (cleanInput.includes("/live/")) {
-      const match = cleanInput.match(/\/live\/([a-zA-Z0-9_-]+)/);
-      if (match && match[1]) cleanInput = match[1];
-    } else if (cleanInput.includes("code=")) {
-      const match = cleanInput.match(/code=([^&]+)/);
-      if (match && match[1]) cleanInput = match[1];
-    }
-    cleanInput = cleanInput.replace(/[^a-zA-Z0-9_-]/g, "").toUpperCase();
-    if (!cleanInput) {
-      toast.error(isHindi ? "अमान्य रूम कोड" : "Invalid room code");
-      return;
-    }
-    toast.success(isHindi ? `लाइव रूम ${cleanInput} में प्रवेश कर रहे हैं...` : `Joining Live Room ${cleanInput}...`);
-    router.push(`/live/${cleanInput}`);
-  };
-
-  const handleCreateAsyncChallenge = () => {
-    const chosen = battleCategory || selectedCats[0] || "india-gk";
-    const userName = authSession?.user?.name || (isHindi ? "खिलाड़ी" : "Quizzer");
-    router.push(`/challenge?cat=${chosen}&score=0&total=10&name=${encodeURIComponent(userName)}`);
-  };
-
-  const diffLabels = {
-    all: isHindi ? "सभी स्तर" : "All Levels",
-    easy: isHindi ? "सरल" : "Easy",
-    medium: isHindi ? "मध्यम" : "Medium",
-    hard: isHindi ? "कठिन" : "Hard",
-  };
-
-  const getTimerLabel = (sec) => {
-    const s = Number(sec);
-    if (!s || s === 0) return isHindi ? "बिना टाइमर" : "No Timer";
-    return isHindi ? `${s} सेकंड` : `${s}s`;
-  };
-
-  const categoriesWithData = filteredCategories.filter((c) => c.hasData);
-  const upcomingCategories = filteredCategories.filter((c) => !c.hasData);
-
-  if (loadingMeta) {
-    return (
-      <div className="relative w-full min-h-screen bg-gradient-to-b from-[#EEF4FF] via-[#E2EDFF] to-[#D5E5FF] dark:from-[#080E1E] dark:via-[#0F1B38] dark:to-[#0A1226] text-slate-900 dark:text-slate-100 flex items-center justify-center p-4">
-        <ContextualLoader 
-          type="subjects" 
-          message={isHindi ? "टेस्ट इंजन व विषय लोड हो रहे हैं..." : "Loading Test Engine & Subjects..."}
-          subMessage={isHindi ? "सभी श्रेणियां व प्रश्न बैंक तैयार किए जा रहे हैं..." : "Preparing categories and question bank..."}
-        />
-      </div>
-    );
-  }
 
   return (
-    <div className="relative w-full min-h-screen bg-gradient-to-b from-[#EEF4FF] via-[#E2EDFF] to-[#D5E5FF] dark:from-[#080E1E] dark:via-[#0F1B38] dark:to-[#0A1226] text-slate-900 dark:text-slate-100 overflow-hidden transition-colors">
+    <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex justify-center text-slate-800 dark:text-slate-100 antialiased font-sans select-none">
       
-      {/* ── MODERN SLEEK COSMIC GLOW (Clean radial ambient orbs) ── */}
-      <div className="absolute inset-0 pointer-events-none select-none overflow-hidden z-0">
-        <div className="absolute top-10 left-1/4 w-96 h-96 bg-indigo-500/15 dark:bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-80 right-10 w-96 h-96 bg-purple-500/15 dark:bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-20 left-10 w-80 h-80 bg-sky-500/15 dark:bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
-      </div>
-
-      {/* Main Content Container */}
-      <div className="relative z-10 w-full max-w-[960px] mx-auto px-3 sm:px-4 py-4 pb-28">
+      {/* Mobile Device Viewport Mockup / Responsive Central Column */}
+      <div className="w-full max-w-[440px] sm:max-w-xl md:max-w-2xl min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col relative shadow-2xl border-x border-slate-200 dark:border-slate-800 overflow-x-hidden">
         
-        {/* ── 1. HEADER & FULL-WIDTH MODE SWITCHER ── */}
-        <header className="mb-3.5">
-          {/* Top Row: Title + Subtitle on Left, Leaderboard Icon Button on Right */}
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-                {activeArenaMode === "solo"
-                  ? (isHindi ? "🎯 GK टेस्ट इंजन" : "🎯 GK Test Engine")
-                  : (isHindi ? "⚔️ 1v1 लाइव जीके बैटल" : "⚔️ 1v1 Live GK Battle")}
-              </h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
-                {activeArenaMode === "solo"
-                  ? (isHindi ? "श्रेणी और समय चुनें, लगातार प्रश्नों का अभ्यास करें" : "Configure categories & practice continuous testing")
-                  : (isHindi ? "दोस्त के साथ लाइव GK मुकाबला" : "Real-time 1v1 battle with friends")}
-              </p>
-            </div>
-
-            {/* Compact Header Leaderboard Icon Button */}
-            <Link
-              href="/leaderboard"
-              className="p-2 sm:px-3 sm:py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200/80 text-xs font-bold transition-all shadow-2xs flex items-center gap-1 shrink-0"
-              title={isHindi ? "लीडरबोर्ड देखें" : "View Leaderboard"}
+        {/* ================= 1. COMPACT STICKY HEADER & TOP ARENA BAR ================= */}
+        <header className="sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-4 py-3 flex items-center justify-between transition-all">
+          <div className="flex items-center space-x-2.5">
+            <button
+              onClick={() => {
+                if (window.history.length > 1) {
+                  router.back();
+                } else {
+                  router.push("/");
+                }
+              }}
+              className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 flex items-center justify-center text-slate-700 dark:text-slate-300 transition cursor-pointer"
+              aria-label="Back"
             >
-              <Trophy size={15} className="text-amber-600" />
-              <span className="hidden sm:inline">{isHindi ? "लीडरबोर्ड" : "Leaderboard"}</span>
-            </Link>
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+            <div className="flex items-center space-x-1.5">
+              <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-sm shadow-indigo-600/30">
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <span className="font-black text-lg tracking-tight text-slate-900 dark:text-white">
+                Quiz<span className="text-indigo-600 dark:text-indigo-400">Web</span>
+              </span>
+            </div>
           </div>
 
-          {/* Full-Width Segmented Mode Switcher (Heading ke theek neeche) */}
-          <div className="w-full grid grid-cols-2 p-1 rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 shadow-2xs mt-3 text-xs font-bold">
+          <div className="flex items-center space-x-2">
+            {/* Live Online Badge */}
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-[11px] font-semibold">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+              <span>1.2k {isHindi ? "लाइव" : "Live"}</span>
+            </div>
+
+            {/* Leaderboard Trophy Shortcut */}
             <button
-              type="button"
-              onClick={() => setActiveArenaMode("solo")}
-              className={`py-2 px-3 rounded-xl text-center transition-all cursor-pointer ${
-                activeArenaMode === "solo"
-                  ? "bg-indigo-600 text-white shadow-xs font-bold"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 font-medium"
-              }`}
+              onClick={() => setIsLeaderboardOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-300 text-xs font-bold shadow-2xs active:scale-95 transition cursor-pointer"
             >
-              🎯 {isHindi ? "सोलो टेस्ट" : "Solo Practice"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveArenaMode("battle")}
-              className={`py-2 px-3 rounded-xl text-center transition-all cursor-pointer ${
-                activeArenaMode === "battle"
-                  ? "bg-indigo-600 text-white shadow-xs font-bold"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 font-medium"
-              }`}
-            >
-              ⚔️ {isHindi ? "1v1 बैटल" : "1v1 Battle"}
+              <Trophy className="w-4 h-4 text-amber-500 fill-amber-400" />
+              <span>{isHindi ? "रैंक" : "Rank"}</span>
             </button>
           </div>
         </header>
 
-        {/* ── CONDITIONAL SECTION: BATTLE MODE VS SOLO ENGINE ── */}
-        {activeArenaMode === "battle" ? (
-          <div className="space-y-3 animate-in fade-in duration-200">
-            {/* Unified 1v1 Battle Card (Single Card, 2 Tabs) */}
-            <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-3">
-              {/* Card Sub-Tabs: [ नया रूम ] [ कोड से जुड़ें ] */}
-              <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl gap-1 text-xs font-bold">
-                <button
-                  type="button"
-                  onClick={() => setBattleTab("create")}
-                  className={`py-2 px-3 rounded-lg text-center transition-all cursor-pointer ${
-                    battleTab === "create"
-                      ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs font-bold"
-                      : "text-slate-500 hover:text-slate-800 dark:text-slate-400 font-medium"
-                  }`}
-                >
-                  ✨ {isHindi ? "नया रूम" : "Create Room"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setBattleTab("join")}
-                  className={`py-2 px-3 rounded-lg text-center transition-all cursor-pointer ${
-                    battleTab === "join"
-                      ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs font-bold"
-                      : "text-slate-500 hover:text-slate-800 dark:text-slate-400 font-medium"
-                  }`}
-                >
-                  🔗 {isHindi ? "कोड से जुड़ें" : "Join Code"}
-                </button>
+        {/* Scrollable Container with bottom padding for Fixed Action Bar & BottomNavBar */}
+        <main className="flex-1 px-4 pt-3 pb-52 space-y-4 overflow-y-auto">
+          
+          {/* ================= 2. TITLE & MODE SWITCHER ================= */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2 tracking-tight">
+                  <span className="text-xl">⚔️</span> {isHindi ? "1v1 लाइव जीके बैटल" : "1v1 Live GK Battle"}
+                </h1>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  {isHindi
+                    ? "दोस्तों के साथ रीयल-टाइम लाइव GK मुकाबला खेलें"
+                    : "Real-time 1v1 live quiz duels with friends"}
+                </p>
               </div>
 
-              {/* Tab 1: नया रूम (Create Room) */}
-              {battleTab === "create" ? (
-                <div className="space-y-3 animate-in fade-in duration-150">
-                  <div className="flex items-center justify-between text-[13px] font-semibold text-slate-700 dark:text-slate-300">
-                    <span>{isHindi ? "विषय" : "Topic"}</span>
-                    {(() => {
-                      const selCat = categoriesWithData.find((c) => c.slug === battleCategory);
-                      return selCat ? (
-                        <span className="text-[11px] text-slate-400 font-normal">
-                          ({selCat.count} {isHindi ? "प्रश्न" : "ques"})
-                        </span>
-                      ) : null;
-                    })()}
-                  </div>
-
-                  {/* Topic Selector Chips (Tappable Chips) */}
-                  <div className="flex flex-wrap gap-1.5 max-h-44 overflow-y-auto custom-scrollbar pt-0.5">
-                    {categoriesWithData.map((cat) => {
-                      const isSelected = battleCategory === cat.slug;
-                      return (
-                        <button
-                          key={cat.slug}
-                          type="button"
-                          onClick={() => setBattleCategory(cat.slug)}
-                          className={`px-2.5 py-1.5 rounded-xl text-xs transition-all cursor-pointer flex items-center gap-1.5 border select-none ${
-                            isSelected
-                              ? "bg-indigo-50 dark:bg-indigo-950/60 border-indigo-500 text-indigo-700 dark:text-indigo-300 font-bold shadow-2xs ring-1 ring-indigo-500/20"
-                              : "bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-300 font-medium"
-                          }`}
-                        >
-                          <span>{cat.icon || "📚"}</span>
-                          <span>{isHindi ? cat.nameHi : cat.name}</span>
-                          <span className="text-[10px] text-slate-400 font-normal">
-                            ({cat.count})
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Primary Solid Indigo Button */}
-                  <button
-                    type="button"
-                    onClick={handleCreateBattle}
-                    className="w-full py-2.5 sm:py-3 px-4 rounded-xl font-bold text-xs sm:text-sm text-white bg-indigo-600 hover:bg-indigo-700 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs mt-1"
-                  >
-                    <span>⚔️</span>
-                    <span>{isHindi ? "लाइव रूम बनाएं" : "Create Live Room"}</span>
-                    <ArrowRight size={15} />
-                  </button>
-                </div>
-              ) : (
-                /* Tab 2: कोड से जुड़ें (Join with Code) */
-                <div className="space-y-3 animate-in fade-in duration-150">
-                  <div>
-                    <label className="block text-[13px] font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                      {isHindi ? "रूम कोड या लिंक" : "Room Code or Link"}
-                    </label>
-                    <input
-                      type="text"
-                      value={challengeCodeInput}
-                      onChange={(e) => setChallengeCodeInput(e.target.value.toUpperCase())}
-                      placeholder={isHindi ? "उदा. BTL902 या लिंक..." : "e.g. BTL902 or paste link..."}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-mono font-bold text-slate-800 dark:text-slate-100 uppercase tracking-widest placeholder:tracking-normal placeholder:font-sans focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-
-                  {/* Primary Solid Indigo Button (No Pink Gradient!) */}
-                  <button
-                    type="button"
-                    onClick={handleJoinBattle}
-                    className="w-full py-2.5 sm:py-3 px-4 rounded-xl font-bold text-xs sm:text-sm text-white bg-indigo-600 hover:bg-indigo-700 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs mt-1"
-                  >
-                    <span>🔗</span>
-                    <span>{isHindi ? "रूम में शामिल हों" : "Join Room"}</span>
-                    <ArrowRight size={15} />
-                  </button>
-                </div>
-              )}
+              <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100/70 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full">
+                ● 1,280+ {isHindi ? "सक्रिय" : "Active"}
+              </div>
             </div>
 
-            {/* Offline Challenge: Single-line Left-aligned Row */}
-            <button
-              type="button"
-              onClick={handleCreateAsyncChallenge}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between gap-2 text-left transition-all cursor-pointer group"
-            >
-              <div className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300 min-w-0">
-                <span className="text-sm shrink-0">📩</span>
-                <span className="truncate">
-                  {isHindi ? "दोस्त offline है? Score challenge भेजें" : "Friend offline? Send a Score Challenge"}
-                </span>
-              </div>
-              <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 group-hover:translate-x-0.5 transition-transform shrink-0">
-                →
-              </span>
-            </button>
-
-            {/* Sub-Link: Leaderboard */}
-            <div className="text-center pt-0.5">
-              <Link
-                href="/leaderboard"
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-indigo-600 transition-colors"
+            {/* Top Level Mode Toggle: Solo Test vs 1v1 Battle */}
+            <div className="bg-slate-200/80 dark:bg-slate-800 p-1 rounded-2xl grid grid-cols-2 gap-1 text-xs font-bold">
+              <button
+                onClick={() => setMode("solo")}
+                className={`py-2 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  mode === "solo"
+                    ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                }`}
               >
-                <span>🏆</span>
-                <span>{isHindi ? "लाइव लीडरबोर्ड देखें" : "View Live Leaderboard"}</span>
-                <span>→</span>
-              </Link>
+                <Target className="w-3.5 h-3.5 text-rose-500" />
+                <span>{isHindi ? "सोलो अभ्यास" : "Solo Practice"}</span>
+              </button>
+              <button
+                onClick={() => setMode("battle")}
+                className={`py-2 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  mode === "battle"
+                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                <Swords className="w-3.5 h-3.5 text-amber-300" />
+                <span>{isHindi ? "1v1 बैटल" : "1v1 Battle"}</span>
+              </button>
             </div>
           </div>
-        ) : (
-          /* Solo Test Engine Configurator */
-          <div className="space-y-6 animate-in fade-in duration-300">
-            {/* ── CATEGORY SELECTION CARD (No Inner Scroll Trap) ── */}
-            <section className="p-4 sm:p-5 rounded-3xl bg-white/95 dark:bg-slate-900/95 border border-blue-100/80 dark:border-slate-800 shadow-xl shadow-blue-900/5 backdrop-blur-md">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3.5">
-                <div>
-                  <h2 className="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                    <span>📚 1. {isHindi ? "श्रेणियां चुनें" : "Select Categories"}</span>
-                    <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300">
-                      {selectedCats.length} {isHindi ? "चयनित" : "selected"}
-                    </span>
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    {isHindi ? "उपलब्ध मुख्य विषय चुनें (कुल प्रश्न संख्या देखें):" : "Pick available subjects (showing question counts):"}
-                  </p>
-                </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleSelectAll}
-                    className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
-                  >
-                    {isHindi ? "उपलब्ध सभी चुनें" : "Select All Active"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleClearAll}
-                    className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
-                  >
-                    {isHindi ? "हटाएं" : "Clear"}
-                  </button>
-                </div>
+          {/* If Solo Mode is Selected */}
+          {mode === "solo" ? (
+            <div className="bg-white dark:bg-slate-850 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 text-center space-y-4 shadow-sm animate-in fade-in duration-200">
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-800 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                <Target className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <div>
+                <h3 className="font-bold text-base text-slate-900 dark:text-white">
+                  {isHindi ? "सोलो टेस्ट मोड" : "Solo Practice Mode"}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs mx-auto">
+                  {isHindi
+                    ? "बिना किसी प्रतिद्वंदी के अपनी गति से सामान्य ज्ञान का अभ्यास करें और अपनी कमजोरियों को सुधारें।"
+                    : "Practice GK at your own pace without opponents and master key subjects."}
+                </p>
               </div>
 
-              {/* Category Search Input */}
-              <div className="relative mb-3.5">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  value={catSearch}
-                  onChange={(e) => setCatSearch(e.target.value)}
-                  placeholder={isHindi ? "श्रेणी खोजें..." : "Search categories..."}
-                  className="w-full pl-9 pr-4 py-2.5 text-xs sm:text-sm rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-slate-100"
-                />
-              </div>
-
-              {/* Responsive Category Grid: Natural Flow without inner scroll trap */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
-                {categoriesWithData.map((cat) => {
-                  const isSelected = selectedCats.includes(cat.id);
-                  return (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => toggleCategory(cat.id)}
-                      className={`p-3 rounded-2xl border text-left flex flex-col justify-between transition-all select-none active:scale-[0.97] min-h-[105px] sm:min-h-[115px] group cursor-pointer ${
-                        isSelected
-                          ? "bg-indigo-50/95 dark:bg-indigo-950/80 border-indigo-600 dark:border-indigo-400 shadow-md ring-2 ring-indigo-500/40 text-indigo-950 dark:text-indigo-100"
-                          : "bg-white dark:bg-slate-800/60 border-slate-200/90 dark:border-slate-700/80 hover:border-indigo-300 dark:hover:border-slate-600 hover:shadow-sm"
-                      }`}
-                    >
-                      {/* Top: Icon Thumbnail + Question Count Badge */}
-                      <div className="flex items-center justify-between w-full mb-2">
-                        <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xl shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-                          {cat.icon || "🎯"}
-                        </div>
-
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-indigo-100/90 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800 shadow-2xs">
-                            {cat.count} {isHindi ? "प्रश्न" : "Q"}
-                          </span>
-
-                          {isSelected && (
-                            <div className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                              <Check size={12} strokeWidth={3} />
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Bottom: Name & Example */}
-                      <div className="min-w-0 w-full">
-                        <div className={`text-xs sm:text-sm font-extrabold truncate ${isSelected ? "text-indigo-900 dark:text-indigo-200" : "text-slate-800 dark:text-slate-100"}`}>
-                          {isHindi ? cat.nameHi : cat.name}
-                        </div>
-                        <div className="text-[10px] text-slate-400 dark:text-slate-500 truncate mt-0.5">
-                          {cat.example}
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Upcoming Categories Accordion Toggle */}
-              {upcomingCategories.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-slate-200/80 dark:border-slate-800">
-                  <button
-                    type="button"
-                    onClick={() => setShowUpcoming((prev) => !prev)}
-                    className="w-full flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 transition-all cursor-pointer text-left"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-base">🚀</span>
-                      <span className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200">
-                        {isHindi ? "आगामी विषय (जल्द आ रहे हैं)" : "Upcoming Categories (Coming Soon)"}
-                      </span>
-                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-100/80 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200/70 dark:border-amber-800/60">
-                        {upcomingCategories.length} {isHindi ? "विषय" : "topics"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1 text-xs font-bold text-indigo-600 dark:text-indigo-400">
-                      <span>{showUpcoming ? (isHindi ? "छुपाएं" : "Hide") : (isHindi ? "दिखाएं" : "Show")}</span>
-                      {showUpcoming ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                    </div>
-                  </button>
-
-                  {showUpcoming && (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 mt-3 animate-in fade-in duration-300">
-                      {upcomingCategories.map((cat) => {
-                        const isSelected = selectedCats.includes(cat.id);
-                        return (
-                          <button
-                            key={cat.id}
-                            type="button"
-                            onClick={() => toggleCategory(cat.id)}
-                            className={`p-3 rounded-2xl border text-left flex flex-col justify-between transition-all select-none active:scale-[0.97] min-h-[105px] opacity-80 hover:opacity-100 cursor-pointer ${
-                              isSelected
-                                ? "bg-amber-50/80 dark:bg-amber-950/40 border-amber-500 ring-2 ring-amber-500/30"
-                                : "bg-slate-50/70 dark:bg-slate-800/40 border-slate-200/70 dark:border-slate-800 hover:border-slate-300"
-                            }`}
-                          >
-                            <div className="flex items-center justify-between w-full mb-2">
-                              <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-lg shrink-0">
-                                {cat.icon || "🎯"}
-                              </div>
-                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100/70 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/60">
-                                {isHindi ? "जल्द" : "Soon"}
-                              </span>
-                            </div>
-                            <div className="min-w-0 w-full">
-                              <div className="text-xs sm:text-sm font-bold truncate text-slate-700 dark:text-slate-300">
-                                {isHindi ? cat.nameHi : cat.name}
-                              </div>
-                              <div className="text-[10px] text-slate-400 dark:text-slate-500 truncate mt-0.5">
-                                {cat.example}
-                              </div>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
-            </section>
-
-            {/* ── CONTROLS GRID: DIFFICULTY, TIMER, COUNT (COMPACT & MODERN) ── */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Difficulty Card */}
-              <section className="p-4 sm:p-5 rounded-3xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-                      <Layers size={16} className="text-indigo-500" />
-                      <span>2. {isHindi ? "कठिनाई स्तर" : "Difficulty"}</span>
-                    </h2>
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/80">
-                      {diffLabels[difficulty]}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    {["all", "easy", "medium", "hard"].map((level) => {
-                      const active = difficulty === level;
-                      return (
-                        <button
-                          key={level}
-                          type="button"
-                          onClick={() => setDifficulty(level)}
-                          className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all text-center cursor-pointer active:scale-95 ${
-                            active
-                              ? "bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-500/20"
-                              : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-                          }`}
-                        >
-                          {diffLabels[level]}
-                        </button>
-                      );
-                    })}
+              {/* Quick Settings for Solo */}
+              <div className="grid grid-cols-2 gap-2 text-left pt-1">
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <span className="text-[11px] font-semibold text-slate-500">
+                    {isHindi ? "प्रश्न संख्या" : "Questions"}
+                  </span>
+                  <div className="flex gap-1 mt-1">
+                    {[10, 20, 30].map((c) => (
+                      <button
+                        key={c}
+                        onClick={() => setSoloQuestionCount(c)}
+                        className={`px-2 py-0.5 rounded text-xs font-bold ${
+                          soloQuestionCount === c
+                            ? "bg-indigo-600 text-white"
+                            : "bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200"
+                        }`}
+                      >
+                        {c}Q
+                      </button>
+                    ))}
                   </div>
                 </div>
-                <div className="pt-3 mt-3 border-t border-slate-100 dark:border-slate-800/80 text-[11px] text-slate-400 dark:text-slate-500 font-medium">
-                  {isHindi ? "सभी स्तरों के मिश्रित या विशिष्ट प्रश्न" : "Mixed or specific question levels"}
+
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <span className="text-[11px] font-semibold text-slate-500">
+                    {isHindi ? "टाइमर प्रति प्रश्न" : "Timer"}
+                  </span>
+                  <div className="flex gap-1 mt-1">
+                    {[0, 15, 20].map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => setSoloTimerSeconds(s)}
+                        className={`px-2 py-0.5 rounded text-xs font-bold ${
+                          soloTimerSeconds === s
+                            ? "bg-indigo-600 text-white"
+                            : "bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200"
+                        }`}
+                      >
+                        {s === 0 ? "Off" : `${s}s`}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </section>
-
-              {/* Timer Card */}
-              <section className="p-4 sm:p-5 rounded-3xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-                      <Clock size={16} className="text-indigo-500" />
-                      <span>3. {isHindi ? "टाइमर (वैकल्पिक)" : "Timer (Optional)"}</span>
-                    </h2>
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/80">
-                      {getTimerLabel(timerSeconds)}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 mb-2.5">
-                    {[0, 15, 20, 30].map((sec) => {
-                      const active = timerSeconds === sec && !showCustomTimer;
-                      return (
-                        <button
-                          key={sec}
-                          type="button"
-                          onClick={() => {
-                            setTimerSeconds(sec);
-                            setShowCustomTimer(false);
-                          }}
-                          className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all text-center cursor-pointer active:scale-95 ${
-                            active
-                              ? "bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-500/20"
-                              : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-                          }`}
-                        >
-                          {sec === 0 ? (isHindi ? "बिना टाइमर" : "No Timer") : `${sec} ${isHindi ? "सेकंड" : "s"}`}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Custom Toggle */}
-                  <button
-                    type="button"
-                    onClick={() => setShowCustomTimer((prev) => !prev)}
-                    className="flex items-center justify-center gap-1.5 w-full py-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
-                  >
-                    <Sliders size={12} />
-                    <span>{showCustomTimer ? (isHindi ? "प्रीसेट विकल्प दिखाएं" : "Show Presets") : (isHindi ? "कस्टम टाइमर सेट करें" : "Custom Timer Slider")}</span>
-                  </button>
-                </div>
-
-                {/* Slider (appears when custom is toggled) */}
-                {showCustomTimer && (
-                  <div className="pt-2.5 mt-2 border-t border-slate-100 dark:border-slate-800/80 animate-in fade-in duration-200">
-                    <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      <span>{isHindi ? "कस्टम सेकंड:" : "Custom seconds:"}</span>
-                      <span className="px-2 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300">
-                        {timerSeconds}s
-                      </span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="60"
-                      step="5"
-                      value={timerSeconds}
-                      onChange={(e) => setTimerSeconds(parseInt(e.target.value, 10) || 0)}
-                      className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                    />
-                  </div>
-                )}
-              </section>
-
-              {/* Question Count Card */}
-              <section className="p-4 sm:p-5 rounded-3xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-                      <Zap size={16} className="text-indigo-500" />
-                      <span>4. {isHindi ? "प्रश्न संख्या" : "Question Count"}</span>
-                    </h2>
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/80">
-                      {questionCount} {isHindi ? "प्रश्न" : "Ques"}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 mb-2.5">
-                    {[10, 20, 30, 50].map((cnt) => {
-                      const active = questionCount === cnt && !showCustomCount;
-                      return (
-                        <button
-                          key={cnt}
-                          type="button"
-                          onClick={() => {
-                            setQuestionCount(cnt);
-                            setShowCustomCount(false);
-                          }}
-                          className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all text-center cursor-pointer active:scale-95 ${
-                            active
-                              ? "bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-500/20"
-                              : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-                          }`}
-                        >
-                          {cnt} {isHindi ? "प्रश्न" : "Questions"}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Custom Toggle */}
-                  <button
-                    type="button"
-                    onClick={() => setShowCustomCount((prev) => !prev)}
-                    className="flex items-center justify-center gap-1.5 w-full py-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
-                  >
-                    <Sliders size={12} />
-                    <span>{showCustomCount ? (isHindi ? "प्रीसेट विकल्प दिखाएं" : "Show Presets") : (isHindi ? "कस्टम संख्या सेट करें" : "Custom Question Slider")}</span>
-                  </button>
-                </div>
-
-                {/* Slider (appears when custom is toggled) */}
-                {showCustomCount && (
-                  <div className="pt-2.5 mt-2 border-t border-slate-100 dark:border-slate-800/80 animate-in fade-in duration-200">
-                    <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      <span>{isHindi ? "कस्टम प्रश्न:" : "Custom count:"}</span>
-                      <span className="px-2 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300">
-                        {questionCount}
-                      </span>
-                    </div>
-                    <input
-                      type="range"
-                      min="5"
-                      max="100"
-                      step="5"
-                      value={questionCount}
-                      onChange={(e) => setQuestionCount(parseInt(e.target.value, 10) || 5)}
-                      className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                    />
-                  </div>
-                )}
-              </section>
-            </div>
-
-            {/* ── STICKY BOTTOM LAUNCH ACTION BAR ── */}
-            <div className="sticky bottom-16 sm:bottom-6 z-30 p-3.5 sm:p-4 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div className="text-center sm:text-left">
-                <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                  {isHindi ? "चयनित विन्यास:" : "Selected Configuration:"}
-                </div>
-                {selectedCats.length === 0 ? (
-                  <div className="text-xs font-bold text-amber-600 dark:text-amber-400 mt-0.5">
-                    {isHindi ? "⚠️ टेस्ट शुरू करने के लिए कम से कम 1 श्रेणी चुनें" : "⚠️ Please select at least 1 category"}
-                  </div>
-                ) : (
-                  <div className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-0.5">
-                    {selectedCats.length} {isHindi ? "श्रेणियां" : "Categories"} · {questionCount} {isHindi ? "प्रश्न" : "Ques"} · {diffLabels[difficulty]} · {getTimerLabel(timerSeconds)}
-                  </div>
-                )}
               </div>
 
               <button
-                type="button"
-                onClick={handleStartQuiz}
-                disabled={isStarting || selectedCats.length === 0}
-                className="w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold text-sm sm:text-base text-white bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 hover:from-indigo-500 hover:to-purple-500 active:scale-95 transition-all shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                onClick={handleStartSoloQuiz}
+                disabled={isStartingSolo}
+                className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-md active:scale-95 transition flex items-center justify-center gap-2 cursor-pointer"
               >
-                {isStarting ? (
+                {isStartingSolo ? (
                   <>
-                    <Loader2 size={18} className="animate-spin" />
+                    <Loader2 size={16} className="animate-spin" />
                     <span>{isHindi ? "लोड हो रहा है..." : "Loading..."}</span>
                   </>
                 ) : (
                   <>
-                    <span>{isHindi ? "🚀 टेस्ट शुरू करें" : "🚀 Start Test"}</span>
-                    <ArrowRight size={18} />
+                    <Play className="w-4 h-4 fill-current" />
+                    <span>{isHindi ? "सोलो क्विज़ शुरू करें" : "Start Solo Practice"}</span>
                   </>
                 )}
               </button>
             </div>
+          ) : (
+            /* ================= 3. 1v1 BATTLE MAIN CONTAINER ================= */
+            <div className="space-y-4">
+              
+              {/* Dual Action Primary Tabs: नया रूम बनाएं vs कोड से जुड़ें */}
+              <div className="bg-white dark:bg-slate-850 p-1.5 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs flex">
+                <button
+                  onClick={() => setSubTab("create")}
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    subTab === "create"
+                      ? "bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-indigo-950/80 dark:to-violet-950/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800 shadow-2xs"
+                      : "text-slate-500 hover:text-slate-800 dark:text-slate-400"
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                  <span>{isHindi ? "नया रूम बनाएं" : "Create Room"}</span>
+                </button>
+                <button
+                  onClick={() => setSubTab("join")}
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    subTab === "join"
+                      ? "bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-indigo-950/80 dark:to-violet-950/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800 shadow-2xs"
+                      : "text-slate-500 hover:text-slate-800 dark:text-slate-400"
+                  }`}
+                >
+                  <Link2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                  <span>{isHindi ? "कोड से जुड़ें" : "Join Code"}</span>
+                </button>
+              </div>
+
+              {/* ---------------- SUBTAB A: CREATE ROOM FLOW ---------------- */}
+              {subTab === "create" && (
+                <div className="space-y-4 animate-in fade-in duration-200">
+                  
+                  {/* BATTLE PARAMETERS CONTROLS */}
+                  <div className="bg-white dark:bg-slate-850 rounded-2xl p-3.5 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-3">
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-800 dark:text-slate-100">
+                      <span className="flex items-center gap-1.5">
+                        <HelpCircle className="w-3.5 h-3.5 text-indigo-500" />{" "}
+                        {isHindi ? "मैच सेटिंग्स (Rules)" : "Match Rules"}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-normal">
+                        {isHindi ? "कस्टम नियम" : "Custom settings"}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 pt-1">
+                      {/* Questions count selector */}
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1">
+                          {isHindi ? "प्रश्नों की संख्या" : "Questions"}
+                        </label>
+                        <div className="grid grid-cols-3 gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                          {[5, 10, 15].map((count) => (
+                            <button
+                              key={count}
+                              type="button"
+                              onClick={() => setQuestionCount(count)}
+                              className={`py-1 text-[11px] font-bold rounded-lg transition cursor-pointer ${
+                                questionCount === count
+                                  ? "bg-white dark:bg-slate-700 text-indigo-700 dark:text-indigo-300 shadow-xs border border-indigo-100 dark:border-indigo-800"
+                                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
+                              }`}
+                            >
+                              {count}Q
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Timer per question selector */}
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1">
+                          {isHindi ? "समय प्रति प्रश्न" : "Timer / Question"}
+                        </label>
+                        <div className="grid grid-cols-3 gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                          {[10, 15, 20].map((sec) => (
+                            <button
+                              key={sec}
+                              type="button"
+                              onClick={() => setTimePerQ(sec)}
+                              className={`py-1 text-[11px] font-bold rounded-lg transition cursor-pointer ${
+                                timePerQ === sec
+                                  ? "bg-white dark:bg-slate-700 text-indigo-700 dark:text-indigo-300 shadow-xs border border-indigo-100 dark:border-indigo-800"
+                                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
+                              }`}
+                            >
+                              {sec}s
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* TOPIC SELECTION LIST */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between px-1">
+                      <label className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1">
+                        <span>{isHindi ? "क्विज़ विषय चुनें (Choose Topic)" : "Choose Duel Topic"}</span>
+                      </label>
+                      <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                        {isHindi ? "कुल 7,000+ प्रश्न" : "7,000+ Questions Pool"}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      {topics.map((topic) => {
+                        const isSelected = selectedTopicId === topic.id;
+                        return (
+                          <div
+                            key={topic.id}
+                            onClick={() => setSelectedTopicId(topic.id)}
+                            className={`p-3.5 rounded-2xl border transition-all cursor-pointer relative flex items-center justify-between select-none ${
+                              isSelected
+                                ? "bg-gradient-to-r from-indigo-50/90 to-violet-50/50 dark:from-indigo-950/80 dark:to-violet-950/40 border-indigo-500 shadow-xs ring-2 ring-indigo-500/15"
+                                : "bg-white dark:bg-slate-850 border-slate-200/90 dark:border-slate-800 hover:border-slate-300 hover:bg-slate-50/50"
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              {/* Large Emoji Badge */}
+                              <div
+                                className={`w-11 h-11 rounded-xl flex items-center justify-center text-2xl shadow-2xs border ${
+                                  isSelected
+                                    ? "bg-white dark:bg-slate-800 border-indigo-200 dark:border-indigo-700"
+                                    : "bg-slate-50 dark:bg-slate-800 border-slate-200/80 dark:border-slate-700"
+                                }`}
+                              >
+                                {topic.emoji}
+                              </div>
+
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <h3
+                                    className={`text-xs sm:text-sm font-bold ${
+                                      isSelected
+                                        ? "text-indigo-950 dark:text-white font-black"
+                                        : "text-slate-800 dark:text-slate-200"
+                                    }`}
+                                  >
+                                    {topic.title}
+                                  </h3>
+                                  {topic.popular && (
+                                    <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300">
+                                      HOT
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">
+                                  {topic.subtitle}
+                                </p>
+                                <span className="inline-block text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded-full mt-1 border border-indigo-100/60 dark:border-indigo-800">
+                                  {topic.questionCount}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Radio / Selection Indicator */}
+                            <div
+                              className={`w-6 h-6 rounded-full flex items-center justify-center border transition-all shrink-0 ${
+                                isSelected
+                                  ? "bg-indigo-600 border-indigo-600 text-white shadow-xs"
+                                  : "border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
+                              }`}
+                            >
+                              {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                </div>
+              )}
+
+              {/* ---------------- SUBTAB B: JOIN ROOM WITH PIN ---------------- */}
+              {subTab === "join" && (
+                <div className="bg-white dark:bg-slate-850 rounded-2xl p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-5 animate-in fade-in duration-200">
+                  <div className="text-center space-y-1">
+                    <div className="w-12 h-12 mx-auto rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-800 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                      <Link2 className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">
+                      {isHindi ? "रूम कोड (PIN) दर्ज करें" : "Enter Room Code (PIN)"}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {isHindi
+                        ? "अपने मित्र द्वारा साझा किया गया 6-अंकों का कोड यहाँ डालें"
+                        : "Enter the 6-digit room code shared by your friend"}
+                    </p>
+                  </div>
+
+                  {/* 6 Digit Box Inputs */}
+                  <div className="flex justify-center gap-2" onPaste={handlePastePin}>
+                    {pinDigits.map((digit, idx) => (
+                      <input
+                        key={idx}
+                        id={`pin-${idx}`}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => handlePinInput(idx, e.target.value)}
+                        onKeyDown={(e) => handlePinKeyDown(idx, e)}
+                        className={`w-11 h-13 text-center text-xl font-black rounded-xl border transition-all focus:outline-none ${
+                          digit
+                            ? "border-indigo-600 bg-indigo-50/30 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 shadow-2xs"
+                            : "border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-700"
+                        }`}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Quick Numeric Keypad simulation & Paste Helper */}
+                  <div className="flex items-center justify-between px-1 text-xs">
+                    <button
+                      onClick={() => setPinDigits(["", "", "", "", "", ""])}
+                      className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 font-semibold flex items-center gap-1 cursor-pointer"
+                    >
+                      <RotateCcw className="w-3 h-3" /> {isHindi ? "रिसेट करें" : "Reset"}
+                    </button>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const text = await navigator.clipboard.readText();
+                          const clean = text.trim();
+                          if (/^\d{6}$/.test(clean)) {
+                            setPinDigits(clean.split(""));
+                          } else {
+                            toast.error(
+                              isHindi
+                                ? "क्लिपबोर्ड में मान्य 6-अंकों का कोड नहीं मिला।"
+                                : "No valid 6-digit code found in clipboard."
+                            );
+                          }
+                        } catch {
+                          toast.error(
+                            isHindi ? "क्लिपबोर्ड एक्सेस की अनुमति नहीं है।" : "Clipboard access denied."
+                          );
+                        }
+                      }}
+                      className="text-indigo-600 dark:text-indigo-400 font-bold hover:underline cursor-pointer"
+                    >
+                      {isHindi ? "क्लिपबोर्ड से पेस्ट करें" : "Paste from Clipboard"}
+                    </button>
+                  </div>
+
+                  <button
+                    disabled={pinDigits.join("").length < 6}
+                    onClick={handleJoinBattleSubmit}
+                    className="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-black rounded-xl shadow-md shadow-indigo-600/30 active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <span>{isHindi ? "कमरे में प्रवेश करें (Join Battle)" : "Enter Room (Join Battle)"}</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
+              {/* ================= 4. ASYNC / OFFLINE CHALLENGE BANNER ================= */}
+              <div
+                onClick={() => setIsAsyncChallengeOpen(true)}
+                className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-4 text-white shadow-md border border-indigo-500/20 cursor-pointer active:scale-[0.99] transition flex items-center justify-between"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-amber-300">
+                    <Send className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <span>{isHindi ? "दोस्त अभी ऑफलाइन है?" : "Friend offline right now?"}</span>
+                      <span className="text-[9px] bg-rose-500 text-white px-1.5 py-0.2 rounded-full font-extrabold">
+                        NEW
+                      </span>
+                    </h4>
+                    <p className="text-[11px] text-slate-300 mt-0.5">
+                      {isHindi
+                        ? "अपना स्कोर सेट करें और WhatsApp पर Score Challenge भेजें!"
+                        : "Set your score first & challenge them on WhatsApp!"}
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
+              </div>
+
+              {/* Real-time Leaderboard Footer Link */}
+              <div className="text-center pt-1 pb-4">
+                <button
+                  onClick={() => setIsLeaderboardOpen(true)}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200/70 dark:border-indigo-800 px-4 py-2 rounded-full shadow-2xs transition cursor-pointer"
+                >
+                  <Trophy className="w-3.5 h-3.5 text-amber-500" />
+                  <span>{isHindi ? "लाइव 1v1 लीडरबोर्ड देखें →" : "View Live 1v1 Leaderboard →"}</span>
+                </button>
+              </div>
+
+            </div>
+          )}
+
+        </main>
+
+        {/* ================= 5. FIXED FROSTED GLASS ACTION BAR ================= */}
+        {mode === "battle" && subTab === "create" && (
+          <div className="fixed bottom-[62px] sm:bottom-[66px] left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/90 dark:border-slate-800 p-3.5 shadow-2xl pb-[env(safe-area-inset-bottom,0px)]">
+            <div className="w-full max-w-[440px] sm:max-w-xl md:max-w-2xl mx-auto space-y-2">
+              {/* Summary Tag */}
+              <div className="flex items-center justify-between text-[11px] px-1 font-semibold text-slate-500 dark:text-slate-400">
+                <span className="flex items-center gap-1 truncate max-w-[200px] sm:max-w-xs">
+                  <span>{isHindi ? "चयनित:" : "Selected:"}</span>
+                  <b className="text-slate-800 dark:text-slate-100 truncate">{selectedTopic.title}</b>
+                </span>
+                <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-md font-bold whitespace-nowrap">
+                  {questionCount} Qs • {timePerQ}s {isHindi ? "प्रति प्रश्न" : "/ question"}
+                </span>
+              </div>
+
+              {/* Launch CTA Button */}
+              <button
+                onClick={handleCreateRoom}
+                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 hover:from-indigo-700 hover:to-purple-700 active:scale-[0.98] text-white font-extrabold text-sm shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <Swords className="w-4 h-4 text-amber-300" />
+                <span>{isHindi ? "लाइव रूम बनाएं (आमंत्रण कोड पाएं) →" : "Create Live Room (Get Code) →"}</span>
+              </button>
+            </div>
           </div>
         )}
+
+        {/* ================= MODAL: LIVE ROOM WAITING LOBBY ================= */}
+        {isLobbyOpen && (
+          <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl animate-in zoom-in-95 duration-150 border border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                    <Swords className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                      {isHindi ? "लाइव बैटल लॉबी" : "Live Battle Lobby"}
+                    </h3>
+                    <p className="text-[10px] text-slate-400 font-medium">
+                      {isHindi ? "मैच शुरू होने का इंतज़ार है" : "Waiting for match start"}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsLobbyOpen(false)}
+                  className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Generated Room PIN Display */}
+              <div className="bg-gradient-to-b from-indigo-50/80 to-white dark:from-slate-800 dark:to-slate-850 border border-indigo-200/80 dark:border-slate-700 rounded-2xl p-4 text-center">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                  {isHindi ? "आपका रूम कोड (PIN)" : "Your Room Code (PIN)"}
+                </span>
+                <div className="text-3xl font-black tracking-widest text-slate-900 dark:text-white my-1 font-mono">
+                  {generatedRoomCode}
+                </div>
+                <div className="inline-flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 px-2.5 py-0.5 rounded-full border border-slate-200 dark:border-slate-800">
+                  <span>
+                    {selectedTopic.emoji} {selectedTopic.title}
+                  </span>{" "}
+                  • <span>{questionCount} प्रश्न</span>
+                </div>
+              </div>
+
+              {/* Share & Copy Buttons */}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={copyCode}
+                  className="py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer"
+                >
+                  {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                  <span>{copied ? (isHindi ? "कोड कॉपी हुआ!" : "Copied!") : (isHindi ? "कोड कॉपी" : "Copy Code")}</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    const shareText = isHindi
+                      ? `आओ मेरे साथ QuizWeb पर 1v1 लाइव क्विज़ मुकाबला खेलो! रूम कोड: ${generatedRoomCode}\n👉 ${typeof window !== "undefined" ? window.location.origin : ""}/live/${generatedRoomCode}`
+                      : `Challenge me to a 1v1 live quiz on QuizWeb! Room Code: ${generatedRoomCode}\n👉 ${typeof window !== "undefined" ? window.location.origin : ""}/live/${generatedRoomCode}`;
+                    if (navigator.share) {
+                      navigator.share({ title: "QuizWeb 1v1", text: shareText, url: window.location.href }).catch(() => {});
+                    } else {
+                      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, "_blank");
+                    }
+                  }}
+                  className="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition cursor-pointer"
+                >
+                  <Share2 className="w-4 h-4" />
+                  <span>{isHindi ? "व्हाट्सऐप पर भेजें" : "Share on WhatsApp"}</span>
+                </button>
+              </div>
+
+              {/* Players Status Box */}
+              <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-3 border border-slate-200 dark:border-slate-700 space-y-2.5">
+                <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  {isHindi ? "खिलाड़ी स्थिति:" : "Players Status:"}
+                </p>
+                <div className="space-y-2">
+                  {/* Host Player */}
+                  <div className="flex items-center justify-between text-xs bg-white dark:bg-slate-800 p-2 rounded-xl border border-slate-200/80 dark:border-slate-700">
+                    <div className="flex items-center gap-2">
+                      <span className="w-7 h-7 rounded-lg bg-indigo-100 dark:bg-indigo-950/60 flex items-center justify-center text-sm font-bold text-indigo-700 dark:text-indigo-300">
+                        {isHindi ? "आप" : "You"}
+                      </span>
+                      <span className="font-bold text-slate-800 dark:text-slate-200">
+                        {isHindi ? "होस्ट (तैयार)" : "Host (Ready)"}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/80 px-2 py-0.5 rounded-full">
+                      {isHindi ? "रेडी" : "Ready"}
+                    </span>
+                  </div>
+
+                  {/* Opponent Player (Waiting or Connected) */}
+                  <div className="flex items-center justify-between text-xs bg-white dark:bg-slate-800 p-2 rounded-xl border border-slate-200/80 dark:border-slate-700">
+                    <div className="flex items-center gap-2">
+                      <span className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-sm">
+                        {opponentJoined ? "👤" : "⏳"}
+                      </span>
+                      <span className="font-semibold text-slate-600 dark:text-slate-300">
+                        {opponentJoined
+                          ? (isHindi ? "रोहित वर्मा (Rohit)" : "Rohit Verma")
+                          : (isHindi ? "दोस्त का इंतज़ार..." : "Waiting for friend...")}
+                      </span>
+                    </div>
+                    {opponentJoined ? (
+                      <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/80 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <Check className="w-3 h-3" /> {isHindi ? "जुड़ गए" : "Joined"}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/80 px-2 py-0.5 rounded-full animate-pulse">
+                        {isHindi ? "प्रतीक्षारत..." : "Waiting..."}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Match Start Button */}
+              <button
+                disabled={!opponentJoined}
+                onClick={handleStartHostBattle}
+                className={`w-full py-3 rounded-xl font-extrabold text-xs shadow-md flex items-center justify-center gap-2 transition cursor-pointer ${
+                  opponentJoined
+                    ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/30 active:scale-[0.98]"
+                    : "bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed"
+                }`}
+              >
+                <Play className="w-4 h-4 fill-current" />
+                <span>
+                  {opponentJoined
+                    ? (isHindi ? "मुकाबला शुरू करें (Start Battle)" : "Start Battle Now")
+                    : (isHindi ? "प्रतिद्वंदी के जुड़ने का इंतज़ार करें" : "Waiting for player to connect...")}
+                </span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ================= MODAL: LEADERBOARD ================= */}
+        {isLeaderboardOpen && (
+          <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl animate-in zoom-in-95 duration-150 border border-slate-100 dark:border-slate-800 max-h-[85vh] flex flex-col">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 flex items-center justify-center">
+                    <Trophy className="w-4 h-4 fill-amber-500 text-amber-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                      {isHindi ? "साप्ताहिक 1v1 चैंपियंस" : "Weekly 1v1 Champions"}
+                    </h3>
+                    <p className="text-[10px] text-slate-400 font-medium">
+                      {isHindi ? "शीर्ष क्विज़ योद्धा" : "Top Quiz Duelists"}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsLeaderboardOpen(false)}
+                  className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Podium View for Top 3 */}
+              <div className="grid grid-cols-3 gap-2 text-center pt-2">
+                {/* Rank 2 */}
+                <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-2.5 flex flex-col items-center">
+                  <span className="text-xl">🥈</span>
+                  <p className="text-xs font-bold text-slate-800 dark:text-slate-100 mt-1 line-clamp-1">
+                    {isHindi ? "प्रिया श." : "Priya S."}
+                  </p>
+                  <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">2,810 XP</span>
+                </div>
+                {/* Rank 1 */}
+                <div className="bg-gradient-to-b from-amber-50 to-white dark:from-amber-950/40 dark:to-slate-800 border-2 border-amber-300 dark:border-amber-600 rounded-2xl p-2.5 flex flex-col items-center -mt-2 shadow-sm">
+                  <Crown className="w-5 h-5 text-amber-500 fill-amber-400" />
+                  <p className="text-xs font-extrabold text-slate-900 dark:text-white mt-1 line-clamp-1">
+                    {isHindi ? "अमित कु." : "Amit K."}
+                  </p>
+                  <span className="text-[10px] font-black text-amber-700 dark:text-amber-400">2,940 XP</span>
+                </div>
+                {/* Rank 3 */}
+                <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-2.5 flex flex-col items-center">
+                  <span className="text-xl">🥉</span>
+                  <p className="text-xs font-bold text-slate-800 dark:text-slate-100 mt-1 line-clamp-1">
+                    {isHindi ? "राहुल व." : "Rahul V."}
+                  </p>
+                  <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">2,650 XP</span>
+                </div>
+              </div>
+
+              {/* List */}
+              <div className="space-y-1.5 overflow-y-auto flex-1 pr-1">
+                {leaderBoardUsers.map((user) => (
+                  <div
+                    key={user.rank}
+                    className={`flex items-center justify-between p-2.5 rounded-xl border text-xs ${user.color}`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-5 font-black text-slate-400 text-center">#{user.rank}</span>
+                      <span className="text-base">{user.avatar}</span>
+                      <div>
+                        <p className="font-bold text-slate-800 dark:text-slate-100">{user.name}</p>
+                        <p className="text-[10px] text-slate-400">{user.wins}</p>
+                      </div>
+                    </div>
+                    <span className="font-black text-indigo-600 dark:text-indigo-400">{user.score}</span>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setIsLeaderboardOpen(false)}
+                className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl cursor-pointer"
+              >
+                {isHindi ? "बंद करें" : "Close"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ================= MODAL: ASYNC SCORE CHALLENGE ================= */}
+        {isAsyncChallengeOpen && (
+          <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl animate-in zoom-in-95 duration-150 border border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                    <Send className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                      {isHindi ? "Score Challenge भेजें" : "Send Score Challenge"}
+                    </h3>
+                    <p className="text-[10px] text-slate-400 font-medium">
+                      {isHindi ? "ऑफलाइन दोस्तों के लिए" : "For offline friends"}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsAsyncChallengeOpen(false)}
+                  className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="space-y-2 text-xs text-slate-600 dark:text-slate-300">
+                <p>
+                  {isHindi
+                    ? "1. पहले आप 10 प्रश्नों का टेस्ट देकर अपना स्कोर तय करेंगे।"
+                    : "1. Play a 10-question quiz set first to record your benchmark score."}
+                </p>
+                <p>
+                  {isHindi
+                    ? "2. टेस्ट खत्म होने पर आपको एक अनोखा चैलेंज लिंक मिलेगा।"
+                    : "2. Once finished, you will receive a unique challenge link."}
+                </p>
+                <p>
+                  {isHindi
+                    ? "3. आपका दोस्त कभी भी उस लिंक पर क्लिक करके आपके स्कोर को चुनौती दे सकता है!"
+                    : "3. Your friend can open the link anytime to battle your score asynchronously!"}
+                </p>
+              </div>
+
+              <button
+                onClick={() => {
+                  setIsAsyncChallengeOpen(false);
+                  const userName = authSession?.user?.name || (isHindi ? "खिलाड़ी" : "Quizzer");
+                  router.push(
+                    `/challenge?cat=${selectedTopic.slug}&score=0&total=10&name=${encodeURIComponent(userName)}`
+                  );
+                }}
+                className="w-full py-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-extrabold text-xs rounded-xl shadow-md active:scale-95 transition cursor-pointer"
+              >
+                {isHindi ? "स्कोर सेट करना शुरू करें (Play First)" : "Record Benchmark Score (Play First)"}
+              </button>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );

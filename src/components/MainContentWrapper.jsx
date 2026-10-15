@@ -14,16 +14,16 @@ export default function MainContentWrapper({ children }) {
   const pathname = usePathname();
   const { hasSavedTier, mounted } = useTier();
 
-  // BottomNavBar is hidden on these routes:
-  const isUnsetLanding = pathname === "/" && (!mounted || !hasSavedTier);
-  const isQuizPlaying = pathname?.startsWith("/quiz") || pathname?.startsWith("/live") || pathname?.startsWith("/t") || pathname?.startsWith("/institute");
+  // BottomNavBar is hidden only during interactive full-screen gameplay, timed exam tests, or admin panel:
+  const isQuizPlaying =
+    pathname?.startsWith("/quiz/") ||
+    pathname?.startsWith("/live/") ||
+    pathname?.startsWith("/t/") ||
+    pathname?.startsWith("/institute");
   const isTimedExam = pathname?.includes("/mock-tests/paper/");
   const isAdmin = pathname?.startsWith("/admin");
-  const isArena = pathname?.startsWith("/arena");
 
-  const isFlashcardRoute = pathname?.startsWith("/fun-facts") || pathname?.startsWith("/true-false");
-
-  const hasBottomNav = !isUnsetLanding && !isQuizPlaying && !isTimedExam && !isAdmin && !isArena && !isFlashcardRoute;
+  const hasBottomNav = !isQuizPlaying && !isTimedExam && !isAdmin;
 
   return (
     <main

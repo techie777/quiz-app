@@ -268,8 +268,13 @@ export default function SessionLobby({ sessionId, isHost, onApproveGuest, onDeny
 
   // Set Calculations: 24 sets per range tab
   const totalSets = useMemo(() => {
-    return Math.ceil((selectedCategory?.questionCount || 0) / 20) || 1;
-  }, [selectedCategory?.questionCount]);
+    const qCount = selectedCategory?.questionCount || (Array.isArray(selectedCategory?.questions) ? selectedCategory.questions.length : 0);
+    if (selectedCategory?.slug === 'india-gk' || selectedCategory?.id === 'india-gk' || selectedCategory?.topic === 'India GK') {
+      return Math.max(174, Math.ceil((qCount || 3468) / 20));
+    }
+    if (qCount > 0) return Math.max(1, Math.ceil(qCount / 20));
+    return 24; // Default to at least 24 sets so sets are never empty
+  }, [selectedCategory]);
 
   const SETS_PER_PAGE = 24;
   const totalRangeTabs = Math.ceil(totalSets / SETS_PER_PAGE);

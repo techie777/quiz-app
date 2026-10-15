@@ -4,8 +4,11 @@ import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { ArrowUp } from 'lucide-react';
 
+import { useTier } from '@/context/TierContext';
+
 export default function ScrollToTop() {
   const pathname = usePathname();
+  const { tier } = useTier();
   const [isVisible, setIsVisible] = useState(false);
 
   // Scroll to top on route change
@@ -27,8 +30,11 @@ export default function ScrollToTop() {
     return () => window.removeEventListener('scroll', toggleVisibility);
   }, []);
 
-  // Do not display floating scroll button during live sessions, arena wizard, active quiz play, or business test tools
+  // Do not display floating scroll button during live sessions, arena wizard, active quiz play, kids mode, or business test tools
   if (
+    tier === "kids" ||
+    pathname === '/kids' ||
+    pathname?.startsWith('/kids') ||
     pathname?.startsWith('/live') ||
     pathname?.startsWith('/quiz/') ||
     pathname?.startsWith('/arena') ||

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 
 export const TIERS = {
   KIDS: "kids",
@@ -181,7 +181,7 @@ export function TierProvider({ children }) {
     }
   }, []);
 
-  const selectTier = (newTier) => {
+  const selectTier = useCallback((newTier) => {
     if (!Object.values(TIERS).includes(newTier)) return;
     setTierState(newTier);
     setHasSavedTier(true);
@@ -191,9 +191,9 @@ export function TierProvider({ children }) {
     } catch (e) {
       console.error("[TierContext] Error writing to localStorage:", e);
     }
-  };
+  }, []);
 
-  const setStudentGrade = (newGrade) => {
+  const setStudentGrade = useCallback((newGrade) => {
     if (!STUDENT_GRADE_OPTIONS.includes(newGrade)) return;
     setStudentGradeState(newGrade);
     try {
@@ -201,18 +201,18 @@ export function TierProvider({ children }) {
     } catch (e) {
       console.error("[TierContext] Error writing student grade to localStorage:", e);
     }
-  };
+  }, []);
 
-  const openTierModal = () => setIsTierModalOpen(true);
+  const openTierModal = useCallback(() => setIsTierModalOpen(true), []);
 
-  const closeTierModal = () => {
+  const closeTierModal = useCallback(() => {
     setIsTierModalOpen(false);
     try {
       localStorage.setItem(ONBOARDED_KEY, "true");
     } catch (e) {
       console.error("[TierContext] Error updating onboarded status:", e);
     }
-  };
+  }, []);
 
   // Sync data-tier attribute with document root for styling hooks
   useEffect(() => {
@@ -225,17 +225,19 @@ export function TierProvider({ children }) {
     }
   }, [tier, hasSavedTier]);
 
-  const clearTier = () => {
+  const clearTier = useCallback(() => {
     setHasSavedTier(false);
+    setTierState(TIERS.ADULTS);
     try {
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(ONBOARDED_KEY);
       if (typeof document !== "undefined") {
         document.documentElement.setAttribute("data-tier", "unset");
       }
     } catch (e) {
       console.error("[TierContext] Error clearing tier from localStorage:", e);
     }
-  };
+  }, []);
 
   const currentConfig = TIER_CONFIG[tier] || TIER_CONFIG.adults;
 
@@ -265,7 +267,20 @@ export function TierProvider({ children }) {
 export function useTier() {
   const context = useContext(TierContext);
   if (!context) {
-    throw new Error("useTier must be used within a TierProvider");
+    return {
+      tier: TIERS.ADULTS,
+      hasSavedTier: false,
+      setTier: () => {},
+      clearTier: () => {},
+      studentGrade: STUDENT_GRADE_OPTIONS[3],
+      setStudentGrade: () => {},
+      isTierModalOpen: false,
+      openTierModal: () => {},
+      closeTierModal: () => {},
+      currentConfig: TIER_CONFIG.adults,
+      tierConfig: TIER_CONFIG,
+      mounted: false,
+    };
   }
   return context;
 }

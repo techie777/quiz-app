@@ -151,9 +151,9 @@ export default function RootLayout({ children }) {
         />
         <Suspense fallback={null}>
         </Suspense>
-        <ScrollToTop />
-        <SecurityGuards />
         <Providers>
+          <SecurityGuards />
+          <ScrollToTop />
           <ModuleRouteGuard />
           <Header />
           <SmartNavigation />
