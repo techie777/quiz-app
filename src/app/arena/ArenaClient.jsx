@@ -358,13 +358,13 @@ export default function ArenaClient({ initialSelectedCategoryIds = null }) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex justify-center text-slate-800 dark:text-slate-100 antialiased font-sans select-none">
+    <div className="w-full min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center text-slate-800 dark:text-slate-100 antialiased font-sans select-none">
       
-      {/* Mobile Device Viewport Mockup / Responsive Central Column */}
-      <div className="w-full max-w-[440px] sm:max-w-xl md:max-w-2xl min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col relative shadow-2xl border-x border-slate-200 dark:border-slate-800 overflow-x-hidden">
+      {/* Desktop Responsive Central Container */}
+      <div className="w-full max-w-5xl xl:max-w-6xl min-h-screen flex flex-col relative overflow-x-hidden">
         
         {/* ================= 1. COMPACT STICKY HEADER & TOP ARENA BAR ================= */}
-        <header className="sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-4 py-3 flex items-center justify-between transition-all">
+        <header className="sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between transition-all shadow-2xs">
           <div className="flex items-center space-x-2.5">
             <button
               onClick={() => {
@@ -391,7 +391,7 @@ export default function ArenaClient({ initialSelectedCategoryIds = null }) {
 
           <div className="flex items-center space-x-2">
             {/* Live Online Badge */}
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-[11px] font-semibold">
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-semibold">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
               <span>1.2k {isHindi ? "लाइव" : "Live"}</span>
             </div>
@@ -399,7 +399,7 @@ export default function ArenaClient({ initialSelectedCategoryIds = null }) {
             {/* Leaderboard Trophy Shortcut */}
             <button
               onClick={() => setIsLeaderboardOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-300 text-xs font-bold shadow-2xs active:scale-95 transition cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-300 text-xs font-bold shadow-2xs active:scale-95 transition cursor-pointer"
             >
               <Trophy className="w-4 h-4 text-amber-500 fill-amber-400" />
               <span>{isHindi ? "रैंक" : "Rank"}</span>
@@ -408,32 +408,32 @@ export default function ArenaClient({ initialSelectedCategoryIds = null }) {
         </header>
 
         {/* Scrollable Container with bottom padding for Fixed Action Bar & BottomNavBar */}
-        <main className="flex-1 px-4 pt-3 pb-52 space-y-4 overflow-y-auto">
+        <main className="flex-1 px-4 sm:px-6 lg:px-8 pt-4 pb-52 space-y-6 overflow-y-auto">
           
           {/* ================= 2. TITLE & MODE SWITCHER ================= */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
+          <div className="space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div>
-                <h1 className="text-xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2 tracking-tight">
-                  <span className="text-xl">⚔️</span> {isHindi ? "1v1 लाइव जीके बैटल" : "1v1 Live GK Battle"}
+                <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2 tracking-tight">
+                  <span className="text-2xl">⚔️</span> {isHindi ? "1v1 लाइव जीके बैटल" : "1v1 Live GK Battle"}
                 </h1>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
                   {isHindi
                     ? "दोस्तों के साथ रीयल-टाइम लाइव GK मुकाबला खेलें"
                     : "Real-time 1v1 live quiz duels with friends"}
                 </p>
               </div>
 
-              <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100/70 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full">
+              <div className="flex items-center self-start sm:self-auto gap-1 text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100/70 dark:bg-emerald-950/60 px-3 py-1 rounded-full border border-emerald-200 dark:border-emerald-800/60">
                 ● 1,280+ {isHindi ? "सक्रिय" : "Active"}
               </div>
             </div>
 
             {/* Top Level Mode Toggle: Solo Test vs 1v1 Battle */}
-            <div className="bg-slate-200/80 dark:bg-slate-800 p-1 rounded-2xl grid grid-cols-2 gap-1 text-xs font-bold">
+            <div className="bg-slate-200/80 dark:bg-slate-800 p-1.5 rounded-2xl grid grid-cols-2 gap-1.5 text-xs font-bold max-w-md">
               <button
                 onClick={() => setMode("solo")}
-                className={`py-2 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                className={`py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   mode === "solo"
                     ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs"
                     : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
@@ -444,7 +444,7 @@ export default function ArenaClient({ initialSelectedCategoryIds = null }) {
               </button>
               <button
                 onClick={() => setMode("battle")}
-                className={`py-2 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                className={`py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   mode === "battle"
                     ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
                     : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
@@ -458,7 +458,7 @@ export default function ArenaClient({ initialSelectedCategoryIds = null }) {
 
           {/* If Solo Mode is Selected */}
           {mode === "solo" ? (
-            <div className="bg-white dark:bg-slate-850 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 text-center space-y-4 shadow-sm animate-in fade-in duration-200">
+            <div className="max-w-xl mx-auto w-full bg-white dark:bg-slate-850 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 text-center space-y-5 shadow-sm animate-in fade-in duration-200">
               <div className="w-16 h-16 mx-auto rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-800 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
                 <Target className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
               </div>
@@ -541,7 +541,7 @@ export default function ArenaClient({ initialSelectedCategoryIds = null }) {
             <div className="space-y-4">
               
               {/* Dual Action Primary Tabs: नया रूम बनाएं vs कोड से जुड़ें */}
-              <div className="bg-white dark:bg-slate-850 p-1.5 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs flex">
+              <div className="bg-white dark:bg-slate-850 p-1.5 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs flex max-w-md">
                 <button
                   onClick={() => setSubTab("create")}
                   className={`flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
@@ -571,7 +571,7 @@ export default function ArenaClient({ initialSelectedCategoryIds = null }) {
                 <div className="space-y-4 animate-in fade-in duration-200">
                   
                   {/* BATTLE PARAMETERS CONTROLS */}
-                  <div className="bg-white dark:bg-slate-850 rounded-2xl p-3.5 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-3">
+                  <div className="bg-white dark:bg-slate-850 rounded-2xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-3">
                     <div className="flex items-center justify-between text-xs font-bold text-slate-800 dark:text-slate-100">
                       <span className="flex items-center gap-1.5">
                         <HelpCircle className="w-3.5 h-3.5 text-indigo-500" />{" "}
@@ -582,7 +582,7 @@ export default function ArenaClient({ initialSelectedCategoryIds = null }) {
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 pt-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                       {/* Questions count selector */}
                       <div className="space-y-1.5">
                         <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1">
@@ -594,7 +594,7 @@ export default function ArenaClient({ initialSelectedCategoryIds = null }) {
                               key={count}
                               type="button"
                               onClick={() => setQuestionCount(count)}
-                              className={`py-1 text-[11px] font-bold rounded-lg transition cursor-pointer ${
+                              className={`py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${
                                 questionCount === count
                                   ? "bg-white dark:bg-slate-700 text-indigo-700 dark:text-indigo-300 shadow-xs border border-indigo-100 dark:border-indigo-800"
                                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
@@ -617,7 +617,7 @@ export default function ArenaClient({ initialSelectedCategoryIds = null }) {
                               key={sec}
                               type="button"
                               onClick={() => setTimePerQ(sec)}
-                              className={`py-1 text-[11px] font-bold rounded-lg transition cursor-pointer ${
+                              className={`py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${
                                 timePerQ === sec
                                   ? "bg-white dark:bg-slate-700 text-indigo-700 dark:text-indigo-300 shadow-xs border border-indigo-100 dark:border-indigo-800"
                                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
@@ -632,33 +632,33 @@ export default function ArenaClient({ initialSelectedCategoryIds = null }) {
                   </div>
 
                   {/* TOPIC SELECTION LIST */}
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <div className="flex items-center justify-between px-1">
-                      <label className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1">
+                      <label className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1">
                         <span>{isHindi ? "क्विज़ विषय चुनें (Choose Topic)" : "Choose Duel Topic"}</span>
                       </label>
-                      <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                      <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
                         {isHindi ? "कुल 7,000+ प्रश्न" : "7,000+ Questions Pool"}
                       </span>
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-3.5">
                       {topics.map((topic) => {
                         const isSelected = selectedTopicId === topic.id;
                         return (
                           <div
                             key={topic.id}
                             onClick={() => setSelectedTopicId(topic.id)}
-                            className={`p-3.5 rounded-2xl border transition-all cursor-pointer relative flex items-center justify-between select-none ${
+                            className={`p-4 rounded-2xl border transition-all cursor-pointer relative flex items-center justify-between select-none ${
                               isSelected
                                 ? "bg-gradient-to-r from-indigo-50/90 to-violet-50/50 dark:from-indigo-950/80 dark:to-violet-950/40 border-indigo-500 shadow-xs ring-2 ring-indigo-500/15"
-                                : "bg-white dark:bg-slate-850 border-slate-200/90 dark:border-slate-800 hover:border-slate-300 hover:bg-slate-50/50"
+                                : "bg-white dark:bg-slate-850 border-slate-200/90 dark:border-slate-800 hover:border-slate-300 hover:bg-slate-50/50 hover:shadow-xs"
                             }`}
                           >
                             <div className="flex items-center gap-3">
                               {/* Large Emoji Badge */}
                               <div
-                                className={`w-11 h-11 rounded-xl flex items-center justify-center text-2xl shadow-2xs border ${
+                                className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-2xs border shrink-0 ${
                                   isSelected
                                     ? "bg-white dark:bg-slate-800 border-indigo-200 dark:border-indigo-700"
                                     : "bg-slate-50 dark:bg-slate-800 border-slate-200/80 dark:border-slate-700"
@@ -667,10 +667,10 @@ export default function ArenaClient({ initialSelectedCategoryIds = null }) {
                                 {topic.emoji}
                               </div>
 
-                              <div>
-                                <div className="flex items-center gap-2">
+                              <div className="min-w-0 pr-1">
+                                <div className="flex items-center gap-2 flex-wrap">
                                   <h3
-                                    className={`text-xs sm:text-sm font-bold ${
+                                    className={`text-xs sm:text-sm font-bold truncate ${
                                       isSelected
                                         ? "text-indigo-950 dark:text-white font-black"
                                         : "text-slate-800 dark:text-slate-200"
@@ -714,15 +714,15 @@ export default function ArenaClient({ initialSelectedCategoryIds = null }) {
 
               {/* ---------------- SUBTAB B: JOIN ROOM WITH PIN ---------------- */}
               {subTab === "join" && (
-                <div className="bg-white dark:bg-slate-850 rounded-2xl p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-5 animate-in fade-in duration-200">
-                  <div className="text-center space-y-1">
-                    <div className="w-12 h-12 mx-auto rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-800 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                      <Link2 className="w-6 h-6" />
+                <div className="max-w-xl mx-auto w-full bg-white dark:bg-slate-850 rounded-3xl p-6 sm:p-8 border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-6 animate-in fade-in duration-200">
+                  <div className="text-center space-y-1.5">
+                    <div className="w-14 h-14 mx-auto rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-800 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                      <Link2 className="w-7 h-7" />
                     </div>
-                    <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">
+                    <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
                       {isHindi ? "रूम कोड (PIN) दर्ज करें" : "Enter Room Code (PIN)"}
                     </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
                       {isHindi
                         ? "अपने मित्र द्वारा साझा किया गया 6-अंकों का कोड यहाँ डालें"
                         : "Enter the 6-digit room code shared by your friend"}
@@ -730,7 +730,7 @@ export default function ArenaClient({ initialSelectedCategoryIds = null }) {
                   </div>
 
                   {/* 6 Digit Box Inputs */}
-                  <div className="flex justify-center gap-2" onPaste={handlePastePin}>
+                  <div className="flex justify-center gap-2 sm:gap-3" onPaste={handlePastePin}>
                     {pinDigits.map((digit, idx) => (
                       <input
                         key={idx}
@@ -741,7 +741,7 @@ export default function ArenaClient({ initialSelectedCategoryIds = null }) {
                         value={digit}
                         onChange={(e) => handlePinInput(idx, e.target.value)}
                         onKeyDown={(e) => handlePinKeyDown(idx, e)}
-                        className={`w-11 h-13 text-center text-xl font-black rounded-xl border transition-all focus:outline-none ${
+                        className={`w-11 sm:w-14 h-13 sm:h-16 text-center text-xl sm:text-2xl font-black rounded-xl sm:rounded-2xl border transition-all focus:outline-none ${
                           digit
                             ? "border-indigo-600 bg-indigo-50/30 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 shadow-2xs"
                             : "border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-700"
@@ -787,7 +787,7 @@ export default function ArenaClient({ initialSelectedCategoryIds = null }) {
                   <button
                     disabled={pinDigits.join("").length < 6}
                     onClick={handleJoinBattleSubmit}
-                    className="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-black rounded-xl shadow-md shadow-indigo-600/30 active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs sm:text-sm font-black rounded-xl sm:rounded-2xl shadow-md shadow-indigo-600/30 active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <span>{isHindi ? "कमरे में प्रवेश करें (Join Battle)" : "Enter Room (Join Battle)"}</span>
                     <ChevronRight className="w-4 h-4" />
@@ -798,36 +798,36 @@ export default function ArenaClient({ initialSelectedCategoryIds = null }) {
               {/* ================= 4. ASYNC / OFFLINE CHALLENGE BANNER ================= */}
               <div
                 onClick={() => setIsAsyncChallengeOpen(true)}
-                className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-4 text-white shadow-md border border-indigo-500/20 cursor-pointer active:scale-[0.99] transition flex items-center justify-between"
+                className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-4 sm:p-5 text-white shadow-md border border-indigo-500/20 cursor-pointer active:scale-[0.99] transition flex items-center justify-between"
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-amber-300">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-11 h-11 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-amber-300 shrink-0">
                     <Send className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <h4 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5">
                       <span>{isHindi ? "दोस्त अभी ऑफलाइन है?" : "Friend offline right now?"}</span>
-                      <span className="text-[9px] bg-rose-500 text-white px-1.5 py-0.2 rounded-full font-extrabold">
+                      <span className="text-[9px] bg-rose-500 text-white px-2 py-0.5 rounded-full font-extrabold">
                         NEW
                       </span>
                     </h4>
-                    <p className="text-[11px] text-slate-300 mt-0.5">
+                    <p className="text-[11px] sm:text-xs text-slate-300 mt-0.5">
                       {isHindi
                         ? "अपना स्कोर सेट करें और WhatsApp पर Score Challenge भेजें!"
                         : "Set your score first & challenge them on WhatsApp!"}
                     </p>
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
+                <ChevronRight className="w-5 h-5 text-slate-400 shrink-0" />
               </div>
 
               {/* Real-time Leaderboard Footer Link */}
               <div className="text-center pt-1 pb-4">
                 <button
                   onClick={() => setIsLeaderboardOpen(true)}
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200/70 dark:border-indigo-800 px-4 py-2 rounded-full shadow-2xs transition cursor-pointer"
+                  className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200/70 dark:border-indigo-800 px-5 py-2.5 rounded-full shadow-2xs transition cursor-pointer"
                 >
-                  <Trophy className="w-3.5 h-3.5 text-amber-500" />
+                  <Trophy className="w-4 h-4 text-amber-500" />
                   <span>{isHindi ? "लाइव 1v1 लीडरबोर्ड देखें →" : "View Live 1v1 Leaderboard →"}</span>
                 </button>
               </div>
@@ -839,15 +839,15 @@ export default function ArenaClient({ initialSelectedCategoryIds = null }) {
 
         {/* ================= 5. FIXED FROSTED GLASS ACTION BAR ================= */}
         {mode === "battle" && subTab === "create" && (
-          <div className="fixed bottom-[62px] sm:bottom-[66px] left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/90 dark:border-slate-800 p-3.5 shadow-2xl pb-[env(safe-area-inset-bottom,0px)]">
-            <div className="w-full max-w-[440px] sm:max-w-xl md:max-w-2xl mx-auto space-y-2">
+          <div className="fixed bottom-[62px] sm:bottom-[66px] left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/90 dark:border-slate-800 p-3.5 sm:p-4 shadow-2xl pb-[env(safe-area-inset-bottom,0px)]">
+            <div className="w-full max-w-5xl xl:max-w-6xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               {/* Summary Tag */}
-              <div className="flex items-center justify-between text-[11px] px-1 font-semibold text-slate-500 dark:text-slate-400">
-                <span className="flex items-center gap-1 truncate max-w-[200px] sm:max-w-xs">
+              <div className="flex items-center justify-between sm:justify-start gap-3 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                <span className="flex items-center gap-1.5 truncate">
                   <span>{isHindi ? "चयनित:" : "Selected:"}</span>
-                  <b className="text-slate-800 dark:text-slate-100 truncate">{selectedTopic.title}</b>
+                  <b className="text-slate-800 dark:text-slate-100 font-bold truncate">{selectedTopic.title}</b>
                 </span>
-                <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-md font-bold whitespace-nowrap">
+                <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-lg font-bold text-xs whitespace-nowrap">
                   {questionCount} Qs • {timePerQ}s {isHindi ? "प्रति प्रश्न" : "/ question"}
                 </span>
               </div>
@@ -855,7 +855,7 @@ export default function ArenaClient({ initialSelectedCategoryIds = null }) {
               {/* Launch CTA Button */}
               <button
                 onClick={handleCreateRoom}
-                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 hover:from-indigo-700 hover:to-purple-700 active:scale-[0.98] text-white font-extrabold text-sm shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 hover:from-indigo-700 hover:to-purple-700 active:scale-[0.98] text-white font-extrabold text-sm shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
                 <Swords className="w-4 h-4 text-amber-300" />
                 <span>{isHindi ? "लाइव रूम बनाएं (आमंत्रण कोड पाएं) →" : "Create Live Room (Get Code) →"}</span>
@@ -867,7 +867,7 @@ export default function ArenaClient({ initialSelectedCategoryIds = null }) {
         {/* ================= MODAL: LIVE ROOM WAITING LOBBY ================= */}
         {isLobbyOpen && (
           <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl animate-in zoom-in-95 duration-150 border border-slate-100 dark:border-slate-800">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md sm:max-w-lg p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-150 border border-slate-100 dark:border-slate-800">
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
@@ -1004,7 +1004,7 @@ export default function ArenaClient({ initialSelectedCategoryIds = null }) {
         {/* ================= MODAL: LEADERBOARD ================= */}
         {isLeaderboardOpen && (
           <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl animate-in zoom-in-95 duration-150 border border-slate-100 dark:border-slate-800 max-h-[85vh] flex flex-col">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md sm:max-w-lg p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-150 border border-slate-100 dark:border-slate-800 max-h-[85vh] flex flex-col">
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 flex items-center justify-center">
@@ -1088,7 +1088,7 @@ export default function ArenaClient({ initialSelectedCategoryIds = null }) {
         {/* ================= MODAL: ASYNC SCORE CHALLENGE ================= */}
         {isAsyncChallengeOpen && (
           <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl animate-in zoom-in-95 duration-150 border border-slate-100 dark:border-slate-800">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md sm:max-w-lg p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-150 border border-slate-100 dark:border-slate-800">
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">

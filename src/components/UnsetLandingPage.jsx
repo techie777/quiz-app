@@ -227,7 +227,8 @@ export default function UnsetLandingPage() {
       topics: isHindi
         ? ["भारत का इतिहास व भूगोल", "समसामयिकी (Current Affairs)", "राजनीति और संविधान", "विश्व का भूगोल व पुरस्कार"]
         : ["Indian History & Geography", "Current Affairs & News", "Polity & Constitution", "World Geography & Awards"],
-      defaultRoute: "/category/india-gk",
+      defaultRoute: "/quizzes",
+      directRoute: "/quizzes",
     },
     {
       id: "gk_engine",
@@ -303,8 +304,10 @@ export default function UnsetLandingPage() {
       router.push("/kids");
     } else if (cat.id === "students") {
       router.push("/school-study");
+    } else if (cat.id === "gk") {
+      router.push("/quizzes");
     } else {
-      router.push(cat.defaultRoute || "/category/india-gk");
+      router.push(cat.defaultRoute || "/quizzes");
     }
   };
 
@@ -317,6 +320,8 @@ export default function UnsetLandingPage() {
       router.push("/kids");
     } else if (cat.id === "students") {
       router.push("/school-study");
+    } else if (cat.id === "gk") {
+      router.push("/quizzes");
     } else {
       router.push(cat.defaultRoute || "/quizzes");
     }

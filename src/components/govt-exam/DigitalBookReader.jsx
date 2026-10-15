@@ -17,6 +17,7 @@ import {
 import ReadingCard from "./ReadingCard";
 import { useQuiz } from "@/context/QuizContext";
 
+const ITEMS_PER_PAGE = 25;
 const chapterQuestionsCache = new Map();
 
 export default function DigitalBookReader({
@@ -35,6 +36,14 @@ export default function DigitalBookReader({
   const [searchTerm, setSearchTerm] = useState("");
   const [revealAll, setRevealAll] = useState(false);
   const [page, setPage] = useState(initialPage);
+
+  const chapterId = chapter?.id || chapter?.slug || "";
+  const chapterTitle = isHindi && chapter?.topicHi
+    ? chapter.topicHi
+    : chapter?.topic || chapter?.title || chapter?.name || (isHindi ? "अध्याय" : "Chapter");
+  const subjectTitle = isHindi && subject?.titleHi
+    ? subject.titleHi
+    : subject?.title || subject?.name || (isHindi ? "सामान्य ज्ञान" : "General Knowledge");
 
   // Fetch full questions for the chapter if questions list is empty or partial
   useEffect(() => {

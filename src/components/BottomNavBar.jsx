@@ -98,8 +98,16 @@ export default function BottomNavBar() {
   const pathname = usePathname();
   const router = useRouter();
   const { isHindi } = useLanguage();
-  const { tier, setTier } = useTier();
+  const { tier, setTier, clearTier } = useTier();
   const [isOthersOpen, setIsOthersOpen] = useState(false);
+
+  const handleMasterHomeClick = (e) => {
+    if (clearTier) clearTier();
+    if (pathname === "/") {
+      if (e?.preventDefault) e.preventDefault();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
 
   // SUPPRESSION RULES:
   // Hide ONLY during full-screen interactive test taking or admin panel
@@ -120,14 +128,6 @@ export default function BottomNavBar() {
     const isKidsHome = pathname === "/kids" || pathname === "/";
     const isProfile = pathname === "/profile";
     const isRewards = pathname === "/rewards";
-
-    const handleHomeClick = () => {
-      if (pathname === "/kids") {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      } else {
-        router.push("/kids");
-      }
-    };
 
     const handleTopicsClick = () => {
       if (pathname === "/kids") {
@@ -169,20 +169,20 @@ export default function BottomNavBar() {
       >
         <div className="w-full max-w-[430px] mx-auto h-[62px] sm:h-[66px] px-3 flex items-center justify-between relative">
           {/* 1. Home */}
-          <button
-            type="button"
-            onClick={handleHomeClick}
+          <Link
+            href="/"
+            onClick={handleMasterHomeClick}
             className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition cursor-pointer py-1 ${
-              isKidsHome
+              pathname === "/"
                 ? "text-amber-600 dark:text-amber-400 font-black"
                 : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-semibold"
             }`}
           >
-            <div className={`p-1 rounded-xl transition ${isKidsHome ? "bg-amber-100 dark:bg-amber-950/70" : ""}`}>
+            <div className={`p-1 rounded-xl transition ${pathname === "/" ? "bg-amber-100 dark:bg-amber-950/70" : ""}`}>
               <Home className="w-5 h-5" />
             </div>
             <span className="text-[10px] leading-tight font-black">{isHindi ? "होम" : "Home"}</span>
-          </button>
+          </Link>
 
           {/* 2. Topics */}
           <button
@@ -354,6 +354,40 @@ export default function BottomNavBar() {
             }
 
             // ── Standard Destinations ──
+            if (item.id === "home") {
+              return (
+                <Link
+                  key={item.id}
+                  href="/"
+                  onClick={handleMasterHomeClick}
+                  prefetch={true}
+                  className="relative flex-1 h-full min-h-[44px] min-w-0 flex flex-col items-center justify-center focus:outline-none cursor-pointer py-1"
+                  aria-label={label}
+                >
+                  <div className="flex flex-col items-center justify-center">
+                    <div
+                      className={`flex items-center justify-center rounded-full transition-all duration-200 ${
+                        isActive
+                          ? "bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 px-2 py-0.5"
+                          : "text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 py-0.5"
+                      }`}
+                    >
+                      <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </div>
+                    <span
+                      className={`text-[10px] sm:text-[10.5px] leading-tight mt-0.5 tracking-tight truncate max-w-full ${
+                        isActive
+                          ? "text-indigo-600 dark:text-indigo-400 font-bold"
+                          : "text-slate-500 dark:text-slate-400 font-medium"
+                      }`}
+                    >
+                      {label}
+                    </span>
+                  </div>
+                </Link>
+              );
+            }
+
             return (
               <Link
                 key={item.id}

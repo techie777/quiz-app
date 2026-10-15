@@ -241,50 +241,52 @@ export default function GovtExamsPage() {
 
   return (
     <div className="w-full min-h-screen bg-slate-50/70 select-none pb-32">
-      <div className="w-full max-w-2xl mx-auto px-3.5 pt-3.5 space-y-4">
+      <div className="w-full max-w-6xl xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 space-y-6">
         
         {/* ================= 1. COMPACT HERO HEADER ================= */}
-        <section className="bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-900 text-white rounded-3xl p-4 sm:p-5 relative overflow-hidden shadow-lg border border-indigo-800/40">
-          <div className="absolute top-0 right-0 w-36 h-36 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none -mr-8 -mt-8" />
-          <div className="absolute bottom-0 left-0 w-28 h-28 bg-amber-500/10 rounded-full blur-2xl pointer-events-none -ml-8 -mb-8" />
+        <section className="bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-900 text-white rounded-3xl p-5 sm:p-7 relative overflow-hidden shadow-lg border border-indigo-800/40">
+          <div className="absolute top-0 right-0 w-72 h-72 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none -mr-16 -mt-16" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-500/10 rounded-full blur-2xl pointer-events-none -ml-16 -mb-16" />
 
-          <div className="relative z-10 space-y-2">
-            <div className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-md px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide text-indigo-200 border border-white/15">
-              <Sparkles className="w-3 h-3 text-amber-400" />
-              <span>🏛️ भारत की प्रमुख प्रतियोगी परीक्षाएं</span>
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="space-y-2.5 max-w-2xl">
+              <div className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold tracking-wide text-indigo-200 border border-white/15">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span>🏛️ भारत की प्रमुख प्रतियोगी परीक्षाएं</span>
+              </div>
+
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight leading-tight">
+                Government Exam{" "}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-orange-300 to-amber-200">
+                  Mastery Hub
+                </span>
+              </h1>
+
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-medium">
+                Complete preparation portal with Syllabus, Career Guides, Digital FlexBooks with Chapter Quizzes, and Official Mocks.
+              </p>
             </div>
 
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight leading-tight">
-              Government Exam{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-orange-300 to-amber-200">
-                Mastery Hub
-              </span>
-            </h1>
-
-            <p className="text-xs text-slate-300 leading-relaxed font-medium">
-              Complete preparation portal with Syllabus, Career Guides, Digital FlexBooks with Chapter Quizzes, and Official Mocks.
-            </p>
-
             {/* 3 Micro Stats */}
-            <div className="grid grid-cols-3 gap-2 pt-3 mt-1 border-t border-white/15 text-center">
-              <div className="bg-white/5 py-1.5 rounded-xl border border-white/5">
-                <span className="text-sm font-black text-amber-400 block font-mono">50+</span>
-                <span className="text-[10px] text-slate-300 font-medium">प्रमुख परीक्षाएं</span>
+            <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:w-96 text-center shrink-0">
+              <div className="bg-white/5 backdrop-blur-sm p-3 rounded-2xl border border-white/10 shadow-inner">
+                <span className="text-base sm:text-xl font-black text-amber-400 block font-mono">50+</span>
+                <span className="text-[11px] text-slate-300 font-medium">प्रमुख परीक्षाएं</span>
               </div>
-              <div className="bg-white/5 py-1.5 rounded-xl border border-white/5">
-                <span className="text-sm font-black text-emerald-400 block font-mono">100% Free</span>
-                <span className="text-[10px] text-slate-300 font-medium">मॉक टेस्ट</span>
+              <div className="bg-white/5 backdrop-blur-sm p-3 rounded-2xl border border-white/10 shadow-inner">
+                <span className="text-base sm:text-xl font-black text-emerald-400 block font-mono">100% Free</span>
+                <span className="text-[11px] text-slate-300 font-medium">मॉक टेस्ट</span>
               </div>
-              <div className="bg-white/5 py-1.5 rounded-xl border border-white/5">
-                <span className="text-sm font-black text-indigo-300 block font-mono">2018–2025</span>
-                <span className="text-[10px] text-slate-300 font-medium">सॉल्व्ड PYQ पेपर्स</span>
+              <div className="bg-white/5 backdrop-blur-sm p-3 rounded-2xl border border-white/10 shadow-inner">
+                <span className="text-base sm:text-xl font-black text-indigo-300 block font-mono">2018–2025</span>
+                <span className="text-[11px] text-slate-300 font-medium">सॉल्व्ड PYQ पेपर्स</span>
               </div>
             </div>
           </div>
         </section>
 
         {/* ================= 2. SEARCH & QUICK CLEAR ================= */}
-        <div className="space-y-2.5">
+        <div className="space-y-3">
           <div className="relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
@@ -292,13 +294,13 @@ export default function GovtExamsPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search 50+ exams (e.g. SSC CGL, RRB NTPC, MP SI)..."
-              className="w-full bg-white border border-slate-200/90 rounded-2xl pl-10 pr-9 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 shadow-2xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium"
+              className="w-full bg-white border border-slate-200/90 rounded-2xl pl-10 pr-9 py-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 shadow-2xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
                 aria-label="क्लियर करें"
               >
                 <X className="w-4 h-4" />
@@ -306,8 +308,8 @@ export default function GovtExamsPage() {
             )}
           </div>
 
-          {/* Horizontal Category Filter Pills */}
-          <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none -mx-3.5 px-3.5 no-scrollbar">
+          {/* Horizontal / Wrapped Category Filter Pills */}
+          <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none flex-nowrap sm:flex-wrap no-scrollbar">
             {CATEGORIES.map((cat) => {
               const isActive = selectedCat === cat.id;
               return (
@@ -315,10 +317,10 @@ export default function GovtExamsPage() {
                   key={cat.id}
                   type="button"
                   onClick={() => setSelectedCat(cat.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer ${
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold shrink-0 transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer ${
                     isActive
                       ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30 ring-2 ring-indigo-500/20"
-                      : "bg-white text-slate-600 border border-slate-200/90 hover:bg-slate-50"
+                      : "bg-white text-slate-600 border border-slate-200/90 hover:bg-slate-50 hover:border-slate-300"
                   }`}
                 >
                   <span>{cat.icon}</span>
@@ -337,87 +339,87 @@ export default function GovtExamsPage() {
         </div>
 
         {/* ================= 3. THREE FAST-ACCESS SHORTCUT TILES ================= */}
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
           {/* FlexBooks */}
           <div
             onClick={() => setActiveShortcutModal("flexbooks")}
-            className="bg-white p-2.5 rounded-2xl border border-slate-200/90 hover:border-indigo-300 transition-all flex flex-col justify-between cursor-pointer group shadow-2xs active:scale-[0.98]"
+            className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 hover:border-indigo-300 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group shadow-2xs active:scale-[0.98]"
           >
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xl">📚</span>
-              <span className="text-[9px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.2 rounded">FREE</span>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-2xl sm:text-3xl">📚</span>
+              <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">FREE</span>
             </div>
             <div>
-              <h4 className="text-[11px] font-black text-slate-900 group-hover:text-indigo-600 leading-tight">
+              <h4 className="text-xs sm:text-sm font-black text-slate-900 group-hover:text-indigo-600 leading-tight">
                 Digital FlexBooks
               </h4>
-              <p className="text-[9px] text-slate-400 mt-0.5">थ्योरी व नोट्स</p>
+              <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5">थ्योरी व नोट्स</p>
             </div>
           </div>
 
           {/* Solved PYQs */}
           <div
             onClick={() => setActiveShortcutModal("pyq")}
-            className="bg-white p-2.5 rounded-2xl border border-slate-200/90 hover:border-indigo-300 transition-all flex flex-col justify-between cursor-pointer group shadow-2xs active:scale-[0.98]"
+            className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 hover:border-indigo-300 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group shadow-2xs active:scale-[0.98]"
           >
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xl">⚡</span>
-              <span className="text-[9px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.2 rounded font-mono">2025</span>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-2xl sm:text-3xl">⚡</span>
+              <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100 font-mono">2025</span>
             </div>
             <div>
-              <h4 className="text-[11px] font-black text-slate-900 group-hover:text-indigo-600 leading-tight">
+              <h4 className="text-xs sm:text-sm font-black text-slate-900 group-hover:text-indigo-600 leading-tight">
                 Solved PYQs
               </h4>
-              <p className="text-[9px] text-slate-400 mt-0.5">पिछले वर्ष के हल</p>
+              <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5">पिछले वर्ष के हल</p>
             </div>
           </div>
 
           {/* Daily Current */}
           <div
             onClick={() => setActiveShortcutModal("current")}
-            className="bg-white p-2.5 rounded-2xl border border-slate-200/90 hover:border-indigo-300 transition-all flex flex-col justify-between cursor-pointer group shadow-2xs active:scale-[0.98]"
+            className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 hover:border-indigo-300 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group shadow-2xs active:scale-[0.98]"
           >
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xl">🎯</span>
-              <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded">DAILY</span>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-2xl sm:text-3xl">🎯</span>
+              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">DAILY</span>
             </div>
             <div>
-              <h4 className="text-[11px] font-black text-slate-900 group-hover:text-indigo-600 leading-tight">
+              <h4 className="text-xs sm:text-sm font-black text-slate-900 group-hover:text-indigo-600 leading-tight">
                 Daily Current
               </h4>
-              <p className="text-[9px] text-slate-400 mt-0.5">10Q स्पीड टेस्ट</p>
+              <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5">10Q स्पीड टेस्ट</p>
             </div>
           </div>
         </div>
 
         {/* Section Heading & Result Meta */}
         <div className="flex items-center justify-between px-1 pt-1">
-          <h2 className="text-xs font-black uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+          <h2 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
             <span>🏛️</span>
             <span>
               {CATEGORIES.find((c) => c.id === selectedCat)?.label || "All Exams"} ({filteredExams.length})
             </span>
           </h2>
-          <span className="text-[11px] text-indigo-700 font-bold bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 flex items-center gap-1">
-            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+          <span className="text-xs text-indigo-700 font-bold bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-100 flex items-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
             100% फ्री मॉक टेस्ट
           </span>
         </div>
 
-        {/* ================= 4. HIGH-EFFICIENCY EXAM CARDS ================= */}
-        <div className="space-y-3">
+        {/* ================= 4. HIGH-EFFICIENCY EXAM CARDS GRID ================= */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
           {filteredExams.length === 0 ? (
-            <div className="bg-white rounded-3xl p-8 text-center border border-dashed border-slate-200">
-              <span className="text-3xl block mb-2">🔍</span>
-              <h4 className="text-xs font-bold text-slate-800">कोई परीक्षा नहीं मिली</h4>
-              <p className="text-[11px] text-slate-400 mt-1">कृपया स्पेलिंग जांचें या कोई अन्य श्रेणी चुनें।</p>
+            <div className="col-span-full bg-white rounded-3xl p-8 sm:p-12 text-center border border-dashed border-slate-200">
+              <span className="text-3xl sm:text-4xl block mb-2">🔍</span>
+              <h4 className="text-sm font-bold text-slate-800">कोई परीक्षा नहीं मिली</h4>
+              <p className="text-xs text-slate-400 mt-1">कृपया स्पेलिंग जांचें या कोई अन्य श्रेणी चुनें।</p>
               <button
                 type="button"
                 onClick={() => {
                   setSearchQuery("");
                   setSelectedCat("all");
                 }}
-                className="mt-3 text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-xl border border-indigo-100 cursor-pointer"
+                className="mt-4 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded-xl border border-indigo-100 cursor-pointer transition-colors"
               >
                 सभी परीक्षाएं दिखाएं
               </button>
@@ -433,82 +435,84 @@ export default function GovtExamsPage() {
                     setSelectedExamDetail(exam);
                     setActiveDetailTab("mocks");
                   }}
-                  className="bg-white rounded-3xl p-3.5 border border-slate-200/90 shadow-2xs hover:shadow-xs hover:border-indigo-300 transition-all flex flex-col justify-between group relative cursor-pointer"
+                  className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-indigo-300 transition-all flex flex-col justify-between group relative cursor-pointer"
                 >
                   {/* Card Header */}
-                  <div className="flex items-start justify-between gap-2.5">
-                    <div className="flex items-start gap-2.5">
-                      <div
-                        className={`w-11 h-11 rounded-2xl flex items-center justify-center text-2xl shrink-0 border shadow-inner ${exam.iconBg}`}
-                      >
-                        {exam.icon}
-                      </div>
-
-                      <div>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <h3 className="text-xs sm:text-sm font-black text-slate-900 group-hover:text-indigo-600 transition-colors">
-                            {exam.title}
-                          </h3>
-                          {exam.badgeText && (
-                            <span
-                              className={`text-[9px] font-black px-1.5 py-0.2 rounded-md ${
-                                exam.badgeType === "hot"
-                                  ? "bg-rose-50 text-rose-700 border border-rose-200"
-                                  : exam.badgeType === "new"
-                                  ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                                  : "bg-indigo-50 text-indigo-800 border border-indigo-200"
-                              }`}
-                            >
-                              {exam.badgeText}
-                            </span>
-                          )}
+                  <div>
+                    <div className="flex items-start justify-between gap-2.5">
+                      <div className="flex items-start gap-3">
+                        <div
+                          className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0 border shadow-inner ${exam.iconBg}`}
+                        >
+                          {exam.icon}
                         </div>
 
-                        {exam.hindiTitle && (
-                          <p className="text-[11px] font-semibold text-slate-600 mt-0.5 leading-snug">
-                            {exam.hindiTitle}
-                          </p>
-                        )}
+                        <div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <h3 className="text-sm sm:text-base font-black text-slate-900 group-hover:text-indigo-600 transition-colors">
+                              {exam.title}
+                            </h3>
+                            {exam.badgeText && (
+                              <span
+                                className={`text-[9px] font-black px-1.5 py-0.2 rounded-md ${
+                                  exam.badgeType === "hot"
+                                    ? "bg-rose-50 text-rose-700 border border-rose-200"
+                                    : exam.badgeType === "new"
+                                    ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                                    : "bg-indigo-50 text-indigo-800 border border-indigo-200"
+                                }`}
+                              >
+                                {exam.badgeText}
+                              </span>
+                            )}
+                          </div>
 
-                        <p className="text-[10px] text-slate-400 font-medium mt-0.5">{exam.dept}</p>
+                          {exam.hindiTitle && (
+                            <p className="text-xs font-semibold text-slate-600 mt-0.5 leading-snug">
+                              {exam.hindiTitle}
+                            </p>
+                          )}
+
+                          <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium mt-0.5">{exam.dept}</p>
+                        </div>
                       </div>
+
+                      {/* Interactive Bookmark Button */}
+                      <button
+                        type="button"
+                        onClick={(e) => toggleSave(exam.id, e)}
+                        className={`p-2 rounded-xl border transition-all active:scale-90 cursor-pointer ${
+                          isSaved
+                            ? "bg-amber-50 text-amber-500 border-amber-200 shadow-2xs"
+                            : "bg-slate-50 text-slate-400 border-slate-200 hover:text-slate-600"
+                        }`}
+                        title={isSaved ? "बुकमार्क हटाया" : "बुकमार्क करें"}
+                      >
+                        <Bookmark className={`w-4 h-4 ${isSaved ? "fill-amber-500" : ""}`} />
+                      </button>
                     </div>
 
-                    {/* Interactive Bookmark Button */}
-                    <button
-                      type="button"
-                      onClick={(e) => toggleSave(exam.id, e)}
-                      className={`p-1.5 rounded-xl border transition-all active:scale-90 cursor-pointer ${
-                        isSaved
-                          ? "bg-amber-50 text-amber-500 border-amber-200 shadow-2xs"
-                          : "bg-slate-50 text-slate-400 border-slate-200 hover:text-slate-600"
-                      }`}
-                      title={isSaved ? "बुकमार्क हटाया" : "बुकमार्क करें"}
-                    >
-                      <Bookmark className={`w-3.5 h-3.5 ${isSaved ? "fill-amber-500" : ""}`} />
-                    </button>
-                  </div>
-
-                  {/* Feature Tag Chips */}
-                  <div className="flex flex-wrap gap-1.5 my-2.5">
-                    {exam.features.map((feature, idx) => (
-                      <span
-                        key={idx}
-                        className="text-[10px] font-bold bg-slate-50 text-slate-600 px-2 py-0.5 rounded-lg border border-slate-200/70"
-                      >
-                        {feature}
-                      </span>
-                    ))}
+                    {/* Feature Tag Chips */}
+                    <div className="flex flex-wrap gap-1.5 my-3">
+                      {exam.features.map((feature, idx) => (
+                        <span
+                          key={idx}
+                          className="text-[10px] sm:text-[11px] font-bold bg-slate-50 text-slate-600 px-2.5 py-0.5 rounded-lg border border-slate-200/70"
+                        >
+                          {feature}
+                        </span>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Card Footer: Metrics & View Details Action */}
-                  <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between">
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between mt-auto">
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1 font-mono">
+                      <span className="text-xs font-bold text-slate-700 flex items-center gap-1 font-mono">
                         <Layers className="w-3.5 h-3.5 text-indigo-600" />
                         {exam.totalModules}+ Modules
                       </span>
-                      <span className="text-[10px] font-black text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      <span className="text-[10px] sm:text-[11px] font-black text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                         {exam.freeTests} Free Mocks
                       </span>
                     </div>
@@ -541,7 +545,7 @@ export default function GovtExamsPage() {
           onClick={() => setSelectedExamDetail(null)}
         >
           <div
-            className="w-full max-w-[430px] bg-white rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl border border-slate-100 max-h-[85vh] flex flex-col animate-in slide-in-from-bottom-6 duration-200"
+            className="w-full max-w-xl sm:max-w-2xl bg-white rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-100 max-h-[85vh] flex flex-col animate-in slide-in-from-bottom-6 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -670,7 +674,7 @@ export default function GovtExamsPage() {
           onClick={() => setActiveShortcutModal(null)}
         >
           <div
-            className="bg-white rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl border border-slate-100"
+            className="bg-white rounded-3xl w-full max-w-md sm:max-w-lg p-5 sm:p-6 space-y-4 shadow-2xl border border-slate-100"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-slate-100 pb-2">
