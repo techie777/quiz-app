@@ -3,44 +3,50 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(request) {
+export async function GET() {
   try {
-    // Fetch users with their activity counts
-    // For "Global Intelligence Leaderboard", we sum their interactions
+    // Fetch top active users with activity counts & custom profile handles
     const users = await prisma.user.findMany({
       select: {
         id: true,
         name: true,
+        nickname: true,
         image: true,
+        avatar: true,
         isPro: true,
         factsReadCount: true,
         tfAnsweredCount: true,
+        totalCoinsEarned: true,
         quizProgress: {
-            select: {
-                score: true
-            }
-        }
+          select: {
+            score: true,
+          },
+        },
       },
       orderBy: {
-        createdAt: 'desc' // We will sort them in memory for the score
+        totalCoinsEarned: "desc",
       },
-      take: 100 // Top 100 for global leaderboard
+      take: 100,
     });
 
-    const leaderboardData = users.map(user => {
-      const totalQuizPoints = user.quizProgress.reduce((sum, p) => sum + (p.score || 0), 0);
-      const intelligenceScore = totalQuizPoints + (user.factsReadCount || 0) + (user.tfAnsweredCount || 0);
+    const leaderboardData = users.map((user) => {
+      const totalQuizPoints = (user.quizProgress || []).reduce((sum, p) => sum + (p.score || 0), 0);
+      const intelligenceScore =
+        totalQuizPoints +
+        (user.factsReadCount || 0) +
+        (user.tfAnsweredCount || 0) +
+        (user.totalCoinsEarned || 0);
 
       return {
         id: user.id,
-        name: user.name || "Anonymous Scholar",
-        image: user.image,
-        isPro: user.isPro,
+        name: user.nickname || user.name || "Anonymous Scholar",
+        image: user.avatar || user.image || null,
+        isPro: Boolean(user.isPro),
         quizPoints: totalQuizPoints,
+        coinsEarned: user.totalCoinsEarned || 0,
         factsRead: user.factsReadCount || 0,
-
         tfAnswered: user.tfAnsweredCount || 0,
-        totalScore: intelligenceScore
+        totalScore: intelligenceScore,
       };
     });
 

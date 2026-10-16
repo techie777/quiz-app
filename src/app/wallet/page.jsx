@@ -31,6 +31,17 @@ import { useLanguage } from "@/context/LanguageContext";
 
 const COIN_TO_RUPEE = 0.01; // 1000 coins = ₹10
 
+const isClaimAllowedToday = (lastClaimAt) => {
+  if (!lastClaimAt) return true;
+  try {
+    const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+    const last = new Date(lastClaimAt).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+    return today !== last;
+  } catch {
+    return true;
+  }
+};
+
 const VOUCHERS = [
   { id: 1, name: "Amazon Pay Voucher", nameHi: "अमेज़न पे वाउचर", amount: 50, coins: 5000, icon: "🛒", brand: "amazon" },
   { id: 2, name: "Amazon Pay Voucher", nameHi: "अमेज़न पे वाउचर", amount: 100, coins: 10000, icon: "🛒", brand: "amazon" },
@@ -122,13 +133,7 @@ export default function WalletPage() {
         lastClaimAt: savedStreakDate || null,
       });
 
-      if (savedStreakDate) {
-        const lastClaim = new Date(savedStreakDate);
-        const hours = (new Date() - lastClaim) / (1000 * 60 * 60);
-        setCanClaim(hours >= 24);
-      } else {
-        setCanClaim(true);
-      }
+      setCanClaim(isClaimAllowedToday(savedStreakDate));
     } catch (e) {
       setWalletData(INITIAL_GUEST_WALLET);
       setTransactions(INITIAL_GUEST_TRANSACTIONS);
@@ -156,13 +161,7 @@ export default function WalletPage() {
         setTransactions(tx.transactions || []);
         setDailyStreak(streak);
 
-        if (streak.lastClaimAt) {
-          const lastClaim = new Date(streak.lastClaimAt);
-          const hoursSinceClaim = (new Date() - lastClaim) / (1000 * 60 * 60);
-          setCanClaim(hoursSinceClaim >= 24);
-        } else {
-          setCanClaim(true);
-        }
+        setCanClaim(isClaimAllowedToday(streak?.lastClaimAt));
       } else {
         // Fallback to guest wallet if database route returns error
         loadGuestWalletData();

@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/adminSessionServer";
 
-const prisma = new PrismaClient();
+export const dynamic = "force-dynamic";
 
 export async function POST(request) {
   try {
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.ok) return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+
     const { originalPaperId } = await request.json();
     if (!originalPaperId) return NextResponse.json({ error: "Missing original paper ID" }, { status: 400 });
 

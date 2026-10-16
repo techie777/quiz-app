@@ -42,10 +42,13 @@ export default function StudyBuilder() {
 
   const fetchMockPapers = async () => {
     try {
-      const res = await fetch('/api/admin/papers/basic'); 
-      if (res.ok) setMockPapers(await res.json());
+      const res = await fetch('/api/admin/mock-papers'); 
+      if (res.ok) {
+        const data = await res.json();
+        setMockPapers(Array.isArray(data) ? data : []);
+      }
     } catch (e) {
-      console.log('No paper API yet, dropdown will be empty');
+      console.log('Error fetching mock papers for study material dropdown:', e);
     }
   };
 
@@ -130,7 +133,7 @@ export default function StudyBuilder() {
             {subjects.length === 0 && (
                <div className="text-center p-12 bg-slate-50 rounded-xl border border-dashed border-slate-300">
                   <p className="text-slate-500 font-bold mb-2">This book is empty.</p>
-                  <p className="text-sm text-slate-400">Add a Subject Division first (e.g. "General Awareness & Polity").</p>
+                  <p className="text-sm text-slate-400">Add a Subject Division first (e.g. &ldquo;General Awareness &amp; Polity&rdquo;).</p>
                </div>
             )}
             

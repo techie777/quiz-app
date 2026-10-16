@@ -2,7 +2,7 @@
 const nextConfig = {
   // Performance optimizations
   experimental: {
-    optimizePackageImports: ['framer-motion', 'lodash'],
+    optimizePackageImports: ['lodash', 'lucide-react'],
   },
   eslint: {
     ignoreDuringBuilds: true,

@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/adminSessionServer";
 
-const prisma = new PrismaClient();
+export const dynamic = "force-dynamic";
 
 export async function GET(request) {
   try {
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.ok) return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+
     const { searchParams } = new URL(request.url);
     const paperId = searchParams.get('paperId');
 
@@ -25,6 +29,9 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.ok) return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+
     const data = await request.json();
     const { id, paperId, name, order, timeLimit, totalMarks, totalQuestions } = data;
 
@@ -61,6 +68,9 @@ export async function POST(request) {
 
 export async function DELETE(request) {
   try {
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.ok) return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 

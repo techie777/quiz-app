@@ -7,6 +7,7 @@ const UIContext = createContext(null);
 
 export function UIProvider({ children }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMasterSidebarOpen, setIsMasterSidebarOpen] = useState(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const [isPlayMenuOpen, setIsPlayMenuOpen] = useState(false);
@@ -20,14 +21,32 @@ export function UIProvider({ children }) {
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
+    setIsMasterSidebarOpen(false);
     setIsPlayMenuOpen(false);
   }, [pathname]);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen((prev) => !prev);
+    setIsMasterSidebarOpen((prev) => !prev);
   };
 
   const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+    setIsMasterSidebarOpen(false);
+  };
+
+  const toggleMasterSidebar = () => {
+    setIsMasterSidebarOpen((prev) => !prev);
+    setIsMobileMenuOpen((prev) => !prev);
+  };
+
+  const openMasterSidebar = () => {
+    setIsMasterSidebarOpen(true);
+    setIsMobileMenuOpen(true);
+  };
+
+  const closeMasterSidebar = () => {
+    setIsMasterSidebarOpen(false);
     setIsMobileMenuOpen(false);
   };
 
@@ -52,6 +71,10 @@ export function UIProvider({ children }) {
         isMobileMenuOpen,
         toggleMobileMenu,
         closeMobileMenu,
+        isMasterSidebarOpen,
+        toggleMasterSidebar,
+        openMasterSidebar,
+        closeMasterSidebar,
         isOnboardingOpen,
         openOnboarding,
         closeOnboarding,

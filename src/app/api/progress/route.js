@@ -81,13 +81,14 @@ export async function POST(request) {
             },
           });
 
-          // Update user balance
+          // Update user balance atomically
           const updatedUser = await prisma.user.update({
             where: { id: session.user.id },
             data: {
-              coinBalance: user.coinBalance + coinsEarned,
-              totalCoinsEarned: user.totalCoinsEarned + coinsEarned,
+              coinBalance: { increment: coinsEarned },
+              totalCoinsEarned: { increment: coinsEarned },
             },
+            select: { coinBalance: true },
           });
 
           coinBalance = updatedUser.coinBalance;

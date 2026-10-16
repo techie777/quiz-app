@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAdmin } from '@/lib/adminSessionServer';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(req) {
+  const adminCheck = await requireAdmin();
+  if (!adminCheck.ok) return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+
   const { searchParams } = new URL(req.url);
   const type = searchParams.get('type');
 
@@ -61,6 +67,9 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
+  const adminCheck = await requireAdmin();
+  if (!adminCheck.ok) return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+
   try {
     const data = await req.json();
     const { type, ...payload } = data;
@@ -88,6 +97,9 @@ export async function POST(req) {
 }
 
 export async function PUT(req) {
+  const adminCheck = await requireAdmin();
+  if (!adminCheck.ok) return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+
   try {
     const data = await req.json();
     const { type, id, ...payload } = data;
@@ -115,6 +127,9 @@ export async function PUT(req) {
 }
 
 export async function DELETE(req) {
+  const adminCheck = await requireAdmin();
+  if (!adminCheck.ok) return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+
   const { searchParams } = new URL(req.url);
   const type = searchParams.get('type');
   const id = searchParams.get('id');

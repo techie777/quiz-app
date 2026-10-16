@@ -2,6 +2,17 @@ import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/mongoDb';
 import { ObjectId } from 'mongodb';
 
+let indexesCreated = false;
+async function ensureIndexes(db) {
+  if (indexesCreated) return;
+  try {
+    await db.collection('QuestionHistory').createIndex({ userId: 1, questionId: 1 });
+    await db.collection('QuestionHistory').createIndex({ userId: 1, next_review_at: 1 });
+    await db.collection('QuestionHistory').createIndex({ userId: 1, isCorrect: 1 });
+    indexesCreated = true;
+  } catch (e) {}
+}
+
 export async function POST(req) {
   try {
     const body = await req.json().catch(() => ({}));
@@ -17,11 +28,7 @@ export async function POST(req) {
     }
 
     const db = await getDb();
-
-    // Ensure indexes on QuestionHistory
-    await db.collection('QuestionHistory').createIndex({ userId: 1, questionId: 1 });
-    await db.collection('QuestionHistory').createIndex({ userId: 1, next_review_at: 1 });
-    await db.collection('QuestionHistory').createIndex({ userId: 1, isCorrect: 1 });
+    await ensureIndexes(db);
 
     const now = new Date();
     const bulkOps = [];
@@ -101,7 +108,13 @@ export async function POST(req) {
     // Free limit tracking: Record 1 set played today
     let dailySetQuotaUsed = 1;
     try {
-      const todayStr = now.toISOString().slice(0, 10);
+      const istString = now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+      const istDate = new Date(istString);
+      const y = istDate.getFullYear();
+      const m = String(istDate.getMonth() + 1).padStart(2, "0");
+      const d = String(istDate.getDate()).padStart(2, "0");
+      const todayStr = `${y}-${m}-${d}`;
+
       const quotaRecord = await db.collection('DailySetUsage').findOneAndUpdate(
         { userId, date: todayStr },
         {

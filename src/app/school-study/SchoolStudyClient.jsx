@@ -1111,7 +1111,7 @@ export default function SchoolStudyClient() {
                 </div>
                 <div className="p-2.5 bg-amber-50 border border-amber-100 rounded-xl">
                   <p className="font-black text-amber-950">📐 नया अध्याय जोड़ा गया</p>
-                  <p className="text-slate-600 mt-0.5">गणित: "निर्देशांक ज्यामिति" के 60 नए प्रश्न अब उपलब्ध हैं।</p>
+                  <p className="text-slate-600 mt-0.5">गणित: &ldquo;निर्देशांक ज्यामिति&rdquo; के 60 नए प्रश्न अब उपलब्ध हैं।</p>
                 </div>
               </div>
             </div>

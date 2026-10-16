@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/mongoDb";
+import { requireAdmin } from "@/lib/adminSessionServer";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,11 @@ export async function POST(req) {
 
 export async function GET(req) {
   try {
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.ok) {
+      return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+    }
+
     const db = await getDb();
     const adEventsCol = db.collection("ad_events");
 

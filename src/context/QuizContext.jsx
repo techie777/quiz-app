@@ -417,18 +417,7 @@ export function QuizProvider({ children }) {
     }
   }, []);
 
-  const submitAnswer = useCallback((questionId, selected) => {
-    dispatch({ type: "SUBMIT_ANSWER", payload: { questionId, selected } });
-    
-    // Auto-sync to DB in background with LATEST data to avoid race conditions
-    setTimeout(async () => {
-      // Find the answer that was just added to get the latest array
-      // Note: In a real app, we'd calculate this from the current state carefully
-      syncProgressToDB(); 
-    }, 100);
-  }, [state]);
-
-  const syncProgressToDB = async (overrideAnswers, overrideIndex, forceComplete = false) => {
+  const syncProgressToDB = useCallback(async (overrideAnswers, overrideIndex, forceComplete = false) => {
     // Determine the data to sync (prefer passed overrides which are the most fresh)
     const activeAnswers = overrideAnswers || state.answers;
     const activeIndex = overrideIndex !== undefined ? overrideIndex : state.currentIndex;
@@ -466,7 +455,18 @@ export function QuizProvider({ children }) {
     } catch (e) {
       console.warn("[QuizContext] Failed to sync progress to DB", e);
     }
-  };
+  }, [state]);
+
+  const submitAnswer = useCallback((questionId, selected) => {
+    dispatch({ type: "SUBMIT_ANSWER", payload: { questionId, selected } });
+    
+    // Auto-sync to DB in background with LATEST data to avoid race conditions
+    setTimeout(async () => {
+      // Find the answer that was just added to get the latest array
+      // Note: In a real app, we'd calculate this from the current state carefully
+      syncProgressToDB(); 
+    }, 100);
+  }, [syncProgressToDB]);
 
   const finishQuiz = useCallback(() => {
     dispatch({ type: "FINISH_QUIZ" });
@@ -475,7 +475,7 @@ export function QuizProvider({ children }) {
     } else {
       setTimeout(() => syncProgressToDB(null, null, true), 10);
     }
-  }, [state]);
+  }, [syncProgressToDB]);
 
   const updateScore = useCallback((amount) => {
     dispatch({ type: "UPDATE_SCORE", payload: amount });

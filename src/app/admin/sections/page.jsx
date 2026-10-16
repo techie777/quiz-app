@@ -417,8 +417,8 @@ export default function SectionsAdmin() {
                 {/* Sub-Sections Container */}
                 <div className={styles.subSectionsBody}>
                   {secSubSections.length === 0 ? (
-                    <div style={{ background: "var(--bg-secondary)", borderRadius: "12px", padding: "16px", textAlignment: "center", color: "var(--text-secondary)", fontSize: "0.85rem", fontWeight: 600 }}>
-                      No sub-sections added yet. Click "+ Sub-Section" above to add sub-categories.
+                    <div style={{ background: "var(--bg-secondary)", borderRadius: "12px", padding: "16px", textAlign: "center", color: "var(--text-secondary)", fontSize: "0.85rem", fontWeight: 600 }}>
+                      No sub-sections added yet. Click &ldquo;+ Sub-Section&rdquo; above to add sub-categories.
                     </div>
                   ) : (
                     secSubSections.map((subSection, subIdx) => {
@@ -490,7 +490,7 @@ export default function SectionsAdmin() {
                           <div className={styles.assignedQuizzesRow}>
                             {assignedQuizzes.length === 0 ? (
                               <span style={{ fontSize: "0.78rem", color: "var(--text-secondary)", fontStyle: "italic" }}>
-                                No quiz categories assigned. Click "Assign Categories" to add.
+                                No quiz categories assigned. Click &ldquo;Assign Categories&rdquo; to add.
                               </span>
                             ) : (
                               assignedQuizzes.map((quiz) => (

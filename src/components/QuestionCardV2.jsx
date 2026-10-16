@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useQuiz } from "@/context/QuizContext";
@@ -55,7 +55,7 @@ export default function QuestionCardV2({
     } catch {
       return false;
     }
-  }, [quizSessionId]);
+  }, []);
 
   // Smooth explanation centered display without layout shifts or screen scrolling
   useEffect(() => {
@@ -104,50 +104,14 @@ export default function QuestionCardV2({
     }));
   }, [question?.id, isHindi, question?.options, question?.optionsHi]);
 
-  // Hotkey Listener
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (revealed || disabled) return;
-      const key = e.key.toUpperCase();
-      const map = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
-      const displayIdx = map[key];
-      if (displayIdx !== undefined && shuffledOptions[displayIdx]) {
-        handleSelect(shuffledOptions[displayIdx].originalIndex);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [revealed, disabled, question, shuffledOptions]);
-
-  const handleFavClick = async () => {
-    if (disabled || !question) return;
-    await toggleQuestionFavourite({
-      question,
-      isAuthenticated: status === "authenticated" && isUser,
-      isHindi,
-      onStateChange: (newFav) => setFav(newFav),
-    });
-  };
-
-  const handleShare = async () => {
-    if (sharing || disabled || !question) return;
-    setSharing(true);
-    try {
-      await shareQuestion({ question, isHindi });
-    } catch {
-      // Silently fail
-    }
-    setSharing(false);
-  };
-
-  const handleSelect = (originalIndex) => {
+  const handleSelect = useCallback((originalIndex) => {
     if (revealed || disabled || !question) return;
     
     // Tap bubble sound and tactile vibration on selection
     if (soundEnabled) playTapSound();
     triggerHaptic(15);
 
-    const selectedOptionText = String(question.options[originalIndex] || "").trim();
+    const selectedOptionText = String(question.options?.[originalIndex] || "").trim();
     const correctAnswerText = String(question.correctAnswer || "").trim();
     const isCorrect = selectedOptionText === correctAnswerText;
     
@@ -183,31 +147,47 @@ export default function QuestionCardV2({
     }
 
     onAnswer(originalIndex);
+  }, [revealed, disabled, question, soundEnabled, isTestMode, combo, onAnswer]);
+
+  // Hotkey Listener
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (revealed || disabled) return;
+      const key = e.key.toUpperCase();
+      const map = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
+      const displayIdx = map[key];
+      if (displayIdx !== undefined && shuffledOptions[displayIdx]) {
+        handleSelect(shuffledOptions[displayIdx].originalIndex);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [revealed, disabled, shuffledOptions, handleSelect]);
+
+  const handleFavClick = async () => {
+    if (disabled || !question) return;
+    await toggleQuestionFavourite({
+      question,
+      isAuthenticated: status === "authenticated" && isUser,
+      isHindi,
+      onStateChange: (newFav) => setFav(newFav),
+    });
   };
 
-  if (!question) return null;
+  const handleShare = async () => {
+    if (sharing || disabled || !question) return;
+    setSharing(true);
+    try {
+      await shareQuestion({ question, isHindi });
+    } catch {
+      // Silently fail
+    }
+    setSharing(false);
+  };
 
-  const rawDiff = String(question?.difficulty || "medium").toLowerCase();
-  const isEasy = rawDiff === "easy" || rawDiff === "1";
-  const isHard = rawDiff === "hard" || rawDiff === "3";
-  const isExpert = rawDiff === "expert" || rawDiff === "4";
-  const diffLabel = isExpert
-    ? (isHindi ? "विशेषज्ञ" : "Expert")
-    : isEasy
-    ? (isHindi ? "सरल" : "Easy")
-    : isHard
-    ? (isHindi ? "कठिन" : "Hard")
-    : (isHindi ? "मध्यम" : "Medium");
-  const diffBadgeStyle = isExpert
-    ? "bg-[#EDE9FE] text-[#7C3AED] border-[#C4B5FD]"
-    : isEasy
-    ? "bg-[#DCFCE7] text-[#16A34A] border-[#86EFAC]"
-    : isHard
-    ? "bg-[#FEE2E2] text-[#DC2626] border-[#FCA5A5]"
-    : "bg-[#FEF3C7] text-[#D97706] border-[#FDE68A]";
-
-  // Derive category display label
+  // Derive category display label (Unconditionally called to satisfy React Rules of Hooks)
   const categoryLabel = useMemo(() => {
+    if (!question) return null;
     // 1. Direct on question object
     const rawCat = isHindi
       ? (question?.categoryNameHi || question?.categoryName || question?.topicNameHi || question?.topicName || question?.category || question?.topic || question?.subTopic)
@@ -257,6 +237,27 @@ export default function QuestionCardV2({
 
     return null;
   }, [question, isHindi, quizId, categoryName]);
+
+  if (!question) return null;
+
+  const rawDiff = String(question?.difficulty || "medium").toLowerCase();
+  const isEasy = rawDiff === "easy" || rawDiff === "1";
+  const isHard = rawDiff === "hard" || rawDiff === "3";
+  const isExpert = rawDiff === "expert" || rawDiff === "4";
+  const diffLabel = isExpert
+    ? (isHindi ? "विशेषज्ञ" : "Expert")
+    : isEasy
+    ? (isHindi ? "सरल" : "Easy")
+    : isHard
+    ? (isHindi ? "कठिन" : "Hard")
+    : (isHindi ? "मध्यम" : "Medium");
+  const diffBadgeStyle = isExpert
+    ? "bg-[#EDE9FE] text-[#7C3AED] border-[#C4B5FD]"
+    : isEasy
+    ? "bg-[#DCFCE7] text-[#16A34A] border-[#86EFAC]"
+    : isHard
+    ? "bg-[#FEE2E2] text-[#DC2626] border-[#FCA5A5]"
+    : "bg-[#FEF3C7] text-[#D97706] border-[#FDE68A]";
 
   return (
     <div className={`${styles.questionSection} ${shakingType ? styles[shakingType] || shakingType : ""}`}>

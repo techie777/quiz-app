@@ -51,9 +51,19 @@ html, body {
 }
 
 /* Dark mode support for admin panel */
+[data-theme="dark"] body,
+.dark body,
+[data-theme="dark"] .adminBody,
+.dark .adminBody {
+  background: var(--bg-primary, #0a0e27);
+  color: var(--text-primary, #f8fafc);
+}
+
 @media (prefers-color-scheme: dark) {
-  .adminBody {
-    background: var(--bg-primary, #0f172a);
-    color: var(--text-primary, #f1f5f9);
+  body:not([data-theme="light"]),
+  .adminBody:not([data-theme="light"]) {
+    background: var(--bg-primary, #0a0e27);
+    color: var(--text-primary, #f8fafc);
   }
 }
+

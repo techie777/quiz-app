@@ -24,6 +24,7 @@ export default function SetCard({
 }) {
   const { t, isHindi } = useLanguage();
   const { tier } = useTier();
+  const { isSetLocked, countdownFormatted, countdownFormattedHi, openLockedSheet, isPro, freeSetsPerWindow } = useEntitlement();
 
   // Mega Mix Special Card
   if (isMix) {
@@ -72,7 +73,6 @@ export default function SetCard({
   }
 
   // Standard Set Card
-  const { isSetLocked, countdownFormatted, countdownFormattedHi, openLockedSheet, isPro, freeSetsPerWindow } = useEntitlement();
   const setIndex = set?.index || 1;
   const effectiveFreeQuota = typeof freeSetsPerWindow === "number" ? freeSetsPerWindow : (freeQuota || FREE_SETS_QUOTA);
   const isLocked = isSetLocked ? isSetLocked(setIndex) : (setIndex > effectiveFreeQuota && !isPro);

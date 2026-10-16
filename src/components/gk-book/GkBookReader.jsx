@@ -876,7 +876,7 @@ export default function GkBookReader({
                     </button>
                   </div>
                   <div className={styles.notesItemQuote}>
-                    "{hl.text}"
+                    &ldquo;{hl.text}&rdquo;
                   </div>
                   {hl.note && (
                     <div className={styles.notesItemNote}>

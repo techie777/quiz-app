@@ -2,14 +2,14 @@ import { Suspense } from "react";
 import ArenaClient from "./ArenaClient";
 
 export const metadata = {
-  title: "GK Test Engine - Custom Quiz Practice | QuizWeb",
-  description: "GK Test Engine on QuizWeb. Select categories, question count, difficulty, and timer settings.",
+  title: "Quiz Arena — Live 1v1 Battle, Friend Challenge & GK Practice | QuizWeb",
+  description: "Enter the Quiz Arena on QuizWeb. Challenge friends to live 1v1 quiz battles, join multiplayer duels with PIN, or run custom GK solo test practice.",
   alternates: {
     canonical: "https://quizweb.in/arena",
   },
   openGraph: {
-    title: "GK Test Engine - Custom Quiz Practice | QuizWeb",
-    description: "GK Test Engine on QuizWeb. Select categories, question count, difficulty, and timer settings.",
+    title: "Quiz Arena — Live 1v1 Battle, Friend Challenge & GK Practice | QuizWeb",
+    description: "Enter the Quiz Arena on QuizWeb. Challenge friends to live 1v1 quiz battles, join multiplayer duels with PIN, or run custom GK solo test practice.",
     url: "https://quizweb.in/arena",
     siteName: "QuizWeb",
     type: "website",

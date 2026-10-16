@@ -14,8 +14,8 @@ function shuffle(array) {
 export async function POST(req) {
   try {
     const body = await req.json().catch(() => ({}));
+    const count = Number(body.count || body.limit) || 20;
     const {
-      count = 20,
       seed,
       weightWeakTopics = true,
       userId,

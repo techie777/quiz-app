@@ -877,7 +877,7 @@ export default function SessionManager({ sessionId }) {
                   </button>
                   <button 
                     type="button"
-                    onClick={() => window.location.href = '/live-quiz'}
+                    onClick={() => window.location.href = '/quizzes'}
                     className="w-full bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 py-2.5 px-4 rounded-xl font-bold text-xs uppercase tracking-wider transition-all cursor-pointer border border-slate-200"
                   >
                     अन्य क्विज़ खोजें 🔍
@@ -1021,7 +1021,7 @@ export default function SessionManager({ sessionId }) {
             <p className="text-rose-600 font-bold text-xl tracking-tight">क्विज़ लोड त्रुटि (Quiz Error)</p>
             <p className="text-xs font-medium text-slate-500">अमान्य क्विज़ प्रारूप: {session.type}</p>
             <button
-              onClick={() => window.location.href = '/live-quiz'}
+              onClick={() => window.location.href = '/quizzes'}
               className="mt-4 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold"
             >
               वापस जाएं ↩️

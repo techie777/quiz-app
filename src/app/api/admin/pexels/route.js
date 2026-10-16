@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/adminSessionServer";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(request) {
+  const adminCheck = await requireAdmin();
+  if (!adminCheck.ok) return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+
   const { searchParams } = new URL(request.url);
   const query = searchParams.get("query");
   const page = searchParams.get("page") || 1;

@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/adminSessionServer";
 import * as xlsx from "xlsx";
+
+export const dynamic = "force-dynamic";
 
 export async function POST(request) {
   try {
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.ok) return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+
     let data = [];
     
     const contentType = request.headers.get("content-type") || "";

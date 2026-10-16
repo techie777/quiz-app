@@ -113,7 +113,7 @@ export default function GkBookIndex({
         onFontSizeChange={setFontSize}
       />
 
-      <main className={styles.main}>
+      <main className={styles.indexMain}>
         {/* Back to Shelf Button */}
         {onBackToShelf && (
           <button

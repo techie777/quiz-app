@@ -223,8 +223,11 @@ export function getCategoryCardImageUrl(category) {
   if (category.imageUrl) return category.imageUrl;
   if (category.image && category.image.startsWith("/")) return category.image;
   
-  const slug = (category.slug || "").toLowerCase().trim();
-  const filename = CATEGORY_SLUG_TO_FILE[slug] || `${slug}.webp`;
+  const rawSlug = category.slug || (category.topic ? category.topic.toLowerCase().replace(/[^a-z0-9]+/g, "-") : category.id);
+  if (!rawSlug) return null;
+  const slug = String(rawSlug).toLowerCase().trim();
+  const canonical = SLUG_ALIASES[slug] || slug;
+  const filename = CATEGORY_SLUG_TO_FILE[canonical] || CATEGORY_SLUG_TO_FILE[slug] || `${slug}.webp`;
   return `/cards/${filename}`;
 }
 

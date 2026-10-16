@@ -134,36 +134,72 @@ export default function GkBookShelf({ onSelectBook, onSelectChapter }) {
 
   return (
     <div className={styles.bookWrapper} data-theme={theme}>
-      {/* Sticky App Header */}
-      <GkBookHeader
-        title="📚 मेरी डिजिटल पुस्तकें (My Bookshelf)"
-        theme={theme}
-        onThemeChange={setTheme}
-        fontSize={fontSize}
-        onFontSizeChange={setFontSize}
-      />
-
-      <main className={styles.main}>
-        {/* Navigation Breadcrumb */}
-        <div className={styles.crumb}>
-          <Link href="/">← मुख्य पृष्ठ (Home)</Link>
-          <span>›</span>
-          <span style={{ fontWeight: 700, color: "var(--tx)" }}>
-            मेरी पुस्तकें (Digital Bookshelf)
-          </span>
-        </div>
-
-        {/* Clean, Clutter-Free Hero Section */}
+      <main className={styles.shelfMain}>
+        {/* Desktop-optimized Flagship Hero Section */}
         <div className={styles.shelfHero}>
-          <span className={styles.shelfHeroTag}>
-            📖 डिजिटल पुस्तकालय
-          </span>
-          <h1 className={styles.shelfHeroTitle}>
-            मेरी डिजिटल पुस्तकें (My Books)
-          </h1>
-          <p className={styles.shelfHeroDesc}>
-            अध्याय-वार संरचित नोट्स, महत्वपूर्ण तथ्य और अभ्यास क्विज़।
-          </p>
+          <div className={styles.shelfHeroContent}>
+            <div className={styles.shelfHeroLeft}>
+              <div className={styles.shelfHeroTag}>
+                <span>📖</span> डिजिटल पुस्तकालय • Digital Bookshelf
+              </div>
+              <h1 className={styles.shelfHeroTitle}>
+                मेरी डिजिटल पुस्तकें (Digital Bookshelf)
+              </h1>
+              <p className={styles.shelfHeroDesc}>
+                NCERT, UPSC, SSC व राज्य परीक्षाओं के लिए अध्याय-वार संरचित नोट्स, माइंड मैप्स, वन-लाइनर तथ्य और त्वरित अभ्यास क्विज़।
+              </p>
+
+              {/* Live Catalog Stats */}
+              <div className={styles.shelfHeroBadges}>
+                <span className={styles.heroBadgeItem}>
+                  📚 <strong>5</strong> डिजिटल पुस्तकें
+                </span>
+                <span className={styles.heroBadgeItem}>
+                  📑 <strong>200+</strong> अध्याय
+                </span>
+                <span className={styles.heroBadgeItem}>
+                  ⚡ <strong>10,000+</strong> महत्वपूर्ण तथ्य
+                </span>
+                <span className={styles.heroBadgeItemLive}>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block" />
+                  <strong>2</strong> पुस्तकें लाइव उपलब्ध
+                </span>
+              </div>
+            </div>
+
+            {/* Reading Mood / Theme Switcher */}
+            <div className={styles.shelfHeroRight}>
+              <div className={styles.themeSelectorBox}>
+                <span className={styles.themeSelectorLabel}>🎨 पठन थीम (Theme)</span>
+                <div className={styles.themePillsRow}>
+                  <button
+                    type="button"
+                    onClick={() => setTheme("light")}
+                    className={`${styles.themePillBtn} ${theme === "light" ? styles.themePillActive : ""}`}
+                    title="लाइट थीम"
+                  >
+                    ☀️ लाइट
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTheme("sepia")}
+                    className={`${styles.themePillBtn} ${theme === "sepia" ? styles.themePillActive : ""}`}
+                    title="सेपिया थीम (आंखों के लिए आरामदायक)"
+                  >
+                    📜 सेपिया
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTheme("dark")}
+                    className={`${styles.themePillBtn} ${theme === "dark" ? styles.themePillActive : ""}`}
+                    title="डार्क थीम"
+                  >
+                    🌙 डार्क
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* 1.1 SMART RESUME BANNER: "जहां छोड़ा था वहीं से शुरू करें" */}
@@ -428,6 +464,14 @@ export default function GkBookShelf({ onSelectBook, onSelectChapter }) {
                               <span>⚡ पढ़ें</span>
                             </button>
                           )}
+
+                          <Link
+                            href={`/category/${book.slug}`}
+                            className={styles.bookBtnQuiz}
+                            title="इस विषय पर क्विज़ खेलें"
+                          >
+                            <span>🎯 क्विज़</span>
+                          </Link>
                         </>
                       ) : (
                         <button type="button" disabled className={styles.bookBtnDisabled}>
@@ -455,7 +499,7 @@ export default function GkBookShelf({ onSelectBook, onSelectChapter }) {
               कोई पुस्तक या अध्याय नहीं मिला
             </h3>
             <p className={styles.mutedText}>
-              "{searchQuery}" के लिए कोई परिणाम नहीं मिला। कृपया दूसरा शब्द खोजें।
+              &ldquo;{searchQuery}&rdquo; के लिए कोई परिणाम नहीं मिला। कृपया दूसरा शब्द खोजें।
             </p>
             <button
               type="button"

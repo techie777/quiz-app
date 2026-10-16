@@ -29,6 +29,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { getXP, saveXP } from "@/lib/gameLayer";
+import toast from "react-hot-toast";
 
 /* ──────────────── SVG CATEGORY LINE ICONS ──────────────── */
 function CategoryIcon({ category, size = 20, color = "currentColor" }) {
@@ -116,10 +117,12 @@ function getCategoryColor(category) {
 
 /* ──────────────── DATE UTILITIES ──────────────── */
 function getTodayDateString() {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, "0");
-  const day = String(today.getDate()).padStart(2, "0");
+  const now = new Date();
+  const istString = now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+  const istDate = new Date(istString);
+  const year = istDate.getFullYear();
+  const month = String(istDate.getMonth() + 1).padStart(2, "0");
+  const day = String(istDate.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
 

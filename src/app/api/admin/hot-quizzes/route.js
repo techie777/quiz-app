@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/mongoDb";
+import { requireAdmin } from "@/lib/adminSessionServer";
 import { HOT_QUIZZES_SEED } from "@/lib/hotQuizzesData";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.ok) return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+
     const db = await getDb();
     let sets = await db
       .collection("quiz_sets")
@@ -37,6 +41,9 @@ export async function GET() {
 
 export async function POST(req) {
   try {
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.ok) return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+
     const body = await req.json();
     const { id, hot, hotRank, format, coverImage } = body;
 

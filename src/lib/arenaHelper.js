@@ -35,10 +35,10 @@ export function seededShuffle(array, rng) {
  * Builds the MongoDB filter query for Quiz Arena based on user selection
  */
 export async function buildArenaFilter(db, params = {}) {
+  const categories = params.categories || params.categoryIds;
+  const topics = params.topics;
+  const rawDifficulties = params.difficulties || (params.difficulty ? [params.difficulty] : []);
   const {
-    categories,
-    topics,
-    difficulties,
     audience,
     language,
     exam,
@@ -49,21 +49,79 @@ export async function buildArenaFilter(db, params = {}) {
     onlyBookmarked,
     userId,
   } = params;
+  const difficulties = Array.isArray(rawDifficulties) ? rawDifficulties : [rawDifficulties];
 
   const query = { status: 'published' };
 
-  // 1. Categories
+  // 1. Categories (supports ObjectIds, slugs, and topic titles)
   if (Array.isArray(categories) && categories.length > 0) {
-    const catObjectIds = categories.map(c => {
-      try { return new ObjectId(c); } catch { return c; }
+    const validObjectIds = [];
+    const nonObjectIdStrings = [];
+
+    categories.forEach(c => {
+      const s = String(c || '').trim();
+      if (!s) return;
+      if (s.length === 24 && /^[0-9a-fA-F]{24}$/.test(s)) {
+        try { validObjectIds.push(new ObjectId(s)); } catch {}
+      } else {
+        nonObjectIdStrings.push(s);
+      }
     });
-    query.$or = [
-      { categoryId: { $in: catObjectIds } },
-      { category_id: { $in: catObjectIds } },
-      { topicId: { $in: categories } },
-      { topic_id: { $in: categories } },
-      { category: { $in: categories } }
-    ];
+
+    // Resolve slugs and category names from database
+    if (nonObjectIdStrings.length > 0) {
+      try {
+        const matchingCategories = await db.collection('Category').find({
+          $or: [
+            { slug: { $in: nonObjectIdStrings } },
+            { topic: { $in: nonObjectIdStrings } },
+            { id: { $in: nonObjectIdStrings } }
+          ]
+        }, { projection: { _id: 1, topic: 1 } }).toArray();
+
+        matchingCategories.forEach(cat => {
+          if (cat._id) validObjectIds.push(cat._id);
+          if (cat.topic && !nonObjectIdStrings.includes(cat.topic)) {
+            nonObjectIdStrings.push(cat.topic);
+          }
+        });
+
+        const matchingTaxonomy = await db.collection('TaxonomyCategory').find({
+          $or: [
+            { slug: { $in: nonObjectIdStrings } },
+            { name: { $in: nonObjectIdStrings } }
+          ]
+        }, { projection: { _id: 1, name: 1 } }).toArray();
+
+        matchingTaxonomy.forEach(cat => {
+          if (cat._id) validObjectIds.push(cat._id);
+          if (cat.name && !nonObjectIdStrings.includes(cat.name)) {
+            nonObjectIdStrings.push(cat.name);
+          }
+        });
+      } catch (err) {
+        console.warn('Error resolving category slugs in buildArenaFilter:', err.message);
+      }
+    }
+
+    const catConditions = [];
+    if (validObjectIds.length > 0) {
+      catConditions.push({ categoryId: { $in: validObjectIds } });
+      catConditions.push({ category_id: { $in: validObjectIds } });
+      const strIds = validObjectIds.map(o => o.toString());
+      catConditions.push({ categoryId: { $in: strIds } });
+      catConditions.push({ category_id: { $in: strIds } });
+    }
+    if (nonObjectIdStrings.length > 0) {
+      catConditions.push({ category: { $in: nonObjectIdStrings } });
+      catConditions.push({ categoryName: { $in: nonObjectIdStrings } });
+      catConditions.push({ topic: { $in: nonObjectIdStrings } });
+      catConditions.push({ topicId: { $in: nonObjectIdStrings } });
+    }
+
+    if (catConditions.length > 0) {
+      query.$or = catConditions;
+    }
   }
 
   // 2. Topics

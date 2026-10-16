@@ -36,7 +36,13 @@ export async function GET() {
     
     const staticPages = [
       { url: '', priority: '1.0', changefreq: 'daily' },
+      { url: '/quizzes', priority: '1.0', changefreq: 'daily' },
+      { url: '/kids', priority: '0.9', changefreq: 'daily' },
+      { url: '/school-study', priority: '0.9', changefreq: 'daily' },
+      { url: '/mock-tests', priority: '0.9', changefreq: 'daily' },
       { url: '/gk', priority: '1.0', changefreq: 'daily' },
+      { url: '/gk-book', priority: '0.8', changefreq: 'weekly' },
+      { url: '/career-guide', priority: '0.8', changefreq: 'weekly' },
       { url: '/arena', priority: '0.9', changefreq: 'daily' },
       { url: '/daily-current-affairs', priority: '0.9', changefreq: 'daily' },
       { url: '/current-affairs', priority: '0.9', changefreq: 'daily' },
@@ -90,14 +96,14 @@ ${stateSets.map(slug => `
 ${categories.map(category => `
   <url>
     <loc>${baseUrl}/category/${category.id}</loc>
-    <lastmod>${category.updatedAt.toISOString()}</lastmod>
+    <lastmod>${(category.updatedAt ? new Date(category.updatedAt) : new Date()).toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>`).join('')}
 ${quizzes.map(quiz => `
   <url>
     <loc>${baseUrl}/quiz/${quiz.id}</loc>
-    <lastmod>${quiz.updatedAt.toISOString()}</lastmod>
+    <lastmod>${(quiz.updatedAt ? new Date(quiz.updatedAt) : new Date()).toISOString()}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>`).join('')}

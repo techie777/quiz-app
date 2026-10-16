@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   Eye,
   EyeOff,
@@ -44,13 +44,13 @@ export default function QuizReadModeView({
   };
 
   // Helper for question text
-  const getQuestionText = (q) => {
+  const getQuestionText = useCallback((q) => {
     if (!q) return "";
     if (isHindi) {
       return q.textHi || q.text_hi || q.text || q.question || "";
     }
     return q.text || q.question || q.textHi || "";
-  };
+  }, [isHindi]);
 
   // Helper for correct answer info
   const getCorrectAnswerInfo = (q) => {
@@ -158,7 +158,7 @@ export default function QuizReadModeView({
         String(idx + 1) === query
       );
     });
-  }, [questions, searchQuery, isHindi]);
+  }, [questions, searchQuery, getQuestionText]);
 
   return (
     <div className="w-full flex flex-col gap-4 animate-in fade-in duration-300">

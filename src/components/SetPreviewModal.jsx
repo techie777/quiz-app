@@ -30,7 +30,7 @@ export default function SetPreviewModal({
   const [selectedDifficulty, setSelectedDifficulty] = useState("all");
   const [expandedIndex, setExpandedIndex] = useState(null);
 
-  const questions = set?.questions || [];
+  const questions = useMemo(() => set?.questions || [], [set?.questions]);
   const setIndex = set?.index || 1;
   const setTitle = `${categoryTopic} ${isHindi ? "सेट" : "Set"} ${setIndex}`;
 

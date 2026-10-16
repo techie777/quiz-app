@@ -78,7 +78,7 @@ export default function CurrentAffairsExportClient() {
             <Link href="/pro" className="block w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-sm transition shadow-lg mb-4">
               <Crown className="inline-block mr-2" size={16} /> Get Pro Access
             </Link>
-            <Link href="/current-affairs" className="text-slate-500 hover:text-white font-bold text-xs uppercase tracking-widest transition">
+            <Link href="/daily-current-affairs" className="text-slate-500 hover:text-white font-bold text-xs uppercase tracking-widest transition">
               Back to Free Feed
             </Link>
          </div>
@@ -100,7 +100,7 @@ export default function CurrentAffairsExportClient() {
           <div className={styles.sheetHeader}>
             <div className={styles.siteInfo}>
               <strong>QuizWeb Education</strong>
-              <span>www.quizweb.com</span>
+              <span>www.quizweb.in</span>
             </div>
             <h1 className={styles.title}>{title}</h1>
             {category ? <p className={styles.subTitle}>Category: {category}</p> : null}

@@ -33,7 +33,7 @@ export default function PastDailyQuizzesPage() {
           const map = {};
           parsed.forEach((a) => {
             if (a.date) {
-              map[a.date] = `${a.score || 0}/${a.total || 10}`;
+              map[a.date] = `${a.score || 0}/${a.total || (tier === "kids" ? 5 : 10)}`;
             }
           });
           setCompletedMap(map);

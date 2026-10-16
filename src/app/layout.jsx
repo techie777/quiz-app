@@ -13,7 +13,7 @@ import { generateWebsiteStructuredData, generateOrganizationStructuredData } fro
 
 
 import Header from '@/components/Header';
-import SmartNavigation from '@/components/SmartNavigation';
+import MasterSidebar from '@/components/MasterSidebar';
 import BottomNavBar from '@/components/BottomNavBar';
 import ModuleRouteGuard from '@/components/ModuleRouteGuard';
 import MainContentWrapper from '@/components/MainContentWrapper';
@@ -156,7 +156,7 @@ export default function RootLayout({ children }) {
           <ScrollToTop />
           <ModuleRouteGuard />
           <Header />
-          <SmartNavigation />
+          <MasterSidebar />
           <div className="hidden md:block">
             <Breadcrumbs />
           </div>

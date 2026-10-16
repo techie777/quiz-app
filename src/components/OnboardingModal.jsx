@@ -131,7 +131,7 @@ export default function OnboardingModal({ isOpen, onClose, initialInterests = []
           ) : (
             <>
               {filteredCategories.length === 0 ? (
-                <div className="text-center py-10 text-slate-500 text-sm">No categories found matching "{search}"</div>
+                <div className="text-center py-10 text-slate-500 text-sm">No categories found matching &ldquo;{search}&rdquo;</div>
               ) : (
                 <div className={styles.categoryGrid}>
                   {filteredCategories.map((cat) => {

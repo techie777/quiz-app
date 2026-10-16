@@ -1,10 +1,16 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAdmin } from '@/lib/adminSessionServer';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req) {
   try {
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.ok) {
+      return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+    }
+
     const now = new Date();
 
     // 1. Target 9 card image updates

@@ -22,10 +22,12 @@ import {
 } from "lucide-react";
 
 function getTodayString() {
-  const d = new Date();
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
+  const now = new Date();
+  const istString = now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+  const istDate = new Date(istString);
+  const year = istDate.getFullYear();
+  const month = String(istDate.getMonth() + 1).padStart(2, "0");
+  const day = String(istDate.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
 
@@ -66,9 +68,10 @@ export default function DailyQuizHubPage() {
           });
           setCompletedMap(map);
 
-          // Calculate consecutive streak days
+          // Calculate consecutive streak days anchored on todayStr
           let streak = 0;
-          let checkDate = new Date();
+          const [tY, tM, tD] = todayStr.split("-").map(Number);
+          const checkDate = new Date(tY, tM - 1, tD);
 
           // If today is completed or not completed, check backward
           if (!completedDates.has(todayStr)) {
@@ -176,7 +179,8 @@ export default function DailyQuizHubPage() {
 
   // 7-Day Mini Streak Tracker calculation
   const currentWeekDays = useMemo(() => {
-    const today = new Date();
+    const [tY, tM, tD] = todayStr.split("-").map(Number);
+    const today = new Date(tY, tM - 1, tD);
     const dayOfWeek = today.getDay(); // 0 is Sun, 1 is Mon...
     const mondayDist = (dayOfWeek + 6) % 7;
     const monday = new Date(today);

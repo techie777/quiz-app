@@ -19,10 +19,12 @@ function normalizeString(v) {
 }
 
 function getTodayDateString() {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
+  const now = new Date();
+  const istString = now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+  const istDate = new Date(istString);
+  const year = istDate.getFullYear();
+  const month = String(istDate.getMonth() + 1).padStart(2, '0');
+  const day = String(istDate.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
@@ -586,7 +588,7 @@ export default function AdminCurrentAffairsPage() {
           <div className={styles.kpiIcon} style={{ background: "rgba(16, 185, 129, 0.12)", color: "#10b981" }}>📅</div>
           <div className={styles.kpiContent}>
             <div className={styles.kpiValue}>{todayCount}</div>
-            <div className={styles.kpiLabel}>Today's Updates ({formatDate(getTodayDateString())})</div>
+            <div className={styles.kpiLabel}>Today&apos;s Updates ({formatDate(getTodayDateString())})</div>
           </div>
         </div>
 
@@ -1197,7 +1199,7 @@ export default function AdminCurrentAffairsPage() {
           <div className={styles.emptyIcon}>🗞️</div>
           <h3 className={styles.emptyTitle}>No Current Affairs Found</h3>
           <p className={styles.emptyText}>
-            No news updates available for the selected filters. Click below to add today's first update!
+            No news updates available for the selected filters. Click below to add today&apos;s first update!
           </p>
           <button className={styles.primaryBtn} onClick={openCreate} style={{ marginTop: "8px" }}>
             <span>⚡ + Post Current Affairs</span>

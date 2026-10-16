@@ -592,7 +592,7 @@ export default function QuizPlayer({ state, onLeave }) {
     if (onLeave) {
       onLeave();
     } else {
-      window.location.href = '/live-quiz';
+      window.location.href = '/quizzes';
     }
   };
 

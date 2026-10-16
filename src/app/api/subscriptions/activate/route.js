@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { getDb } from "@/lib/mongoDb";
+import { prisma } from "@/lib/prisma";
 import { PRO_PLANS } from "@/lib/monetizationConfig";
 
 export const dynamic = "force-dynamic";
@@ -52,32 +53,31 @@ export async function POST(req) {
       createdAt: new Date(),
     });
 
-    // 3. Update user if authenticated
-    if (userId) {
+    // 3. Update user in Prisma (User collection) if authenticated
+    const userEmail = session?.user?.email;
+    if (userEmail) {
       try {
-        const { ObjectId } = require("mongodb");
-        await db.collection("users").updateOne(
-          { _id: new ObjectId(userId) },
-          {
-            $set: {
-              isPro: true,
-              proExpiresAt: endDate,
-              proPlan: plan.id,
-            },
-          }
-        );
+        await prisma.user.update({
+          where: { email: userEmail },
+          data: {
+            isPro: true,
+            proExpiresAt: endDate,
+          },
+        });
       } catch (err) {
-        // If not valid objectId, update by string id or email
-        await db.collection("users").updateOne(
-          { email: session?.user?.email },
-          {
-            $set: {
-              isPro: true,
-              proExpiresAt: endDate,
-              proPlan: plan.id,
-            },
-          }
-        );
+        console.error("Prisma user update error on subscription activation:", err);
+      }
+    } else if (userId) {
+      try {
+        await prisma.user.update({
+          where: { id: String(userId) },
+          data: {
+            isPro: true,
+            proExpiresAt: endDate,
+          },
+        });
+      } catch (err) {
+        console.error("Prisma user update by ID error:", err);
       }
     }
 

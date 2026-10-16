@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/mongoDb";
+import { requireAdmin } from "@/lib/adminSessionServer";
 import { DEFAULT_APPEAL_TEXT } from "@/lib/monetizationConfig";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req) {
   try {
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.ok) {
+      return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+    }
+
     const { searchParams } = new URL(req.url);
     const exportCsv = searchParams.get("export") === "csv";
 
@@ -55,6 +61,11 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
+    const adminCheck = await requireAdmin({ masterOnly: true });
+    if (!adminCheck.ok) {
+      return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+    }
+
     const body = await req.json();
     const { appealText } = body;
 

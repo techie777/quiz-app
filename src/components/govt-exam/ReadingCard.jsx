@@ -18,42 +18,37 @@ export default function ReadingCard({
     setIsRevealed(forceReveal);
   }, [forceReveal]);
 
-  if (!question) return null;
-
-  // Determine language text
-  const qText = isHindi && question.textHi ? question.textHi : question.text;
-  
-  // Normalize options array
-  let opts = [];
-  if (Array.isArray(question.options)) {
-    opts = question.options;
-  } else if (typeof question.options === "string") {
-    try {
-      opts = JSON.parse(question.options);
-    } catch {
-      opts = [];
-    }
-  }
-
-  if (isHindi && question.optionsHi) {
-    let optsHi = [];
-    if (Array.isArray(question.optionsHi)) {
-      optsHi = question.optionsHi;
-    } else if (typeof question.optionsHi === "string") {
+  // Deterministic shuffle to avoid hydration mismatch and predictable answers (Called unconditionally)
+  const finalOpts = React.useMemo(() => {
+    if (!question) return [];
+    let baseOpts = [];
+    if (Array.isArray(question.options)) {
+      baseOpts = question.options;
+    } else if (typeof question.options === "string") {
       try {
-        optsHi = JSON.parse(question.optionsHi);
+        baseOpts = JSON.parse(question.options);
       } catch {
-        optsHi = [];
+        baseOpts = [];
       }
     }
-    if (optsHi.length === opts.length && optsHi.length > 0) {
-      opts = optsHi;
-    }
-  }
 
-  // Deterministic shuffle to avoid hydration mismatch and predictable answers
-  const finalOpts = React.useMemo(() => {
-    if (!opts || opts.length === 0) return [];
+    if (isHindi && question.optionsHi) {
+      let optsHi = [];
+      if (Array.isArray(question.optionsHi)) {
+        optsHi = question.optionsHi;
+      } else if (typeof question.optionsHi === "string") {
+        try {
+          optsHi = JSON.parse(question.optionsHi);
+        } catch {
+          optsHi = [];
+        }
+      }
+      if (optsHi.length === baseOpts.length && optsHi.length > 0) {
+        baseOpts = optsHi;
+      }
+    }
+
+    if (!baseOpts || baseOpts.length === 0) return [];
     const hashString = (str) => {
       let hash = 0;
       for (let i = 0; i < str.length; i++) {
@@ -67,13 +62,18 @@ export default function ReadingCard({
       return x - Math.floor(x);
     };
     
-    const result = [...opts];
+    const result = [...baseOpts];
     for (let i = result.length - 1; i > 0; i--) {
       const j = Math.floor(random() * (i + 1));
       [result[i], result[j]] = [result[j], result[i]];
     }
     return result;
-  }, [opts, question.text, question.id]);
+  }, [question, isHindi]);
+
+  if (!question) return null;
+
+  // Determine language text
+  const qText = isHindi && question.textHi ? question.textHi : question.text;
 
   // Find correct answer index based on ORIGINAL opts, then map to shuffled finalOpts
   let correctIndex = -1;

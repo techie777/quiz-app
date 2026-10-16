@@ -2,8 +2,7 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/mongoDb";
 import { MAIN_CATEGORIES } from "@/lib/mainCategoriesConfig";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { requireAdmin } from "@/lib/adminSessionServer";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +30,11 @@ const DEFAULT_TOPIC_TAGS = {
 
 export async function GET(req) {
   try {
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.ok) {
+      return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+    }
+
     const { searchParams } = new URL(req.url);
     const search = searchParams.get("search")?.toLowerCase().trim() || "";
     const mainCategoryFilter = searchParams.get("mainCategory") || "";
@@ -216,8 +220,11 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const session = await getServerSession(authOptions);
-    // Allow master or admin
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.ok) {
+      return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+    }
+
     const body = await req.json();
     const { action, setId, tags, topicKey } = body;
 

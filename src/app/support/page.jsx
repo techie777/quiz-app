@@ -233,7 +233,7 @@ export default function SupportUsPage() {
             {DEFAULT_APPEAL_TEXT.subtitleEn}
           </p>
           <p style={{ fontSize: "12px", color: "#94A3B8", fontStyle: "italic", marginBottom: "20px" }}>
-            "{DEFAULT_APPEAL_TEXT.subtitleHi}"
+            &ldquo;{DEFAULT_APPEAL_TEXT.subtitleHi}&rdquo;
           </p>
 
           {/* Preset Buttons */}

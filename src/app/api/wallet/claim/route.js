@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 
-const prisma = new PrismaClient();
+export const dynamic = "force-dynamic";
 
 const DAILY_REWARD = 50;
+
+// Helper to get calendar date string in IST (Asia/Kolkata) -> "YYYY-MM-DD"
+function getISTDateString(date) {
+  return date.toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+}
 
 export async function POST() {
   try {
@@ -33,26 +38,25 @@ export async function POST() {
       });
     }
 
-    // Check if can claim (24 hours since last claim)
+    const now = new Date();
+    const todayStr = getISTDateString(now);
+    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const yesterdayStr = getISTDateString(yesterday);
+
+    // Check if already claimed today
     if (streak.lastClaimAt) {
-      const lastClaim = new Date(streak.lastClaimAt);
-      const now = new Date();
-      const hoursSinceClaim = (now - lastClaim) / (1000 * 60 * 60);
-      
-      if (hoursSinceClaim < 24) {
+      const lastClaimStr = getISTDateString(new Date(streak.lastClaimAt));
+      if (lastClaimStr === todayStr) {
         return NextResponse.json({ error: "Already claimed today" }, { status: 400 });
       }
     }
 
-    // Check if streak is broken (more than 48 hours)
-    let newStreakCount = streak.streakCount + 1;
+    // Determine new streak count
+    let newStreakCount = 1;
     if (streak.lastClaimAt) {
-      const lastClaim = new Date(streak.lastClaimAt);
-      const now = new Date();
-      const hoursSinceClaim = (now - lastClaim) / (1000 * 60 * 60);
-      
-      if (hoursSinceClaim > 48) {
-        newStreakCount = 1; // Reset streak
+      const lastClaimStr = getISTDateString(new Date(streak.lastClaimAt));
+      if (lastClaimStr === yesterdayStr) {
+        newStreakCount = (streak.streakCount || 0) + 1;
       }
     }
 
@@ -61,11 +65,11 @@ export async function POST() {
       where: { userId: user.id },
       data: {
         streakCount: newStreakCount,
-        lastClaimAt: new Date(),
+        lastClaimAt: now,
       },
     });
 
-    // Create transaction
+    // Create transaction record
     const transaction = await prisma.coinTransaction.create({
       data: {
         userId: user.id,
@@ -75,12 +79,16 @@ export async function POST() {
       },
     });
 
-    // Update user balance
+    // Update user balance atomically
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: {
-        coinBalance: user.coinBalance + DAILY_REWARD,
-        totalCoinsEarned: user.totalCoinsEarned + DAILY_REWARD,
+        coinBalance: { increment: DAILY_REWARD },
+        totalCoinsEarned: { increment: DAILY_REWARD },
+      },
+      select: {
+        coinBalance: true,
+        totalCoinsEarned: true,
       },
     });
 

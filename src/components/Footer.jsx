@@ -80,16 +80,7 @@ export default function Footer() {
     isCurrentlyFullscreen ||
     settings?.footerEnabled === false;
 
-  if (isInsideTier) {
-    return null;
-  }
-
-  // FOOTER RULE: The full footer appears ONLY on the master landing page and static pages (About, Contact, Privacy, Terms, Support, Donate)
-  const isMasterLandingPage = pathname === "/" && !hasSavedTier;
-  const isStaticPage = STATIC_PAGE_ROUTES.some((route) => pathname === route || pathname?.startsWith(`${route}/`));
-  const isFullFooterPage = isMasterLandingPage || isStaticPage;
-
-  // --- Dynamic SEO Data Logic (Must be called unconditionally before any early return) ---
+  // --- Dynamic SEO Data Logic (Called unconditionally before any early return) ---
   const dynamicSEOData = useMemo(() => {
     // Curated high-relevance fallbacks in case quizzes are loading or not yet cached
     const fallbackCategories = [
@@ -142,6 +133,15 @@ export default function Footer() {
 
     return { popular, recent, tags };
   }, [quizzes, isHindi]);
+
+  if (isInsideTier) {
+    return null;
+  }
+
+  // FOOTER RULE: The full footer appears ONLY on the master landing page and static pages (About, Contact, Privacy, Terms, Support, Donate)
+  const isMasterLandingPage = pathname === "/" && !hasSavedTier;
+  const isStaticPage = STATIC_PAGE_ROUTES.some((route) => pathname === route || pathname?.startsWith(`${route}/`));
+  const isFullFooterPage = isMasterLandingPage || isStaticPage;
 
   // Hub/SEO pages get a slim one-line footer (Privacy · Terms · Support)
   if (!isFullFooterPage) {

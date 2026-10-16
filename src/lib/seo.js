@@ -1,5 +1,7 @@
 // SEO optimization utilities
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://quizweb.in';
+
 // Generate structured data for pages
 export const generateStructuredData = (type, data) => {
   const structuredData = {
@@ -16,7 +18,7 @@ export const generateQuizStructuredData = (quiz) => {
   return generateStructuredData("Quiz", {
     name: quiz.topic || quiz.title,
     description: quiz.description || `Test your knowledge with ${quiz.topic} quiz`,
-    url: `${process.env.NEXT_PUBLIC_SITE_URL}/quiz/${quiz.id}`,
+    url: `${SITE_URL}/quiz/${quiz.id}`,
     numberOfQuestions: quiz.questions?.length || 0,
     educationalLevel: quiz.difficulty || "beginner",
     about: {
@@ -26,12 +28,12 @@ export const generateQuizStructuredData = (quiz) => {
     author: {
       "@type": "Organization",
       name: "QuizWeb",
-      url: process.env.NEXT_PUBLIC_SITE_URL
+      url: SITE_URL
     },
     publisher: {
       "@type": "Organization",
       name: "QuizWeb",
-      url: process.env.NEXT_PUBLIC_SITE_URL
+      url: SITE_URL
     },
     dateModified: quiz.updatedAt || new Date().toISOString(),
     datePublished: quiz.createdAt || new Date().toISOString()
@@ -43,7 +45,7 @@ export const generateCategoryStructuredData = (category) => {
   return generateStructuredData("CollectionPage", {
     name: category.topic,
     description: category.description || `Explore ${category.topic} quizzes and test your knowledge`,
-    url: `${process.env.NEXT_PUBLIC_SITE_URL}/category/${category.id}`,
+    url: `${SITE_URL}/category/${category.id}`,
     numberOfItems: category.questionCount || 0,
     mainEntity: {
       "@type": "ItemList",
@@ -73,10 +75,10 @@ export const generateBreadcrumbStructuredData = (breadcrumbs) => {
 export const generateOrganizationStructuredData = () => {
   return generateStructuredData("Organization", {
     name: "QuizWeb",
-    url: process.env.NEXT_PUBLIC_SITE_URL,
+    url: SITE_URL,
     logo: {
       "@type": "ImageObject",
-      url: `${process.env.NEXT_PUBLIC_SITE_URL}/logo.png`,
+      url: `${SITE_URL}/logo.png`,
       width: 512,
       height: 512
     },
@@ -96,13 +98,13 @@ export const generateOrganizationStructuredData = () => {
 export const generateWebsiteStructuredData = () => {
   return generateStructuredData("WebSite", {
     name: "QuizWeb",
-    url: process.env.NEXT_PUBLIC_SITE_URL,
+    url: SITE_URL,
     description: "Free online quizzes and educational games across Science, Math, History, Sports, and more!",
     potentialAction: {
       "@type": "SearchAction",
       target: {
         "@type": "EntryPoint",
-        urlTemplate: `${process.env.NEXT_PUBLIC_SITE_URL}/search?q={search_term_string}`
+        urlTemplate: `${SITE_URL}/search?q={search_term_string}`
       },
       "query-input": "required name=search_term_string"
     },

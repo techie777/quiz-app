@@ -3,6 +3,11 @@ export function GET() {
   
   const robotsTxt = `User-agent: *
 Allow: /
+Allow: /quizzes
+Allow: /kids
+Allow: /kids-zone
+Allow: /school-study
+Allow: /school-study/*
 Allow: /hub/*
 Allow: /category/*
 Allow: /quiz/*
@@ -10,6 +15,15 @@ Allow: /daily-current-affairs
 Allow: /current-affairs
 Allow: /daily/*
 Allow: /govt-exams/*
+Allow: /govt-study/*
+Allow: /mock-tests
+Allow: /mock-tests/*
+Allow: /career-guide
+Allow: /career-guide/*
+Allow: /gk-book
+Allow: /gk-book/*
+Allow: /fun-facts
+Allow: /true-false
 Allow: /govt-jobs-alerts
 Allow: /my-favourites
 Allow: /previous-years-papers
@@ -37,6 +51,7 @@ Disallow: /*.pdf$
 Allow: /daily-current-affairs?date=*
 Allow: /daily-current-affairs?month=*
 Allow: /daily-current-affairs?category=*
+Allow: /category/*?set=*
 Allow: /category/*?difficulty=*
 Allow: /category/*?page=*
 

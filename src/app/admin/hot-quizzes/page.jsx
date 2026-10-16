@@ -89,7 +89,7 @@ export default function AdminHotQuizzesPage() {
             Hot Quizzes & Fun Formats Manager
           </h1>
           <p style={{ fontSize: "14px", color: "var(--text-secondary, #64748B)", margin: "4px 0 0" }}>
-            Control quizzes appearing in the Explorer "🔥 Hot Quizzes" row and the dedicated Fun Quizzes page.
+            Control quizzes appearing in the Explorer &ldquo;🔥 Hot Quizzes&rdquo; row and the dedicated Fun Quizzes page.
           </p>
         </div>
         <button

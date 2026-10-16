@@ -11,7 +11,13 @@ const TYPE_META = {
 };
 
 function today() {
-  return new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const istString = now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+  const istDate = new Date(istString);
+  const year = istDate.getFullYear();
+  const month = String(istDate.getMonth() + 1).padStart(2, "0");
+  const day = String(istDate.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 export default function DailyExportPage() {

@@ -437,7 +437,7 @@ export default function PwaInstallPrompt() {
                       <div className={styles.walkthroughStep}>
                         <div className={styles.walkthroughBadge}>1</div>
                         <div className={styles.walkthroughText}>
-                          <div className={styles.walkthroughTitle}>Tap "Install Now"</div>
+                          <div className={styles.walkthroughTitle}>Tap &ldquo;Install Now&rdquo;</div>
                           <div className={styles.walkthroughDesc}>
                             Click the button below to prompt Google Chrome or your Android browser.
                           </div>
@@ -449,8 +449,8 @@ export default function PwaInstallPrompt() {
                         <div className={styles.walkthroughText}>
                           <div className={styles.walkthroughTitle}>Confirm Installation</div>
                           <div className={styles.walkthroughDesc}>
-                            Tap <span className={styles.keyHighlight}>"Install"</span> or{" "}
-                            <span className={styles.keyHighlight}>"Add to Home screen"</span> when prompted.
+                            Tap <span className={styles.keyHighlight}>&ldquo;Install&rdquo;</span> or{" "}
+                            <span className={styles.keyHighlight}>&ldquo;Add to Home screen&rdquo;</span> when prompted.
                           </div>
                         </div>
                       </div>
@@ -484,10 +484,10 @@ export default function PwaInstallPrompt() {
                       <div className={styles.walkthroughStep}>
                         <div className={styles.walkthroughBadge}>2</div>
                         <div className={styles.walkthroughText}>
-                          <div className={styles.walkthroughTitle}>Select 'Add to Home Screen'</div>
+                          <div className={styles.walkthroughTitle}>Select &lsquo;Add to Home Screen&rsquo;</div>
                           <div className={styles.walkthroughDesc}>
                             Scroll down the action list and tap{" "}
-                            <span className={styles.keyHighlight}>"Add to Home Screen" (➕)</span>.
+                            <span className={styles.keyHighlight}>&ldquo;Add to Home Screen&rdquo; (➕)</span>.
                           </div>
                         </div>
                       </div>
@@ -495,9 +495,9 @@ export default function PwaInstallPrompt() {
                       <div className={styles.walkthroughStep}>
                         <div className={styles.walkthroughBadge}>3</div>
                         <div className={styles.walkthroughText}>
-                          <div className={styles.walkthroughTitle}>Tap 'Add' at Top Right</div>
+                          <div className={styles.walkthroughTitle}>Tap &lsquo;Add&rsquo; at Top Right</div>
                           <div className={styles.walkthroughDesc}>
-                            Tap <span className={styles.keyHighlight}>"Add"</span> in the top-right corner. QuizWeb will now be on your Home Screen!
+                            Tap <span className={styles.keyHighlight}>&ldquo;Add&rdquo;</span> in the top-right corner. QuizWeb will now be on your Home Screen!
                           </div>
                         </div>
                       </div>
@@ -521,9 +521,9 @@ export default function PwaInstallPrompt() {
                       <div className={styles.walkthroughStep}>
                         <div className={styles.walkthroughBadge}>2</div>
                         <div className={styles.walkthroughText}>
-                          <div className={styles.walkthroughTitle}>Or Click "Install Desktop App" Below</div>
+                          <div className={styles.walkthroughTitle}>Or Click &ldquo;Install Desktop App&rdquo; Below</div>
                           <div className={styles.walkthroughDesc}>
-                            We'll directly trigger the desktop prompt if your browser supports it.
+                            We&apos;ll directly trigger the desktop prompt if your browser supports it.
                           </div>
                         </div>
                       </div>
@@ -550,7 +550,7 @@ export default function PwaInstallPrompt() {
                   </div>
                   <h3 className="text-lg font-bold text-white">QuizWeb App Installed!</h3>
                   <p className="text-xs text-slate-300 max-w-xs">
-                    You're all set! Launch QuizWeb directly from your Home Screen or App Drawer anytime for offline learning.
+                    You&apos;re all set! Launch QuizWeb directly from your Home Screen or App Drawer anytime for offline learning.
                   </p>
                 </div>
               )}

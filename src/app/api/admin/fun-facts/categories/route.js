@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/adminSessionServer";
+
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.ok) return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+
     const categories = await prisma.funFactCategory.findMany({
       orderBy: { sortOrder: "asc" },
       include: {
@@ -20,6 +26,9 @@ export async function GET() {
 
 export async function POST(request) {
   try {
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.ok) return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+
     const body = await request.json();
     const { name, nameHi, slug, image, sortOrder } = body;
 
@@ -35,6 +44,9 @@ export async function POST(request) {
 
 export async function DELETE(request) {
   try {
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.ok) return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
     
@@ -50,6 +62,9 @@ export async function DELETE(request) {
 
 export async function PATCH(request) {
   try {
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.ok) return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+
     const body = await request.json();
     const { id, name, nameHi, slug, image, sortOrder } = body;
 

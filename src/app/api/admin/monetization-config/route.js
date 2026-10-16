@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/mongoDb";
+import { requireAdmin } from "@/lib/adminSessionServer";
 import { DEFAULT_AD_TOGGLES } from "@/lib/monetizationConfig";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.ok) {
+      return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+    }
+
     const db = await getDb();
     const configDoc = await db.collection("app_settings").findOne({ key: "monetization_config" });
     const config = configDoc?.value || DEFAULT_AD_TOGGLES;
@@ -41,6 +47,11 @@ export async function GET() {
 
 export async function POST(req) {
   try {
+    const adminCheck = await requireAdmin({ masterOnly: true });
+    if (!adminCheck.ok) {
+      return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+    }
+
     const body = await req.json();
     const { config } = body;
 

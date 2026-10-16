@@ -31,7 +31,7 @@ function loadCurrentAffairsList(raw) {
 }
 
 async function getUserId(session) {
-  if (!session?.user?.id || session.user.isAdmin) return null;
+  if (!session?.user?.id) return null;
   return session.user.id;
 }
 
@@ -50,19 +50,17 @@ export async function GET(request) {
   const ids = toIdList(favRow?.value || "[]");
   if (idsOnly) return NextResponse.json({ ids }, { status: 200 });
 
-  const caRow = await prisma.setting.findUnique({
-    where: { key: "currentAffairs" },
-    select: { value: true },
-  });
-  const list = loadCurrentAffairsList(caRow?.value || "[]");
-  const idSet = new Set(ids);
-  const items = list.filter((x) => idSet.has(x.id));
+  const items = ids.length > 0
+    ? await prisma.currentAffair.findMany({
+        where: { id: { in: ids } },
+      })
+    : [];
 
   items.sort((a, b) => {
     if (a.date !== b.date) return b.date.localeCompare(a.date);
-    const at = a.createdAt || "";
-    const bt = b.createdAt || "";
-    return bt.localeCompare(at);
+    const at = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const bt = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return bt - at;
   });
 
   return NextResponse.json({ ids, items }, { status: 200 });

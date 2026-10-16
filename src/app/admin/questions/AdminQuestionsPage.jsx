@@ -26,6 +26,7 @@ import {
   ChevronDown,
   ChevronRight,
   ExternalLink,
+  Sparkles,
 } from "lucide-react";
 
 export default function AdminQuestionsPage() {

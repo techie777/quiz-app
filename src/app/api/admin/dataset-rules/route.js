@@ -3,10 +3,11 @@ import { NextResponse } from "next/server";
 import { getDb } from "@/lib/mongoDb";
 import { DEFAULT_ACCESS_SETTINGS, getAccessSettings } from "@/lib/entitlement";
 import { DEFAULT_AD_TOGGLES } from "@/lib/monetizationConfig";
+import { requireAdmin } from "@/lib/adminSessionServer";
 
 export const dynamic = "force-dynamic";
 
-export const DEFAULT_DATASET_RULES = {
+const DEFAULT_DATASET_RULES = {
   generationMode: "dynamic", // "dynamic" (Smart Balancing) | "static" (Sequential As Prepared)
   megaPoolRoundRobin: true,  // Rule 1: 10 Easy (Q1-5 easy first), 5 Med, 5 Hard, round-robin subcategories
   subCategoryMixing: true,   // Rule 2: Set 1 (10-5-5) -> Set 2+ (7-7-6) with topic mixing
@@ -69,6 +70,11 @@ export async function GET() {
 
 export async function POST(req) {
   try {
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.ok) {
+      return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+    }
+
     const body = await req.json();
     const { rules } = body;
 

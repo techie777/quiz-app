@@ -38,11 +38,13 @@ export default async function Page() {
     const categoriesRaw = await prisma.category.findMany({
       where: {
         hidden: false,
+        categoryClass: {
+          not: "govt-exam",
+        },
         OR: [
           { parentId: null },
           { parentId: { isSet: false } },
-          { showSubCategoriesOnHome: true }
-        ]
+        ],
       },
       include: {
         _count: {
@@ -100,8 +102,8 @@ export default async function Page() {
       sortOrder: cat.sortOrder,
       parentId: cat.parentId,
       showSubCategoriesOnHome: cat.showSubCategoriesOnHome,
-      createdAt: cat.createdAt.toISOString(),
-      updatedAt: cat.updatedAt.toISOString(),
+      createdAt: cat.createdAt ? new Date(cat.createdAt).toISOString() : new Date().toISOString(),
+      updatedAt: cat.updatedAt ? new Date(cat.updatedAt).toISOString() : new Date().toISOString(),
       questionCount: (cat._count?.questions || 0) + (cat.subCategories?.reduce((acc, sub) => acc + (sub._count?.questions || 0), 0) || 0),
       questions: (cat.questions || []).map(q => ({
         ...q,

@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/adminSessionServer";
 
-const prisma = new PrismaClient();
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.ok) return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+
     const materials = await prisma.studyMaterial.findMany({
       orderBy: { createdAt: 'desc' },
       include: {
@@ -22,6 +26,9 @@ export async function GET() {
 
 export async function POST(request) {
   try {
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.ok) return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+
     const data = await request.json();
     const { id, name, slug, image, description, authors, alignedTo } = data;
 
@@ -46,6 +53,9 @@ export async function POST(request) {
 
 export async function DELETE(request) {
   try {
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.ok) return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 

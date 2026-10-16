@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, Suspense } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -30,14 +30,16 @@ import {
   HelpCircle,
   Swords,
   Users,
+  Share2,
+  Compass,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
 // Curated Top Practice Subjects for quick topic switching
 const AVAILABLE_TOPICS = [
   { id: "india-gk", slug: "india-gk", name: "India GK (भारत सामान्य ज्ञान)", icon: "🇮🇳", questions: 3468, sets: 174 },
-  { id: "world-gk", slug: "world-gk", name: "विश्व भूगोल व इतिहास", icon: "🌍", questions: 1840, sets: 92 },
-  { id: "science", slug: "science", name: "सामान्य विज्ञान (Science)", icon: "🔬", questions: 1250, sets: 62 },
+  { id: "world-gk", slug: "world-gk", name: "विश्व भूगोल व इतिहास (World GK)", icon: "🌍", questions: 1840, sets: 92 },
+  { id: "science", slug: "science", name: "सामान्य विज्ञान (General Science)", icon: "🔬", questions: 1250, sets: 62 },
   { id: "current-affairs", slug: "current-affairs", name: "समसामयिकी (Current Affairs)", icon: "⚡", questions: 980, sets: 49 },
   { id: "constitution", slug: "constitution", name: "भारतीय संविधान व राजव्यवस्था", icon: "📜", questions: 1420, sets: 71 },
 ];
@@ -70,7 +72,7 @@ const SAMPLE_PREVIEW_QUESTIONS = [
   },
 ];
 
-export default function CategoryPracticeSetsPage() {
+function CategoryPracticeSetsContent() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -161,12 +163,6 @@ export default function CategoryPracticeSetsPage() {
       });
     } catch {}
 
-    // Seed realistic gamified demonstration state if fresh user (matches reference prototype)
-    if (!map[1]) map[1] = { completed: true, score: 18, total: 20, accuracy: 90 };
-    if (!map[2]) map[2] = { completed: true, score: 14, total: 20, accuracy: 70 };
-    if (!map[4]) map[4] = { completed: true, score: 19, total: 20, accuracy: 95 };
-    if (!map[8]) map[8] = { completed: true, score: 12, total: 20, accuracy: 60 };
-
     setProgressMap(map);
   }, [currentSlug]);
 
@@ -178,7 +174,8 @@ export default function CategoryPracticeSetsPage() {
       return {
         id: categoryData.id || currentSlug,
         slug: categoryData.slug || currentSlug,
-        name: categoryData.topic || currentSlug,
+        name: categoryData.topic || categoryData.name || currentSlug,
+        hindiName: categoryData.topicHi || categoryData.nameHi || "",
         icon: categoryData.emoji === "IN" ? "🇮🇳" : (categoryData.emoji || "📚"),
         questions: categoryData.questionCount || (questions.length > 0 ? questions.length : 3468),
         sets: Math.max(1, Math.ceil((categoryData.questionCount || questions.length || 3468) / 20)),
@@ -235,7 +232,10 @@ export default function CategoryPracticeSetsPage() {
       if (!isNaN(num)) {
         return allSets.filter((s) => s.id === num);
       }
-      return allSets.filter((s) => `सेट ${s.id}`.includes(searchQuery) || `set ${s.id}`.toLowerCase().includes(searchQuery.toLowerCase()));
+      return allSets.filter((s) =>
+        `सेट ${s.id}`.includes(searchQuery) ||
+        `set ${s.id}`.toLowerCase().includes(searchQuery.toLowerCase())
+      );
     }
     const currentRangeObj = ranges.find((r) => r.label === activeRange) || ranges[0];
     return allSets.filter((s) => s.id >= currentRangeObj.start && s.id <= currentRangeObj.end);
@@ -299,8 +299,14 @@ export default function CategoryPracticeSetsPage() {
   const handleLaunchLiveBattle = (targetSetNum = selectedSet) => {
     setIsTestStarting(false);
     const sessionId = Math.random().toString(36).substring(2, 10).toUpperCase();
-    toast.success(isHindi ? `⚔️ सेट ${targetSetNum} के लिए लाइव मुकाबला रूम तैयार किया जा रहा है...` : `Creating Live Room for Set ${targetSetNum}...`);
-    router.push(`/live/${sessionId}?is_host=true&categoryId=${categoryData?.id || currentSlug}&setIndex=${targetSetNum}`);
+    toast.success(
+      isHindi
+        ? `⚔️ सेट ${targetSetNum} के लिए लाइव मुकाबला रूम तैयार किया जा रहा है...`
+        : `Creating Live Room for Set ${targetSetNum}...`
+    );
+    router.push(
+      `/live/${sessionId}?is_host=true&categoryId=${categoryData?.id || currentSlug}&setIndex=${targetSetNum}`
+    );
   };
 
   // Preview Questions for the selected previewSetId
@@ -314,521 +320,742 @@ export default function CategoryPracticeSetsPage() {
   }, [previewSetId, allSets]);
 
   return (
-    <div className="min-h-screen bg-slate-100 flex justify-center text-slate-800 antialiased font-sans select-none">
-      {/* Mobile-Optimized Frame Container */}
-      <div className="w-full max-w-[430px] min-h-screen bg-slate-50 flex flex-col relative shadow-2xl border-x border-slate-200 overflow-x-hidden">
+    <div className="w-full min-h-screen bg-slate-50/70 dark:bg-slate-950 text-slate-800 dark:text-slate-100 antialiased font-sans select-none pb-28 lg:pb-16">
+      
+      {/* ================= 1. DESKTOP & MOBILE RESPONSIVE CONTAINER ================= */}
+      <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-6 space-y-4 sm:space-y-6">
 
-        {/* ================= 1. COMPACT STICKY TOP HEADER ================= */}
-        <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 py-2.5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => router.push("/")}
-              className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 flex items-center justify-center text-slate-700 transition"
-              aria-label="Back to Home"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-base">{currentTopic.icon}</span>
-                <h1 className="text-base font-extrabold text-slate-900 leading-tight">
-                  {currentTopic.name}
-                </h1>
+        {/* ================= TOP BREADCRUMB & HEADER BANNER ================= */}
+        <section className="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-6 border border-slate-200/90 dark:border-slate-800 shadow-xs relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-50/60 dark:bg-indigo-950/20 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+
+          {/* Desktop Breadcrumbs */}
+          <div className="hidden sm:flex items-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-400 mb-3 relative z-10">
+            <Link href="/" className="hover:text-indigo-600 transition flex items-center gap-1">
+              <span>Home</span>
+            </Link>
+            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+            <Link href="/quizzes" className="hover:text-indigo-600 transition">
+              Quizzes & Practice
+            </Link>
+            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+            <span className="text-slate-900 dark:text-white font-extrabold">{currentTopic.name}</span>
+          </div>
+
+          {/* Main Topic Header Row */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+            <div className="flex items-center gap-3.5 sm:gap-4">
+              {/* Back button */}
+              <button
+                onClick={() => router.push("/quizzes")}
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 flex items-center justify-center text-slate-700 dark:text-slate-200 transition shrink-0 cursor-pointer shadow-2xs"
+                aria-label="Back to Quizzes"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+
+              {/* Topic Icon & Name */}
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl sm:text-3xl p-1 bg-slate-100/70 dark:bg-slate-800 rounded-xl border border-slate-200/60 dark:border-slate-700 shadow-2xs">
+                    {currentTopic.icon}
+                  </span>
+                  <div>
+                    <h1 className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+                      {currentTopic.name}
+                    </h1>
+                    {currentTopic.hindiName && (
+                      <p className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400">
+                        {currentTopic.hindiName}
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
-              <p className="text-[11px] text-slate-500 font-medium">
-                {currentTopic.questions.toLocaleString()} प्रश्न उपलब्ध • {totalSetsCount} सेट
-              </p>
             </div>
-          </div>
 
-          <button
-            onClick={() => setIsChangeTopicOpen(true)}
-            className="text-xs font-bold text-indigo-600 bg-indigo-50/90 hover:bg-indigo-100 active:scale-95 px-3 py-1.5 rounded-xl border border-indigo-200/80 transition"
-          >
-            बदलें
-          </button>
-        </header>
-
-        {/* ================= MAIN SCROLLABLE VIEW ================= */}
-        <main className="flex-1 px-3.5 pt-3 pb-52 space-y-3 overflow-y-auto">
-
-          {/* ================= MODE TOGGLE: SOLO vs 1v1 LIVE QUIZ ================= */}
-          <div className="flex items-center justify-center">
-            <div className="grid grid-cols-2 p-1 w-full bg-slate-200/70 border border-slate-300/70 rounded-2xl shadow-2xs gap-1">
-              <button
-                type="button"
-                onClick={() => setQuizMode("solo")}
-                className={`py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                  quizMode === "solo"
-                    ? "bg-white text-indigo-700 shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                <Rocket className="w-3.5 h-3.5 text-indigo-600" />
-                <span>{isHindi ? "सोलो अभ्यास" : "Solo Practice"}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setQuizMode("live")}
-                className={`py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                  quizMode === "live"
-                    ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                <Swords className="w-3.5 h-3.5 text-amber-300" />
-                <span>{isHindi ? "1v1 लाइव मुकाबला" : "Live Battle"}</span>
-                <span className="bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full tracking-wider animate-pulse">
-                  LIVE
+            {/* Metrics & Actions */}
+            <div className="flex items-center justify-between sm:justify-end gap-2.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300">
+                <span className="bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800 px-3 py-1.5 rounded-xl font-mono shadow-2xs">
+                  {currentTopic.questions.toLocaleString()} {isHindi ? "प्रश्न" : "Questions"}
                 </span>
+                <span className="bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800 px-3 py-1.5 rounded-xl font-mono shadow-2xs">
+                  {totalSetsCount} {isHindi ? "सेट्स" : "Sets"}
+                </span>
+              </div>
+
+              <button
+                onClick={() => setIsChangeTopicOpen(true)}
+                className="text-xs font-black text-indigo-600 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/70 hover:bg-indigo-100 active:scale-95 px-3.5 py-1.5 sm:py-2 rounded-xl border border-indigo-200 dark:border-indigo-800 transition cursor-pointer shadow-2xs flex items-center gap-1.5"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>{isHindi ? "विषय बदलें" : "Change Topic"}</span>
               </button>
             </div>
           </div>
+        </section>
 
-          {/* ================= 2. SMART CONTROL DECK (ABOVE GRID) ================= */}
-          <div className="bg-white rounded-2xl p-3 border border-slate-200/80 shadow-xs space-y-3">
-            {/* Timer preference selector */}
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                <Timer className="w-4 h-4 text-indigo-600" />
-                {quizMode === "live" ? (isHindi ? "लाइव मुकाबला समय सीमा" : "Live Battle Timer") : (isHindi ? "प्रति प्रश्न समय सीमा" : "Question Timer")}
-              </span>
-              <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">
-                {selectedTimer === "off" ? "असीमित" : selectedTimer}
-              </span>
-            </div>
+        {/* ================= 2. DESKTOP 2-COLUMN MASTER-DETAIL GRID ================= */}
+        <div className="lg:grid lg:grid-cols-12 lg:gap-6 items-start space-y-4 lg:space-y-0">
+          
+          {/* ================= LEFT SIDEBAR (Sticky on Desktop) ================= */}
+          <aside className="lg:col-span-4 space-y-4 lg:sticky lg:top-20">
+            
+            {/* Mode Switcher: Solo vs 1v1 Live */}
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-3 sm:p-4 border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-3">
+              <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <Zap className="w-4 h-4 text-amber-500 fill-amber-500" />
+                <span>{isHindi ? "अभ्यास मोड चुनें:" : "Choose Practice Mode:"}</span>
+              </label>
 
-            <div className="grid grid-cols-4 gap-1.5">
-              {[
-                { label: "बंद", value: "off", hint: "No limit" },
-                { label: "15s", value: "15s", hint: "तेज़" },
-                { label: "30s", value: "30s", hint: "मानक" },
-                { label: "60s", value: "60s", hint: "शांत" },
-              ].map((t) => (
+              <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700 gap-1">
                 <button
-                  key={t.value}
-                  onClick={() => setSelectedTimer(t.value)}
-                  className={`py-2 rounded-xl text-xs font-extrabold transition-all flex flex-col items-center justify-center active:scale-95 cursor-pointer ${
-                    selectedTimer === t.value
-                      ? "bg-gradient-to-tr from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-600/25 ring-2 ring-indigo-500/20"
-                      : "bg-slate-50 text-slate-600 border border-slate-200/80 hover:bg-slate-100"
+                  type="button"
+                  onClick={() => setQuizMode("solo")}
+                  className={`py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    quizMode === "solo"
+                      ? "bg-white dark:bg-slate-700 text-indigo-700 dark:text-white shadow-sm"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                   }`}
                 >
-                  <span>{t.label}</span>
-                  <span className={`text-[9px] font-normal ${selectedTimer === t.value ? "text-indigo-100" : "text-slate-400"}`}>
-                    {t.hint}
+                  <Rocket className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                  <span>{isHindi ? "सोलो अभ्यास" : "Solo Practice"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setQuizMode("live")}
+                  className={`py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    quizMode === "live"
+                      ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-sm"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                >
+                  <Swords className="w-3.5 h-3.5 text-amber-300" />
+                  <span>{isHindi ? "1v1 लाइव" : "1v1 Battle"}</span>
+                  <span className="bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full tracking-wider animate-pulse">
+                    LIVE
                   </span>
                 </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Range Carousel Pills */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between px-1">
-              <span className="text-xs font-bold text-slate-700 flex items-center gap-1">
-                <Layers className="w-3.5 h-3.5 text-slate-400" /> सेट्स रेंज चुनें
-              </span>
-              <span className="text-[11px] font-semibold text-slate-400">{totalSetsCount} सेट्स</span>
+              </div>
             </div>
 
-            <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none no-scrollbar">
-              {ranges.map((range) => {
-                const isActive = activeRange === range.label && !searchQuery;
-                return (
+            {/* Timer preference selector */}
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-3.5 sm:p-4 border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                  <Timer className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  {quizMode === "live"
+                    ? isHindi ? "लाइव मुकाबला समय सीमा" : "Live Battle Timer"
+                    : isHindi ? "प्रति प्रश्न समय सीमा" : "Question Timer"}
+                </span>
+                <span className="text-[11px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 px-2.5 py-0.5 rounded-full border border-indigo-100 dark:border-indigo-800">
+                  {selectedTimer === "off" ? (isHindi ? "असीमित" : "No Limit") : selectedTimer}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-4 gap-1.5">
+                {[
+                  { label: isHindi ? "बंद" : "Off", value: "off", hint: "No limit" },
+                  { label: "15s", value: "15s", hint: isHindi ? "तेज़" : "Fast" },
+                  { label: "30s", value: "30s", hint: isHindi ? "मानक" : "Standard" },
+                  { label: "60s", value: "60s", hint: isHindi ? "शांत" : "Relaxed" },
+                ].map((t) => (
                   <button
-                    key={range.label}
-                    onClick={() => {
-                      setActiveRange(range.label);
-                      setSearchQuery("");
-                    }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all active:scale-95 cursor-pointer ${
-                      isActive
-                        ? "bg-slate-900 text-white shadow-sm ring-2 ring-slate-900/10"
-                        : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+                    key={t.value}
+                    onClick={() => setSelectedTimer(t.value)}
+                    className={`py-2 rounded-xl text-xs font-extrabold transition-all flex flex-col items-center justify-center active:scale-95 cursor-pointer ${
+                      selectedTimer === t.value
+                        ? "bg-gradient-to-tr from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-600/25 ring-2 ring-indigo-500/20"
+                        : "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750"
                     }`}
                   >
-                    {range.label}
+                    <span>{t.label}</span>
+                    <span
+                      className={`text-[9px] font-normal ${
+                        selectedTimer === t.value ? "text-indigo-100" : "text-slate-400"
+                      }`}
+                    >
+                      {t.hint}
+                    </span>
                   </button>
-                );
-              })}
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* Unified Numeric & Set Search Bar */}
-          <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="सेट नंबर ढूंढें (उदा. 5, 24, 110)..."
-              className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-8 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-slate-400 shadow-2xs"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
-                aria-label="Clear search"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
+            {/* Desktop Selected Set Launch Deck (Hidden on Mobile, prominent on Desktop) */}
+            <div className="hidden lg:block bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 rounded-3xl p-5 border border-indigo-200/90 dark:border-slate-800 shadow-sm space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    {isHindi ? "सक्रिय चयन" : "Selected Set"}
+                  </span>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-xl font-black text-slate-900 dark:text-white">
+                      सेट {selectedSet}
+                    </span>
+                    {activeSetData.completed ? (
+                      <span className="flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-xs font-black px-2 py-0.5 rounded-lg border border-emerald-200">
+                        <Trophy className="w-3 h-3 text-amber-500 fill-amber-400" />
+                        <span>{activeSetData.score}/20</span>
+                      </span>
+                    ) : (
+                      <span className="bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-xs font-bold px-2 py-0.5 rounded-lg">
+                        {isHindi ? "नया अभ्यास सेट" : "New Practice Set"}
+                      </span>
+                    )}
+                  </div>
+                </div>
 
-          {/* ================= 3. TACTILE 2-COLUMN SET GRID ================= */}
-          <div className="grid grid-cols-2 gap-2.5">
-            {displayedSets.length === 0 ? (
-              <div className="col-span-2 py-10 text-center bg-white rounded-2xl border border-dashed border-slate-300 p-4 space-y-2">
-                <p className="text-xs font-bold text-slate-700">कोई सेट नहीं मिला!</p>
-                <p className="text-[11px] text-slate-400">कृपया 1 से {totalSetsCount} के बीच सेट नंबर दर्ज करें।</p>
                 <button
-                  onClick={() => setSearchQuery("")}
-                  className="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-xl border border-indigo-200 cursor-pointer"
+                  type="button"
+                  onClick={() => setPreviewSetId(selectedSet)}
+                  className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 flex items-center gap-1 bg-indigo-50/70 dark:bg-indigo-950/70 px-2.5 py-1.5 rounded-xl border border-indigo-200/80 transition cursor-pointer"
                 >
-                  सभी सेट्स रीसेट करें
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>{isHindi ? "प्रश्न देखें" : "Preview"}</span>
                 </button>
               </div>
-            ) : (
-              displayedSets.map((set) => {
-                const isSelected = selectedSet === set.id;
 
-                return (
-                  <div
-                    key={set.id}
-                    onClick={() => setSelectedSet(set.id)}
-                    className={`relative rounded-2xl p-3 border transition-all cursor-pointer flex flex-col justify-between active:scale-[0.98] ${
-                      isSelected
-                        ? "bg-gradient-to-br from-indigo-50/90 to-violet-50/50 border-indigo-500 ring-2 ring-indigo-500/20 shadow-md"
-                        : set.completed
-                        ? "bg-white border-emerald-200/90 shadow-2xs hover:shadow-xs"
-                        : "bg-white border-slate-200 hover:border-slate-300 shadow-2xs hover:shadow-xs"
-                    }`}
+              {/* Set specs */}
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="p-2.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200/80 dark:border-slate-700">
+                  <span className="text-slate-400 text-[10px] block">{isHindi ? "प्रश्नों की संख्या" : "Questions"}</span>
+                  <span className="font-black text-slate-800 dark:text-slate-200">
+                    {activeSetData.questionsCount} MCQs
+                  </span>
+                </div>
+                <div className="p-2.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200/80 dark:border-slate-700">
+                  <span className="text-slate-400 text-[10px] block">{isHindi ? "समय सीमा" : "Timer Limit"}</span>
+                  <span className="font-black text-slate-800 dark:text-slate-200">
+                    {selectedTimer === "off" ? (isHindi ? "असीमित" : "Unlimited") : `${selectedTimer}/Q`}
+                  </span>
+                </div>
+              </div>
+
+              {/* Primary Action Button */}
+              {quizMode === "live" ? (
+                <button
+                  onClick={() => handleLaunchLiveBattle(selectedSet)}
+                  className="w-full py-3.5 bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 active:scale-98 text-white rounded-2xl font-black text-sm shadow-md shadow-purple-600/30 flex items-center justify-center gap-2 transition cursor-pointer"
+                >
+                  <Swords className="w-4 h-4 text-amber-300" />
+                  <span>{isHindi ? "⚔️ 1v1 लाइव रूम बनाएं" : "⚔️ Create Live Battle Room"}</span>
+                </button>
+              ) : (
+                <div className="space-y-2">
+                  <button
+                    onClick={() => setIsTestStarting(true)}
+                    className="w-full py-3.5 bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 hover:from-indigo-700 hover:to-purple-700 active:scale-98 text-white rounded-2xl font-black text-sm shadow-md shadow-indigo-600/30 flex items-center justify-center gap-2 transition cursor-pointer"
                   >
-                    {/* Card Top: Number & Badges */}
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <span className={`text-sm font-black ${isSelected ? "text-indigo-950" : "text-slate-900"}`}>
-                            सेट {set.id}
-                          </span>
-                          {set.isNew && (
-                            <span className="bg-amber-100 text-amber-800 text-[9px] font-black px-1.5 py-0.5 rounded-md">
-                              NEW
+                    <Rocket className="w-4 h-4 text-amber-300" />
+                    <span>{isHindi ? "🚀 सोलो अभ्यास शुरू करें" : "🚀 Start Solo Practice"}</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleLaunchLiveBattle(selectedSet)}
+                    className="w-full py-2.5 bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 active:scale-98 transition cursor-pointer"
+                  >
+                    <Swords className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                    <span>{isHindi ? "दोस्तों के साथ 1v1 लाइव खेलें" : "Play 1v1 Live with Friends"}</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Lateral Navigation: Other Topics Strip */}
+            <div className="hidden lg:block bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-2.5">
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                <Compass className="w-3.5 h-3.5" />
+                <span>{isHindi ? "अन्य लोकप्रिय विषय" : "Other Popular Topics"}</span>
+              </span>
+
+              <div className="space-y-1.5">
+                {AVAILABLE_TOPICS.filter((t) => t.slug !== currentSlug).slice(0, 3).map((topic) => (
+                  <Link
+                    key={topic.id}
+                    href={`/category/${topic.slug}`}
+                    className="p-2 rounded-xl border border-slate-100 dark:border-slate-800 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-between text-xs transition"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">{topic.icon}</span>
+                      <span className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-[170px]">
+                        {topic.name}
+                      </span>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+          </aside>
+
+          {/* ================= RIGHT MAIN AREA: SETS EXPLORER & GRID ================= */}
+          <main className="lg:col-span-8 space-y-4">
+            
+            {/* Filter Bar: Range Pills + Search Input */}
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-3.5">
+              
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                {/* Search Bar */}
+                <div className="relative flex-1 max-w-md">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder={isHindi ? "सेट नंबर ढूंढें (उदा. 5, 24, 110)..." : "Find set number (e.g. 5, 24, 110)..."}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl pl-10 pr-9 py-2.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-slate-400 shadow-2xs"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 cursor-pointer"
+                      aria-label="Clear search"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Range Label & Total */}
+                <div className="flex items-center justify-between sm:justify-end gap-2 text-xs font-bold text-slate-500 dark:text-slate-400">
+                  <span>
+                    {isHindi ? `दिखाए जा रहे सेट्स: ${displayedSets.length}` : `Showing ${displayedSets.length} Sets`}
+                  </span>
+                </div>
+              </div>
+
+              {/* Range Carousel Pills */}
+              <div className="space-y-1.5 pt-1 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-xs font-extrabold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-indigo-500" />
+                    <span>{isHindi ? "सेट्स रेंज चुनें:" : "Choose Set Range:"}</span>
+                  </span>
+                  <span className="text-[11px] font-semibold text-slate-400">{totalSetsCount} सेट्स</span>
+                </div>
+
+                <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none no-scrollbar">
+                  {ranges.map((range) => {
+                    const isActive = activeRange === range.label && !searchQuery;
+                    return (
+                      <button
+                        key={range.label}
+                        onClick={() => {
+                          setActiveRange(range.label);
+                          setSearchQuery("");
+                        }}
+                        className={`px-3.5 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all active:scale-95 cursor-pointer ${
+                          isActive
+                            ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xs"
+                            : "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750"
+                        }`}
+                      >
+                        {range.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+            </div>
+
+            {/* ================= MAIN RESPONSIVE SETS GRID ================= */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-3.5">
+              {displayedSets.length === 0 ? (
+                <div className="col-span-full py-12 text-center bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 p-6 space-y-2">
+                  <span className="text-3xl block mb-2">🔍</span>
+                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    {isHindi ? "कोई सेट नहीं मिला!" : "No sets match your search!"}
+                  </p>
+                  <p className="text-[11px] text-slate-400">
+                    {isHindi
+                      ? `कृपया 1 से ${totalSetsCount} के बीच सेट नंबर दर्ज करें।`
+                      : `Enter a valid number between 1 and ${totalSetsCount}.`}
+                  </p>
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-3.5 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 cursor-pointer"
+                  >
+                    {isHindi ? "सभी सेट्स रीसेट करें" : "Reset Sets"}
+                  </button>
+                </div>
+              ) : (
+                displayedSets.map((set) => {
+                  const isSelected = selectedSet === set.id;
+
+                  return (
+                    <div
+                      key={set.id}
+                      onClick={() => setSelectedSet(set.id)}
+                      className={`relative rounded-3xl p-3.5 sm:p-4 border transition-all cursor-pointer flex flex-col justify-between active:scale-[0.98] group ${
+                        isSelected
+                          ? "bg-gradient-to-br from-indigo-50/90 to-violet-50/50 dark:from-indigo-950/60 dark:to-slate-900 border-indigo-500 ring-2 ring-indigo-500/20 shadow-md"
+                          : set.completed
+                          ? "bg-white dark:bg-slate-900 border-emerald-200/90 dark:border-emerald-800/80 shadow-2xs hover:shadow-md hover:border-emerald-400"
+                          : "bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-700 shadow-2xs hover:shadow-md"
+                      }`}
+                    >
+                      {/* Card Top: Number & Badges */}
+                      <div className="flex items-start justify-between mb-2.5">
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className={`text-sm sm:text-base font-black ${
+                                isSelected
+                                  ? "text-indigo-950 dark:text-white"
+                                  : "text-slate-900 dark:text-white"
+                              }`}
+                            >
+                              सेट {set.id}
                             </span>
-                          )}
+                            {set.isNew && (
+                              <span className="bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 text-[9px] font-black px-1.5 py-0.5 rounded-md">
+                                NEW
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
+                            <Clock className="w-3 h-3 text-slate-400" />
+                            {set.questionsCount} प्रश्न (~10m)
+                          </p>
                         </div>
-                        <p className="text-[11px] font-medium text-slate-500 flex items-center gap-1 mt-0.5">
-                          <Clock className="w-3 h-3 text-slate-400" />
-                          {set.questionsCount} प्रश्न (~10m)
-                        </p>
+
+                        {/* State Indicator */}
+                        {isSelected ? (
+                          <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                            <Check className="w-4 h-4 stroke-[3]" />
+                          </div>
+                        ) : set.completed ? (
+                          <div className="flex items-center gap-0.5 bg-emerald-50 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 text-[10px] font-black px-1.5 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
+                            <Trophy className="w-2.5 h-2.5 text-amber-500 fill-amber-400" />
+                            <span>{set.score}/20</span>
+                          </div>
+                        ) : (
+                          <div className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-700 mt-1 mr-1 group-hover:bg-indigo-400 transition" />
+                        )}
                       </div>
 
-                      {/* State Badge */}
-                      {isSelected ? (
-                        <div className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                          <Check className="w-3.5 h-3.5 stroke-[3]" />
-                        </div>
-                      ) : set.completed ? (
-                        <div className="flex items-center gap-0.5 bg-emerald-50 text-emerald-800 text-[10px] font-black px-1.5 py-0.5 rounded-md border border-emerald-200">
-                          <Trophy className="w-2.5 h-2.5 text-amber-500 fill-amber-400" />
-                          <span>{set.score}/20</span>
-                        </div>
-                      ) : (
-                        <div className="w-2 h-2 rounded-full bg-slate-300 mt-1 mr-1" />
-                      )}
-                    </div>
+                      {/* Card Bottom: Preview Action & Accuracy */}
+                      <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                        <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+                          {set.completed ? `${set.accuracy}% सही` : "अनदेखा"}
+                        </span>
 
-                    {/* Card Bottom: Preview Action & Accuracy */}
-                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                      <span className="text-[10px] font-semibold text-slate-400">
-                        {set.completed ? `${set.accuracy}% सही` : "अनदेखा"}
-                      </span>
-                      
-                      <div className="flex items-center gap-1">
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
                             setPreviewSetId(set.id);
                           }}
-                          className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 bg-indigo-50/70 hover:bg-indigo-100/70 px-2 py-0.5 rounded-lg border border-indigo-100 transition cursor-pointer"
+                          className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 flex items-center gap-1 bg-indigo-50/70 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 px-2 py-0.5 rounded-lg border border-indigo-100 dark:border-indigo-800 transition cursor-pointer"
                         >
                           <Eye className="w-3 h-3 text-indigo-500" />
                           <span>देखें</span>
                         </button>
                       </div>
                     </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </main>
+                  );
+                })
+              )}
+            </div>
 
-        {/* ================= 4. FIXED FROSTED GLASS ACTION TRAY ================= */}
-        <div className="fixed bottom-[62px] sm:bottom-[66px] left-0 right-0 z-40 flex justify-center pointer-events-none pb-[env(safe-area-inset-bottom,0px)]">
-          <div className="w-full max-w-[430px] bg-white/95 backdrop-blur-md border-t border-slate-200 p-3 px-3.5 shadow-[0_-8px_25px_rgba(0,0,0,0.08)] pointer-events-auto">
-            <div className="flex items-center justify-between gap-2.5">
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs text-slate-500 font-medium">चुना गया:</span>
-                  <span className="text-xs font-black text-slate-900 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
-                    सेट {selectedSet}
-                  </span>
-                </div>
-                <p className="text-[10.5px] text-slate-500 font-semibold mt-0.5 truncate">
-                  {quizMode === "live" ? "⚔️ 1v1 लाइव मुकाबला" : `${activeSetData.questionsCount} प्रश्न • ${selectedTimer === "off" ? "असीमित" : selectedTimer}`}
-                </p>
+          </main>
+
+        </div>
+
+      </div>
+
+      {/* ================= 3. MOBILE FIXED FROSTED GLASS ACTION TRAY (Hidden on Desktop) ================= */}
+      <div className="lg:hidden fixed bottom-[62px] sm:bottom-[66px] left-0 right-0 z-40 flex justify-center pointer-events-none pb-[env(safe-area-inset-bottom,0px)] px-3">
+        <div className="w-full max-w-md bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 rounded-3xl p-3 shadow-[0_-8px_25px_rgba(0,0,0,0.1)] pointer-events-auto">
+          <div className="flex items-center justify-between gap-2.5">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-slate-500 font-medium">{isHindi ? "चुना गया:" : "Selected:"}</span>
+                <span className="text-xs font-black text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
+                  सेट {selectedSet}
+                </span>
               </div>
+              <p className="text-[10.5px] text-slate-500 font-semibold mt-0.5 truncate">
+                {quizMode === "live"
+                  ? "⚔️ 1v1 लाइव मुकाबला"
+                  : `${activeSetData.questionsCount} प्रश्न • ${selectedTimer === "off" ? "असीमित" : selectedTimer}`}
+              </p>
+            </div>
 
-              {quizMode === "live" ? (
-                /* LIVE QUIZ CTA */
+            {quizMode === "live" ? (
+              <button
+                onClick={() => handleLaunchLiveBattle(selectedSet)}
+                className="flex-1 max-w-[210px] bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 active:scale-95 text-white py-3 px-3.5 rounded-xl font-black text-xs sm:text-sm shadow-md shadow-purple-600/30 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+              >
+                <Swords className="w-4 h-4 text-amber-300 shrink-0" />
+                <span className="truncate">{isHindi ? "लाइव रूम बनाएं" : "Create Room"}</span>
+              </button>
+            ) : (
+              <div className="flex items-center gap-1.5 flex-1 max-w-[225px] justify-end">
                 <button
                   onClick={() => handleLaunchLiveBattle(selectedSet)}
-                  className="flex-1 max-w-[210px] bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 active:scale-95 text-white py-3 px-3.5 rounded-xl font-black text-xs sm:text-sm shadow-md shadow-purple-600/30 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                  title={isHindi ? "सेट के साथ लाइव रूम बनाएं" : "Live Room with Set"}
+                  className="p-3 bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 rounded-xl font-bold text-xs flex items-center justify-center gap-1 active:scale-95 transition cursor-pointer shrink-0"
                 >
-                  <Swords className="w-4 h-4 text-amber-300 shrink-0" />
-                  <span className="truncate">लाइव रूम बनाएं</span>
+                  <Swords className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <span className="hidden sm:inline">लाइव</span>
                 </button>
-              ) : (
-                /* SOLO PRACTICE CTA + QUICK LIVE BUTTON */
-                <div className="flex items-center gap-1.5 flex-1 max-w-[225px] justify-end">
-                  <button
-                    onClick={() => handleLaunchLiveBattle(selectedSet)}
-                    title={isHindi ? "सेट 1 के साथ लाइव रूम बनाएं" : "Live Room with Set"}
-                    className="p-3 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-xl font-bold text-xs flex items-center justify-center gap-1 active:scale-95 transition cursor-pointer shrink-0"
-                  >
-                    <Swords className="w-4 h-4 text-purple-600" />
-                    <span className="hidden sm:inline">लाइव</span>
-                  </button>
 
-                  <button
-                    onClick={() => setIsTestStarting(true)}
-                    className="flex-1 bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 hover:from-indigo-700 hover:to-purple-700 active:scale-95 text-white py-3 px-3 rounded-xl font-black text-xs sm:text-sm shadow-md shadow-indigo-600/30 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                  >
-                    <Rocket className="w-4 h-4 text-amber-300 shrink-0" />
-                    <span className="truncate">क्विज़ शुरू करें</span>
-                  </button>
+                <button
+                  onClick={() => setIsTestStarting(true)}
+                  className="flex-1 bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 hover:from-indigo-700 hover:to-purple-700 active:scale-95 text-white py-3 px-3 rounded-xl font-black text-xs sm:text-sm shadow-md shadow-indigo-600/30 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Rocket className="w-4 h-4 text-amber-300 shrink-0" />
+                  <span className="truncate">{isHindi ? "क्विज़ शुरू करें" : "Start Quiz"}</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ================= MODAL 1: QUESTION PREVIEW DIALOG (Responsive Center/Drawer) ================= */}
+      {previewSetId !== null && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200"
+          onClick={() => setPreviewSetId(null)}
+        >
+          <div
+            className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-100 dark:border-slate-800 max-h-[85vh] flex flex-col animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 px-2.5 py-1 rounded-lg border border-indigo-200 dark:border-indigo-800">
+                  सेट {previewSetId}
+                </span>
+                <div>
+                  <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                    {isHindi ? "प्रश्नों का नमूना" : "Question Preview"}
+                  </h3>
+                  <p className="text-[10px] text-slate-400">
+                    {isHindi ? "कुल 20 वस्तुनिष्ठ प्रश्न" : "Total 20 Multiple Choice Questions"}
+                  </p>
                 </div>
-              )}
+              </div>
+              <button
+                onClick={() => setPreviewSetId(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 cursor-pointer"
+                aria-label="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Sample Questions List */}
+            <div className="overflow-y-auto space-y-3.5 pr-1 text-xs text-slate-700 dark:text-slate-300 flex-1">
+              {previewSetQuestions.map((q, idx) => (
+                <div key={idx} className="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200/80 dark:border-slate-700 space-y-2">
+                  <span className="font-black text-indigo-600 dark:text-indigo-400 text-[11px] block">
+                    प्रश्न {String(idx + 1).padStart(2, "0")}:
+                  </span>
+                  <p className="font-bold text-slate-800 dark:text-slate-100 text-xs">{q.text}</p>
+                  <div className="grid grid-cols-2 gap-1.5 pt-1 text-[11px]">
+                    {q.options.map((opt, oIdx) => (
+                      <span
+                        key={oIdx}
+                        className="bg-white dark:bg-slate-900 p-2 rounded-xl border border-slate-200 dark:border-slate-700 font-medium text-slate-700 dark:text-slate-300 truncate"
+                      >
+                        {opt}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 mt-2 flex gap-2">
+              <button
+                onClick={() => {
+                  setSelectedSet(previewSetId);
+                  setPreviewSetId(null);
+                }}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-black py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition cursor-pointer"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>{isHindi ? "यह सेट चुनें" : "Select this Set"}</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setPreviewSetId(null);
+                  handleLaunchLiveBattle(previewSetId);
+                }}
+                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-black py-2.5 px-3.5 rounded-xl text-xs flex items-center justify-center gap-1 shadow-md active:scale-95 transition cursor-pointer"
+              >
+                <Swords className="w-4 h-4 text-amber-300" />
+                <span>{isHindi ? "लाइव खेलें" : "Play Live"}</span>
+              </button>
             </div>
           </div>
         </div>
+      )}
 
-        {/* ================= MODAL 1: QUESTION PREVIEW BOTTOM SHEET ================= */}
-        {previewSetId !== null && (
+      {/* ================= MODAL 2: CHANGE TOPIC DRAWER ================= */}
+      {isChangeTopicOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200"
+          onClick={() => setIsChangeTopicOpen(false)}
+        >
           <div
-            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200"
-            onClick={() => setPreviewSetId(null)}
+            className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-100 dark:border-slate-800 max-h-[85vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
           >
-            <div
-              className="w-full max-w-[430px] bg-white rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl border border-slate-100 max-h-[85vh] flex flex-col animate-in slide-in-from-bottom-6 duration-200"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-black bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-lg border border-indigo-200">
-                    सेट {previewSetId}
-                  </span>
-                  <div>
-                    <h3 className="font-extrabold text-sm text-slate-900">प्रश्नों का नमूना</h3>
-                    <p className="text-[10px] text-slate-400">कुल 20 वस्तुनिष्ठ प्रश्न</p>
-                  </div>
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                  <BookOpen className="w-4 h-4" />
                 </div>
-                <button
-                  onClick={() => setPreviewSetId(null)}
-                  className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 cursor-pointer"
-                  aria-label="Close"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+                <div>
+                  <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                    {isHindi ? "विषय बदलें (Change Topic)" : "Change Topic"}
+                  </h3>
+                  <p className="text-[10px] text-slate-400">
+                    {isHindi ? "उपलब्ध अन्य सामान्य ज्ञान विषय" : "Select from curated GK subjects"}
+                  </p>
+                </div>
               </div>
-
-              {/* Sample Questions List */}
-              <div className="overflow-y-auto space-y-3.5 pr-1 text-xs text-slate-700 flex-1">
-                {previewSetQuestions.map((q, idx) => (
-                  <div key={idx} className="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
-                    <span className="font-black text-indigo-600 text-[11px] block">
-                      प्रश्न {String(idx + 1).padStart(2, "0")}:
-                    </span>
-                    <p className="font-bold text-slate-800 text-xs">{q.text}</p>
-                    <div className="grid grid-cols-2 gap-1.5 pt-1 text-[11px]">
-                      {q.options.map((opt, oIdx) => (
-                        <span
-                          key={oIdx}
-                          className="bg-white p-2 rounded-xl border border-slate-200 font-medium text-slate-700 truncate"
-                        >
-                          {opt}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Dual Action Buttons: Solo Practice OR 1v1 Live Room */}
-              <div className="pt-3 border-t border-slate-100 mt-2 flex gap-2">
-                <button
-                  onClick={() => {
-                    setSelectedSet(previewSetId);
-                    setPreviewSetId(null);
-                  }}
-                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-black py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition cursor-pointer"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>यह सेट चुनें</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setPreviewSetId(null);
-                    handleLaunchLiveBattle(previewSetId);
-                  }}
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-black py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1 shadow-md active:scale-95 transition cursor-pointer"
-                >
-                  <Swords className="w-4 h-4 text-amber-300" />
-                  <span>लाइव खेलें</span>
-                </button>
-              </div>
+              <button
+                onClick={() => setIsChangeTopicOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 cursor-pointer"
+                aria-label="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
-          </div>
-        )}
 
-        {/* ================= MODAL 2: CHANGE TOPIC DRAWER ================= */}
-        {isChangeTopicOpen && (
-          <div
-            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200"
-            onClick={() => setIsChangeTopicOpen(false)}
-          >
-            <div
-              className="w-full max-w-[430px] bg-white rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl border border-slate-100 max-h-[85vh] flex flex-col"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                    <BookOpen className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="font-extrabold text-sm text-slate-900">विषय बदलें (Change Topic)</h3>
-                    <p className="text-[10px] text-slate-400">उपलब्ध अन्य सामान्य ज्ञान विषय</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setIsChangeTopicOpen(false)}
-                  className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 cursor-pointer"
-                  aria-label="Close"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="space-y-2 overflow-y-auto flex-1 pr-1">
-                {AVAILABLE_TOPICS.map((topic) => {
-                  const isCurrent = currentTopic.slug === topic.slug;
-                  return (
-                    <div
-                      key={topic.id}
-                      onClick={() => {
-                        setIsChangeTopicOpen(false);
-                        router.push(`/category/${topic.slug}`);
-                      }}
-                      className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between active:scale-[0.99] ${
-                        isCurrent
-                          ? "bg-indigo-50/80 border-indigo-500 ring-2 ring-indigo-500/20 shadow-xs"
-                          : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl p-2 bg-slate-50 rounded-xl border border-slate-200">
-                          {topic.icon}
-                        </span>
-                        <div>
-                          <h4 className="text-xs font-bold text-slate-800">{topic.name}</h4>
-                          <p className="text-[11px] text-slate-500">
-                            {topic.questions.toLocaleString()} प्रश्न • {topic.sets} सेट
-                          </p>
-                        </div>
+            <div className="space-y-2 overflow-y-auto flex-1 pr-1">
+              {AVAILABLE_TOPICS.map((topic) => {
+                const isCurrent = currentTopic.slug === topic.slug;
+                return (
+                  <div
+                    key={topic.id}
+                    onClick={() => {
+                      setIsChangeTopicOpen(false);
+                      router.push(`/category/${topic.slug}`);
+                    }}
+                    className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between active:scale-[0.99] ${
+                      isCurrent
+                        ? "bg-indigo-50/80 dark:bg-indigo-950/60 border-indigo-500 ring-2 ring-indigo-500/20 shadow-xs"
+                        : "bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-750"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl p-2 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                        {topic.icon}
+                      </span>
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">{topic.name}</h4>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          {topic.questions.toLocaleString()} {isHindi ? "प्रश्न" : "Questions"} • {topic.sets} {isHindi ? "सेट" : "Sets"}
+                        </p>
                       </div>
-                      {isCurrent ? (
-                        <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-xs">
-                          <Check className="w-3.5 h-3.5 stroke-[3]" />
-                        </div>
-                      ) : (
-                        <ChevronRight className="w-4 h-4 text-slate-400" />
-                      )}
                     </div>
-                  );
-                })}
-              </div>
+                    {isCurrent ? (
+                      <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-xs">
+                        <Check className="w-3.5 h-3.5 stroke-[3]" />
+                      </div>
+                    ) : (
+                      <ChevronRight className="w-4 h-4 text-slate-400" />
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* ================= MODAL 3: STARTING TEST CONFIRMATION ================= */}
-        {isTestStarting && (
-          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl text-center border border-slate-100 animate-in zoom-in-95 duration-150">
-              <div className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-lg shadow-indigo-600/30">
-                <Rocket className="w-7 h-7 text-amber-300" />
+      {/* ================= MODAL 3: STARTING TEST CONFIRMATION ================= */}
+      {isTestStarting && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl text-center border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-150">
+            <div className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-lg shadow-indigo-600/30">
+              <Rocket className="w-7 h-7 text-amber-300" />
+            </div>
+            <div>
+              <h3 className="font-black text-lg text-slate-900 dark:text-white">
+                {isHindi ? "क्विज़ शुरू करने के लिए तैयार?" : "Ready to Start Quiz?"}
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                {currentTopic.name} • <b>सेट {selectedSet}</b>
+              </p>
+            </div>
+
+            <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-3 text-xs text-slate-700 dark:text-slate-300 space-y-1.5 text-left">
+              <div className="flex justify-between">
+                <span className="text-slate-500 dark:text-slate-400">{isHindi ? "प्रश्नों की संख्या:" : "Questions:"}</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200">{activeSetData.questionsCount} MCQs</span>
               </div>
-              <div>
-                <h3 className="font-black text-lg text-slate-900">क्विज़ शुरू करने के लिए तैयार?</h3>
-                <p className="text-xs text-slate-500 mt-1">
-                  {currentTopic.name} • <b>सेट {selectedSet}</b>
-                </p>
+              <div className="flex justify-between">
+                <span className="text-slate-500 dark:text-slate-400">{isHindi ? "समय सीमा:" : "Timer:"}</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200">
+                  {selectedTimer === "off" ? (isHindi ? "असीमित" : "Unlimited") : `${selectedTimer} प्रति प्रश्न`}
+                </span>
               </div>
-
-              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3 text-xs text-slate-700 space-y-1.5 text-left">
-                <div className="flex justify-between">
-                  <span className="text-slate-500">प्रश्नों की संख्या:</span>
-                  <span className="font-bold text-slate-800">{activeSetData.questionsCount} वस्तुनिष्ठ प्रश्न</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">समय सीमा:</span>
-                  <span className="font-bold text-slate-800">
-                    {selectedTimer === "off" ? "असीमित" : `${selectedTimer} प्रति प्रश्न`}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">मार्किंग:</span>
-                  <span className="font-bold text-emerald-700">+1 सही, 0 गलत (कोई नेगेटिव नहीं)</span>
-                </div>
-              </div>
-
-              {/* Action Buttons: Solo Practice OR 1v1 Live Room */}
-              <div className="space-y-2 pt-1">
-                <button
-                  onClick={handleLaunchSoloQuiz}
-                  className="w-full py-3 bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 text-white font-black text-xs rounded-xl shadow-md shadow-indigo-600/20 active:scale-95 transition cursor-pointer flex items-center justify-center gap-1.5"
-                >
-                  <Rocket className="w-4 h-4 text-amber-300" />
-                  <span>सोलो अभ्यास शुरू करें</span>
-                </button>
-
-                <button
-                  onClick={() => handleLaunchLiveBattle(selectedSet)}
-                  className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-black text-xs rounded-xl shadow-md shadow-purple-600/20 active:scale-95 transition cursor-pointer flex items-center justify-center gap-1.5"
-                >
-                  <Swords className="w-4 h-4 text-amber-300" />
-                  <span>⚔️ 1v1 लाइव रूम बनाएं (दोस्तों के साथ खेलें)</span>
-                </button>
-
-                <button
-                  onClick={() => setIsTestStarting(false)}
-                  className="w-full py-2 text-slate-400 hover:text-slate-600 font-bold text-xs rounded-xl transition cursor-pointer"
-                >
-                  रद्द करें
-                </button>
+              <div className="flex justify-between">
+                <span className="text-slate-500 dark:text-slate-400">{isHindi ? "मार्किंग:" : "Marking:"}</span>
+                <span className="font-bold text-emerald-700 dark:text-emerald-400">
+                  {isHindi ? "+1 सही, 0 गलत (कोई नेगेटिव नहीं)" : "+1 Correct, 0 Wrong (No negative)"}
+                </span>
               </div>
             </div>
-          </div>
-        )}
 
-      </div>
+            {/* Action Buttons: Solo Practice OR 1v1 Live Room */}
+            <div className="space-y-2 pt-1">
+              <button
+                onClick={handleLaunchSoloQuiz}
+                className="w-full py-3 bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 text-white font-black text-xs rounded-xl shadow-md shadow-indigo-600/20 active:scale-95 transition cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <Rocket className="w-4 h-4 text-amber-300" />
+                <span>{isHindi ? "सोलो अभ्यास शुरू करें" : "Start Solo Practice"}</span>
+              </button>
+
+              <button
+                onClick={() => handleLaunchLiveBattle(selectedSet)}
+                className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-black text-xs rounded-xl shadow-md shadow-purple-600/20 active:scale-95 transition cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <Swords className="w-4 h-4 text-amber-300" />
+                <span>{isHindi ? "⚔️ 1v1 लाइव रूम बनाएं (दोस्तों के साथ)" : "⚔️ Create 1v1 Live Room"}</span>
+              </button>
+
+              <button
+                onClick={() => setIsTestStarting(false)}
+                className="w-full py-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 font-bold text-xs rounded-xl transition cursor-pointer"
+              >
+                {isHindi ? "रद्द करें" : "Cancel"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
+  );
+}
+
+export default function CategoryPracticeSetsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+          <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      }
+    >
+      <CategoryPracticeSetsContent />
+    </Suspense>
   );
 }

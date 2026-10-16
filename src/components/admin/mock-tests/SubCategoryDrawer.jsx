@@ -237,7 +237,7 @@ export default function SubCategoryDrawer({
 
              {activeTab === 'quizzes' && (
                <div className="space-y-6">
-                 <p className="text-sm text-slate-500 font-medium">Link specific subject quizzes that appear on this exam's dashboard.</p>
+                 <p className="text-sm text-slate-500 font-medium">Link specific subject quizzes that appear on this exam&apos;s dashboard.</p>
                  <div className="grid grid-cols-2 gap-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                     {Array.isArray(quizCategories) && quizCategories.map(qc => (
                       <label key={qc.id} className={`flex items-center gap-4 p-4 rounded-3xl border-2 cursor-pointer transition-all ${examForm.quizCategoryIds?.includes(qc.id) ? 'border-indigo-600 bg-indigo-50/30' : 'border-slate-50 hover:border-slate-200'}`}>

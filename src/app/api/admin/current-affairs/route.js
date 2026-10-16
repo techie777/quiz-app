@@ -9,11 +9,17 @@ function normalizeString(v) {
   return String(v || "").trim();
 }
 
+let isMigrated = false;
+
 async function ensureMigrated() {
+  if (isMigrated) return;
   const row = await prisma.setting.findUnique({
     where: { key: "currentAffairs" },
   });
-  if (!row) return;
+  if (!row) {
+    isMigrated = true;
+    return;
+  }
 
   const items = safeJsonParse(row.value, []);
   if (Array.isArray(items) && items.length > 0) {
@@ -37,6 +43,7 @@ async function ensureMigrated() {
 
   // Delete the old setting to mark migration as done
   await prisma.setting.delete({ where: { key: "currentAffairs" } }).catch(() => {});
+  isMigrated = true;
 }
 
 function hasCurrentAffairsAccess(admin) {

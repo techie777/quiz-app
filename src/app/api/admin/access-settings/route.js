@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { requireAdmin } from "@/lib/adminSessionServer";
 import { getAccessSettings } from "@/lib/entitlement";
 import { getDb } from "@/lib/mongoDb";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(request) {
   try {
@@ -15,10 +16,9 @@ export async function GET(request) {
 
 export async function PUT(request) {
   try {
-    const session = await getServerSession(authOptions);
-    // In dev or admin mode allow update
-    if (session?.user && !session.user.isAdmin && process.env.NODE_ENV === "production") {
-      return NextResponse.json({ success: false, error: "Admin access required" }, { status: 403 });
+    const adminCheck = await requireAdmin({ masterOnly: true });
+    if (!adminCheck.ok) {
+      return NextResponse.json({ success: false, error: adminCheck.error }, { status: adminCheck.status });
     }
 
     const body = await request.json();

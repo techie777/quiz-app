@@ -45,15 +45,15 @@ class SocketService {
       // Add connection error logging
       this.socket.on('connect_error', (error) => {
         console.error('❌ Socket Connection Error:', error.message);
-        console.error('???? Attempted URL:', socketUrl);
+        console.error('🌐 Attempted URL:', socketUrl);
       });
       
       this.socket.on('connect', () => {
-        console.log('???? Socket Connected Successfully');
+        console.log('✅ Socket Connected Successfully');
       });
       
       this.socket.on('disconnect', (reason) => {
-        console.warn('???? Socket Disconnected:', reason);
+        console.warn('⚠️ Socket Disconnected:', reason);
       });
     }
     return this.socket;

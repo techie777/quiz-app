@@ -144,7 +144,7 @@ export async function PUT(request) {
   try {
     const body = await request.json();
     const type = String(body.type || "").trim();
-    const date = String(body.date || "").trim() || getToday();
+    const date = String(body.date || "").trim() || getTodayIST();
     const categoryId = String(body.categoryId || "").trim();
     const questionIds = Array.isArray(body.questionIds) ? body.questionIds : [];
 

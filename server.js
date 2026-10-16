@@ -990,6 +990,14 @@ app.prepare()
     httpServer.listen(port, () => {
       console.log(`🚀 Engine Live: http://${hostname}:${port}`);
     });
+
+    process.on('unhandledRejection', (reason, promise) => {
+      console.error('⚠️ [Server] Unhandled Rejection at:', promise, 'reason:', reason);
+    });
+
+    process.on('uncaughtException', (err) => {
+      console.error('❌ [Server] Uncaught Exception:', err);
+    });
   })
   .catch((err) => {
     console.error('❌ FATAL: Next.js preparation failed:', err);

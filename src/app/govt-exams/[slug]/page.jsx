@@ -1058,7 +1058,7 @@ export default function ExamDetailPage() {
                     {examData.name} Full Length Mock Tests
                   </h2>
                   <p className="text-indigo-200 text-base mb-8 leading-relaxed font-medium">
-                    Attempt official pattern simulated online test series, section-wise speed tests, and previous years' question papers with real-time ranking.
+                    Attempt official pattern simulated online test series, section-wise speed tests, and previous years&apos; question papers with real-time ranking.
                   </p>
                   <Link
                     href={`/mock-tests`}

@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/adminSessionServer";
 
-const prisma = new PrismaClient();
+export const dynamic = "force-dynamic";
 
 export async function GET(request) {
+  const adminCheck = await requireAdmin();
+  if (!adminCheck.ok) return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+
   const { searchParams } = new URL(request.url);
   const materialId = searchParams.get('materialId');
 
@@ -27,6 +31,9 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  const adminCheck = await requireAdmin();
+  if (!adminCheck.ok) return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+
   try {
     const data = await request.json();
     const { action, payload } = data; // action: 'saveSubject', 'saveChapter', 'deleteSubject', 'deleteChapter'

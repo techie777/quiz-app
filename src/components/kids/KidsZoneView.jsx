@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -98,6 +98,8 @@ export default function KidsZoneView() {
 
   const todayIST = getTodayIST();
 
+  const handleStartDailyAdventureRef = useRef(null);
+
   // Load persistent stars & sound preference
   useEffect(() => {
     try {
@@ -113,7 +115,7 @@ export default function KidsZoneView() {
       setIsStickerModalOpen(true);
     };
     const handleKidsPlay = () => {
-      handleStartDailyAdventure();
+      handleStartDailyAdventureRef.current?.();
     };
 
     window.addEventListener("open-kids-stickers", handleOpenStickers);
@@ -288,6 +290,7 @@ export default function KidsZoneView() {
       setLoadingDaily(false);
     }
   };
+  handleStartDailyAdventureRef.current = handleStartDailyAdventure;
 
   return (
     <div className="w-full flex flex-col items-center select-none text-slate-800 pb-32">

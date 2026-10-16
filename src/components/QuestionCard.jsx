@@ -191,12 +191,6 @@ export default function QuestionCard({
           {isHindi ? (question.category?.nameHi || question.category?.name) : question.category?.name}
         </span>
         <div className={styles.actionBtns}>
-          <VoiceAnswerControl 
-            onSelectOption={(idx) => handleSelect(shuffledOptions[idx]?.index)} 
-            optionsCount={shuffledOptions.length}
-            options={shuffledOptions.map(o => o.text)}
-            isHindi={isHindi}
-          />
           <button 
             onClick={handleShare} 
             disabled={sharing}
